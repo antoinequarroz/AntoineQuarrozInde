@@ -26,7 +26,7 @@ const displayProjects = computed(() => {
 })
 
 const desktopTrackStyle = computed(() => ({
-  height: `${Math.max(760, sourceTotal.value * 220)}vh`,
+  height: `${Math.max(380, sourceTotal.value * 105)}vh`,
 }))
 
 const progress = computed(() => {
@@ -38,7 +38,21 @@ const progress = computed(() => {
   return Math.min(1, Math.max(0, p))
 })
 
-const rawSourceStep = computed(() => progress.value * maxSourceStep.value)
+const settledProgress = ref(0)
+let scrollSettleTimer: ReturnType<typeof setTimeout> | undefined
+
+watch(progress, (value) => {
+  if (scrollSettleTimer) clearTimeout(scrollSettleTimer)
+  scrollSettleTimer = setTimeout(() => {
+    settledProgress.value = value
+  }, 140)
+}, { immediate: true })
+
+onBeforeUnmount(() => {
+  if (scrollSettleTimer) clearTimeout(scrollSettleTimer)
+})
+
+const rawSourceStep = computed(() => settledProgress.value * maxSourceStep.value)
 
 const activeSourceIndex = computed(() => {
   if (!props.projects.length) return 0
@@ -86,14 +100,14 @@ function cardStyle(index: number) {
   const total = Math.max(1, displayProjects.value.length)
   const spin = sourceTotal.value > 1
     ? rawSourceStep.value * (360 / sourceTotal.value)
-    : progress.value * 360
+    : settledProgress.value * 360
   const baseAngle = (index / total) * 360
   const angle = baseAngle - spin
   const normalized = ((angle + 540) % 360) - 180
   const abs = Math.abs(normalized)
   const radians = normalized * (Math.PI / 180)
-  const horizontalRadius = viewportW.value >= 1440 ? 360 : viewportW.value >= 1280 ? 300 : 240
-  const verticalRadius = viewportH.value >= 900 ? 520 : 430
+  const horizontalRadius = viewportW.value >= 1440 ? 270 : viewportW.value >= 1280 ? 240 : 205
+  const verticalRadius = viewportH.value >= 900 ? 390 : 330
   const x = Math.sin(radians) * horizontalRadius
   const y = (normalized / 180) * verticalRadius + Math.sin(radians * 2) * 34
   const z = Math.cos(radians) * 560 - 650
@@ -150,18 +164,19 @@ function cardStyle(index: number) {
       </div>
 
       <div class="hidden md:block relative left-1/2 w-screen -translate-x-1/2" :style="desktopTrackStyle">
-        <div class="sticky top-0 flex h-screen min-h-[760px] items-center justify-center overflow-hidden">
+        <div class="sticky top-20 xl:top-24 flex h-[calc(100vh-5rem)] xl:h-[calc(100vh-6rem)] min-h-[420px] items-center justify-center overflow-hidden">
           <div class="absolute inset-0 bg-[linear-gradient(180deg,rgba(246,246,251,0.92),rgba(238,242,255,0.76)_45%,rgba(246,246,251,0.94)),radial-gradient(circle_at_50%_47%,rgba(124,58,237,0.18),transparent_36%),radial-gradient(circle_at_54%_42%,rgba(34,211,238,0.14),transparent_26%)] dark:bg-[linear-gradient(180deg,rgba(6,6,14,0.94),rgba(9,9,18,0.82)_45%,rgba(6,6,14,0.96)),radial-gradient(circle_at_50%_47%,rgba(124,58,237,0.22),transparent_36%),radial-gradient(circle_at_54%_42%,rgba(34,211,238,0.16),transparent_26%)]" />
-          <div class="absolute inset-x-0 top-8 mx-auto h-px max-w-6xl bg-gradient-to-r from-transparent via-violet-400/30 to-transparent" />
-          <div class="absolute left-1/2 top-1/2 h-[54rem] w-[26rem] -translate-x-1/2 -translate-y-1/2 rounded-[999px] border border-violet-500/15 dark:border-white/10" />
-          <div class="absolute left-1/2 top-1/2 h-[40rem] w-[15rem] -translate-x-1/2 -translate-y-1/2 rounded-[999px] border border-cyan-400/15 dark:border-cyan-300/10" />
-          <div class="absolute left-1/2 top-1/2 h-[80vh] w-px -translate-x-1/2 -translate-y-1/2 bg-gradient-to-b from-transparent via-violet-400/25 to-transparent" />
-          <div class="absolute left-1/2 top-1/2 h-[11rem] w-[11rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-violet-500/10 blur-3xl dark:bg-violet-400/15" />
+          <div class="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-[#070710] via-[#070710]/60 to-transparent" />
+          <div class="absolute inset-x-0 top-10 mx-auto h-px max-w-6xl bg-gradient-to-r from-transparent via-violet-400/30 to-transparent" />
+          <div class="absolute left-1/2 top-[51.5%] h-[36rem] w-[17rem] -translate-x-1/2 -translate-y-1/2 rounded-[999px] border border-violet-500/15 dark:border-white/10" />
+          <div class="absolute left-1/2 top-[51.5%] h-[27rem] w-[10rem] -translate-x-1/2 -translate-y-1/2 rounded-[999px] border border-cyan-400/15 dark:border-cyan-300/10" />
+          <div class="absolute left-1/2 top-[51.5%] h-[52vh] w-px -translate-x-1/2 -translate-y-1/2 bg-gradient-to-b from-transparent via-violet-400/25 to-transparent" />
+          <div class="absolute left-1/2 top-[51.5%] h-[6.5rem] w-[6.5rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-violet-500/10 blur-3xl dark:bg-violet-400/15" />
 
-          <aside class="absolute left-[max(2rem,calc((100vw-1180px)/2))] top-1/2 z-[1200] w-[26rem] -translate-y-1/2">
+          <aside class="absolute left-[max(1rem,calc((100vw-1040px)/2))] top-[51.5%] z-[1200] w-[17.5rem] xl:w-[19rem] -translate-y-1/2">
             <div
               v-if="activeProject"
-              class="relative overflow-hidden rounded-[2rem] border border-violet-500/15 bg-white/[0.8] p-7 shadow-2xl shadow-violet-500/10 backdrop-blur-xl dark:border-white/10 dark:bg-black/35"
+              class="relative overflow-hidden rounded-[1.45rem] border border-violet-500/15 bg-white/[0.8] p-4.5 xl:p-5 shadow-2xl shadow-violet-500/10 backdrop-blur-xl dark:border-white/10 dark:bg-black/35"
             >
               <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-400/70 to-transparent" />
               <div class="flex items-center justify-between gap-4">
@@ -175,48 +190,48 @@ function cardStyle(index: number) {
               <div class="mt-5 text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-600 dark:text-cyan-300">
                 {{ t('portfolio.case_study') }}
               </div>
-              <h3 class="mt-6 font-display text-4xl font-bold leading-tight text-gray-950 dark:text-white">
+              <h3 class="mt-4 font-display text-[1.45rem] xl:text-[1.7rem] font-bold leading-tight text-gray-950 dark:text-white">
                 {{ activeProject.title }}
               </h3>
-              <p class="mt-4 text-sm leading-relaxed text-gray-600 dark:text-gray-300">
+              <p class="mt-3 line-clamp-6 text-[13px] leading-relaxed text-gray-600 dark:text-gray-300">
                 {{ activeProject.description }}
               </p>
 
-              <div class="mt-6 grid grid-cols-2 gap-3">
-                <div class="rounded-2xl border border-violet-500/10 bg-white/65 p-4 dark:border-white/10 dark:bg-white/[0.04]">
+              <div class="mt-4 grid grid-cols-2 gap-2.5">
+                <div class="rounded-2xl border border-violet-500/10 bg-white/65 p-3 dark:border-white/10 dark:bg-white/[0.04]">
                   <div class="text-[10px] font-bold uppercase tracking-[0.16em] text-violet-600 dark:text-violet-300">
                     {{ t('portfolio.context') }}
                   </div>
-                  <p class="mt-2 text-xs leading-relaxed text-gray-600 dark:text-gray-300">
+                  <p class="mt-1.5 line-clamp-4 text-[11px] leading-relaxed text-gray-600 dark:text-gray-300">
                     {{ activeCase.context }}
                   </p>
                 </div>
-                <div class="rounded-2xl border border-cyan-400/15 bg-cyan-50/50 p-4 dark:border-cyan-300/10 dark:bg-cyan-300/[0.04]">
+                <div class="rounded-2xl border border-cyan-400/15 bg-cyan-50/50 p-3 dark:border-cyan-300/10 dark:bg-cyan-300/[0.04]">
                   <div class="text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-700 dark:text-cyan-300">
                     {{ t('portfolio.impact') }}
                   </div>
-                  <p class="mt-2 text-xs leading-relaxed text-gray-600 dark:text-gray-300">
+                  <p class="mt-1.5 line-clamp-4 text-[11px] leading-relaxed text-gray-600 dark:text-gray-300">
                     {{ activeCase.impact }}
                   </p>
                 </div>
               </div>
 
-              <div class="mt-5 flex flex-wrap gap-2">
+              <div class="mt-4 flex flex-wrap gap-1.5">
                 <span
-                  v-for="tag in activeProject.tags.slice(0, 5)"
+                  v-for="tag in activeProject.tags.slice(0, 3)"
                   :key="tag"
-                  class="rounded-full border border-violet-500/15 bg-violet-50 px-3 py-1 text-xs text-violet-700 dark:border-violet-500/25 dark:bg-violet-500/10 dark:text-violet-200"
+                  class="rounded-full border border-violet-500/15 bg-violet-50 px-2.5 py-1 text-[11px] text-violet-700 dark:border-violet-500/25 dark:bg-violet-500/10 dark:text-violet-200"
                 >
                   {{ tag }}
                 </span>
               </div>
-              <div class="mt-7 flex flex-wrap gap-3">
+              <div class="mt-5 flex flex-wrap gap-2">
                 <a
                   v-if="activeProject.liveUrl"
                   :href="activeProject.liveUrl"
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="btn-primary rounded-full px-5 py-2.5 text-sm"
+                  class="btn-primary rounded-full px-4 py-2 text-xs"
                 >
                   {{ t('portfolio.view') }}
                 </a>
@@ -225,7 +240,7 @@ function cardStyle(index: number) {
                   :href="activeProject.codeUrl"
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="btn-secondary rounded-full px-5 py-2.5 text-sm"
+                  class="btn-secondary rounded-full px-4 py-2 text-xs"
                 >
                   {{ t('portfolio.code') }}
                 </a>
@@ -233,7 +248,7 @@ function cardStyle(index: number) {
             </div>
           </aside>
 
-          <div class="absolute right-[max(2rem,calc((100vw-1180px)/2))] top-1/2 z-[1200] w-[19rem] -translate-y-1/2 rounded-[1.5rem] border border-violet-500/15 bg-white/65 p-5 text-sm text-gray-600 shadow-xl shadow-violet-500/10 backdrop-blur-xl dark:border-white/10 dark:bg-black/25 dark:text-gray-300">
+          <div class="absolute right-[max(1rem,calc((100vw-1040px)/2))] top-[51.5%] z-[1200] w-[13.5rem] xl:w-[14.5rem] -translate-y-1/2 rounded-[1.1rem] border border-violet-500/15 bg-white/65 p-3 xl:p-3.5 text-sm text-gray-600 shadow-xl shadow-violet-500/10 backdrop-blur-xl dark:border-white/10 dark:bg-black/25 dark:text-gray-300">
             <div class="text-[10px] font-bold uppercase tracking-[0.18em] text-violet-600 dark:text-violet-300">
               {{ activeCategoryLabel }}
             </div>
@@ -247,9 +262,9 @@ function cardStyle(index: number) {
               {{ t('portfolio.selection_count', { count: projects.length }) }}
             </p>
             <div class="mt-5 h-1.5 overflow-hidden rounded-full bg-violet-500/10 dark:bg-white/10">
-              <div class="h-full rounded-full bg-gradient-brand transition-[width] duration-150" :style="{ width: `${progress * 100}%` }" />
+              <div class="h-full rounded-full bg-gradient-brand transition-[width] duration-150" :style="{ width: `${settledProgress * 100}%` }" />
             </div>
-            <div class="mt-5 max-h-[18rem] space-y-2 overflow-y-auto pr-1">
+            <div class="mt-3 max-h-[11rem] xl:max-h-[13rem] space-y-1.5 overflow-y-auto pr-1">
               <button
                 v-for="(project, index) in projects"
                 :key="`nav-${project.id}`"
@@ -276,21 +291,14 @@ function cardStyle(index: number) {
             </div>
           </div>
 
-          <div class="absolute left-1/2 top-1/2 z-[1100] hidden h-36 w-36 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-violet-500/20 bg-white/70 text-center shadow-2xl shadow-violet-500/10 backdrop-blur-xl dark:border-white/10 dark:bg-black/30 xl:grid">
-            <div>
-              <div class="font-display text-2xl font-bold text-gray-950 dark:text-white">{{ activeSourceIndex + 1 }}</div>
-              <div class="text-[10px] uppercase tracking-[0.18em] text-violet-600 dark:text-violet-300">scroll</div>
-            </div>
-          </div>
-
           <div class="relative h-full w-full [perspective:2600px] [transform-style:preserve-3d]">
               <article
                 v-for="(project, index) in displayProjects"
                 :key="`${project.id}-${index}`"
-                class="absolute left-1/2 top-1/2 h-[31rem] w-[24.5rem] overflow-hidden rounded-[1.9rem] border border-white/15 bg-[#11111b] shadow-2xl shadow-black/35 transition-[opacity,transform] duration-200 ease-out [backface-visibility:hidden]"
+                class="absolute left-1/2 top-[51.5%] h-[20.5rem] xl:h-[22rem] w-[16.2rem] xl:w-[17.5rem] overflow-hidden rounded-[1.25rem] xl:rounded-[1.4rem] border border-white/15 bg-[#11111b] shadow-2xl shadow-black/35 transition-[opacity,transform] duration-200 ease-out [backface-visibility:hidden]"
                 :style="cardStyle(index)"
               >
-                <div class="relative h-64 overflow-hidden bg-[#10101b]">
+                <div class="relative h-36 xl:h-44 overflow-hidden bg-[#10101b]">
                   <img v-if="project.image" :src="project.image" :alt="project.title" class="h-full w-full object-cover" loading="lazy">
                   <div v-else class="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(139,92,246,0.42),transparent_36%),radial-gradient(circle_at_72%_72%,rgba(34,211,238,0.28),transparent_34%)]" />
                   <div class="absolute inset-0 bg-gradient-to-t from-black/76 via-black/18 to-transparent" />
@@ -299,9 +307,9 @@ function cardStyle(index: number) {
                     {{ categoryLabel(project.category) }}
                   </div>
                 </div>
-                <div class="p-5">
-                  <h3 class="font-display text-2xl font-bold leading-tight text-white">{{ project.title }}</h3>
-                  <p class="mt-3 line-clamp-3 text-sm leading-relaxed text-white/62">{{ project.description }}</p>
+                <div class="p-3 xl:p-3.5">
+                  <h3 class="font-display text-base xl:text-lg font-bold leading-tight text-white">{{ project.title }}</h3>
+                  <p class="mt-2 line-clamp-2 text-[13px] leading-relaxed text-white/62">{{ project.description }}</p>
                   <div class="mt-4 flex flex-wrap gap-1.5">
                     <span
                       v-for="tag in project.tags.slice(0, 3)"

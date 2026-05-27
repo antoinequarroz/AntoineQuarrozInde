@@ -4,7 +4,7 @@ const year = new Date().getFullYear()
 
 const socials = [
   { name: 'GitHub', href: 'https://github.com/antoinequarroz', icon: 'github' },
-  { name: 'LinkedIn', href: 'https://linkedin.com/in/antoinequarroz', icon: 'linkedin' },
+  { name: 'LinkedIn', href: 'https://www.linkedin.com/in/antoine-quarroz-376020187/', icon: 'linkedin' },
 ]
 
 const navLinks = computed(() => [
@@ -118,7 +118,7 @@ const stack = ['Vue 3 / Nuxt', 'TypeScript', 'Flutter', 'Tailwind CSS', 'Supabas
               <ul class="space-y-3">
                 <li>
                   <a
-                    href="mailto:antoine@quarroz.dev"
+                    href="mailto:info@antoinequarroz.ch"
                     class="text-sm text-gray-600 transition-colors hover:text-violet-600 dark:text-white/60 dark:hover:text-violet-400"
                   >
                     antoine@quarroz.dev

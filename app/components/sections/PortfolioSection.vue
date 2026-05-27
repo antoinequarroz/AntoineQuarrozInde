@@ -34,12 +34,14 @@ const filtered = computed(() => {
       <div class="section-grid" />
     </div>
     <div class="section-container relative z-10">
+      <div class="relative pt-2 md:sticky md:top-16 md:z-40 md:pb-2 md:pt-3">
+        <div class="pointer-events-none absolute inset-x-0 top-0 hidden h-full bg-gradient-to-b from-[#06060e] via-[#06060e]/92 to-transparent md:block" />
       <!-- Header — marges réduites pour coller au carousel -->
       <div
         v-motion
         :initial="{ opacity: 0, y: 40 }"
         :visible="{ opacity: 1, y: 0, transition: { duration: 700 } }"
-        class="mx-auto mb-6 md:mb-8 flex max-w-3xl flex-col items-center text-center"
+        class="relative z-30 mx-auto mb-1 md:mb-2 flex max-w-3xl flex-col items-center text-center"
       >
         <span class="badge mb-4">{{ t('portfolio.badge') }}</span>
         <h2 class="section-heading">
@@ -54,7 +56,7 @@ const filtered = computed(() => {
         v-motion
         :initial="{ opacity: 0, y: 10 }"
         :visible="{ opacity: 1, y: 0, transition: { delay: 200, duration: 400 } }"
-        class="flex justify-center gap-2 mb-6 flex-wrap"
+        class="relative z-30 mb-1 flex flex-wrap justify-center gap-2 md:mb-2"
       >
         <button
           v-for="filter in filters"
@@ -76,6 +78,7 @@ const filtered = computed(() => {
           </span>
         </button>
       </div>
+      </div>
 
       <!-- Skeleton while loading -->
       <template v-if="store.loading">
@@ -95,7 +98,9 @@ const filtered = computed(() => {
           </div>
         </div>
       </template>
-      <SectionsProjectHelixCarousel v-else :projects="filtered" :active-category="activeFilter" />
+      <div v-else class="mt-0">
+        <SectionsProjectHelixCarousel :projects="filtered" :active-category="activeFilter" />
+      </div>
     </div>
   </section>
 </template>
