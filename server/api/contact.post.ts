@@ -64,7 +64,7 @@ export default defineEventHandler(async (event) => {
   const safeSubject = subject?.trim() ? subject.trim() : 'Nouveau message'
 
   const { error } = await resend.emails.send({
-    from: 'Portfolio <noreply@quarroz.dev>',
+    from: 'Portfolio <info@antoinequarroz.ch>',
     to: config.contactEmail,
     replyTo: email,
     subject: `[Portfolio] ${safeSubject}`,
