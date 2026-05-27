@@ -84,7 +84,7 @@ const contactInfo = computed(() => [
         <p class="section-subtitle mx-auto text-center">{{ t('contact.subtitle') }}</p>
       </div>
 
-      <div class="grid lg:grid-cols-5 gap-8 lg:gap-12">
+      <div class="grid lg:grid-cols-5 gap-6 lg:gap-12">
         <!-- Calendrier de réservation -->
         <div
           v-motion
@@ -102,7 +102,7 @@ const contactInfo = computed(() => [
           :visible="{ opacity: 1, x: 0, transition: { delay: 100, duration: 600 } }"
           class="lg:col-span-3"
         >
-          <form class="card-glass p-8 space-y-5" @submit.prevent="handleSubmit">
+          <form class="card-glass p-5 md:p-8 space-y-4 md:space-y-5" @submit.prevent="handleSubmit">
             <div class="grid sm:grid-cols-2 gap-5">
               <div>
                 <label class="block text-xs font-semibold text-gray-500 dark:text-white/50 uppercase tracking-wider mb-2">

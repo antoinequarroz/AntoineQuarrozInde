@@ -31,7 +31,7 @@ const tools = [
     </div>
 
     <div class="section-container relative z-10">
-      <div class="grid items-start gap-12 lg:grid-cols-[420px_1fr] xl:grid-cols-[460px_1fr]">
+      <div class="grid items-start gap-8 lg:gap-12 lg:grid-cols-[420px_1fr] xl:grid-cols-[460px_1fr]">
 
         <!-- ─── COLONNE GAUCHE : Photo + faits ─── -->
         <div
@@ -131,7 +131,7 @@ const tools = [
           </h2>
 
           <dl class="mt-6 space-y-6">
-            <div class="grid grid-cols-[88px_1fr] gap-5 items-start">
+            <div class="grid grid-cols-1 gap-2 sm:grid-cols-[88px_1fr] sm:gap-5 items-start">
               <dt class="pt-1 text-[10px] font-bold uppercase tracking-[0.2em] text-violet-500 dark:text-violet-400">
                 {{ t('about.label_1') }}
               </dt>
@@ -142,7 +142,7 @@ const tools = [
 
             <div class="h-px bg-gradient-to-r from-violet-500/20 via-fuchsia-400/10 to-transparent" />
 
-            <div class="grid grid-cols-[88px_1fr] gap-5 items-start">
+            <div class="grid grid-cols-1 gap-2 sm:grid-cols-[88px_1fr] sm:gap-5 items-start">
               <dt class="pt-1 text-[10px] font-bold uppercase tracking-[0.2em] text-fuchsia-500 dark:text-fuchsia-400">
                 {{ t('about.label_2') }}
               </dt>

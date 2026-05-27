@@ -50,7 +50,7 @@
   }
 
   .section-padding {
-    @apply py-20 md:py-24 lg:py-28;
+    @apply py-14 md:py-24 lg:py-28;
   }
 
   .section-surface {
@@ -86,11 +86,11 @@
   }
 
   .section-header {
-    @apply mx-auto mb-12 flex max-w-3xl flex-col items-center text-center md:mb-16;
+    @apply mx-auto mb-8 flex max-w-3xl flex-col items-center text-center md:mb-16;
   }
 
   .section-heading {
-    @apply font-display text-4xl font-bold leading-[0.95] tracking-tight text-gray-950 dark:text-white md:text-6xl;
+    @apply font-display text-3xl font-bold leading-[0.95] tracking-tight text-gray-950 dark:text-white md:text-6xl;
   }
 
   .section-heading-gradient {
@@ -131,7 +131,7 @@
   }
 
   .section-subtitle {
-    @apply mt-5 text-base md:text-lg text-gray-600 dark:text-white/70 max-w-2xl leading-relaxed;
+    @apply mt-4 text-sm md:text-lg text-gray-600 dark:text-white/70 max-w-2xl leading-relaxed;
   }
 
   .nav-link {
@@ -145,6 +145,37 @@
            text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-600
            focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500
            transition-all duration-200;
+  }
+}
+
+@media (max-width: 430px) {
+  .section-container {
+    padding-left: 0.875rem;
+    padding-right: 0.875rem;
+  }
+
+  .section-padding {
+    padding-top: 3rem;
+    padding-bottom: 3rem;
+  }
+
+  .section-heading {
+    font-size: 2rem;
+  }
+}
+
+@media (max-width: 390px) {
+  .section-container {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+
+  .section-heading {
+    font-size: 1.85rem;
+  }
+
+  .section-subtitle {
+    font-size: 0.82rem;
   }
 }
 

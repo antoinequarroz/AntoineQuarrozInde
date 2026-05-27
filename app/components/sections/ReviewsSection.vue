@@ -149,7 +149,7 @@ function authorInitials(review: Review) {
         </div>
       </div>
 
-      <div class="reviews-mask mx-auto mt-12 grid max-h-[720px] max-w-6xl grid-cols-1 gap-5 overflow-hidden md:grid-cols-2 lg:grid-cols-3">
+      <div class="reviews-mask mx-auto mt-8 md:mt-12 grid max-h-[520px] md:max-h-[720px] max-w-6xl grid-cols-1 gap-4 md:gap-5 overflow-hidden md:grid-cols-2 lg:grid-cols-3">
         <div
           v-for="columnIndex in 3"
           :key="columnIndex"
@@ -162,7 +162,7 @@ function authorInitials(review: Review) {
               <article
                 v-for="review in columnItems(columnIndex - 1)"
                 :key="`${copy}-${review.id}`"
-                class="group rounded-[1.75rem] border border-violet-500/15 bg-white/80 p-6 shadow-xl shadow-violet-500/10 backdrop-blur transition-all duration-300 hover:-translate-y-1 hover:border-violet-500/25 dark:border-white/10 dark:bg-white/[0.045] dark:shadow-black/20"
+                class="group rounded-[1.4rem] md:rounded-[1.75rem] border border-violet-500/15 bg-white/80 p-4 md:p-6 shadow-xl shadow-violet-500/10 backdrop-blur transition-all duration-300 hover:-translate-y-1 hover:border-violet-500/25 dark:border-white/10 dark:bg-white/[0.045] dark:shadow-black/20"
               >
                 <div class="mb-5 flex gap-0.5">
                   <span
@@ -216,7 +216,7 @@ function authorInitials(review: Review) {
 }
 
 .reviews-column {
-  min-height: 720px;
+  min-height: 520px;
 }
 
 .reviews-track {
@@ -230,6 +230,12 @@ function authorInitials(review: Review) {
 @keyframes reviewsScroll {
   to {
     transform: translateY(-50%);
+  }
+}
+
+@media (min-width: 768px) {
+  .reviews-column {
+    min-height: 720px;
   }
 }
 </style>

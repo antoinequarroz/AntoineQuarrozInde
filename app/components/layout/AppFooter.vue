@@ -19,7 +19,7 @@ const stack = ['Vue 3 / Nuxt', 'TypeScript', 'Flutter', 'Tailwind CSS', 'Supabas
 </script>
 
 <template>
-  <footer class="relative overflow-hidden pb-8 pt-16">
+  <footer class="relative overflow-hidden pb-6 pt-10 md:pb-8 md:pt-16">
     <!-- Glow blobs -->
     <div class="pointer-events-none absolute inset-0 select-none">
       <div class="absolute -top-32 left-1/4 h-80 w-80 rounded-full bg-violet-600/20 blur-3xl" />
@@ -29,14 +29,14 @@ const stack = ['Vue 3 / Nuxt', 'TypeScript', 'Flutter', 'Tailwind CSS', 'Supabas
 
     <div class="section-container relative">
       <!-- Glass card -->
-      <div class="relative overflow-hidden rounded-3xl border border-violet-500/15 bg-white/80 p-8 shadow-2xl shadow-violet-500/10 backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.04] md:p-12">
+      <div class="relative overflow-hidden rounded-3xl border border-violet-500/15 bg-white/80 p-5 md:p-12 shadow-2xl shadow-violet-500/10 backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.04]">
         <!-- Top shine -->
         <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-400/50 to-transparent" />
         <!-- Inner corner glow -->
         <div class="absolute -right-20 -top-20 h-48 w-48 rounded-full bg-violet-500/10 blur-3xl" />
         <div class="absolute -bottom-16 -left-16 h-40 w-40 rounded-full bg-fuchsia-500/8 blur-3xl" />
 
-        <div class="relative grid gap-12 md:grid-cols-[1fr_auto]">
+        <div class="relative grid gap-8 md:gap-12 md:grid-cols-[1fr_auto]">
 
           <!-- ─── Brand + tagline + socials ─── -->
           <div>
@@ -75,7 +75,7 @@ const stack = ['Vue 3 / Nuxt', 'TypeScript', 'Flutter', 'Tailwind CSS', 'Supabas
           </div>
 
           <!-- ─── Nav columns ─── -->
-          <nav class="grid grid-cols-2 gap-10 sm:grid-cols-3">
+          <nav class="grid grid-cols-1 gap-8 sm:grid-cols-3 sm:gap-10">
 
             <!-- Navigation -->
             <div>

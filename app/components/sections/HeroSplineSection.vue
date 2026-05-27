@@ -6,7 +6,7 @@ const sceneUrl = "https://prod.spline.design/PyzDhpQ9E5f1E3MT/scene.splinecode";
 </script>
 
 <template>
-    <section class="relative w-full h-screen overflow-hidden bg-black">
+    <section class="relative w-full min-h-[100svh] overflow-hidden bg-black">
         <!-- Spline background -->
         <UiSplineRobot
             :scene-url="sceneUrl"
@@ -35,7 +35,7 @@ const sceneUrl = "https://prod.spline.design/PyzDhpQ9E5f1E3MT/scene.splinecode";
         <div
             class="absolute inset-0 z-20 section-container pointer-events-none"
         >
-            <div class="h-full grid grid-rows-[1fr_auto] py-20 md:py-24">
+            <div class="h-full grid grid-rows-[1fr_auto] py-16 md:py-24">
                 <div class="flex items-center">
                     <div class="max-w-3xl text-white">
                         <!-- Badge -->
@@ -52,7 +52,7 @@ const sceneUrl = "https://prod.spline.design/PyzDhpQ9E5f1E3MT/scene.splinecode";
                         </div>
 
                         <h1
-                            class="font-display font-bold text-4xl sm:text-6xl lg:text-7xl xl:text-[5.2rem] leading-[0.9] tracking-tight"
+                            class="font-display font-bold text-[2.35rem] max-[390px]:text-[2.05rem] sm:text-6xl lg:text-7xl xl:text-[5.2rem] leading-[0.95] tracking-tight"
                         >
                             <span class="block">{{ t("hero.title_1") }}</span>
                             <span class="block modern-gradient">{{
@@ -62,7 +62,7 @@ const sceneUrl = "https://prod.spline.design/PyzDhpQ9E5f1E3MT/scene.splinecode";
                         </h1>
 
                         <p
-                            class="mt-6 text-sm sm:text-base md:text-lg text-white/72 max-w-xl leading-relaxed"
+                            class="mt-4 text-sm sm:text-base md:text-lg text-white/72 max-w-xl leading-relaxed"
                         >
                             {{ t("hero.subtitle") }}
                         </p>
@@ -82,7 +82,7 @@ const sceneUrl = "https://prod.spline.design/PyzDhpQ9E5f1E3MT/scene.splinecode";
 
         <!-- Scroll hint -->
         <div
-            class="absolute bottom-8 right-5 md:right-8 z-20 flex flex-col items-end text-white/50 pointer-events-none"
+            class="absolute bottom-8 right-5 md:right-8 z-20 flex max-[430px]:hidden flex-col items-end text-white/50 pointer-events-none"
         >
             <span class="text-[10px] tracking-[0.2em] uppercase">{{
                 t("hero.scroll")

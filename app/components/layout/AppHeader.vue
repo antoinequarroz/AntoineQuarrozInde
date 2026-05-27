@@ -22,11 +22,11 @@ function closeMenu() {
 <template>
   <header
     class="fixed top-0 left-0 right-0 z-50 transition-all duration-500"
-    :class="isScrolled ? 'py-2' : 'py-3'"
+    :class="isScrolled ? 'py-1.5 md:py-2' : 'py-2 md:py-3'"
   >
     <div class="section-container flex justify-center">
       <div
-        class="w-full max-w-4xl grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-full border px-3 sm:px-5 py-2.5 transition-all duration-300"
+        class="w-full max-w-4xl grid grid-cols-[auto_1fr_auto] items-center gap-1.5 md:gap-3 rounded-full border px-2 max-[390px]:px-1.5 sm:px-5 py-1.5 md:py-2.5 transition-all duration-300"
         :class="isScrolled
           ? 'bg-white/92 dark:bg-surface-dark/92 border-gray-200/70 dark:border-white/10 backdrop-blur-xl shadow-lg shadow-violet-500/10'
           : 'bg-white/12 dark:bg-white/5 border-white/25 dark:border-white/15 backdrop-blur-md'"
@@ -69,7 +69,7 @@ function closeMenu() {
             {{ t('nav.contact') }}
           </a>
           <button
-            class="md:hidden w-10 h-10 rounded-full flex items-center justify-center transition-colors"
+            class="md:hidden w-8.5 h-8.5 rounded-full flex items-center justify-center transition-colors"
             :class="isScrolled ? 'bg-gray-100 dark:bg-gray-800/60 text-gray-700 dark:text-gray-200' : 'bg-white/15 text-white'"
             :aria-label="isMenuOpen ? 'Close menu' : 'Open menu'"
             @click="isMenuOpen = !isMenuOpen"

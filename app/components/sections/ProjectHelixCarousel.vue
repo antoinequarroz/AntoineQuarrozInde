@@ -139,13 +139,13 @@ function cardStyle(index: number) {
 
     <div v-else>
       <div class="md:hidden">
-        <div class="-mx-4 flex snap-x gap-4 overflow-x-auto px-4 pb-4 no-scrollbar">
+        <div class="-mx-3 max-[390px]:-mx-2.5 flex snap-x gap-3 max-[390px]:gap-2.5 overflow-x-auto px-3 max-[390px]:px-2.5 pb-4 no-scrollbar">
           <article
             v-for="project in projects"
             :key="project.id"
-            class="min-w-[82vw] snap-center overflow-hidden rounded-[1.5rem] border border-violet-500/15 bg-white/80 shadow-xl shadow-violet-500/10 backdrop-blur dark:border-white/10 dark:bg-white/[0.04]"
+            class="min-w-[86vw] max-[430px]:min-w-[90vw] max-[390px]:min-w-[93vw] snap-center overflow-hidden rounded-[1.35rem] max-[390px]:rounded-[1.2rem] border border-violet-500/15 bg-white/80 shadow-xl shadow-violet-500/10 backdrop-blur dark:border-white/10 dark:bg-white/[0.04]"
           >
-            <div class="relative h-56 overflow-hidden bg-[#10101b]">
+            <div class="relative h-52 max-[430px]:h-48 max-[390px]:h-44 overflow-hidden bg-[#10101b]">
               <img v-if="project.image" :src="project.image" :alt="project.title" class="h-full w-full object-cover" loading="lazy">
               <div v-else class="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(139,92,246,0.42),transparent_36%),radial-gradient(circle_at_72%_72%,rgba(34,211,238,0.28),transparent_34%)]" />
               <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
@@ -153,11 +153,11 @@ function cardStyle(index: number) {
                 <span class="rounded-full bg-black/35 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-white backdrop-blur">
                   {{ categoryLabel(project.category) }}
                 </span>
-                <h3 class="mt-3 font-display text-2xl font-bold leading-tight text-white">{{ project.title }}</h3>
+                <h3 class="mt-2.5 font-display text-[1.35rem] max-[390px]:text-[1.2rem] font-bold leading-tight text-white">{{ project.title }}</h3>
               </div>
             </div>
-            <div class="p-5">
-              <p class="text-sm leading-relaxed text-gray-600 dark:text-gray-300">{{ project.description }}</p>
+            <div class="p-4 max-[390px]:p-3.5">
+              <p class="text-[13px] max-[390px]:text-[12px] leading-relaxed text-gray-600 dark:text-gray-300">{{ project.description }}</p>
             </div>
           </article>
         </div>
