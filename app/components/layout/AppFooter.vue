@@ -16,6 +16,13 @@ const navLinks = computed(() => [
 ])
 
 const stack = ['Vue 3 / Nuxt', 'TypeScript', 'Flutter', 'Tailwind CSS', 'Supabase']
+
+const localSeoLinks = [
+  { label: 'Developpeur web Valais', href: '/developpeur-web-valais' },
+  { label: 'Creation site internet Valais', href: '/creation-site-internet-valais' },
+  { label: 'Refonte site web Valais', href: '/refonte-site-web-valais' },
+  { label: 'Application mobile Valais', href: '/application-mobile-valais' },
+]
 </script>
 
 <template>
@@ -75,7 +82,7 @@ const stack = ['Vue 3 / Nuxt', 'TypeScript', 'Flutter', 'Tailwind CSS', 'Supabas
           </div>
 
           <!-- ─── Nav columns ─── -->
-          <nav class="grid grid-cols-1 gap-8 sm:grid-cols-3 sm:gap-10">
+          <nav class="grid grid-cols-1 gap-8 sm:grid-cols-4 sm:gap-8">
 
             <!-- Navigation -->
             <div>
@@ -130,6 +137,23 @@ const stack = ['Vue 3 / Nuxt', 'TypeScript', 'Flutter', 'Tailwind CSS', 'Supabas
                 <li class="flex items-center gap-1.5 text-sm text-gray-600 dark:text-white/60">
                   <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-violet-500" />
                   {{ t('contact.info.availability') }}
+                </li>
+              </ul>
+            </div>
+
+            <!-- Local SEO -->
+            <div>
+              <p class="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-violet-500 dark:text-violet-400">
+                Local
+              </p>
+              <ul class="space-y-3">
+                <li v-for="item in localSeoLinks" :key="item.href">
+                  <NuxtLink
+                    :to="item.href"
+                    class="text-sm text-gray-600 transition-colors hover:text-violet-600 dark:text-white/60 dark:hover:text-violet-400"
+                  >
+                    {{ item.label }}
+                  </NuxtLink>
                 </li>
               </ul>
             </div>

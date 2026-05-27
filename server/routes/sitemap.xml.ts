@@ -6,6 +6,9 @@ export default defineEventHandler((event) => {
   const urls = [
     '/',
     '/developpeur-web-valais',
+    '/creation-site-internet-valais',
+    '/refonte-site-web-valais',
+    '/application-mobile-valais',
     '/en',
     '/de',
     '/blog',
