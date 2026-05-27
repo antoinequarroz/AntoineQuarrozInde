@@ -149,7 +149,7 @@ function authorInitials(review: Review) {
         </div>
       </div>
 
-      <div class="reviews-mask mx-auto mt-8 md:mt-12 grid max-h-[520px] md:max-h-[720px] max-w-6xl grid-cols-1 gap-4 md:gap-5 overflow-hidden md:grid-cols-2 lg:grid-cols-3">
+      <div class="reviews-mask mx-auto mt-6 md:mt-12 grid max-h-[430px] md:max-h-[720px] max-w-6xl grid-cols-1 gap-3 md:gap-5 overflow-hidden md:grid-cols-2 lg:grid-cols-3">
         <div
           v-for="columnIndex in 3"
           :key="columnIndex"
@@ -162,7 +162,7 @@ function authorInitials(review: Review) {
               <article
                 v-for="review in columnItems(columnIndex - 1)"
                 :key="`${copy}-${review.id}`"
-                class="group rounded-[1.4rem] md:rounded-[1.75rem] border border-violet-500/15 bg-white/80 p-4 md:p-6 shadow-xl shadow-violet-500/10 backdrop-blur transition-all duration-300 hover:-translate-y-1 hover:border-violet-500/25 dark:border-white/10 dark:bg-white/[0.045] dark:shadow-black/20"
+                class="group rounded-[1.2rem] md:rounded-[1.75rem] border border-violet-500/15 bg-white/80 p-3.5 md:p-6 shadow-xl shadow-violet-500/10 backdrop-blur transition-all duration-300 hover:-translate-y-1 hover:border-violet-500/25 dark:border-white/10 dark:bg-white/[0.045] dark:shadow-black/20"
               >
                 <div class="mb-5 flex gap-0.5">
                   <span
@@ -175,11 +175,11 @@ function authorInitials(review: Review) {
                   </span>
                 </div>
 
-                <p class="text-sm leading-relaxed text-gray-900 dark:text-white/90">
+                <p class="text-[13px] md:text-sm leading-relaxed line-clamp-4 md:line-clamp-none text-gray-900 dark:text-white/90">
                   “{{ review.content }}”
                 </p>
 
-                <div class="mt-6 flex items-center gap-3">
+                <div class="mt-4 md:mt-6 flex items-center gap-3">
                   <img
                     v-if="review.avatar"
                     :src="review.avatar"
@@ -216,7 +216,7 @@ function authorInitials(review: Review) {
 }
 
 .reviews-column {
-  min-height: 520px;
+  min-height: 430px;
 }
 
 .reviews-track {

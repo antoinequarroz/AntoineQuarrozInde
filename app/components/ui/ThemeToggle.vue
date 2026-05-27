@@ -1,15 +1,18 @@
 <script setup lang="ts">
 const colorMode = useColorMode()
+const isMobile = useMediaQuery('(max-width: 767px)')
 
 const isDark = computed(() => colorMode.value === 'dark')
 
 function toggle() {
+  if (isMobile.value) return
   colorMode.preference = isDark.value ? 'light' : 'dark'
 }
 </script>
 
 <template>
   <button
+    v-if="!isMobile"
     class="relative w-10 h-10 rounded-xl flex items-center justify-center
            bg-gray-100 dark:bg-gray-800/50 hover:bg-violet-100 dark:hover:bg-violet-500/20
            text-gray-500 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400

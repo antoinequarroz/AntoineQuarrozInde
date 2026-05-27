@@ -31,7 +31,7 @@ const tools = [
     </div>
 
     <div class="section-container relative z-10">
-      <div class="grid items-start gap-8 lg:gap-12 lg:grid-cols-[420px_1fr] xl:grid-cols-[460px_1fr]">
+      <div class="grid items-start gap-6 max-[430px]:gap-5 lg:gap-12 lg:grid-cols-[420px_1fr] xl:grid-cols-[460px_1fr]">
 
         <!-- ─── COLONNE GAUCHE : Photo + faits ─── -->
         <div
@@ -49,7 +49,7 @@ const tools = [
             <!-- Container -->
             <div
               class="relative overflow-hidden rounded-[1.75rem] border border-violet-500/20 bg-gradient-to-br from-violet-100 to-fuchsia-100 shadow-2xl shadow-violet-500/15 dark:border-violet-400/15 dark:from-violet-900/30 dark:to-fuchsia-900/20"
-              style="aspect-ratio: 3/4"
+              style="aspect-ratio: 3/3.65"
             >
               <!-- Trait lumineux -->
               <div class="absolute inset-x-0 top-0 z-10 h-px bg-gradient-to-r from-transparent via-violet-400/40 to-transparent" />
@@ -104,14 +104,14 @@ const tools = [
           </div>
 
           <!-- Faits personnels -->
-          <div class="mt-6 space-y-2.5">
+          <div class="mt-4 max-[390px]:mt-3.5 space-y-2">
             <div
               v-for="fact in facts"
               :key="fact.label"
-              class="flex items-center gap-3 rounded-xl border border-violet-500/10 bg-white/70 px-4 py-2.5 backdrop-blur dark:border-white/[0.07] dark:bg-white/[0.03]"
+              class="flex items-center gap-2.5 rounded-xl border border-violet-500/10 bg-white/70 px-3 py-2 backdrop-blur dark:border-white/[0.07] dark:bg-white/[0.03]"
             >
               <span class="text-base leading-none">{{ fact.emoji }}</span>
-              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ fact.label }}</span>
+              <span class="text-[13px] leading-snug font-medium text-gray-700 dark:text-gray-300">{{ fact.label }}</span>
             </div>
           </div>
         </div>
@@ -130,7 +130,7 @@ const tools = [
             <span class="block section-heading-gradient">{{ t('about.title').split('\n')[1] }}</span>
           </h2>
 
-          <dl class="mt-5 max-[430px]:mt-4 space-y-5">
+          <dl class="mt-4 max-[430px]:mt-3.5 space-y-4.5">
             <div class="grid grid-cols-1 gap-2 sm:grid-cols-[88px_1fr] sm:gap-5 items-start">
               <dt class="pt-1 text-[10px] font-bold uppercase tracking-[0.2em] text-violet-500 dark:text-violet-400">
                 {{ t('about.label_1') }}

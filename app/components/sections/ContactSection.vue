@@ -105,7 +105,7 @@ const contactInfo = computed(() => [
           <form class="card-glass p-4 max-[390px]:p-3.5 md:p-8 space-y-4 md:space-y-5" @submit.prevent="handleSubmit">
             <div class="grid sm:grid-cols-2 gap-4 md:gap-5">
               <div>
-                <label class="block text-xs font-semibold text-gray-500 dark:text-white/50 uppercase tracking-wider mb-2">
+                <label class="block text-[11px] font-semibold text-gray-500 dark:text-white/50 uppercase tracking-wider mb-1.5">
                   {{ t('contact.form.name') }}
                 </label>
                 <input
@@ -117,7 +117,7 @@ const contactInfo = computed(() => [
                 >
               </div>
               <div>
-                <label class="block text-xs font-semibold text-gray-500 dark:text-white/50 uppercase tracking-wider mb-2">
+                <label class="block text-[11px] font-semibold text-gray-500 dark:text-white/50 uppercase tracking-wider mb-1.5">
                   {{ t('contact.form.email') }}
                 </label>
                 <input
@@ -131,7 +131,7 @@ const contactInfo = computed(() => [
             </div>
 
             <div>
-              <label class="block text-xs font-semibold text-gray-500 dark:text-white/50 uppercase tracking-wider mb-2">
+              <label class="block text-[11px] font-semibold text-gray-500 dark:text-white/50 uppercase tracking-wider mb-1.5">
                 {{ t('contact.form.subject') }}
               </label>
                 <input
@@ -143,7 +143,7 @@ const contactInfo = computed(() => [
             </div>
 
             <div>
-              <label class="block text-xs font-semibold text-gray-500 dark:text-white/50 uppercase tracking-wider mb-2">
+              <label class="block text-[11px] font-semibold text-gray-500 dark:text-white/50 uppercase tracking-wider mb-1.5">
                 {{ t('contact.form.message') }}
               </label>
               <textarea
@@ -157,13 +157,13 @@ const contactInfo = computed(() => [
 
             <!-- Status messages -->
             <Transition name="fade">
-              <div v-if="status === 'success'" class="flex items-center gap-2 p-3 rounded-xl bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 text-sm">
+              <div v-if="status === 'success'" class="flex items-center gap-2 p-2.5 rounded-xl bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 text-[13px]">
                 <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 {{ t('contact.form.success') }}
               </div>
-              <div v-else-if="status === 'error'" class="flex items-center gap-2 p-3 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm">
+              <div v-else-if="status === 'error'" class="flex items-center gap-2 p-2.5 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-[13px]">
                 <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>

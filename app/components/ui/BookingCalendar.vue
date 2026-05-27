@@ -86,20 +86,20 @@ const content = computed(() => {
 </script>
 
 <template>
-  <div class="card-glass p-6 flex flex-col gap-5 h-full">
+  <div class="card-glass p-4 max-[390px]:p-3.5 flex flex-col gap-4 h-full">
 
     <!-- En-tête -->
     <div>
-      <h3 class="font-display font-semibold text-lg text-gray-900 dark:text-white leading-tight">
+      <h3 class="font-display font-semibold text-base md:text-lg text-gray-900 dark:text-white leading-tight">
         {{ content.title }}
       </h3>
-      <p class="mt-1.5 text-sm text-gray-500 dark:text-gray-400 leading-snug">
+      <p class="mt-1 text-[13px] md:text-sm text-gray-500 dark:text-gray-400 leading-snug">
         {{ content.desc }}
       </p>
     </div>
 
     <!-- Widget calendrier -->
-    <div class="rounded-2xl border border-violet-500/15 dark:border-violet-400/20 bg-white/60 dark:bg-white/[0.04] p-4 flex-1">
+    <div class="rounded-2xl border border-violet-500/15 dark:border-violet-400/20 bg-white/60 dark:bg-white/[0.04] p-3.5 max-[390px]:p-3 flex-1">
 
       <!-- Mois + badge durée -->
       <div class="flex items-center justify-between mb-3">

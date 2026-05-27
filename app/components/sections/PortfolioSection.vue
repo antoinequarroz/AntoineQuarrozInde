@@ -41,14 +41,14 @@ const filtered = computed(() => {
         v-motion
         :initial="{ opacity: 0, y: 40 }"
         :visible="{ opacity: 1, y: 0, transition: { duration: 700 } }"
-        class="relative z-30 mx-auto mb-1 md:mb-2 flex max-w-3xl flex-col items-center text-center"
+        class="relative z-30 mx-auto mb-2 max-[430px]:mb-1.5 md:mb-2 flex max-w-3xl flex-col items-center text-center"
       >
-        <span class="badge mb-4">{{ t('portfolio.badge') }}</span>
+        <span class="badge mb-3 max-[430px]:mb-2.5">{{ t('portfolio.badge') }}</span>
         <h2 class="section-heading">
           <span class="block">{{ t('portfolio.title').split('\n')[0] }}</span>
           <span class="block section-heading-gradient">{{ t('portfolio.title').split('\n')[1] }}</span>
         </h2>
-        <p class="section-subtitle mx-auto text-center">{{ t('portfolio.subtitle') }}</p>
+        <p class="section-subtitle mx-auto text-center max-[430px]:max-w-[32ch]">{{ t('portfolio.subtitle') }}</p>
       </div>
 
       <!-- Filters -->

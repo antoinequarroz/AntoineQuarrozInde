@@ -22,7 +22,7 @@ function closeMenu() {
 <template>
   <header
     class="fixed top-0 left-0 right-0 z-50 transition-all duration-500"
-    :class="isScrolled ? 'py-1.5 md:py-2' : 'py-2 md:py-3'"
+    :class="isScrolled ? 'py-1 md:py-2' : 'py-1.5 md:py-3'"
   >
     <div class="section-container flex justify-center">
       <div
@@ -58,7 +58,7 @@ function closeMenu() {
         </nav>
 
         <!-- Right -->
-        <div class="justify-self-end flex items-center gap-2">
+        <div class="justify-self-end flex items-center gap-1.5 md:gap-2">
           <UiLangSwitcher />
           <UiThemeToggle />
           <a
@@ -91,12 +91,9 @@ function closeMenu() {
     <Transition name="mobile-menu">
       <div
         v-if="isMenuOpen"
-        class="md:hidden fixed inset-0 z-50 backdrop-blur-2xl"
-        :class="isScrolled
-          ? 'bg-white/95 dark:bg-[#07070f]/96'
-          : 'bg-black/85 dark:bg-[#07070f]/96'"
+        class="md:hidden fixed inset-0 z-50 backdrop-blur-2xl bg-[#07070f]/96"
       >
-        <div class="section-container h-full flex flex-col pt-6 pb-5">
+        <div class="section-container h-full flex flex-col pt-5 pb-4">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2.5">
               <div class="w-8 h-8 rounded-xl bg-gradient-brand flex items-center justify-center shadow-glow-sm">
@@ -108,10 +105,7 @@ function closeMenu() {
               </div>
             </div>
             <button
-              class="w-10 h-10 rounded-xl flex items-center justify-center transition-colors"
-              :class="isScrolled
-                ? 'bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-white hover:bg-gray-200 dark:hover:bg-white/20'
-                : 'bg-white/10 text-white hover:bg-white/20'"
+              class="w-10 h-10 rounded-xl flex items-center justify-center transition-colors bg-white/10 text-white hover:bg-white/20"
               aria-label="Close menu"
               @click="closeMenu"
             >
@@ -121,21 +115,18 @@ function closeMenu() {
             </button>
           </div>
 
-          <div class="mt-6 flex items-center gap-2">
+          <div class="mt-4 flex items-center gap-2">
             <UiLangSwitcher />
             <UiThemeToggle />
           </div>
 
-          <nav class="flex-1 flex flex-col justify-center gap-2.5 mt-6">
+          <nav class="flex-1 flex flex-col justify-center gap-2 mt-5">
             <a
               v-for="(link, idx) in navLinks"
               :key="link.href"
               :href="link.href"
               class="px-4 py-3.5 rounded-xl text-xl max-[390px]:text-lg font-display font-semibold
-                     transition-all duration-200"
-              :class="isScrolled
-                ? 'text-gray-900 dark:text-white/90 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white'
-                : 'text-white/90 hover:bg-white/10 hover:text-white'"
+                     transition-all duration-200 text-white/90 hover:bg-white/10 hover:text-white"
               :style="{ transitionDelay: `${idx * 40}ms` }"
               @click="closeMenu"
             >

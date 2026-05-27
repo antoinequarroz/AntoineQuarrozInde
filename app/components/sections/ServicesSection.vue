@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const { t, locale } = useI18n()
+const isMobile = useMediaQuery('(max-width: 767px)')
 
 type ServiceKey = 'vitrine' | 'mobile' | 'cms'
 
@@ -119,11 +120,11 @@ const offerMeta = computed(() => {
                 {{ t(`services.${service.key}.description`) }}
               </p>
 
-              <ul class="mb-6 space-y-2">
+              <ul class="mb-5 space-y-1.5">
                 <li
-                  v-for="feature in service.features"
+                  v-for="feature in (isMobile ? service.features.slice(0, 3) : service.features)"
                   :key="feature"
-                  class="flex items-center gap-2 text-sm text-gray-900 dark:text-white/90"
+                  class="flex items-center gap-2 text-[13px] md:text-sm text-gray-900 dark:text-white/90"
                 >
                   <svg class="h-4 w-4 flex-shrink-0 text-violet-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                     <polyline points="20 6 9 17 4 12" />
