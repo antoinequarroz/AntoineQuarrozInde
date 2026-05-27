@@ -6,7 +6,7 @@ const sceneUrl = "https://prod.spline.design/PyzDhpQ9E5f1E3MT/scene.splinecode";
 </script>
 
 <template>
-    <section class="relative w-full min-h-[100svh] overflow-hidden bg-black">
+    <section id="hero" class="relative w-full min-h-[100svh] overflow-hidden bg-black">
         <!-- Spline background -->
         <UiSplineRobot
             :scene-url="sceneUrl"
@@ -35,9 +35,9 @@ const sceneUrl = "https://prod.spline.design/PyzDhpQ9E5f1E3MT/scene.splinecode";
         <div
             class="absolute inset-0 z-20 section-container pointer-events-none"
         >
-            <div class="h-full grid grid-rows-[1fr_auto] py-16 md:py-24">
+            <div class="h-full grid grid-rows-[1fr_auto] py-14 max-[430px]:py-12 md:py-24">
                 <div class="flex items-center">
-                    <div class="max-w-3xl text-white">
+                    <div class="max-w-3xl pt-14 max-[430px]:pt-12 md:pt-8 text-white">
                         <!-- Badge -->
                         <div
                             class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/20 bg-white/8 backdrop-blur-sm mb-7"
@@ -52,7 +52,7 @@ const sceneUrl = "https://prod.spline.design/PyzDhpQ9E5f1E3MT/scene.splinecode";
                         </div>
 
                         <h1
-                            class="font-display font-bold text-[2.35rem] max-[390px]:text-[2.05rem] sm:text-6xl lg:text-7xl xl:text-[5.2rem] leading-[0.95] tracking-tight"
+                            class="font-display font-bold text-[2.1rem] max-[390px]:text-[1.92rem] sm:text-6xl lg:text-7xl xl:text-[5.2rem] leading-[0.95] tracking-tight"
                         >
                             <span class="block">{{ t("hero.title_1") }}</span>
                             <span class="block modern-gradient">{{
@@ -62,7 +62,7 @@ const sceneUrl = "https://prod.spline.design/PyzDhpQ9E5f1E3MT/scene.splinecode";
                         </h1>
 
                         <p
-                            class="mt-4 text-sm sm:text-base md:text-lg text-white/72 max-w-xl leading-relaxed"
+                            class="mt-4 text-[13px] max-[390px]:text-[12.5px] sm:text-base md:text-lg text-white/72 max-w-xl leading-relaxed"
                         >
                             {{ t("hero.subtitle") }}
                         </p>

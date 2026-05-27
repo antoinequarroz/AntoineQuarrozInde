@@ -17,6 +17,7 @@
 
   body {
     @apply bg-white text-gray-900 dark:bg-surface-dark dark:text-gray-100 font-sans transition-colors duration-300;
+    overflow-x: hidden;
   }
 
   * {
@@ -155,12 +156,22 @@
   }
 
   .section-padding {
-    padding-top: 3rem;
-    padding-bottom: 3rem;
+    padding-top: 2.75rem;
+    padding-bottom: 2.75rem;
   }
 
   .section-heading {
     font-size: 2rem;
+  }
+
+  .section-header {
+    margin-bottom: 1.5rem;
+  }
+
+  .section-subtitle {
+    margin-top: 0.7rem;
+    font-size: 0.88rem;
+    line-height: 1.45;
   }
 }
 
@@ -175,7 +186,11 @@
   }
 
   .section-subtitle {
-    font-size: 0.82rem;
+    font-size: 0.8rem;
+  }
+
+  .section-header {
+    margin-bottom: 1.2rem;
   }
 }
 

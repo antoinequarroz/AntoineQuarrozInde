@@ -56,12 +56,12 @@ const filtered = computed(() => {
         v-motion
         :initial="{ opacity: 0, y: 10 }"
         :visible="{ opacity: 1, y: 0, transition: { delay: 200, duration: 400 } }"
-        class="relative z-30 mb-1 flex flex-wrap justify-center gap-2 md:mb-2"
+        class="relative z-30 mb-3 max-[430px]:mb-4 flex flex-wrap justify-center gap-1.5 md:gap-2 md:mb-2"
       >
         <button
           v-for="filter in filters"
           :key="filter.key"
-          class="group inline-flex items-center gap-2 rounded-2xl px-5 py-2 text-sm font-semibold transition-all duration-200"
+          class="group inline-flex items-center gap-1.5 rounded-2xl px-3.5 max-[390px]:px-3 py-1.5 text-xs md:px-5 md:py-2 md:text-sm font-semibold transition-all duration-200"
           :class="activeFilter === filter.key
             ? 'bg-gradient-brand text-white shadow-glow-sm'
             : 'bg-white/70 text-gray-500 ring-1 ring-violet-500/10 backdrop-blur dark:bg-white/[0.04] dark:text-gray-400 dark:ring-white/10 hover:bg-violet-50 dark:hover:bg-violet-500/10 hover:text-violet-600 dark:hover:text-violet-400'"

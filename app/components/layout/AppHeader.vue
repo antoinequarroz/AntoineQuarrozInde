@@ -26,14 +26,14 @@ function closeMenu() {
   >
     <div class="section-container flex justify-center">
       <div
-        class="w-full max-w-4xl grid grid-cols-[auto_1fr_auto] items-center gap-1.5 md:gap-3 rounded-full border px-2 max-[390px]:px-1.5 sm:px-5 py-1.5 md:py-2.5 transition-all duration-300"
+        class="w-full max-w-4xl grid grid-cols-[auto_1fr_auto] items-center gap-1 md:gap-3 rounded-full border px-2 max-[390px]:px-1.5 sm:px-5 py-1 md:py-2.5 transition-all duration-300"
         :class="isScrolled
           ? 'bg-white/92 dark:bg-surface-dark/92 border-gray-200/70 dark:border-white/10 backdrop-blur-xl shadow-lg shadow-violet-500/10'
           : 'bg-white/12 dark:bg-white/5 border-white/25 dark:border-white/15 backdrop-blur-md'"
       >
         <!-- Left -->
         <div class="flex items-center gap-2.5">
-          <NuxtLink to="/" class="w-9 h-9 rounded-xl bg-gradient-brand flex items-center justify-center shadow-glow-sm">
+          <NuxtLink to="/" class="h-8 w-8 rounded-xl bg-gradient-brand flex items-center justify-center shadow-glow-sm md:h-9 md:w-9">
             <span class="font-display font-bold text-white text-xs">AQ</span>
           </NuxtLink>
           <span
@@ -69,7 +69,7 @@ function closeMenu() {
             {{ t('nav.contact') }}
           </a>
           <button
-            class="md:hidden w-8.5 h-8.5 rounded-full flex items-center justify-center transition-colors"
+            class="md:hidden h-8 w-8 rounded-full flex items-center justify-center transition-colors"
             :class="isScrolled ? 'bg-gray-100 dark:bg-gray-800/60 text-gray-700 dark:text-gray-200' : 'bg-white/15 text-white'"
             :aria-label="isMenuOpen ? 'Close menu' : 'Open menu'"
             @click="isMenuOpen = !isMenuOpen"
@@ -96,7 +96,7 @@ function closeMenu() {
           ? 'bg-white/95 dark:bg-[#07070f]/96'
           : 'bg-black/85 dark:bg-[#07070f]/96'"
       >
-        <div class="section-container h-full flex flex-col pt-8 pb-6">
+        <div class="section-container h-full flex flex-col pt-6 pb-5">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2.5">
               <div class="w-8 h-8 rounded-xl bg-gradient-brand flex items-center justify-center shadow-glow-sm">
@@ -104,7 +104,7 @@ function closeMenu() {
               </div>
               <div>
                 <div class="font-display font-semibold text-gray-900 dark:text-white"><span class="text-gradient">Antoine Quarroz</span></div>
-                <div class="text-xs text-gray-500 dark:text-gray-400">{{ t('footer.tagline') }}</div>
+                <div class="hidden sm:block text-xs text-gray-500 dark:text-gray-400">{{ t('footer.tagline') }}</div>
               </div>
             </div>
             <button
@@ -126,12 +126,12 @@ function closeMenu() {
             <UiThemeToggle />
           </div>
 
-          <nav class="flex-1 flex flex-col justify-center gap-3 mt-8">
+          <nav class="flex-1 flex flex-col justify-center gap-2.5 mt-6">
             <a
               v-for="(link, idx) in navLinks"
               :key="link.href"
               :href="link.href"
-              class="px-5 py-4 rounded-xl text-2xl font-display font-semibold
+              class="px-4 py-3.5 rounded-xl text-xl max-[390px]:text-lg font-display font-semibold
                      transition-all duration-200"
               :class="isScrolled
                 ? 'text-gray-900 dark:text-white/90 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white'

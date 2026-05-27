@@ -102,8 +102,8 @@ const contactInfo = computed(() => [
           :visible="{ opacity: 1, x: 0, transition: { delay: 100, duration: 600 } }"
           class="lg:col-span-3"
         >
-          <form class="card-glass p-5 md:p-8 space-y-4 md:space-y-5" @submit.prevent="handleSubmit">
-            <div class="grid sm:grid-cols-2 gap-5">
+          <form class="card-glass p-4 max-[390px]:p-3.5 md:p-8 space-y-4 md:space-y-5" @submit.prevent="handleSubmit">
+            <div class="grid sm:grid-cols-2 gap-4 md:gap-5">
               <div>
                 <label class="block text-xs font-semibold text-gray-500 dark:text-white/50 uppercase tracking-wider mb-2">
                   {{ t('contact.form.name') }}

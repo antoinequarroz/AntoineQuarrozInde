@@ -139,11 +139,11 @@ function cardStyle(index: number) {
 
     <div v-else>
       <div class="md:hidden">
-        <div class="-mx-3 max-[390px]:-mx-2.5 flex snap-x gap-3 max-[390px]:gap-2.5 overflow-x-auto px-3 max-[390px]:px-2.5 pb-4 no-scrollbar">
+        <div class="-mx-2.5 max-[390px]:-mx-2 flex snap-x gap-2.5 max-[390px]:gap-2 overflow-x-auto px-2.5 max-[390px]:px-2 pb-4 no-scrollbar">
           <article
             v-for="project in projects"
             :key="project.id"
-            class="min-w-[86vw] max-[430px]:min-w-[90vw] max-[390px]:min-w-[93vw] snap-center overflow-hidden rounded-[1.35rem] max-[390px]:rounded-[1.2rem] border border-violet-500/15 bg-white/80 shadow-xl shadow-violet-500/10 backdrop-blur dark:border-white/10 dark:bg-white/[0.04]"
+            class="min-w-[84vw] max-[430px]:min-w-[88vw] max-[390px]:min-w-[91vw] snap-center overflow-hidden rounded-[1.35rem] max-[390px]:rounded-[1.2rem] border border-violet-500/15 bg-white/80 shadow-xl shadow-violet-500/10 backdrop-blur dark:border-white/10 dark:bg-white/[0.04]"
           >
             <div class="relative h-52 max-[430px]:h-48 max-[390px]:h-44 overflow-hidden bg-[#10101b]">
               <img v-if="project.image" :src="project.image" :alt="project.title" class="h-full w-full object-cover" loading="lazy">
@@ -157,7 +157,7 @@ function cardStyle(index: number) {
               </div>
             </div>
             <div class="p-4 max-[390px]:p-3.5">
-              <p class="text-[13px] max-[390px]:text-[12px] leading-relaxed text-gray-600 dark:text-gray-300">{{ project.description }}</p>
+              <p class="line-clamp-3 text-[13px] max-[390px]:text-[12px] leading-relaxed text-gray-600 dark:text-gray-300">{{ project.description }}</p>
             </div>
           </article>
         </div>

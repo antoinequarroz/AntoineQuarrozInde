@@ -125,17 +125,17 @@ const tools = [
         >
           <span class="badge mb-4">{{ t('about.badge') }}</span>
 
-          <h2 class="mb-6 section-heading">
+          <h2 class="mb-5 max-[430px]:mb-4 section-heading">
             <span class="block">{{ t('about.title').split('\n')[0] }}</span>
             <span class="block section-heading-gradient">{{ t('about.title').split('\n')[1] }}</span>
           </h2>
 
-          <dl class="mt-6 space-y-6">
+          <dl class="mt-5 max-[430px]:mt-4 space-y-5">
             <div class="grid grid-cols-1 gap-2 sm:grid-cols-[88px_1fr] sm:gap-5 items-start">
               <dt class="pt-1 text-[10px] font-bold uppercase tracking-[0.2em] text-violet-500 dark:text-violet-400">
                 {{ t('about.label_1') }}
               </dt>
-              <dd class="leading-relaxed text-gray-900 dark:text-white/90">
+              <dd class="text-[14px] max-[390px]:text-[13px] leading-relaxed text-gray-900 dark:text-white/90">
                 {{ t('about.description_1') }}
               </dd>
             </div>
@@ -146,14 +146,14 @@ const tools = [
               <dt class="pt-1 text-[10px] font-bold uppercase tracking-[0.2em] text-fuchsia-500 dark:text-fuchsia-400">
                 {{ t('about.label_2') }}
               </dt>
-              <dd class="leading-relaxed text-gray-700 dark:text-white/70">
+              <dd class="text-[14px] max-[390px]:text-[13px] leading-relaxed text-gray-700 dark:text-white/70">
                 {{ t('about.description_2') }}
               </dd>
             </div>
           </dl>
 
           <!-- Citation -->
-          <div class="mt-7 max-w-xl rounded-2xl border border-violet-600/30 bg-violet-600 p-4 backdrop-blur dark:border-violet-500/40 dark:bg-violet-600/90">
+          <div class="mt-6 max-w-xl rounded-2xl border border-violet-600/30 bg-violet-600 p-3.5 max-[390px]:p-3 backdrop-blur dark:border-violet-500/40 dark:bg-violet-600/90">
             <div class="flex gap-3">
               <div class="mt-0.5 flex-shrink-0">
                 <svg class="h-5 w-5 text-white/70" fill="currentColor" viewBox="0 0 24 24">
