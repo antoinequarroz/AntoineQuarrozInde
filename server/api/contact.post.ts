@@ -2,7 +2,7 @@ import { Resend } from 'resend'
 
 const RATE_WINDOW_MS = 60_000
 const RATE_LIMIT_MAX = 5
-const MIN_FORM_FILL_MS = 3000
+const MIN_FORM_FILL_MS = 1200
 const ipHits = new Map<string, number[]>()
 
 export default defineEventHandler(async (event) => {
