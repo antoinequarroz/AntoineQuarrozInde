@@ -1,6 +1,8 @@
 <script setup lang="ts">
 const { t } = useI18n()
 const { track } = useMarketing()
+const runtimeConfig = useRuntimeConfig()
+const turnstileSiteKey = runtimeConfig.public.turnstileSiteKey as string
 
   const form = reactive({
   name: '',
@@ -10,12 +12,57 @@ const { track } = useMarketing()
   website: '',
   startedAt: Date.now(),
 })
+const turnstileToken = ref('')
+const turnstileContainer = ref<HTMLElement | null>(null)
+const turnstileWidgetId = ref<string | null>(null)
 
 type FormStatus = 'idle' | 'sending' | 'success' | 'error'
 const status = ref<FormStatus>('idle')
 
+useHead({
+  script: turnstileSiteKey
+    ? [{ src: 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit', async: true, defer: true }]
+    : [],
+})
+
+const renderTurnstile = () => {
+  if (!turnstileSiteKey || !turnstileContainer.value) return
+  const turnstile = (window as any).turnstile
+  if (!turnstile || turnstileWidgetId.value) return
+
+  turnstileWidgetId.value = turnstile.render(turnstileContainer.value, {
+    sitekey: turnstileSiteKey,
+    callback: (token: string) => {
+      turnstileToken.value = token
+    },
+    'expired-callback': () => {
+      turnstileToken.value = ''
+    },
+    'error-callback': () => {
+      turnstileToken.value = ''
+    },
+  })
+}
+
+onMounted(() => {
+  if (!turnstileSiteKey) return
+  const waitForTurnstile = () => {
+    if ((window as any).turnstile) {
+      renderTurnstile()
+      return
+    }
+    window.setTimeout(waitForTurnstile, 150)
+  }
+  waitForTurnstile()
+})
+
 async function handleSubmit() {
   if (status.value === 'sending') return
+  if (turnstileSiteKey && !turnstileToken.value) {
+    status.value = 'error'
+    setTimeout(() => { status.value = 'idle' }, 5000)
+    return
+  }
   status.value = 'sending'
 
   try {
@@ -28,6 +75,7 @@ async function handleSubmit() {
         message: form.message,
         website: form.website,
         startedAt: form.startedAt,
+        turnstileToken: turnstileToken.value,
       },
     })
     status.value = 'success'
@@ -38,6 +86,10 @@ async function handleSubmit() {
     form.message = ''
     form.website = ''
     form.startedAt = Date.now()
+    turnstileToken.value = ''
+    if (turnstileWidgetId.value && (window as any).turnstile) {
+      (window as any).turnstile.reset(turnstileWidgetId.value)
+    }
   }
   catch {
     status.value = 'error'
@@ -164,6 +216,9 @@ const contactInfo = computed(() => [
             </div>
 
             <div>
+              <div v-if="turnstileSiteKey" class="mb-3">
+                <div ref="turnstileContainer" />
+              </div>
               <label class="block text-[11px] font-semibold text-gray-500 dark:text-white/50 uppercase tracking-wider mb-1.5">
                 {{ t('contact.form.message') }}
               </label>

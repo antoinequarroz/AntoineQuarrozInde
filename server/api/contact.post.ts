@@ -16,7 +16,7 @@ export default defineEventHandler(async (event) => {
   ipHits.set(ip, hits)
 
   const body = await readBody(event)
-  const { name, email, subject, message, website, startedAt } = body
+  const { name, email, subject, message, website, startedAt, turnstileToken } = body
 
   if (!name || !email || !message) {
     throw createError({ statusCode: 400, message: 'Champs requis manquants' })
@@ -31,6 +31,27 @@ export default defineEventHandler(async (event) => {
   }
 
   const config = useRuntimeConfig()
+
+  if (config.turnstileSecretKey) {
+    if (!turnstileToken || typeof turnstileToken !== 'string') {
+      throw createError({ statusCode: 400, message: 'Validation anti-bot manquante' })
+    }
+
+    const verifyResponse = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        secret: config.turnstileSecretKey,
+        response: turnstileToken,
+        remoteip: ip,
+      }),
+    })
+
+    const verifyData = await verifyResponse.json() as { success?: boolean }
+    if (!verifyData?.success) {
+      throw createError({ statusCode: 400, message: 'Echec de validation anti-bot' })
+    }
+  }
 
   // If no API key configured, return success anyway (dev mode)
   if (!config.resendApiKey) {

@@ -65,10 +65,12 @@ export default defineNuxtConfig({
   runtimeConfig: {
     resendApiKey: process.env.RESEND_API_KEY || '',
     contactEmail: process.env.CONTACT_EMAIL || 'info@antoinequarroz.ch',
+    turnstileSecretKey: process.env.TURNSTILE_SECRET_KEY || '',
     supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
     adminEmail: process.env.ADMIN_EMAIL || '',
     public: {
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'https://www.antoinequarroz.dev',
+      turnstileSiteKey: process.env.TURNSTILE_SITE_KEY || '',
       supabaseUrl: process.env.SUPABASE_URL || '',
       supabaseAnonKey: process.env.SUPABASE_ANON_KEY || '',
       supabasePublishableKey: process.env.SUPABASE_PUBLISHABLE_KEY || '',
