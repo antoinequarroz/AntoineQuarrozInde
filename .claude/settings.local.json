@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx nuxi@latest init . --no-install --package-manager npm)",
+      "Bash(npx nuxi@latest init . --template minimal --no-install --package-manager npm --force)",
+      "Bash(npx nuxi@latest init . --template minimal --package-manager npm --force)",
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000)",
+      "Bash(echo \"Server PID: $!\")",
+      "Read(//tmp/**)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://127.0.0.1:3000/)",
+      "Bash(curl -s http://127.0.0.1:3000/)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/)",
+      "Bash(cat /tmp/nuxt-dev2.log | grep -E \"error|Error|warn|WARN|ready|✓|500\" | tail -20)",
+      "Bash(curl -s --max-time 10 http://localhost:3000/)",
+      "Bash(mkdir -p /Users/antoinequarroz/Desktop/AntoineQuarrozVitrine/i18n/locales *)",
+      "Bash(curl -s --max-time 15 http://localhost:3000/)",
+      "Bash(curl -s --max-time 10 -w \"\\\\n%{http_code}\" http://localhost:3000/)",
+      "Bash(grep -E \"^[0-9]{3}$|title\")",
+      "Bash(lsof -ti:3000)",
+      "Bash(curl -v --max-time 5 http://127.0.0.1:3000/)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('nav:', list\\(d.get\\('nav',{}\\).keys\\(\\)\\)\\); print\\('footer:', list\\(d.get\\('footer',{}\\).keys\\(\\)\\)\\)\")",
+      "Bash(curl -s --max-time 10 http://127.0.0.1:3000/)",
+      "Bash(python3 -c ' *)",
+      "Bash(cp /Users/antoinequarroz/Desktop/AntoineQuarrozVitrine/i18n/locales/*.json /Users/antoinequarroz/Desktop/AntoineQuarrozVitrine/app/locales/)",
+      "Bash(curl -s --max-time 10 http://127.0.0.1:3000/admin/login)",
+      "Bash(curl -v --max-time 10 http://127.0.0.1:3000/admin/login)",
+      "Bash(curl -s -o /dev/null -w '%{http_code}' --max-time 5 http://127.0.0.1:3000__TRACKED_VAR__)",
+      "Bash(curl -s --max-time 5 -o /dev/null -w \"%{http_code}\" http://127.0.0.1:3000/admin/login)",
+      "Bash(npx nuxt *)",
+      "Bash(curl -s http://localhost:3001/)",
+      "Bash(git init *)",
+      "Bash(git add *)"
+    ]
+  }
+}

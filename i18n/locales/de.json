@@ -1,0 +1,160 @@
+{
+  "nav": {
+    "home": "Startseite",
+    "about": "Über mich",
+    "services": "Leistungen",
+    "portfolio": "Portfolio",
+    "blog": "Blog",
+    "contact": "Kontakt"
+  },
+  "hero": {
+    "badge": "Verfügbar für neue Projekte",
+    "title_1": "Ich gestalte",
+    "title_2": "digitale Erlebnisse",
+    "title_3": "die bleiben.",
+    "subtitle": "Freelance Web- & Mobile-Entwickler aus der Schweiz. Ich entwickle Websites, mobile Apps und maßgeschneiderte CMS-Lösungen.",
+    "cta_primary": "Meine Projekte",
+    "cta_secondary": "Kontakt aufnehmen",
+    "scroll": "Scrollen"
+  },
+  "about": {
+    "badge": "Über mich",
+    "title": "Leidenschaft für Code,\nObsession für Details.",
+    "description_1": "Ich bin Antoine Quarroz, Web- & Mobile-Entwickler aus dem Wallis, Schweiz. Mit Expertise in modernen Technologien verwandle ich Ihre Ideen in leistungsstarke, ästhetische digitale Produkte.",
+    "description_2": "Mein Ansatz verbindet technische Präzision mit Designgefühl, um Lösungen zu liefern, die nicht nur perfekt funktionieren, sondern auch visuell beeindrucken.",
+    "skills_title": "Technologien",
+    "years": "Jahre Erfahrung",
+    "projects": "abgeschlossene Projekte",
+    "clients": "zufriedene Kunden",
+    "quote": "Eine starke digitale Präsenz muss nicht nur gut aussehen: Sie muss erklären, überzeugen und zur Kontaktaufnahme führen.",
+    "approach_1_title": "Positionierung",
+    "approach_1_text": "Botschaft und Conversion-Pfad klären.",
+    "approach_2_title": "Design",
+    "approach_2_text": "Ein erstklassiges, klares und glaubwürdiges Interface schaffen.",
+    "approach_3_title": "Delivery",
+    "approach_3_text": "Schnell liefern mit einer sauberen technischen Grundlage."
+  },
+  "blog": {
+    "badge": "Blog",
+    "title": "Aktuelle Artikel.",
+    "subtitle": "Gedanken zu Web, Design und Entwicklung.",
+    "view_all": "Alle Artikel",
+    "read": "Artikel lesen",
+    "preview": "Schnellvorschau",
+    "open": "Vollständigen Artikel öffnen"
+  },
+  "services": {
+    "badge": "Leistungen",
+    "title": "Was ich\nfür Sie tun kann.",
+    "subtitle": "Komplette digitale Lösungen, von der Konzeption bis zur Inbetriebnahme.",
+    "vitrine": {
+      "title": "Showcase-Websites",
+      "description": "Moderne, schnelle und SEO-optimierte Websites, die Ihre Marke perfekt widerspiegeln und Besucher konvertieren.",
+      "features": [
+        "Individuelles Design",
+        "100% responsive",
+        "SEO-Optimierung",
+        "Maximale Performance"
+      ]
+    },
+    "mobile": {
+      "title": "Mobile Applikationen",
+      "description": "Native oder Cross-Platform iOS- und Android-Apps, intuitiv und leistungsstark für ein außergewöhnliches Nutzererlebnis.",
+      "features": [
+        "iOS & Android",
+        "Durchdachtes UI/UX",
+        "Push-Benachrichtigungen",
+        "Offline-fähig"
+      ]
+    },
+    "cms": {
+      "title": "CMS-Lösungen",
+      "description": "Maßgeschneiderte Content-Management-Systeme, die Ihnen ermöglichen, Ihr Business selbstständig zu verwalten.",
+      "features": [
+        "Intuitive Oberfläche",
+        "Maßgeschneidert",
+        "Multi-User",
+        "Skalierbar"
+      ]
+    },
+    "cta": "Mehr erfahren"
+  },
+  "portfolio": {
+    "badge": "Portfolio",
+    "title": "Aktuelle Projekte.",
+    "subtitle": "Eine Auswahl meiner neuesten Arbeiten.",
+    "all": "Alle",
+    "web": "Web",
+    "mobile": "Mobile",
+    "cms": "CMS",
+    "view": "Projekt ansehen",
+    "code": "Quellcode",
+    "selection_count": "{count} Projekt(e) in dieser Auswahl. Scrollen Sie, um sie zu drehen, bevor der nächste Abschnitt erscheint.",
+    "case_study": "Case Study",
+    "context": "Kontext",
+    "impact": "Wirkung",
+    "category_intro": {
+      "all": {
+        "title": "Projekte als konkrete Beweise.",
+        "text": "Jede Arbeit zeigt einen klaren Weg, Vertrauen, Klarheit und Conversion zu schaffen."
+      },
+      "web": {
+        "title": "Premium-Websites, die konvertieren.",
+        "text": "Showcase, Landingpage oder Plattform: Das Ziel bleibt klar, schnell überzeugen und qualifizierte Anfragen gewinnen."
+      },
+      "mobile": {
+        "title": "Flüssige und zuverlässige Mobile Apps.",
+        "text": "Saubere Interfaces, schnelle Abläufe und wartbare Architektur für eine nützliche Alltagserfahrung."
+      },
+      "cms": {
+        "title": "CMS-Systeme, die leicht zu steuern sind.",
+        "text": "Editierbare Werkzeuge, die Autonomie geben, ohne Design, Geschwindigkeit oder Qualität zu opfern."
+      }
+    },
+    "case": {
+      "web": {
+        "context": "Angebot klären, Marke stärken und Nutzer gezielt zur Aktion führen.",
+        "impact": "Mehr Vertrauen, klarere Navigation und besser qualifizierte Anfragen."
+      },
+      "mobile": {
+        "context": "Einen Kunden- oder Geschäftsprozess in eine klare Mobile Experience verwandeln.",
+        "impact": "Ein Produkt, das angenehmer, stabiler und einfacher erweiterbar ist."
+      },
+      "cms": {
+        "context": "Kunden Kontrolle über Inhalte, Daten oder Abläufe geben.",
+        "impact": "Weniger Reibung im Alltag, mehr Autonomie und sauberere Verwaltung."
+      }
+    },
+    "coming_soon": "Projekte bald verfügbar..."
+  },
+  "contact": {
+    "badge": "Kontakt",
+    "title": "Starten wir Ihr\nProjekt gemeinsam.",
+    "subtitle": "Eine Idee? Ein Projekt? Lassen Sie uns darüber sprechen.",
+    "form": {
+      "name": "Ihr Name",
+      "email": "Ihre E-Mail",
+      "subject": "Betreff",
+      "message": "Ihre Nachricht",
+      "send": "Nachricht senden",
+      "sending": "Wird gesendet...",
+      "success": "Nachricht gesendet! Ich antworte innerhalb von 24 Stunden.",
+      "error": "Fehler beim Senden. Versuchen Sie es erneut oder kontaktieren Sie mich direkt."
+    },
+    "info": {
+      "email": "contact-email",
+      "location": "Wallis, Schweiz",
+      "response": "Antwort innerhalb 24h",
+      "availability": "Verfügbar für neue Projekte"
+    }
+  },
+  "footer": {
+    "tagline": "Freelance Web- & Mobile-Entwickler",
+    "rights": "Alle Rechte vorbehalten.",
+    "made_with": "Gemacht mit"
+  },
+  "theme": {
+    "toggle_dark": "Dunkelmodus",
+    "toggle_light": "Hellmodus"
+  }
+}

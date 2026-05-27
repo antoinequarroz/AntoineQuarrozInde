@@ -1,0 +1,151 @@
+<script setup lang="ts">
+const auth = useAuthStore()
+const router = useRouter()
+const route = useRoute()
+
+const navItems = [
+  { label: 'Dashboard', icon: 'grid', href: '/admin' },
+  { label: 'Projets', icon: 'folder', href: '/admin/projects' },
+  { label: 'Articles', icon: 'file-text', href: '/admin/articles' },
+  { label: 'Avis', icon: 'star', href: '/admin/reviews' },
+]
+
+const isSidebarOpen = ref(false)
+
+function isActive(href: string) {
+  if (href === '/admin') return route.path === '/admin'
+  return route.path.startsWith(href)
+}
+
+async function handleLogout() {
+  await auth.logout()
+  await router.push('/admin/login')
+}
+</script>
+
+<template>
+  <div class="min-h-screen bg-gray-50 dark:bg-[#0b0b12] flex text-sm">
+
+    <!-- Mobile overlay -->
+    <Transition name="fade">
+      <div v-if="isSidebarOpen" class="fixed inset-0 bg-black/40 z-40 lg:hidden backdrop-blur-sm" @click="isSidebarOpen = false" />
+    </Transition>
+
+    <!-- Sidebar -->
+    <aside
+      class="fixed top-0 left-0 h-full w-56 bg-white dark:bg-[#111118] border-r border-gray-100 dark:border-white/[0.06]
+             z-50 flex flex-col transition-transform duration-300 lg:translate-x-0"
+      :class="isSidebarOpen ? 'translate-x-0' : '-translate-x-full'"
+    >
+      <!-- Branding -->
+      <div class="flex items-center gap-2.5 px-4 h-14 border-b border-gray-100 dark:border-white/[0.06] flex-shrink-0">
+        <div class="w-6 h-6 rounded-lg bg-gradient-brand flex items-center justify-center flex-shrink-0">
+          <span class="font-display font-bold text-white text-[10px]">AQ</span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <span class="font-display font-semibold text-xs text-gray-900 dark:text-white truncate block">Antoine Quarroz</span>
+          <span class="text-[10px] text-gray-400 block">Admin</span>
+        </div>
+        <button class="lg:hidden text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 ml-1" @click="isSidebarOpen = false">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Nav -->
+      <nav class="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
+        <p class="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-600">Navigation</p>
+        <NuxtLink
+          v-for="item in navItems"
+          :key="item.href"
+          :to="item.href"
+          class="flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-medium transition-all duration-150"
+          :class="isActive(item.href)
+            ? 'bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400'
+            : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/[0.04] hover:text-gray-900 dark:hover:text-white'"
+          @click="isSidebarOpen = false"
+        >
+          <!-- icons 14px -->
+          <svg v-if="item.icon === 'grid'" class="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+          </svg>
+          <svg v-else-if="item.icon === 'folder'" class="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+          </svg>
+          <svg v-else-if="item.icon === 'file-text'" class="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+          <svg v-else-if="item.icon === 'star'" class="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+          </svg>
+          <span>{{ item.label }}</span>
+        </NuxtLink>
+      </nav>
+
+      <!-- Bottom -->
+      <div class="px-2 py-3 border-t border-gray-100 dark:border-white/[0.06] space-y-0.5 flex-shrink-0">
+        <NuxtLink
+          to="/"
+          target="_blank"
+          class="flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-medium text-gray-400 dark:text-gray-500
+                 hover:bg-gray-50 dark:hover:bg-white/[0.04] hover:text-gray-700 dark:hover:text-gray-300 transition-all"
+        >
+          <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+          </svg>
+          Voir le site
+        </NuxtLink>
+        <button
+          class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-medium
+                 text-red-400 dark:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/[0.08] transition-all"
+          @click="handleLogout"
+        >
+          <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+          </svg>
+          Déconnexion
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <div class="flex-1 lg:ml-56 flex flex-col min-h-screen min-w-0">
+      <!-- Topbar -->
+      <header class="sticky top-0 z-30 h-14 flex items-center gap-3 px-4 sm:px-6
+                     bg-white/90 dark:bg-[#111118]/90 backdrop-blur-xl
+                     border-b border-gray-100 dark:border-white/[0.06]">
+        <button
+          class="lg:hidden w-7 h-7 rounded-lg flex items-center justify-center
+                 text-gray-400 hover:bg-gray-100 dark:hover:bg-white/[0.06] transition-all"
+          @click="isSidebarOpen = true"
+        >
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+        </button>
+
+        <!-- Breadcrumb -->
+        <nav class="flex items-center gap-1.5 text-xs text-gray-400 flex-1 min-w-0">
+          <NuxtLink to="/admin" class="hover:text-gray-700 dark:hover:text-gray-200 transition-colors font-medium">Admin</NuxtLink>
+          <span v-if="$route.path !== '/admin'" class="text-gray-300 dark:text-gray-700">/</span>
+          <span v-if="$route.path !== '/admin'" class="text-gray-600 dark:text-gray-300 font-medium truncate capitalize">
+            {{ $route.path.split('/').pop() }}
+          </span>
+        </nav>
+
+        <UiThemeToggle />
+      </header>
+
+      <!-- Content -->
+      <main class="flex-1 p-4 sm:p-6">
+        <slot />
+      </main>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.fade-enter-active, .fade-leave-active { transition: opacity 0.15s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
+</style>

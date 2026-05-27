@@ -1,0 +1,152 @@
+{
+  "nav": {
+    "home": "Home",
+    "about": "About",
+    "services": "Services",
+    "portfolio": "Portfolio",
+    "blog": "Blog",
+    "contact": "Contact"
+  },
+  "hero": {
+    "badge": "Available for new projects",
+    "variant_a": {
+      "title_1": "I help companies",
+      "title_2": "win more clients",
+      "title_3": "through better digital products.",
+      "subtitle": "Conversion-focused websites and apps, delivered fast with premium execution quality."
+    },
+    "variant_b": {
+      "title_1": "I turn your ideas into",
+      "title_2": "digital products",
+      "title_3": "that scale and perform.",
+      "subtitle": "Custom web and mobile development with clear planning, clean code, and reliable delivery."
+    },
+    "cta_primary": "Start my project",
+    "cta_secondary": "View my work",
+    "scroll": "Scroll"
+  },
+  "about": {
+    "badge": "About",
+    "title": "Passionate about code,\nobsessed with details.",
+    "description_1": "I'm Antoine Quarroz, a web & mobile developer based in Valais, Switzerland. With expertise in modern technologies, I transform your ideas into high-performance, beautiful digital products.",
+    "description_2": "My approach combines technical rigor and design sensibility to deliver solutions that not only work perfectly, but also impress visually.",
+    "skills_title": "Technologies",
+    "years": "years of experience",
+    "projects": "delivered projects",
+    "clients": "happy clients"
+  },
+  "services": {
+    "badge": "Services",
+    "title": "What I can\ndo for you.",
+    "subtitle": "Complete digital solutions, from design to deployment.",
+    "vitrine": {
+      "title": "Showcase Websites",
+      "description": "Modern, fast, SEO-optimized websites that perfectly reflect your brand and convert your visitors.",
+      "features": [
+        "Custom design",
+        "100% responsive",
+        "SEO optimization",
+        "Maximum performance"
+      ]
+    },
+    "mobile": {
+      "title": "Mobile Applications",
+      "description": "Native or cross-platform iOS and Android apps, intuitive and performant, delivering an exceptional user experience.",
+      "features": [
+        "iOS & Android",
+        "Polished UI/UX",
+        "Push notifications",
+        "Offline ready"
+      ]
+    },
+    "cms": {
+      "title": "CMS Solutions",
+      "description": "Custom content management systems designed to let you manage your business with complete autonomy.",
+      "features": [
+        "Intuitive interface",
+        "Fully custom",
+        "Multi-user",
+        "Scalable"
+      ]
+    },
+    "cta": "Learn more"
+  },
+  "portfolio": {
+    "badge": "Portfolio",
+    "title": "Recent work.",
+    "subtitle": "A selection of my latest projects.",
+    "all": "All",
+    "web": "Web",
+    "mobile": "Mobile",
+    "cms": "CMS",
+    "view": "View project",
+    "code": "Source code",
+    "selection_count": "{count} project(s) in this selection. Scroll to rotate them before moving to the next section.",
+    "case_study": "Case study",
+    "context": "Context",
+    "impact": "Impact",
+    "category_intro": {
+      "all": {
+        "title": "Projects designed as proof.",
+        "text": "Each piece shows a concrete way to build trust, clarity and conversion."
+      },
+      "web": {
+        "title": "Premium websites built to convert.",
+        "text": "Showcase site, landing page or platform: the goal stays clear, convince fast and generate qualified enquiries."
+      },
+      "mobile": {
+        "title": "Fluid and reliable mobile apps.",
+        "text": "Clean interfaces, fast flows and maintainable architecture for a useful daily experience."
+      },
+      "cms": {
+        "title": "CMS tools that are easy to run.",
+        "text": "Editable systems that give clients autonomy without sacrificing design, speed or quality."
+      }
+    },
+    "case": {
+      "web": {
+        "context": "Clarify the offer, strengthen the brand and guide users toward action.",
+        "impact": "More trust, clearer navigation and better qualified enquiries."
+      },
+      "mobile": {
+        "context": "Turn a client or business workflow into a clear and fast mobile experience.",
+        "impact": "A product that is nicer to use, more stable and easier to evolve."
+      },
+      "cms": {
+        "context": "Give clients control over content, data or operations.",
+        "impact": "Less daily friction, more autonomy and cleaner management."
+      }
+    },
+    "coming_soon": "Projects coming soon..."
+  },
+  "contact": {
+    "badge": "Contact",
+    "title": "Let's start your\nproject together.",
+    "subtitle": "Have an idea? A project? Let's chat over a virtual coffee.",
+    "form": {
+      "name": "Your name",
+      "email": "Your email",
+      "subject": "Subject (optional)",
+      "message": "Your message",
+      "send": "Send message",
+      "sending": "Sending...",
+      "success": "Message sent! I'll reply within 24 hours.",
+      "error": "Error sending message. Please try again or contact me directly."
+    },
+    "info": {
+      "email": "contact-email",
+      "location": "Valais, Switzerland",
+      "response": "Response within 24h",
+      "availability": "Available for new projects"
+    }
+  },
+  "footer": {
+    "tagline": "Freelance web & mobile developer",
+    "rights": "All rights reserved.",
+    "made_with": "Made with"
+  },
+  "theme": {
+    "toggle_dark": "Dark mode",
+    "toggle_light": "Light mode"
+  }
+}

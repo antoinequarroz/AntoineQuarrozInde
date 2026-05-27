@@ -1,0 +1,152 @@
+{
+  "nav": {
+    "home": "Accueil",
+    "about": "À propos",
+    "services": "Services",
+    "portfolio": "Portfolio",
+    "blog": "Blog",
+    "contact": "Contact"
+  },
+  "hero": {
+    "badge": "Disponible pour de nouveaux mandats",
+    "variant_a": {
+      "title_1": "J'aide les entreprises à",
+      "title_2": "gagner des clients",
+      "title_3": "avec leur site web.",
+      "subtitle": "Sites vitrines et applications orientés conversion, avec une exécution rapide et un niveau de qualité premium."
+    },
+    "variant_b": {
+      "title_1": "Je transforme vos idées en",
+      "title_2": "produits digitaux",
+      "title_3": "rentables et scalables.",
+      "subtitle": "Développement web & mobile sur mesure, avec un cadrage clair, un code propre et un suivi sérieux jusqu'à la mise en ligne."
+    },
+    "cta_primary": "Démarrer mon projet",
+    "cta_secondary": "Voir mes projets",
+    "scroll": "Défiler"
+  },
+  "about": {
+    "badge": "À propos",
+    "title": "Passionné par le code,\nobsédé par les détails.",
+    "description_1": "Je m'appelle Antoine Quarroz, développeur web & mobile basé en Valais, Suisse. Fort d'une expertise en technologies modernes, je transforme vos idées en produits digitaux performants et esthétiques.",
+    "description_2": "Mon approche combine rigueur technique et sensibilité design pour livrer des solutions qui non seulement fonctionnent parfaitement, mais qui impressionnent aussi visuellement.",
+    "skills_title": "Technologies",
+    "years": "ans d'expérience",
+    "projects": "projets livrés",
+    "clients": "clients satisfaits"
+  },
+  "services": {
+    "badge": "Services",
+    "title": "Ce que je\npeux faire pour vous.",
+    "subtitle": "Des solutions digitales complètes, de la conception à la mise en ligne.",
+    "vitrine": {
+      "title": "Sites Vitrine",
+      "description": "Des sites web modernes, rapides et optimisés SEO qui reflètent parfaitement votre image de marque et convertissent vos visiteurs.",
+      "features": [
+        "Design sur mesure",
+        "100% responsive",
+        "Optimisation SEO",
+        "Performances maximales"
+      ]
+    },
+    "mobile": {
+      "title": "Applications Mobiles",
+      "description": "Des applications iOS et Android natives ou cross-platform, intuitives et performantes qui offrent une expérience utilisateur exceptionnelle.",
+      "features": [
+        "iOS & Android",
+        "UI/UX soigné",
+        "Push notifications",
+        "Hors-ligne ready"
+      ]
+    },
+    "cms": {
+      "title": "Solutions CMS",
+      "description": "Des systèmes de gestion de contenu sur mesure, pensés pour vous permettre de gérer votre business en toute autonomie.",
+      "features": [
+        "Interface intuitive",
+        "Sur mesure",
+        "Multi-utilisateurs",
+        "Évolutif"
+      ]
+    },
+    "cta": "En savoir plus"
+  },
+  "portfolio": {
+    "badge": "Portfolio",
+    "title": "Projets récents.",
+    "subtitle": "Une sélection de mes dernières réalisations.",
+    "all": "Tous",
+    "web": "Web",
+    "mobile": "Mobile",
+    "cms": "CMS",
+    "view": "Voir le projet",
+    "code": "Code source",
+    "selection_count": "{count} projet(s) dans cette sélection. Faites défiler pour les faire tourner avant de passer à la suite.",
+    "case_study": "Case study",
+    "context": "Contexte",
+    "impact": "Impact",
+    "category_intro": {
+      "all": {
+        "title": "Des projets pensés comme des preuves.",
+        "text": "Chaque réalisation montre une façon concrète de créer confiance, clarté et conversion."
+      },
+      "web": {
+        "title": "Des sites premium qui convertissent.",
+        "text": "Vitrine, landing page ou plateforme: l'objectif reste clair, convaincre vite et générer des demandes qualifiées."
+      },
+      "mobile": {
+        "title": "Des apps mobiles fluides et fiables.",
+        "text": "Interfaces propres, parcours rapides et architecture maintenable pour une expérience utile au quotidien."
+      },
+      "cms": {
+        "title": "Des CMS simples à piloter.",
+        "text": "Des outils administrables qui donnent de l'autonomie sans sacrifier le design, la vitesse ou la qualité."
+      }
+    },
+    "case": {
+      "web": {
+        "context": "Clarifier l'offre, renforcer l'image et guider l'utilisateur vers l'action.",
+        "impact": "Plus de confiance, une navigation plus nette et des demandes plus qualifiées."
+      },
+      "mobile": {
+        "context": "Transformer un usage métier ou client en expérience mobile claire et rapide.",
+        "impact": "Un produit plus agréable à utiliser, plus stable et plus facile à faire évoluer."
+      },
+      "cms": {
+        "context": "Donner le contrôle au client sur ses contenus, données ou opérations.",
+        "impact": "Moins de friction au quotidien, plus d'autonomie et une gestion plus propre."
+      }
+    },
+    "coming_soon": "Projets bientôt disponibles..."
+  },
+  "contact": {
+    "badge": "Contact",
+    "title": "Démarrons votre\nprojet ensemble.",
+    "subtitle": "Une idée ? Un projet ? Parlons-en autour d'un café virtuel.",
+    "form": {
+      "name": "Votre nom",
+      "email": "Votre email",
+      "subject": "Sujet (optionnel)",
+      "message": "Votre message",
+      "send": "Envoyer le message",
+      "sending": "Envoi en cours...",
+      "success": "Message envoyé ! Je vous répondrai dans les 24h.",
+      "error": "Erreur lors de l'envoi. Réessayez ou contactez-moi directement."
+    },
+    "info": {
+      "email": "contact-email",
+      "location": "Valais, Suisse",
+      "response": "Réponse sous 24h",
+      "availability": "Disponible pour de nouveaux mandats"
+    }
+  },
+  "footer": {
+    "tagline": "Développeur web & mobile freelance",
+    "rights": "Tous droits réservés.",
+    "made_with": "Fait avec"
+  },
+  "theme": {
+    "toggle_dark": "Mode sombre",
+    "toggle_light": "Mode clair"
+  }
+}
