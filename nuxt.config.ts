@@ -64,7 +64,7 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     resendApiKey: process.env.RESEND_API_KEY || '',
-    contactEmail: process.env.CONTACT_EMAIL || 'antoine@quarroz.dev',
+    contactEmail: process.env.CONTACT_EMAIL || 'info@antoinequarroz.ch',
     supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
     adminEmail: process.env.ADMIN_EMAIL || '',
     public: {

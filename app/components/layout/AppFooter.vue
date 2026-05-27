@@ -117,30 +117,6 @@ const localSeoLinks = [
               </ul>
             </div>
 
-            <!-- Contact -->
-            <div>
-              <p class="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-500 dark:text-cyan-400">
-                {{ t('footer.col_contact') }}
-              </p>
-              <ul class="space-y-3">
-                <li>
-                  <a
-                    href="mailto:info@antoinequarroz.ch"
-                    class="text-sm text-gray-600 transition-colors hover:text-violet-600 dark:text-white/60 dark:hover:text-violet-400"
-                  >
-                    antoine@quarroz.dev
-                  </a>
-                </li>
-                <li class="text-sm text-gray-600 dark:text-white/60">
-                  Valais, Suisse
-                </li>
-                <li class="flex items-center gap-1.5 text-sm text-gray-600 dark:text-white/60">
-                  <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-violet-500" />
-                  {{ t('contact.info.availability') }}
-                </li>
-              </ul>
-            </div>
-
             <!-- Local SEO -->
             <div>
               <p class="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-violet-500 dark:text-violet-400">
@@ -154,6 +130,26 @@ const localSeoLinks = [
                   >
                     {{ item.label }}
                   </NuxtLink>
+                </li>
+              </ul>
+            </div>
+
+            <!-- Contact -->
+            <div>
+              <p class="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-500 dark:text-cyan-400">
+                {{ t('footer.col_contact') }}
+              </p>
+              <ul class="space-y-3">
+                <li>
+                  <a
+                    href="mailto:info@antoinequarroz.ch"
+                    class="text-sm text-gray-600 transition-colors hover:text-violet-600 dark:text-white/60 dark:hover:text-violet-400"
+                  >
+                    info@antoinequarroz.ch
+                  </a>
+                </li>
+                <li class="text-sm text-gray-600 dark:text-white/60">
+                  Valais, Suisse
                 </li>
               </ul>
             </div>

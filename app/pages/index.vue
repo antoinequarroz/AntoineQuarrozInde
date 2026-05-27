@@ -36,7 +36,7 @@ useHead({
             jobTitle: 'Développeur web freelance',
             url: `${siteUrl}/`,
             image: `${siteUrl}/about.jpg`,
-            email: 'mailto:antoine@quarroz.dev',
+            email: 'mailto:info@antoinequarroz.ch',
             address: {
               '@type': 'PostalAddress',
               addressLocality: 'Valais',

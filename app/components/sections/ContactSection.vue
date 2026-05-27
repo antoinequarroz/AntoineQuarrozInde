@@ -7,6 +7,8 @@ const { track } = useMarketing()
   email: '',
   subject: '',
   message: '',
+  website: '',
+  startedAt: Date.now(),
 })
 
 type FormStatus = 'idle' | 'sending' | 'success' | 'error'
@@ -19,7 +21,14 @@ async function handleSubmit() {
   try {
     await $fetch('/api/contact', {
       method: 'POST',
-      body: { name: form.name, email: form.email, subject: form.subject, message: form.message },
+      body: {
+        name: form.name,
+        email: form.email,
+        subject: form.subject,
+        message: form.message,
+        website: form.website,
+        startedAt: form.startedAt,
+      },
     })
     status.value = 'success'
     track('contact_form_submit_success')
@@ -27,6 +36,8 @@ async function handleSubmit() {
     form.email = ''
     form.subject = ''
     form.message = ''
+    form.website = ''
+    form.startedAt = Date.now()
   }
   catch {
     status.value = 'error'
@@ -36,7 +47,7 @@ async function handleSubmit() {
   setTimeout(() => { status.value = 'idle' }, 5000)
 }
 
-const EMAIL = 'antoine@quarroz.dev'
+const EMAIL = 'info@antoinequarroz.ch'
 
 const contactInfo = computed(() => [
   {
@@ -103,6 +114,16 @@ const contactInfo = computed(() => [
           class="lg:col-span-3"
         >
           <form class="card-glass p-4 max-[390px]:p-3.5 md:p-8 space-y-4 md:space-y-5" @submit.prevent="handleSubmit">
+            <div class="hidden" aria-hidden="true">
+              <label for="contact-website">Website</label>
+              <input
+                id="contact-website"
+                v-model="form.website"
+                type="text"
+                tabindex="-1"
+                autocomplete="off"
+              >
+            </div>
             <div class="grid sm:grid-cols-2 gap-4 md:gap-5">
               <div>
                 <label class="block text-[11px] font-semibold text-gray-500 dark:text-white/50 uppercase tracking-wider mb-1.5">

@@ -1,11 +1,33 @@
 import { Resend } from 'resend'
 
+const RATE_WINDOW_MS = 60_000
+const RATE_LIMIT_MAX = 5
+const MIN_FORM_FILL_MS = 3000
+const ipHits = new Map<string, number[]>()
+
 export default defineEventHandler(async (event) => {
+  const ip = getRequestIP(event, { xForwardedFor: true }) || 'unknown'
+  const now = Date.now()
+  const hits = (ipHits.get(ip) || []).filter((ts) => now - ts < RATE_WINDOW_MS)
+  if (hits.length >= RATE_LIMIT_MAX) {
+    throw createError({ statusCode: 429, message: 'Trop de requetes, reessayez plus tard.' })
+  }
+  hits.push(now)
+  ipHits.set(ip, hits)
+
   const body = await readBody(event)
-  const { name, email, subject, message } = body
+  const { name, email, subject, message, website, startedAt } = body
 
   if (!name || !email || !message) {
     throw createError({ statusCode: 400, message: 'Champs requis manquants' })
+  }
+  if (website && String(website).trim().length > 0) {
+    throw createError({ statusCode: 400, message: 'Requete invalide' })
+  }
+
+  const started = Number(startedAt)
+  if (!Number.isFinite(started) || now - started < MIN_FORM_FILL_MS) {
+    throw createError({ statusCode: 400, message: 'Soumission trop rapide' })
   }
 
   const config = useRuntimeConfig()
