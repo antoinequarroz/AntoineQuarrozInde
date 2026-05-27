@@ -36,14 +36,19 @@ export default defineNuxtConfig({
 
   app: {
     head: {
-      title: 'Antoine Quarroz — Développeur Web & Mobile',
+      titleTemplate: '%s',
+      title: 'Antoine Quarroz — Développeur Web en Valais',
       meta: [
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
         {
           name: 'description',
-          content: 'Antoine Quarroz, développeur web & mobile freelance. Sites vitrine, applications iOS & Android, solutions CMS sur mesure.',
+          content: 'Antoine Quarroz, développeur web & mobile freelance basé en Valais (Suisse). Création de sites web, applications mobiles et CMS sur mesure.',
         },
+        { name: 'format-detection', content: 'telephone=no' },
+        { property: 'og:type', content: 'website' },
+        { property: 'og:site_name', content: 'Antoine Quarroz' },
+        { name: 'twitter:card', content: 'summary_large_image' },
       ],
       link: [
         { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
@@ -63,6 +68,7 @@ export default defineNuxtConfig({
     supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
     adminEmail: process.env.ADMIN_EMAIL || '',
     public: {
+      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'https://www.antoinequarroz.dev',
       supabaseUrl: process.env.SUPABASE_URL || '',
       supabaseAnonKey: process.env.SUPABASE_ANON_KEY || '',
       supabasePublishableKey: process.env.SUPABASE_PUBLISHABLE_KEY || '',

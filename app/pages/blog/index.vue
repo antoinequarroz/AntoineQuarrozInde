@@ -1,7 +1,20 @@
 <script setup lang="ts">
+const runtimeConfig = useRuntimeConfig()
+const siteUrl = runtimeConfig.public.siteUrl.replace(/\/+$/, '')
+
 useSeoMeta({
-  title: 'Blog — Antoine Quarroz',
-  description: 'Articles sur le développement web, mobile et les technologies modernes.',
+  title: 'Blog Développement Web — Antoine Quarroz',
+  description: 'Articles d’Antoine Quarroz sur le développement web, mobile, Nuxt, Vue et les bonnes pratiques de performance et UX.',
+  ogTitle: 'Blog Développement Web — Antoine Quarroz',
+  ogDescription: 'Articles sur le web, le mobile, Nuxt, Vue et la performance.',
+  ogUrl: `${siteUrl}/blog`,
+  robots: 'index, follow',
+})
+
+useHead({
+  link: [
+    { rel: 'canonical', href: `${siteUrl}/blog` },
+  ],
 })
 
 const store = useArticlesStore()

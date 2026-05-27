@@ -1,6 +1,8 @@
 <script setup lang="ts">
 const route = useRoute()
 const store = useArticlesStore()
+const runtimeConfig = useRuntimeConfig()
+const siteUrl = runtimeConfig.public.siteUrl.replace(/\/+$/, '')
 
 await store.ensureLoaded()
 
@@ -16,7 +18,18 @@ useSeoMeta({
   ogTitle: () => `${article.value?.title} — Antoine Quarroz`,
   ogDescription: () => article.value?.excerpt,
   ogImage: () => article.value?.coverImage ?? undefined,
+  ogUrl: () => `${siteUrl}/blog/${article.value?.slug ?? ''}`,
+  robots: 'index, follow',
   twitterCard: 'summary_large_image',
+})
+
+useHead({
+  link: [
+    {
+      rel: 'canonical',
+      href: `${siteUrl}/blog/${article.value.slug}`,
+    },
+  ],
 })
 
 // Simple markdown renderer (headings, bold, paragraphs)
