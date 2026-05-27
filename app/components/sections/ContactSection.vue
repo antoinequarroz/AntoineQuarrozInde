@@ -77,7 +77,10 @@ const contactInfo = computed(() => [
         class="section-header"
       >
         <span class="badge mb-4">{{ t('contact.badge') }}</span>
-        <h2 class="section-heading whitespace-pre-line"><span class="section-heading-gradient">{{ t('contact.title') }}</span></h2>
+        <h2 class="section-heading">
+          <span class="block">{{ t('contact.title').split('\n')[0] }}</span>
+          <span class="block section-heading-gradient">{{ t('contact.title').split('\n')[1] }}</span>
+        </h2>
         <p class="section-subtitle mx-auto text-center">{{ t('contact.subtitle') }}</p>
       </div>
 
@@ -102,7 +105,7 @@ const contactInfo = computed(() => [
           <form class="card-glass p-8 space-y-5" @submit.prevent="handleSubmit">
             <div class="grid sm:grid-cols-2 gap-5">
               <div>
-                <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+                <label class="block text-xs font-semibold text-gray-500 dark:text-white/50 uppercase tracking-wider mb-2">
                   {{ t('contact.form.name') }}
                 </label>
                 <input
@@ -114,7 +117,7 @@ const contactInfo = computed(() => [
                 >
               </div>
               <div>
-                <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+                <label class="block text-xs font-semibold text-gray-500 dark:text-white/50 uppercase tracking-wider mb-2">
                   {{ t('contact.form.email') }}
                 </label>
                 <input
@@ -128,7 +131,7 @@ const contactInfo = computed(() => [
             </div>
 
             <div>
-              <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+              <label class="block text-xs font-semibold text-gray-500 dark:text-white/50 uppercase tracking-wider mb-2">
                 {{ t('contact.form.subject') }}
               </label>
                 <input
@@ -140,7 +143,7 @@ const contactInfo = computed(() => [
             </div>
 
             <div>
-              <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+              <label class="block text-xs font-semibold text-gray-500 dark:text-white/50 uppercase tracking-wider mb-2">
                 {{ t('contact.form.message') }}
               </label>
               <textarea

@@ -20,23 +20,20 @@
   "about": {
     "badge": "Über mich",
     "title": "Leidenschaft für Code,\nObsession für Details.",
-    "description_1": "Ich bin Antoine Quarroz, Web- & Mobile-Entwickler aus dem Wallis, Schweiz. Mit Expertise in modernen Technologien verwandle ich Ihre Ideen in leistungsstarke, ästhetische digitale Produkte.",
-    "description_2": "Mein Ansatz verbindet technische Präzision mit Designgefühl, um Lösungen zu liefern, die nicht nur perfekt funktionieren, sondern auch visuell beeindrucken.",
-    "skills_title": "Technologien",
-    "years": "Jahre Erfahrung",
-    "projects": "abgeschlossene Projekte",
-    "clients": "zufriedene Kunden",
+    "description_1": "Ich bin Antoine — ausgebildeter Mediamatiker HF, seit 2022 freiberuflich in Web- & Mobile-Entwicklung tätig. Was mich unterscheidet: Ich schreibe nicht nur Code. Ich verbinde Design, Kommunikation und Technik, um Dinge zu liefern, die aussehen und funktionieren.",
+    "description_2": "Ich begleite Selbstständige, KMUs und Startups aus dem Wallis und der ganzen Schweiz bei ihren digitalen Projekten. Jeder Auftrag ist eine Gelegenheit, etwas zu bauen, auf das ich stolz bin — nicht nur funktional, sondern unvergesslich.",
     "quote": "Eine starke digitale Präsenz muss nicht nur gut aussehen: Sie muss erklären, überzeugen und zur Kontaktaufnahme führen.",
-    "approach_1_title": "Positionierung",
-    "approach_1_text": "Botschaft und Conversion-Pfad klären.",
-    "approach_2_title": "Design",
-    "approach_2_text": "Ein erstklassiges, klares und glaubwürdiges Interface schaffen.",
-    "approach_3_title": "Delivery",
-    "approach_3_text": "Schnell liefern mit einer sauberen technischen Grundlage."
+    "available": "Verfügbar",
+    "fact_location": "Wallis, Schweiz",
+    "fact_title": "Mediamatiker HF",
+    "fact_since": "Freelancer seit 2022",
+    "tools_title": "Mein täglicher Stack",
+    "label_1": "Werdegang",
+    "label_2": "Mission"
   },
   "blog": {
     "badge": "Blog",
-    "title": "Aktuelle Artikel.",
+    "title": "Aktuelle\nArtikel.",
     "subtitle": "Gedanken zu Web, Design und Entwicklung.",
     "view_all": "Alle Artikel",
     "read": "Artikel lesen",
@@ -81,7 +78,7 @@
   },
   "portfolio": {
     "badge": "Portfolio",
-    "title": "Aktuelle Projekte.",
+    "title": "Aktuelle\nProjekte.",
     "subtitle": "Eine Auswahl meiner neuesten Arbeiten.",
     "all": "Alle",
     "web": "Web",
@@ -149,9 +146,11 @@
     }
   },
   "footer": {
-    "tagline": "Freelance Web- & Mobile-Entwickler",
+    "tagline": "Freelance Web- & Mobile-Entwickler aus dem Wallis, Schweiz.",
     "rights": "Alle Rechte vorbehalten.",
-    "made_with": "Gemacht mit"
+    "made_with": "Gemacht mit ♥ im Wallis",
+    "col_nav": "Navigation",
+    "col_contact": "Kontakt"
   },
   "theme": {
     "toggle_dark": "Dunkelmodus",

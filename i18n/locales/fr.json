@@ -20,23 +20,20 @@
   "about": {
     "badge": "À propos",
     "title": "Passionné par le code,\nobsédé par les détails.",
-    "description_1": "Je m'appelle Antoine Quarroz, développeur web & mobile basé en Valais, Suisse. Fort d'une expertise en technologies modernes, je transforme vos idées en produits digitaux performants et esthétiques.",
-    "description_2": "Mon approche combine rigueur technique et sensibilité design pour livrer des solutions qui non seulement fonctionnent parfaitement, mais qui impressionnent aussi visuellement.",
-    "skills_title": "Technologies",
-    "years": "ans d'expérience",
-    "projects": "projets livrés",
-    "clients": "clients satisfaits",
+    "description_1": "Je m'appelle Antoine — médiamaticien HES de formation, je fais du développement web & mobile depuis 2022 en freelance. Ce qui me distingue : je ne me contente pas d'écrire du code. Je combine design, communication et technique pour livrer des choses qui ont du style et qui fonctionnent vraiment.",
+    "description_2": "Basé en Valais, j'accompagne des indépendants, des PME et des startups sur leurs projets digitaux. Chaque mission est une occasion de construire quelque chose dont je suis fier — pas juste fonctionnel, mais mémorable.",
     "quote": "Une présence digitale forte ne doit pas seulement être belle : elle doit expliquer, rassurer et déclencher une prise de contact.",
-    "approach_1_title": "Positionnement",
-    "approach_1_text": "Clarifier le message et le chemin de conversion.",
-    "approach_2_title": "Design",
-    "approach_2_text": "Créer une interface premium, lisible et crédible.",
-    "approach_3_title": "Delivery",
-    "approach_3_text": "Livrer vite avec une base technique propre."
+    "available": "Disponible",
+    "fact_location": "Valais, Suisse",
+    "fact_title": "Médiamaticien HES",
+    "fact_since": "Freelance depuis 2022",
+    "tools_title": "Mon stack au quotidien",
+    "label_1": "Parcours",
+    "label_2": "Mission"
   },
   "blog": {
     "badge": "Blog",
-    "title": "Articles récents.",
+    "title": "Articles\nrécents.",
     "subtitle": "Des réflexions sur le web, le design et le développement.",
     "view_all": "Tous les articles",
     "read": "Lire l'article",
@@ -81,7 +78,7 @@
   },
   "portfolio": {
     "badge": "Portfolio",
-    "title": "Projets récents.",
+    "title": "Projets\nrécents.",
     "subtitle": "Une sélection de mes dernières réalisations.",
     "all": "Tous",
     "web": "Web",
@@ -149,9 +146,11 @@
     }
   },
   "footer": {
-    "tagline": "Développeur web & mobile freelance",
+    "tagline": "Développeur web & mobile freelance basé en Valais, Suisse.",
     "rights": "Tous droits réservés.",
-    "made_with": "Fait avec"
+    "made_with": "Fait avec ♥ en Valais",
+    "col_nav": "Navigation",
+    "col_contact": "Contact"
   },
   "theme": {
     "toggle_dark": "Mode sombre",

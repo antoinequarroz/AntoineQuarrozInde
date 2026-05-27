@@ -45,7 +45,10 @@ function closeArticlePreview() {
         class="section-header"
       >
         <span class="badge mb-4">{{ t('blog.badge') }}</span>
-        <h2 class="section-heading"><span class="section-heading-gradient">{{ t('blog.title') }}</span></h2>
+        <h2 class="section-heading">
+          <span class="block">{{ t('blog.title').split('\n')[0] }}</span>
+          <span class="block section-heading-gradient">{{ t('blog.title').split('\n')[1] }}</span>
+        </h2>
         <p class="section-subtitle mx-auto">{{ t('blog.subtitle') }}</p>
         <NuxtLink to="/blog" class="btn-secondary mt-6 text-sm px-5 py-2.5">
           {{ t('blog.view_all') }}
@@ -75,8 +78,8 @@ function closeArticlePreview() {
           :key="`meta-${article.id}`"
           class="rounded-xl border border-violet-300/20 bg-white/60 dark:bg-white/[0.04] px-3 py-2.5"
         >
-          <p class="text-xs text-gray-500 dark:text-gray-400">{{ article.createdAt }}</p>
-          <p class="text-sm font-semibold text-gray-800 dark:text-white mt-0.5 line-clamp-1">{{ article.title }}</p>
+          <p class="text-xs text-gray-500 dark:text-white/50">{{ article.createdAt }}</p>
+          <p class="text-sm font-semibold text-gray-900 dark:text-white mt-0.5 line-clamp-1">{{ article.title }}</p>
         </div>
       </div>
     </div>

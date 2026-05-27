@@ -22,7 +22,6 @@ await useAsyncData('index-data', () =>
 <template>
   <div>
     <SectionsHeroSplineSection />
-    <SectionsStorySection />
     <SectionsAboutSection />
     <SectionsServicesSection />
     <SectionsPortfolioSection />

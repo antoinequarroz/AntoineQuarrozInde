@@ -143,7 +143,7 @@ function authorInitials(review: Review) {
           <div class="flex gap-0.5">
             <span v-for="i in 5" :key="i" class="text-lg text-yellow-400">★</span>
           </div>
-          <span class="text-sm font-medium text-gray-500 dark:text-gray-400">
+          <span class="text-sm font-medium text-gray-500 dark:text-white/50">
             {{ displayRating.toFixed(1) }}/5 · {{ displayReviews.length }} {{ content.reviewsLabel }}
           </span>
         </div>
@@ -175,7 +175,7 @@ function authorInitials(review: Review) {
                   </span>
                 </div>
 
-                <p class="text-sm leading-relaxed text-gray-700 dark:text-gray-300">
+                <p class="text-sm leading-relaxed text-gray-900 dark:text-white/90">
                   “{{ review.content }}”
                 </p>
 
@@ -195,7 +195,7 @@ function authorInitials(review: Review) {
                   </div>
                   <div class="min-w-0">
                     <div class="truncate font-semibold text-gray-950 dark:text-white">{{ review.author }}</div>
-                    <div class="truncate text-xs text-gray-500 dark:text-gray-400">
+                    <div class="truncate text-xs text-gray-500 dark:text-white/50">
                       {{ review.role }}{{ review.company ? `, ${review.company}` : '' }}
                     </div>
                   </div>

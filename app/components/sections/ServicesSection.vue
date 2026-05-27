@@ -58,8 +58,9 @@ const offerMeta = computed(() => {
         class="section-header"
       >
         <span class="badge mb-4">{{ t('services.badge') }}</span>
-        <h2 class="section-heading whitespace-pre-line">
-          <span class="section-heading-gradient">{{ t('services.title') }}</span>
+        <h2 class="section-heading">
+          <span class="block">{{ t('services.title').split('\n')[0] }}</span>
+          <span class="block section-heading-gradient">{{ t('services.title').split('\n')[1] }}</span>
         </h2>
         <p class="section-subtitle mx-auto text-center">{{ t('services.subtitle') }}</p>
       </div>
@@ -114,7 +115,7 @@ const offerMeta = computed(() => {
               <h3 class="mb-3 font-display text-xl font-bold text-gray-950 dark:text-white">
                 {{ t(`services.${service.key}.title`) }}
               </h3>
-              <p class="mb-6 flex-1 text-sm leading-relaxed text-gray-600 dark:text-white/78">
+              <p class="mb-6 flex-1 text-sm leading-relaxed text-gray-700 dark:text-white/80">
                 {{ t(`services.${service.key}.description`) }}
               </p>
 
@@ -122,7 +123,7 @@ const offerMeta = computed(() => {
                 <li
                   v-for="feature in service.features"
                   :key="feature"
-                  class="flex items-center gap-2 text-sm text-gray-700 dark:text-white/84"
+                  class="flex items-center gap-2 text-sm text-gray-900 dark:text-white/90"
                 >
                   <svg class="h-4 w-4 flex-shrink-0 text-violet-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                     <polyline points="20 6 9 17 4 12" />

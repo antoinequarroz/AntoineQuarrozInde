@@ -131,7 +131,7 @@
   }
 
   .section-subtitle {
-    @apply mt-5 text-base md:text-lg text-gray-600 dark:text-gray-300 max-w-2xl leading-relaxed;
+    @apply mt-5 text-base md:text-lg text-gray-600 dark:text-white/70 max-w-2xl leading-relaxed;
   }
 
   .nav-link {

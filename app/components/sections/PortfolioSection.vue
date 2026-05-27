@@ -42,7 +42,10 @@ const filtered = computed(() => {
         class="mx-auto mb-6 md:mb-8 flex max-w-3xl flex-col items-center text-center"
       >
         <span class="badge mb-4">{{ t('portfolio.badge') }}</span>
-        <h2 class="section-heading"><span class="section-heading-gradient">{{ t('portfolio.title') }}</span></h2>
+        <h2 class="section-heading">
+          <span class="block">{{ t('portfolio.title').split('\n')[0] }}</span>
+          <span class="block section-heading-gradient">{{ t('portfolio.title').split('\n')[1] }}</span>
+        </h2>
         <p class="section-subtitle mx-auto text-center">{{ t('portfolio.subtitle') }}</p>
       </div>
 
