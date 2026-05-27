@@ -32,27 +32,15 @@ const desktopTrackStyle = computed(() => ({
 const progress = computed(() => {
   const vh = Math.max(1, viewportH.value)
   const h = Math.max(1, height.value)
-  const start = vh * 0.58
+  // Animation starts only once the section is fully sticky (top-20 = 80px, xl:top-24 = 96px)
+  const stickyTop = viewportW.value >= 1280 ? 96 : 80
+  const start = stickyTop
   const end = -Math.max(vh, h - vh * 1.02)
   const p = (start - top.value) / (start - end)
   return Math.min(1, Math.max(0, p))
 })
 
-const settledProgress = ref(0)
-let scrollSettleTimer: ReturnType<typeof setTimeout> | undefined
-
-watch(progress, (value) => {
-  if (scrollSettleTimer) clearTimeout(scrollSettleTimer)
-  scrollSettleTimer = setTimeout(() => {
-    settledProgress.value = value
-  }, 140)
-}, { immediate: true })
-
-onBeforeUnmount(() => {
-  if (scrollSettleTimer) clearTimeout(scrollSettleTimer)
-})
-
-const rawSourceStep = computed(() => settledProgress.value * maxSourceStep.value)
+const rawSourceStep = computed(() => progress.value * maxSourceStep.value)
 
 const activeSourceIndex = computed(() => {
   if (!props.projects.length) return 0
@@ -262,7 +250,7 @@ function cardStyle(index: number) {
               {{ t('portfolio.selection_count', { count: projects.length }) }}
             </p>
             <div class="mt-5 h-1.5 overflow-hidden rounded-full bg-violet-500/10 dark:bg-white/10">
-              <div class="h-full rounded-full bg-gradient-brand transition-[width] duration-150" :style="{ width: `${settledProgress * 100}%` }" />
+              <div class="h-full rounded-full bg-gradient-brand transition-[width] duration-150" :style="{ width: `${progress * 100}%` }" />
             </div>
             <div class="mt-3 max-h-[11rem] xl:max-h-[13rem] space-y-1.5 overflow-y-auto pr-1">
               <button
@@ -295,7 +283,7 @@ function cardStyle(index: number) {
               <article
                 v-for="(project, index) in displayProjects"
                 :key="`${project.id}-${index}`"
-                class="absolute left-1/2 top-[51.5%] h-[20.5rem] xl:h-[22rem] w-[16.2rem] xl:w-[17.5rem] overflow-hidden rounded-[1.25rem] xl:rounded-[1.4rem] border border-white/15 bg-[#11111b] shadow-2xl shadow-black/35 transition-[opacity,transform] duration-200 ease-out [backface-visibility:hidden]"
+                class="absolute left-1/2 top-[51.5%] h-[20.5rem] xl:h-[22rem] w-[16.2rem] xl:w-[17.5rem] overflow-hidden rounded-[1.25rem] xl:rounded-[1.4rem] border border-white/15 bg-[#11111b] shadow-2xl shadow-black/35 transition-[opacity,transform] duration-[120ms] ease-out [backface-visibility:hidden] will-change-transform"
                 :style="cardStyle(index)"
               >
                 <div class="relative h-36 xl:h-44 overflow-hidden bg-[#10101b]">
