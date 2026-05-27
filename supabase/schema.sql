@@ -47,7 +47,19 @@ create table if not exists public.marketing_events (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.contact_messages (
+  id bigint generated always as identity primary key,
+  name text not null,
+  email text not null,
+  subject text,
+  message text not null,
+  status text not null default 'new' check (status in ('new', 'replied')),
+  replied_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
 alter table public.projects enable row level security;
 alter table public.articles enable row level security;
 alter table public.reviews enable row level security;
 alter table public.marketing_events enable row level security;
+alter table public.contact_messages enable row level security;

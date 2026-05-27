@@ -8,6 +8,7 @@ const navItems = [
   { label: 'Projets', icon: 'folder', href: '/admin/projects' },
   { label: 'Articles', icon: 'file-text', href: '/admin/articles' },
   { label: 'Avis', icon: 'star', href: '/admin/reviews' },
+  { label: 'Messages', icon: 'mail', href: '/admin/messages' },
 ]
 
 const isSidebarOpen = ref(false)
@@ -78,6 +79,10 @@ async function handleLogout() {
           </svg>
           <svg v-else-if="item.icon === 'star'" class="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+          </svg>
+          <svg v-else-if="item.icon === 'mail'" class="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/>
+            <polyline points="22,6 12,13 2,6"/>
           </svg>
           <span>{{ item.label }}</span>
         </NuxtLink>

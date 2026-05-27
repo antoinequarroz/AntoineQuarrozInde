@@ -5,6 +5,15 @@ const RATE_LIMIT_MAX = 5
 const MIN_FORM_FILL_MS = 1200
 const ipHits = new Map<string, number[]>()
 
+function escapeHtml(input: string) {
+  return input
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;')
+}
+
 export default defineEventHandler(async (event) => {
   const ip = getRequestIP(event, { xForwardedFor: true }) || 'unknown'
   const now = Date.now()
@@ -60,8 +69,24 @@ export default defineEventHandler(async (event) => {
   }
 
   const resend = new Resend(config.resendApiKey)
+  const supabase = getSupabaseAdmin()
 
   const safeSubject = subject?.trim() ? subject.trim() : 'Nouveau message'
+  const safeName = escapeHtml(String(name))
+  const safeEmail = escapeHtml(String(email))
+  const safeMessage = escapeHtml(String(message))
+  const safeSubjectHtml = escapeHtml(safeSubject)
+
+  const { error: saveError } = await supabase.from('contact_messages').insert({
+    name: String(name),
+    email: String(email),
+    subject: safeSubject,
+    message: String(message),
+    status: 'new',
+  })
+  if (saveError) {
+    console.warn('[contact] unable to persist contact_messages:', saveError.message)
+  }
 
   const { error } = await resend.emails.send({
     from: 'Portfolio <info@antoinequarroz.ch>',
@@ -72,12 +97,12 @@ export default defineEventHandler(async (event) => {
       <div style="font-family:sans-serif;max-width:560px;margin:0 auto">
         <h2 style="color:#7c3aed">Nouveau message depuis le portfolio</h2>
         <table style="width:100%;border-collapse:collapse">
-          <tr><td style="padding:8px 0;color:#6b7280;width:100px">De</td><td style="padding:8px 0;font-weight:600">${name}</td></tr>
-          <tr><td style="padding:8px 0;color:#6b7280">Email</td><td style="padding:8px 0"><a href="mailto:${email}">${email}</a></td></tr>
-          <tr><td style="padding:8px 0;color:#6b7280">Sujet</td><td style="padding:8px 0">${safeSubject}</td></tr>
+          <tr><td style="padding:8px 0;color:#6b7280;width:100px">De</td><td style="padding:8px 0;font-weight:600">${safeName}</td></tr>
+          <tr><td style="padding:8px 0;color:#6b7280">Email</td><td style="padding:8px 0"><a href="mailto:${safeEmail}">${safeEmail}</a></td></tr>
+          <tr><td style="padding:8px 0;color:#6b7280">Sujet</td><td style="padding:8px 0">${safeSubjectHtml}</td></tr>
         </table>
         <hr style="border:none;border-top:1px solid #e5e7eb;margin:16px 0">
-        <p style="color:#374151;line-height:1.6;white-space:pre-wrap">${message}</p>
+        <p style="color:#374151;line-height:1.6;white-space:pre-wrap">${safeMessage}</p>
       </div>
     `,
   })

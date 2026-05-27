@@ -19,6 +19,17 @@ export interface ContactForm {
   message: string
 }
 
+export interface ContactMessage {
+  id: number
+  name: string
+  email: string
+  subject: string | null
+  message: string
+  status: 'new' | 'replied'
+  repliedAt: string | null
+  createdAt: string
+}
+
 export type ServiceKey = 'vitrine' | 'mobile' | 'cms'
 
 export type Locale = 'fr' | 'en' | 'de'
