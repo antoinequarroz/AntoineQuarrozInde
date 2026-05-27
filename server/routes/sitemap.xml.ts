@@ -5,6 +5,7 @@ export default defineEventHandler((event) => {
 
   const urls = [
     '/',
+    '/developpeur-web-valais',
     '/en',
     '/de',
     '/blog',

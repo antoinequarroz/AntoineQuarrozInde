@@ -50,7 +50,7 @@ useHead({
             name: 'Antoine Quarroz',
             url: `${siteUrl}/`,
             image: `${siteUrl}/about.jpg`,
-            areaServed: ['Valais', 'Suisse'],
+            areaServed: ['Valais', 'Suisse', "Val d'Herens", "Val d'Anniviers"],
             founder: { '@id': `${siteUrl}/#person` },
             sameAs: [],
           },
