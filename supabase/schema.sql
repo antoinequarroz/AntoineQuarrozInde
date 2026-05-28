@@ -117,6 +117,53 @@ create table if not exists public.tasks (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.quotes (
+  id bigint generated always as identity primary key,
+  organization_id uuid not null references public.organizations(id) on delete cascade,
+  client_id bigint references public.clients(id) on delete set null,
+  number text not null,
+  title text not null,
+  amount_cents integer not null default 0 check (amount_cents >= 0),
+  currency text not null default 'CHF',
+  status text not null default 'draft' check (status in ('draft', 'sent', 'accepted', 'rejected')),
+  issued_at date,
+  valid_until date,
+  notes text,
+  created_at timestamptz not null default now(),
+  unique (organization_id, number)
+);
+
+create table if not exists public.invoices (
+  id bigint generated always as identity primary key,
+  organization_id uuid not null references public.organizations(id) on delete cascade,
+  client_id bigint references public.clients(id) on delete set null,
+  quote_id bigint references public.quotes(id) on delete set null,
+  number text not null,
+  amount_cents integer not null default 0 check (amount_cents >= 0),
+  currency text not null default 'CHF',
+  status text not null default 'draft' check (status in ('draft', 'sent', 'paid', 'overdue', 'cancelled')),
+  issued_at date,
+  due_at date,
+  paid_at date,
+  notes text,
+  created_at timestamptz not null default now(),
+  unique (organization_id, number)
+);
+
+create table if not exists public.appointments (
+  id bigint generated always as identity primary key,
+  organization_id uuid not null references public.organizations(id) on delete cascade,
+  client_id bigint references public.clients(id) on delete set null,
+  title text not null,
+  description text,
+  starts_at timestamptz not null,
+  ends_at timestamptz not null,
+  location text,
+  meeting_url text,
+  status text not null default 'scheduled' check (status in ('scheduled', 'completed', 'cancelled')),
+  created_at timestamptz not null default now()
+);
+
 create index if not exists idx_projects_organization_id on public.projects(organization_id);
 create index if not exists idx_articles_organization_id on public.articles(organization_id);
 create index if not exists idx_reviews_organization_id on public.reviews(organization_id);
@@ -128,6 +175,10 @@ create index if not exists idx_clients_organization_id on public.clients(organiz
 create index if not exists idx_tasks_organization_id on public.tasks(organization_id);
 create index if not exists idx_tasks_client_id on public.tasks(client_id);
 create index if not exists idx_tasks_project_id on public.tasks(project_id);
+create index if not exists idx_quotes_organization_id on public.quotes(organization_id);
+create index if not exists idx_invoices_organization_id on public.invoices(organization_id);
+create index if not exists idx_appointments_organization_id on public.appointments(organization_id);
+create index if not exists idx_appointments_starts_at on public.appointments(starts_at);
 
 alter table public.projects enable row level security;
 alter table public.articles enable row level security;
@@ -139,3 +190,6 @@ alter table public.organization_memberships enable row level security;
 alter table public.audit_logs enable row level security;
 alter table public.clients enable row level security;
 alter table public.tasks enable row level security;
+alter table public.quotes enable row level security;
+alter table public.invoices enable row level security;
+alter table public.appointments enable row level security;
