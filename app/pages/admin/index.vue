@@ -9,6 +9,7 @@ const tasks = useTasksStore()
 const quotes = useQuotesStore()
 const invoices = useInvoicesStore()
 const appointments = useAppointmentsStore()
+const toast = useToast()
 
 const stats = computed(() => [
   {
@@ -117,6 +118,68 @@ const pipeline = computed(() => {
   const cashConv = sentInvoices > 0 ? Math.round((paidInvoices / sentInvoices) * 100) : 0
   return { leads, activeClients, sentQuotes, acceptedQuotes, sentInvoices, paidInvoices, quoteConv, cashConv }
 })
+const runningAutomation = ref(false)
+
+function daysFromNow(isoDate: string) {
+  const now = new Date()
+  const d = new Date(isoDate)
+  return Math.ceil((d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+}
+
+async function runPipelineAutomation() {
+  if (runningAutomation.value) return
+  runningAutomation.value = true
+  try {
+    await Promise.all([tasks.ensureLoaded(), quotes.ensureLoaded(), invoices.ensureLoaded(), clients.ensureLoaded()])
+    const existingTitles = new Set(tasks.tasks.map(t => t.title))
+    let created = 0
+
+    for (const q of quotes.quotes) {
+      if (q.status !== 'sent' || !q.validUntil) continue
+      const d = daysFromNow(q.validUntil)
+      if (d < 0 || d > 3) continue
+      const key = `[RELANCE DEVIS ${q.number}]`
+      if (existingTitles.has(key)) continue
+      await tasks.add({
+        title: key,
+        description: `Relancer le devis ${q.number} (${q.title}) avant expiration (${q.validUntil}).`,
+        status: 'todo',
+        priority: d <= 1 ? 'high' : 'medium',
+        dueDate: q.validUntil,
+        clientId: q.clientId ?? null,
+        projectId: null,
+      })
+      existingTitles.add(key)
+      created++
+    }
+
+    for (const inv of invoices.invoices) {
+      if (!['sent', 'overdue'].includes(inv.status) || !inv.dueAt) continue
+      const d = daysFromNow(inv.dueAt)
+      if (d > 2) continue
+      const key = `[RELANCE FACTURE ${inv.number}]`
+      if (existingTitles.has(key)) continue
+      await tasks.add({
+        title: key,
+        description: `Relancer la facture ${inv.number} (echeance ${inv.dueAt}).`,
+        status: 'todo',
+        priority: d < 0 ? 'high' : 'medium',
+        dueDate: inv.dueAt,
+        clientId: inv.clientId ?? null,
+        projectId: null,
+      })
+      existingTitles.add(key)
+      created++
+    }
+
+    if (created > 0) toast.success(`${created} relance(s) ajoutee(s) dans Taches`)
+    else toast.success('Aucune nouvelle relance a generer')
+  } catch {
+    toast.error('Erreur pendant la generation des relances')
+  } finally {
+    runningAutomation.value = false
+  }
+}
 
 onMounted(async () => {
   await Promise.all([
@@ -265,6 +328,16 @@ onMounted(async () => {
       <div class="mt-3 grid sm:grid-cols-2 gap-2 text-xs">
         <p class="rounded-lg bg-gray-50 dark:bg-white/[0.03] px-3 py-2">Conversion devis: <span class="font-semibold">{{ pipeline.quoteConv }}%</span></p>
         <p class="rounded-lg bg-gray-50 dark:bg-white/[0.03] px-3 py-2">Encaissement factures: <span class="font-semibold">{{ pipeline.cashConv }}%</span></p>
+      </div>
+      <div class="mt-3 flex items-center justify-between gap-3 rounded-lg border border-gray-100 dark:border-white/[0.06] p-3">
+        <p class="text-xs text-gray-500">Automatiser les relances en taches (devis a 3 jours, factures dues/overdue).</p>
+        <button
+          class="px-3 py-2 rounded-lg bg-violet-600 text-white text-xs disabled:opacity-60"
+          :disabled="runningAutomation"
+          @click="runPipelineAutomation"
+        >
+          {{ runningAutomation ? 'Generation...' : 'Generer les relances' }}
+        </button>
       </div>
     </div>
 
