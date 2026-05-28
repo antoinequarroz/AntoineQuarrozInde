@@ -2,7 +2,6 @@
 definePageMeta({ layout: false })
 
 const auth = useAuthStore()
-const router = useRouter()
 
 const email = ref('')
 const password = ref('')
@@ -13,7 +12,7 @@ async function handleLogin() {
   error.value = ''
   const ok = await auth.login(email.value, password.value)
   if (ok) {
-    await router.push('/admin')
+    await navigateTo('/admin', { replace: true })
   } else {
     error.value = 'Identifiants invalides.'
     password.value = ''

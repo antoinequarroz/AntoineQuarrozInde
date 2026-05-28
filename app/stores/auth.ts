@@ -30,8 +30,18 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function checkSession() {
     const client = useSupabaseClient()
-    const { data } = await client.auth.getSession()
-    const session = data.session
+    let { data } = await client.auth.getSession()
+    let session = data.session
+
+    // iOS PWA standalone can temporarily return null on cold wake.
+    // getUser() forces a refresh path and usually restores session state.
+    if (!session) {
+      await client.auth.getUser()
+      const retry = await client.auth.getSession()
+      data = retry.data
+      session = data.session
+    }
+
     isAuthenticated.value = !!session
     accessToken.value = session?.access_token ?? null
     userEmail.value = session?.user?.email ?? null

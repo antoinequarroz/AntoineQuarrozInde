@@ -150,6 +150,12 @@
 }
 
 @media (max-width: 430px) {
+  .input-field {
+    padding: 0.65rem 0.75rem;
+    border-radius: 0.65rem;
+    font-size: 0.9rem;
+  }
+
   .section-container {
     padding-left: 0.875rem;
     padding-right: 0.875rem;
@@ -206,5 +212,143 @@
   .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
+  }
+
+  .admin-page-actions {
+    @apply flex flex-wrap items-center gap-2;
+  }
+
+  .admin-table-wrap {
+    @apply overflow-x-auto;
+  }
+
+  .admin-table {
+    min-width: 760px;
+  }
+
+  .admin-modal-panel {
+    max-height: calc(100dvh - 1rem);
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
+  }
+
+  .admin-sticky-actions {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-table {
+    min-width: 680px;
+  }
+
+  .admin-page-actions {
+    width: 100%;
+  }
+
+  .admin-page-actions > * {
+    flex: 1 1 calc(50% - 0.25rem);
+    justify-content: center;
+    text-align: center;
+  }
+}
+
+@media (max-width: 430px) {
+  .admin-shell .input-field,
+  .admin-shell select.input-field,
+  .admin-shell textarea.input-field {
+    min-height: 2.7rem;
+    font-size: 0.95rem;
+    line-height: 1.25rem;
+  }
+
+  .admin-shell button,
+  .admin-shell [role="button"],
+  .admin-shell a.inline-flex,
+  .admin-shell .admin-page-actions > * {
+    min-height: 2.65rem;
+  }
+
+  .admin-shell .admin-main {
+    padding-top: 0.75rem;
+  }
+
+  .admin-shell .admin-main > div > .space-y-5 {
+    gap: 0.875rem;
+  }
+
+  .admin-shell .admin-main .rounded-xl,
+  .admin-shell .admin-main .rounded-2xl {
+    border-radius: 0.8rem;
+  }
+
+  .admin-shell .admin-main .text-xs {
+    font-size: 0.72rem;
+  }
+
+  .admin-shell .admin-main .text-sm {
+    font-size: 0.82rem;
+  }
+
+  .admin-shell .admin-main .text-xl {
+    font-size: 1.1rem;
+    line-height: 1.35rem;
+  }
+
+  .admin-table {
+    min-width: 620px;
+  }
+
+  .admin-page-actions > * {
+    flex: 1 1 100%;
+    min-height: 2.5rem;
+  }
+
+  .admin-modal-panel {
+    max-height: calc(100dvh - 0.5rem);
+    border-radius: 0.9rem;
+    padding-top: 0.75rem;
+  }
+
+  .admin-sticky-actions {
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin-left: -0.25rem;
+    margin-right: -0.25rem;
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
+    gap: 0.5rem;
+  }
+
+  .admin-sticky-actions > button {
+    min-height: 2.5rem;
+    flex: 1 1 0;
+  }
+}
+
+@media (max-width: 390px) {
+  .admin-shell .input-field,
+  .admin-shell select.input-field,
+  .admin-shell textarea.input-field {
+    min-height: 2.55rem;
+    font-size: 0.9rem;
+  }
+
+  .admin-shell .admin-main .text-sm {
+    font-size: 0.8rem;
+  }
+
+  .admin-shell .admin-main .text-xl {
+    font-size: 1.02rem;
+  }
+
+  .admin-table {
+    min-width: 590px;
+  }
+
+  .admin-modal-panel {
+    max-height: calc(100dvh - 0.25rem);
+    border-radius: 0.8rem;
   }
 }

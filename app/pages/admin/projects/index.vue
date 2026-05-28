@@ -114,7 +114,7 @@ const catColors: Record<string, string> = {
     <Transition name="modal">
       <div v-if="showForm" class="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
         <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="showForm = false" />
-        <div class="relative w-full max-w-xl bg-white dark:bg-[#111118] rounded-2xl shadow-2xl border border-gray-100 dark:border-white/[0.08] my-4">
+        <div class="admin-modal-panel relative w-full max-w-xl bg-white dark:bg-[#111118] rounded-2xl shadow-2xl border border-gray-100 dark:border-white/[0.08] my-4 overflow-y-auto">
 
           <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-white/[0.06]">
             <h2 class="font-display font-semibold text-base text-gray-900 dark:text-white">
@@ -128,7 +128,7 @@ const catColors: Record<string, string> = {
           </div>
 
           <form class="px-6 py-5 space-y-4" @submit.prevent="handleSubmit">
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Titre *</label>
                 <input v-model="form.title" type="text" class="input-field" placeholder="Nom du projet" required>
@@ -153,7 +153,7 @@ const catColors: Record<string, string> = {
               <UiAppImageUpload v-model="form.image" />
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Technologies</label>
                 <input v-model="form.tags" type="text" class="input-field" placeholder="Vue 3, Nuxt, Tailwind">
@@ -181,7 +181,7 @@ const catColors: Record<string, string> = {
               <label class="text-sm text-gray-600 dark:text-gray-300 cursor-pointer" @click="form.featured = !form.featured">Mettre en avant</label>
             </div>
 
-            <div class="flex gap-3 pt-2 border-t border-gray-100 dark:border-white/[0.06]">
+            <div class="admin-sticky-actions sticky bottom-0 bg-white dark:bg-[#111118] flex gap-3 pt-2 border-t border-gray-100 dark:border-white/[0.06]">
               <button type="submit" class="flex-1 py-2.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold transition-colors">
                 {{ editingProject ? 'Enregistrer' : 'Créer' }}
               </button>
@@ -194,9 +194,42 @@ const catColors: Record<string, string> = {
       </div>
     </Transition>
 
+    <!-- Mobile cards -->
+    <div class="sm:hidden space-y-2">
+      <div
+        v-for="project in store.projects"
+        :key="`mobile-${project.id}`"
+        class="rounded-xl border p-3 bg-white dark:bg-[#111118] border-gray-100 dark:border-white/[0.06]"
+      >
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0">
+            <img v-if="project.image" :src="project.image" class="w-full h-full object-cover" alt="">
+            <div v-else class="w-full h-full bg-violet-50 dark:bg-violet-500/10 flex items-center justify-center">
+              <svg class="w-4 h-4 text-violet-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+              </svg>
+            </div>
+          </div>
+          <div class="min-w-0">
+            <p class="text-sm font-medium text-gray-800 dark:text-gray-200">{{ project.title }}</p>
+            <p class="text-xs text-gray-400 line-clamp-1">{{ project.description }}</p>
+          </div>
+        </div>
+        <div class="mt-2 flex items-center gap-2 flex-wrap">
+          <span class="text-xs font-semibold px-2 py-1 rounded-lg" :class="catColors[project.category]">{{ project.category }}</span>
+          <span v-if="project.featured" class="text-xs font-semibold px-2 py-1 rounded-lg bg-yellow-50 text-yellow-600 dark:bg-yellow-500/10 dark:text-yellow-400">★</span>
+          <span v-for="tag in project.tags.slice(0, 2)" :key="`m-${project.id}-${tag}`" class="text-xs bg-gray-50 dark:bg-white/[0.04] text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded-md">{{ tag }}</span>
+        </div>
+        <div class="mt-3 flex items-center gap-3">
+          <button class="text-xs text-violet-600" @click="openEdit(project)">Editer</button>
+          <button class="text-xs text-red-500" @click="handleDelete(project.id)">Supprimer</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Table -->
-    <div class="bg-white dark:bg-[#111118] border border-gray-100 dark:border-white/[0.06] rounded-xl overflow-hidden">
-      <table class="w-full">
+    <div class="admin-table-wrap hidden sm:block bg-white dark:bg-[#111118] border border-gray-100 dark:border-white/[0.06] rounded-xl overflow-hidden">
+      <table class="admin-table w-full">
         <thead>
           <tr class="border-b border-gray-100 dark:border-white/[0.06]">
             <th class="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Projet</th>

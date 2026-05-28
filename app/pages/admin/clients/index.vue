@@ -86,8 +86,35 @@ onMounted(() => store.ensureLoaded())
       <button class="px-4 py-2 rounded-lg text-sm font-semibold bg-violet-600 hover:bg-violet-700 text-white" @click="openNew">Nouveau</button>
     </div>
 
-    <div class="bg-white dark:bg-[#111118] border border-gray-100 dark:border-white/[0.06] rounded-xl overflow-hidden">
-      <table class="w-full">
+    <div class="space-y-3">
+      <div class="sm:hidden space-y-2">
+        <div
+          v-for="client in store.clients"
+          :key="`mobile-${client.id}`"
+          class="rounded-xl border p-3 bg-white dark:bg-[#111118] border-gray-100 dark:border-white/[0.06]"
+        >
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <p class="text-sm font-medium text-gray-800 dark:text-gray-200">{{ client.name }}</p>
+              <p class="text-xs text-gray-400">{{ client.company || 'Independant' }}</p>
+            </div>
+            <span class="text-[11px] px-2 py-1 rounded-md"
+              :class="client.status === 'active' ? 'bg-green-50 text-green-700 dark:bg-green-500/10 dark:text-green-300' : client.status === 'lead' ? 'bg-yellow-50 text-yellow-700 dark:bg-yellow-500/10 dark:text-yellow-300' : 'bg-gray-100 text-gray-500 dark:bg-white/[0.06] dark:text-gray-400'">
+              {{ client.status }}
+            </span>
+          </div>
+          <p class="mt-2 text-xs text-gray-500">{{ client.email }}</p>
+          <p class="text-xs text-gray-400">{{ client.phone || '-' }}</p>
+          <div class="mt-3 flex items-center gap-3">
+            <NuxtLink :to="`/admin/clients/${client.id}`" class="text-xs text-sky-600">Voir</NuxtLink>
+            <button class="text-xs text-violet-600" @click="openEdit(client)">Editer</button>
+            <button class="text-xs text-red-500" @click="handleDelete(client.id)">Supprimer</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="admin-table-wrap hidden sm:block bg-white dark:bg-[#111118] border border-gray-100 dark:border-white/[0.06] rounded-xl overflow-hidden">
+      <table class="admin-table w-full">
         <thead>
           <tr class="border-b border-gray-100 dark:border-white/[0.06]">
             <th class="text-left px-5 py-3 text-xs text-gray-400 uppercase">Nom</th>
@@ -120,18 +147,19 @@ onMounted(() => store.ensureLoaded())
           </tr>
         </tbody>
       </table>
+      </div>
     </div>
 
     <Transition name="fade">
-      <div v-if="showForm" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div v-if="showForm" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
         <div class="absolute inset-0 bg-black/40" @click="showForm = false" />
-        <form class="relative w-full max-w-xl bg-white dark:bg-[#111118] rounded-xl p-5 space-y-3" @submit.prevent="handleSubmit">
+        <form class="admin-modal-panel relative w-full max-w-2xl max-h-[92vh] overflow-y-auto bg-white dark:bg-[#111118] rounded-xl p-4 sm:p-5 space-y-3" @submit.prevent="handleSubmit">
           <h2 class="font-semibold text-gray-900 dark:text-white">{{ editing ? 'Modifier client' : 'Nouveau client' }}</h2>
-          <div class="grid grid-cols-2 gap-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <input v-model="form.name" class="input-field" placeholder="Nom" required>
             <input v-model="form.company" class="input-field" placeholder="Societe">
           </div>
-          <div class="grid grid-cols-2 gap-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <input v-model="form.email" type="email" class="input-field" placeholder="Email" required>
             <input v-model="form.phone" class="input-field" placeholder="Telephone">
           </div>
@@ -141,7 +169,7 @@ onMounted(() => store.ensureLoaded())
             <option value="inactive">Inactive</option>
           </select>
           <textarea v-model="form.notes" rows="3" class="input-field" placeholder="Notes" />
-          <div class="flex justify-end gap-2">
+          <div class="admin-sticky-actions sticky bottom-0 bg-white dark:bg-[#111118] pt-2 flex justify-end gap-2">
             <button type="button" class="px-3 py-2 text-sm" @click="showForm = false">Annuler</button>
             <button type="submit" class="px-4 py-2 rounded-lg bg-violet-600 text-white text-sm">Enregistrer</button>
           </div>

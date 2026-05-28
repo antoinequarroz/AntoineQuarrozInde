@@ -134,7 +134,7 @@ onMounted(loadMessages)
         <h1 class="font-display font-semibold text-xl text-gray-900 dark:text-white">Messages CRM</h1>
         <p class="text-sm text-gray-400 mt-0.5">Inbox, qualification, tags et reponse depuis l'admin.</p>
       </div>
-      <select v-model="statusFilter" class="input-field max-w-[180px] text-sm">
+      <select v-model="statusFilter" class="input-field w-full sm:w-auto sm:max-w-[180px] text-sm">
         <option value="all">Tous les statuts</option>
         <option value="new">Nouveau</option>
         <option value="in_progress">En cours</option>
@@ -143,39 +143,59 @@ onMounted(loadMessages)
       </select>
     </div>
 
-    <div class="grid lg:grid-cols-[360px_1fr] gap-4">
+    <div class="grid lg:grid-cols-[340px_1fr] gap-4">
       <div class="bg-white dark:bg-[#111118] border border-gray-100 dark:border-white/[0.06] rounded-xl overflow-hidden">
         <div class="px-4 py-3 border-b border-gray-100 dark:border-white/[0.06] text-xs text-gray-400">
           {{ filteredMessages.length }} message(s)
         </div>
         <div v-if="loading" class="p-4 text-sm text-gray-400">Chargement...</div>
         <div v-else-if="!filteredMessages.length" class="p-4 text-sm text-gray-400">Aucun message pour ce filtre.</div>
-        <div v-else class="max-h-[72vh] overflow-y-auto">
-          <button
-            v-for="msg in filteredMessages"
-            :key="msg.id"
-            class="w-full text-left px-4 py-3 border-b border-gray-50 dark:border-white/[0.03] hover:bg-gray-50/70 dark:hover:bg-white/[0.03] transition-colors"
-            :class="selected?.id === msg.id ? 'bg-violet-50/60 dark:bg-violet-500/10' : ''"
-            @click="openMessage(msg)"
-          >
-            <div class="flex items-center justify-between gap-2">
-              <p class="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">{{ msg.name }}</p>
-              <span class="text-[10px] font-semibold px-2 py-0.5 rounded" :class="statusMeta[msg.status].classes">
-                {{ statusMeta[msg.status].label }}
-              </span>
-            </div>
-            <p class="text-xs text-gray-400 truncate">{{ msg.email }}</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{{ msg.message }}</p>
-            <div v-if="msg.tags?.length" class="flex flex-wrap gap-1 mt-2">
-              <span
-                v-for="tag in msg.tags"
-                :key="`${msg.id}-${tag}`"
-                class="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 dark:bg-white/[0.08] dark:text-gray-300"
-              >
-                #{{ tag }}
-              </span>
-            </div>
-          </button>
+        <div v-else>
+          <div class="sm:hidden max-h-[56vh] overflow-y-auto p-2 space-y-2">
+            <button
+              v-for="msg in filteredMessages"
+              :key="`mobile-${msg.id}`"
+              class="w-full rounded-xl border border-gray-100 dark:border-white/[0.06] bg-white dark:bg-[#111118] text-left p-3"
+              :class="selected?.id === msg.id ? 'ring-1 ring-violet-500/60' : ''"
+              @click="openMessage(msg)"
+            >
+              <div class="flex items-center justify-between gap-2">
+                <p class="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">{{ msg.name }}</p>
+                <span class="text-[10px] font-semibold px-2 py-0.5 rounded" :class="statusMeta[msg.status].classes">
+                  {{ statusMeta[msg.status].label }}
+                </span>
+              </div>
+              <p class="text-xs text-gray-400 truncate">{{ msg.email }}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{{ msg.message }}</p>
+            </button>
+          </div>
+          <div class="hidden sm:block max-h-[72vh] overflow-y-auto">
+            <button
+              v-for="msg in filteredMessages"
+              :key="msg.id"
+              class="w-full text-left px-4 py-3 border-b border-gray-50 dark:border-white/[0.03] hover:bg-gray-50/70 dark:hover:bg-white/[0.03] transition-colors"
+              :class="selected?.id === msg.id ? 'bg-violet-50/60 dark:bg-violet-500/10' : ''"
+              @click="openMessage(msg)"
+            >
+              <div class="flex items-center justify-between gap-2">
+                <p class="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">{{ msg.name }}</p>
+                <span class="text-[10px] font-semibold px-2 py-0.5 rounded" :class="statusMeta[msg.status].classes">
+                  {{ statusMeta[msg.status].label }}
+                </span>
+              </div>
+              <p class="text-xs text-gray-400 truncate">{{ msg.email }}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{{ msg.message }}</p>
+              <div v-if="msg.tags?.length" class="flex flex-wrap gap-1 mt-2">
+                <span
+                  v-for="tag in msg.tags"
+                  :key="`${msg.id}-${tag}`"
+                  class="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 dark:bg-white/[0.08] dark:text-gray-300"
+                >
+                  #{{ tag }}
+                </span>
+              </div>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -240,7 +260,7 @@ onMounted(loadMessages)
             <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Reponse</label>
             <textarea v-model="replyBody" rows="8" class="input-field resize-y" />
           </div>
-          <div class="flex justify-end">
+          <div class="admin-sticky-actions sticky bottom-0 bg-white dark:bg-[#111118] pt-2 flex justify-end">
             <button
               class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold bg-violet-600 hover:bg-violet-700 text-white transition-colors disabled:opacity-60"
               :disabled="sending"

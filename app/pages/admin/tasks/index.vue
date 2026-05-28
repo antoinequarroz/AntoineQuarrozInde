@@ -8,6 +8,8 @@ const toast = useToast()
 
 const showForm = ref(false)
 const editing = ref<Task | null>(null)
+const isOffline = ref(false)
+let onlineStateHandler: (() => void) | null = null
 const form = reactive({
   title: '',
   description: '',
@@ -73,6 +75,22 @@ async function handleDelete(id: number) {
 }
 
 onMounted(() => store.ensureLoaded())
+
+onMounted(() => {
+  isOffline.value = !navigator.onLine
+  onlineStateHandler = () => {
+    isOffline.value = !navigator.onLine
+    if (!isOffline.value) void store.flushQueue()
+  }
+  window.addEventListener('online', onlineStateHandler)
+  window.addEventListener('offline', onlineStateHandler)
+})
+
+onBeforeUnmount(() => {
+  if (!onlineStateHandler) return
+  window.removeEventListener('online', onlineStateHandler)
+  window.removeEventListener('offline', onlineStateHandler)
+})
 </script>
 
 <template>
@@ -81,12 +99,17 @@ onMounted(() => store.ensureLoaded())
       <div>
         <h1 class="font-display font-semibold text-xl text-gray-900 dark:text-white">Taches</h1>
         <p class="text-sm text-gray-400 mt-0.5">{{ store.tasks.length }} tache(s), {{ store.done.length }} terminee(s)</p>
+        <p v-if="isOffline || store.pendingCount > 0 || store.syncing" class="text-xs text-amber-500 mt-1">
+          <span v-if="store.syncing">Synchronisation en cours...</span>
+          <span v-else-if="isOffline">Hors ligne: modifications en attente ({{ store.pendingCount }})</span>
+          <span v-else>Modifications en attente: {{ store.pendingCount }}</span>
+        </p>
       </div>
       <button class="px-4 py-2 rounded-lg text-sm font-semibold bg-violet-600 hover:bg-violet-700 text-white" @click="openNew">Nouvelle</button>
     </div>
 
-    <div class="bg-white dark:bg-[#111118] border border-gray-100 dark:border-white/[0.06] rounded-xl overflow-hidden">
-      <table class="w-full">
+    <div class="admin-table-wrap bg-white dark:bg-[#111118] border border-gray-100 dark:border-white/[0.06] rounded-xl overflow-hidden overflow-x-auto">
+      <table class="admin-table w-full">
         <thead>
           <tr class="border-b border-gray-100 dark:border-white/[0.06]">
             <th class="text-left px-5 py-3 text-xs text-gray-400 uppercase">Titre</th>
@@ -122,11 +145,11 @@ onMounted(() => store.ensureLoaded())
     <Transition name="fade">
       <div v-if="showForm" class="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-black/40" @click="showForm = false" />
-        <form class="relative w-full max-w-xl bg-white dark:bg-[#111118] rounded-xl p-5 space-y-3" @submit.prevent="handleSubmit">
+        <form class="admin-modal-panel relative w-full max-w-xl bg-white dark:bg-[#111118] rounded-xl p-5 space-y-3" @submit.prevent="handleSubmit">
           <h2 class="font-semibold text-gray-900 dark:text-white">{{ editing ? 'Modifier tache' : 'Nouvelle tache' }}</h2>
           <input v-model="form.title" class="input-field" placeholder="Titre" required>
           <textarea v-model="form.description" rows="3" class="input-field" placeholder="Description" />
-          <div class="grid grid-cols-3 gap-3">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <select v-model="form.status" class="input-field">
               <option value="todo">Todo</option>
               <option value="in_progress">In progress</option>
@@ -139,7 +162,7 @@ onMounted(() => store.ensureLoaded())
             </select>
             <input v-model="form.dueDate" type="date" class="input-field">
           </div>
-          <div class="flex justify-end gap-2">
+          <div class="admin-sticky-actions sticky bottom-0 bg-white dark:bg-[#111118] pt-2 flex justify-end gap-2">
             <button type="button" class="px-3 py-2 text-sm" @click="showForm = false">Annuler</button>
             <button type="submit" class="px-4 py-2 rounded-lg bg-violet-600 text-white text-sm">Enregistrer</button>
           </div>

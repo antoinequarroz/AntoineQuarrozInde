@@ -18,6 +18,7 @@ const navItems = [
 ]
 
 const isSidebarOpen = ref(false)
+const isStandalone = ref(true)
 
 function isActive(href: string) {
   if (href === '/admin') return route.path === '/admin'
@@ -33,10 +34,16 @@ const selectedOrganizationId = computed({
   get: () => auth.currentOrganizationId || '',
   set: (value: string) => auth.setCurrentOrganization(value),
 })
+
+onMounted(() => {
+  const nav = window.navigator as Navigator & { standalone?: boolean }
+  const mediaStandalone = window.matchMedia('(display-mode: standalone)').matches
+  isStandalone.value = mediaStandalone || !!nav.standalone
+})
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 dark:bg-[#0b0b12] flex text-sm">
+  <div class="admin-shell min-h-screen bg-gray-50 dark:bg-[#0b0b12] flex text-sm">
 
     <!-- Mobile overlay -->
     <Transition name="fade">
@@ -45,7 +52,7 @@ const selectedOrganizationId = computed({
 
     <!-- Sidebar -->
     <aside
-      class="fixed top-0 left-0 h-full w-56 bg-white dark:bg-[#111118] border-r border-gray-100 dark:border-white/[0.06]
+      class="admin-sidebar fixed top-0 left-0 h-full w-56 bg-white dark:bg-[#111118] border-r border-gray-100 dark:border-white/[0.06]
              z-50 flex flex-col transition-transform duration-300 lg:translate-x-0"
       :class="isSidebarOpen ? 'translate-x-0' : '-translate-x-full'"
     >
@@ -133,7 +140,6 @@ const selectedOrganizationId = computed({
       <div class="px-2 py-3 border-t border-gray-100 dark:border-white/[0.06] space-y-0.5 flex-shrink-0">
         <NuxtLink
           to="/"
-          target="_blank"
           class="flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-medium text-gray-400 dark:text-gray-500
                  hover:bg-gray-50 dark:hover:bg-white/[0.04] hover:text-gray-700 dark:hover:text-gray-300 transition-all"
         >
@@ -158,7 +164,7 @@ const selectedOrganizationId = computed({
     <!-- Main -->
     <div class="flex-1 lg:ml-56 flex flex-col min-h-screen min-w-0">
       <!-- Topbar -->
-      <header class="sticky top-0 z-30 h-14 flex items-center gap-3 px-4 sm:px-6
+      <header class="admin-topbar sticky top-0 z-30 h-14 flex items-center gap-2 sm:gap-3 px-3 sm:px-6
                      bg-white/90 dark:bg-[#111118]/90 backdrop-blur-xl
                      border-b border-gray-100 dark:border-white/[0.06]">
         <button
@@ -172,7 +178,7 @@ const selectedOrganizationId = computed({
         </button>
 
         <!-- Breadcrumb -->
-        <nav class="flex items-center gap-1.5 text-xs text-gray-400 flex-1 min-w-0">
+        <nav class="flex items-center gap-1.5 text-xs text-gray-400 flex-1 min-w-0 overflow-hidden">
           <NuxtLink to="/admin" class="hover:text-gray-700 dark:hover:text-gray-200 transition-colors font-medium">Admin</NuxtLink>
           <span v-if="$route.path !== '/admin'" class="text-gray-300 dark:text-gray-700">/</span>
           <span v-if="$route.path !== '/admin'" class="text-gray-600 dark:text-gray-300 font-medium truncate capitalize">
@@ -183,7 +189,7 @@ const selectedOrganizationId = computed({
         <select
           v-if="auth.organizations.length > 0"
           v-model="selectedOrganizationId"
-          class="h-8 px-2.5 rounded-lg border border-gray-200 dark:border-white/[0.1] bg-white dark:bg-[#181826] text-xs text-gray-700 dark:text-gray-200"
+          class="h-8 max-w-[44vw] sm:max-w-none px-2 rounded-lg border border-gray-200 dark:border-white/[0.1] bg-white dark:bg-[#181826] text-xs text-gray-700 dark:text-gray-200"
         >
           <option
             v-for="org in auth.organizations"
@@ -198,7 +204,13 @@ const selectedOrganizationId = computed({
       </header>
 
       <!-- Content -->
-      <main class="flex-1 p-4 sm:p-6">
+      <main class="admin-main flex-1 p-4 sm:p-6">
+        <div
+          v-if="!isStandalone"
+          class="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300"
+        >
+          Mode navigateur detecte. Pour l'experience PWA complete, ouvre depuis l'icone ecran d'accueil.
+        </div>
         <slot />
       </main>
     </div>
@@ -208,4 +220,25 @@ const selectedOrganizationId = computed({
 <style scoped>
 .fade-enter-active, .fade-leave-active { transition: opacity 0.15s ease; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
+
+.admin-sidebar {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.admin-topbar {
+  padding-top: env(safe-area-inset-top);
+  min-height: calc(3.5rem + env(safe-area-inset-top));
+}
+
+.admin-main {
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+}
+
+@media (max-width: 430px) {
+  .admin-main {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+}
 </style>

@@ -4,6 +4,7 @@
 
   modules: [
     '@nuxtjs/tailwindcss',
+    '@vite-pwa/nuxt',
     '@nuxtjs/color-mode',
     '@nuxtjs/i18n',
     '@pinia/nuxt',
@@ -34,13 +35,79 @@
 
   css: ['~/assets/css/main.css'],
 
+  pwa: {
+    registerType: 'autoUpdate',
+    injectRegister: 'auto',
+    manifest: {
+      name: 'Antoine Quarroz',
+      short_name: 'AQuarroz',
+      id: '/',
+      description: 'Developpeur web & mobile freelance en Valais.',
+      theme_color: '#0a0b18',
+      background_color: '#0a0b18',
+      display: 'standalone',
+      start_url: '/',
+      scope: '/',
+      lang: 'fr',
+      icons: [
+        { src: '/favicon-48x48.png', sizes: '48x48', type: 'image/png' },
+        { src: '/favicon-96x96.png', sizes: '96x96', type: 'image/png' },
+        { src: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+      ],
+      shortcuts: [
+        {
+          name: 'Admin',
+          short_name: 'Admin',
+          url: '/admin/login',
+        },
+      ],
+    },
+    workbox: {
+      globPatterns: ['**/*.{js,css,html,png,svg,ico,woff2}'],
+      navigateFallback: '/offline',
+      navigateFallbackDenylist: [/^\/api\//, /^\/admin\//],
+      cleanupOutdatedCaches: true,
+      clientsClaim: true,
+      skipWaiting: true,
+      runtimeCaching: [
+        {
+          urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+          handler: 'StaleWhileRevalidate',
+          options: {
+            cacheName: 'google-fonts-stylesheets',
+          },
+        },
+        {
+          urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
+          handler: 'CacheFirst',
+          options: {
+            cacheName: 'google-fonts-webfonts',
+            expiration: {
+              maxEntries: 20,
+              maxAgeSeconds: 60 * 60 * 24 * 365,
+            },
+          },
+        },
+      ],
+    },
+    client: {
+      installPrompt: true,
+    },
+    devOptions: {
+      enabled: false,
+      suppressWarnings: true,
+    },
+  },
+
   app: {
     head: {
       titleTemplate: '%s',
       title: 'Antoine Quarroz â€” DÃ©veloppeur Web en Valais',
       meta: [
         { charset: 'utf-8' },
-        { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+        { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
+        { name: 'apple-mobile-web-app-capable', content: 'yes' },
+        { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' },
         {
           name: 'description',
           content: 'Antoine Quarroz, dÃ©veloppeur web & mobile freelance basÃ© en Valais (Suisse). CrÃ©ation de sites web, applications mobiles et CMS sur mesure.',

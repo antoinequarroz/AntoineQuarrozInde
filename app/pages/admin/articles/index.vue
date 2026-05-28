@@ -117,7 +117,7 @@ function renderMarkdown(md: string): string {
     <Transition name="modal">
       <div v-if="showForm" class="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
         <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="showForm = false" />
-        <div class="relative w-full max-w-4xl bg-white dark:bg-[#111118] rounded-2xl shadow-2xl border border-gray-100 dark:border-white/[0.08] my-4">
+        <div class="admin-modal-panel relative w-full max-w-4xl bg-white dark:bg-[#111118] rounded-2xl shadow-2xl border border-gray-100 dark:border-white/[0.08] my-4 overflow-y-auto">
 
           <!-- Modal header -->
           <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-white/[0.06]">
@@ -189,7 +189,7 @@ function renderMarkdown(md: string): string {
                 </button>
                 <label class="text-sm text-gray-600 dark:text-gray-300 cursor-pointer" @click="form.published = !form.published">Publié</label>
               </div>
-              <div class="flex gap-3 pt-2 border-t border-gray-100 dark:border-white/[0.06]">
+              <div class="admin-sticky-actions sticky bottom-0 bg-white dark:bg-[#111118] flex gap-3 pt-2 border-t border-gray-100 dark:border-white/[0.06]">
                 <button type="submit" class="flex-1 py-2.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold transition-colors">
                   {{ editingArticle ? 'Enregistrer' : 'Créer' }}
                 </button>
@@ -224,9 +224,48 @@ function renderMarkdown(md: string): string {
       </div>
     </Transition>
 
+    <!-- Mobile cards -->
+    <div class="sm:hidden space-y-2">
+      <div
+        v-for="article in store.articles"
+        :key="`mobile-${article.id}`"
+        class="rounded-xl border p-3 bg-white dark:bg-[#111118] border-gray-100 dark:border-white/[0.06]"
+      >
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0">
+            <img v-if="article.coverImage" :src="article.coverImage" class="w-full h-full object-cover" alt="">
+            <div v-else class="w-full h-full bg-purple-50 dark:bg-purple-500/10 flex items-center justify-center">
+              <svg class="w-4 h-4 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+              </svg>
+            </div>
+          </div>
+          <div class="min-w-0">
+            <p class="text-sm font-medium text-gray-800 dark:text-gray-200">{{ article.title }}</p>
+            <p class="text-xs text-gray-500">{{ article.readTime }} min</p>
+          </div>
+        </div>
+        <div class="mt-2 flex flex-wrap gap-1">
+          <span
+            class="text-xs font-semibold px-2 py-1 rounded-lg"
+            :class="article.published ? 'bg-green-50 text-green-600 dark:bg-green-500/10 dark:text-green-400' : 'bg-gray-50 text-gray-400 dark:bg-white/[0.04] dark:text-gray-500'"
+          >{{ article.published ? 'Publie' : 'Brouillon' }}</span>
+          <span v-for="tag in article.tags.slice(0, 2)" :key="`m-${article.id}-${tag}`" class="text-xs bg-violet-50 dark:bg-violet-500/10 text-violet-500 px-1.5 py-0.5 rounded-md">{{ tag }}</span>
+        </div>
+        <div class="mt-3 flex items-center gap-3">
+          <button class="text-xs text-violet-600" @click="openEdit(article)">Editer</button>
+          <button class="text-xs text-red-500" @click="handleDelete(article.id)">Supprimer</button>
+        </div>
+      </div>
+      <div v-if="!store.articles.length" class="py-10 text-center">
+        <p class="text-sm text-gray-400 mb-3">Aucun article pour l'instant</p>
+        <button class="text-sm font-medium text-violet-600 hover:text-violet-700 transition-colors" @click="openNew">+ Ecrire le premier</button>
+      </div>
+    </div>
+
     <!-- Table -->
-    <div class="bg-white dark:bg-[#111118] border border-gray-100 dark:border-white/[0.06] rounded-xl overflow-hidden">
-      <table class="w-full">
+    <div class="admin-table-wrap hidden sm:block bg-white dark:bg-[#111118] border border-gray-100 dark:border-white/[0.06] rounded-xl overflow-hidden">
+      <table class="admin-table w-full">
         <thead>
           <tr class="border-b border-gray-100 dark:border-white/[0.06]">
             <th class="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Article</th>

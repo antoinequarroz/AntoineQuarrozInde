@@ -145,7 +145,7 @@ onMounted(async () => {
     </div>
 
     <!-- Stats row -->
-    <div class="grid grid-cols-2 lg:grid-cols-6 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4">
       <NuxtLink
         v-for="stat in stats"
         :key="stat.label"
@@ -186,7 +186,7 @@ onMounted(async () => {
             </svg>
           </div>
         </div>
-        <div class="font-display font-bold text-3xl text-gray-900 dark:text-white leading-none mb-1.5">{{ stat.value }}</div>
+        <div class="font-display font-bold text-2xl sm:text-3xl text-gray-900 dark:text-white leading-none mb-1.5">{{ stat.value }}</div>
         <div class="text-xs text-gray-400 dark:text-gray-500">{{ stat.sub }}</div>
       </NuxtLink>
     </div>

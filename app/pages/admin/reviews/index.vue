@@ -89,7 +89,7 @@ async function handleDelete(id: number) {
     <Transition name="modal">
       <div v-if="showForm" class="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
         <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="showForm = false" />
-        <div class="relative w-full max-w-md bg-white dark:bg-[#111118] rounded-2xl shadow-2xl border border-gray-100 dark:border-white/[0.08] my-4">
+        <div class="admin-modal-panel relative w-full max-w-md bg-white dark:bg-[#111118] rounded-2xl shadow-2xl border border-gray-100 dark:border-white/[0.08] my-4 overflow-y-auto">
 
           <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-white/[0.06]">
             <h2 class="font-display font-semibold text-base text-gray-900 dark:text-white">
@@ -103,7 +103,7 @@ async function handleDelete(id: number) {
           </div>
 
           <form class="px-6 py-5 space-y-4" @submit.prevent="handleSubmit">
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Nom *</label>
                 <input v-model="form.author" type="text" class="input-field" placeholder="Marie Dupont" required>
@@ -140,7 +140,7 @@ async function handleDelete(id: number) {
               </button>
               <label class="text-sm text-gray-600 dark:text-gray-300 cursor-pointer" @click="form.visible = !form.visible">Visible sur le site</label>
             </div>
-            <div class="flex gap-3 pt-2 border-t border-gray-100 dark:border-white/[0.06]">
+            <div class="admin-sticky-actions sticky bottom-0 bg-white dark:bg-[#111118] flex gap-3 pt-2 border-t border-gray-100 dark:border-white/[0.06]">
               <button type="submit" class="flex-1 py-2.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold transition-colors">
                 {{ editingReview ? 'Enregistrer' : 'Ajouter' }}
               </button>
@@ -152,8 +152,8 @@ async function handleDelete(id: number) {
     </Transition>
 
     <!-- Table -->
-    <div class="bg-white dark:bg-[#111118] border border-gray-100 dark:border-white/[0.06] rounded-xl overflow-hidden">
-      <table class="w-full">
+    <div class="admin-table-wrap bg-white dark:bg-[#111118] border border-gray-100 dark:border-white/[0.06] rounded-xl overflow-hidden">
+      <table class="admin-table w-full">
         <thead>
           <tr class="border-b border-gray-100 dark:border-white/[0.06]">
             <th class="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Client</th>

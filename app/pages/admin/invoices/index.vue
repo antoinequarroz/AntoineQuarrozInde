@@ -107,15 +107,39 @@ onMounted(async () => {
 </script>
 <template>
   <div class="space-y-5">
-    <div class="flex flex-wrap items-center justify-between gap-3"><h1 class="font-display font-semibold text-xl">Factures</h1><div class="flex items-center gap-2"><button class="px-3 py-2 rounded-lg border border-gray-200 dark:border-white/[0.12] text-sm" @click="exportCsv">Exporter CSV</button><button class="px-3 py-2 rounded-lg border border-gray-200 dark:border-white/[0.12] text-sm" @click="printSelected">Imprimer</button><button class="px-3 py-2 rounded-lg border border-gray-200 dark:border-white/[0.12] text-sm" @click="downloadPdf">PDF</button><button class="px-4 py-2 rounded-lg bg-violet-600 text-white text-sm" @click="openNew">Nouvelle</button></div></div>
+    <div class="flex flex-wrap items-center justify-between gap-3"><h1 class="font-display font-semibold text-xl">Factures</h1><div class="admin-page-actions"><button class="px-3 py-2 rounded-lg border border-gray-200 dark:border-white/[0.12] text-sm" @click="exportCsv">Exporter CSV</button><button class="px-3 py-2 rounded-lg border border-gray-200 dark:border-white/[0.12] text-sm" @click="printSelected">Imprimer</button><button class="px-3 py-2 rounded-lg border border-gray-200 dark:border-white/[0.12] text-sm" @click="downloadPdf">PDF</button><button class="px-4 py-2 rounded-lg bg-violet-600 text-white text-sm" @click="openNew">Nouvelle</button></div></div>
     <div class="grid lg:grid-cols-[1fr_320px] gap-4">
-    <div class="bg-white dark:bg-[#111118] border border-gray-100 dark:border-white/[0.06] rounded-xl overflow-hidden">
-      <table class="w-full">
+    <div class="space-y-3">
+      <div class="sm:hidden space-y-2">
+        <button
+          v-for="q in store.invoices"
+          :key="`mobile-${q.id}`"
+          class="w-full rounded-xl border p-3 text-left bg-white dark:bg-[#111118] border-gray-100 dark:border-white/[0.06]"
+          :class="selectedId === q.id ? 'ring-1 ring-violet-500/60' : ''"
+          @click="selectedId = q.id"
+        >
+          <div class="flex items-start justify-between gap-2">
+            <p class="text-sm font-semibold">{{ q.number }}</p>
+            <span class="text-[11px] uppercase text-gray-400">{{ q.status }}</span>
+          </div>
+          <p class="mt-1 text-xs text-gray-500">{{ q.clientId ? clientsById.get(q.clientId)?.name || '-' : '-' }}</p>
+          <p class="mt-1 text-xs text-gray-500">Echeance: {{ q.dueAt || '-' }}</p>
+          <p class="mt-2 text-sm font-medium">{{ formatAmount(q.amountCents, q.currency) }}</p>
+          <div class="mt-3 flex items-center gap-3">
+            <button class="text-xs text-violet-600" @click.stop="openEdit(q)">Editer</button>
+            <button class="text-xs text-red-500" @click.stop="del(q.id)">Supprimer</button>
+          </div>
+        </button>
+      </div>
+
+    <div class="admin-table-wrap hidden sm:block bg-white dark:bg-[#111118] border border-gray-100 dark:border-white/[0.06] rounded-xl overflow-hidden">
+      <table class="admin-table w-full">
         <thead><tr class="border-b border-gray-100 dark:border-white/[0.06]"><th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Numero</th><th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Client</th><th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Devis</th><th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Montant</th><th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Echeance</th><th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Statut</th><th class="text-right px-4 py-3 text-xs uppercase text-gray-400">Actions</th></tr></thead>
         <tbody><tr v-for="q in store.invoices" :key="q.id" class="border-b border-gray-50 dark:border-white/[0.03] cursor-pointer" :class="selectedId === q.id ? 'bg-violet-50/60 dark:bg-violet-500/10' : ''" @click="selectedId = q.id"><td class="px-4 py-3 text-sm">{{ q.number }}</td><td class="px-4 py-3 text-sm">{{ q.clientId ? clientsById.get(q.clientId)?.name || '-' : '-' }}</td><td class="px-4 py-3 text-sm">{{ q.quoteId ? quotesById.get(q.quoteId)?.number || '-' : '-' }}</td><td class="px-4 py-3 text-sm">{{ formatAmount(q.amountCents, q.currency) }}</td><td class="px-4 py-3 text-sm">{{ q.dueAt || '-' }}</td><td class="px-4 py-3 text-sm">{{ q.status }}</td><td class="px-4 py-3 text-right space-x-2"><button class="text-xs text-violet-600" @click.stop="openEdit(q)">Editer</button><button class="text-xs text-red-500" @click.stop="del(q.id)">Supprimer</button></td></tr></tbody>
       </table>
     </div>
-    <div class="bg-white dark:bg-[#111118] border border-gray-100 dark:border-white/[0.06] rounded-xl p-4">
+    </div>
+    <div class="hidden lg:block bg-white dark:bg-[#111118] border border-gray-100 dark:border-white/[0.06] rounded-xl p-4 lg:sticky lg:top-20">
       <template v-if="selectedInvoice">
         <p class="text-xs uppercase text-gray-400">Apercu</p>
         <h2 class="text-lg font-semibold mt-1">{{ selectedInvoice.number }}</h2>
@@ -135,6 +159,60 @@ onMounted(async () => {
       <p v-else class="text-sm text-gray-400">Selectionne une facture.</p>
     </div>
     </div>
-    <Transition name="fade"><div v-if="showForm" class="fixed inset-0 z-50 flex items-center justify-center p-4"><div class="absolute inset-0 bg-black/40" @click="showForm=false"/><form class="relative w-full max-w-xl bg-white dark:bg-[#111118] rounded-xl p-5 space-y-3" @submit.prevent="submit"><input v-model="form.number" class="input-field" placeholder="Numero" required><select v-model.number="form.clientId" class="input-field" :disabled="!!form.quoteId"><option :value="null">Aucun client</option><option v-for="c in clients.clients" :key="c.id" :value="c.id">{{ c.name }}</option></select><select v-model.number="form.quoteId" class="input-field"><option :value="null">Aucun devis</option><option v-for="q in filteredQuotes" :key="q.id" :value="q.id">{{ q.number }} - {{ q.title }}</option></select><input v-model="form.currency" class="input-field" placeholder="Devise"><div class="space-y-2 border border-gray-200 dark:border-white/[0.08] rounded-lg p-3"><div class="flex items-center justify-between"><p class="text-xs font-semibold uppercase text-gray-400">Lignes</p><button type="button" class="text-xs text-violet-600" @click="addItem">Ajouter</button></div><div v-for="(item, idx) in formItems" :key="idx" class="grid grid-cols-12 gap-2 items-center"><input v-model="item.label" class="input-field col-span-4" placeholder="Libelle"><input v-model.number="item.quantity" type="number" step="0.1" min="0" class="input-field col-span-2" placeholder="Qt"><input v-model.number="item.unitPriceCents" type="number" min="0" class="input-field col-span-3" placeholder="Prix (cts)"><input v-model.number="item.taxRate" type="number" step="0.1" min="0" class="input-field col-span-2" placeholder="TVA %"><button type="button" class="text-xs text-red-500 col-span-1" @click="removeItem(idx)">x</button><input v-model="item.description" class="input-field col-span-12" placeholder="Description (optionnel)"></div><div class="pt-2 text-xs text-gray-500 space-y-1"><p>Sous-total: {{ formatAmount(draftTotals.subtotalCents, form.currency) }}</p><p>TVA: {{ formatAmount(draftTotals.taxCents, form.currency) }}</p><p class="font-semibold">Total: {{ formatAmount(draftTotals.totalCents, form.currency) }}</p></div></div><div class="grid grid-cols-3 gap-3"><input v-model="form.issuedAt" type="date" class="input-field"><input v-model="form.dueAt" type="date" class="input-field"><input v-model="form.paidAt" type="date" class="input-field"></div><select v-model="form.status" class="input-field"><option value="draft">draft</option><option value="sent">sent</option><option value="paid">paid</option><option value="overdue">overdue</option><option value="cancelled">cancelled</option></select><textarea v-model="form.notes" rows="3" class="input-field" placeholder="Notes"/><div class="flex justify-end gap-2"><button type="button" class="px-3 py-2 text-sm" @click="showForm=false">Annuler</button><button class="px-4 py-2 rounded-lg bg-violet-600 text-white text-sm">Enregistrer</button></div></form></div></Transition>
+    <Transition name="fade">
+      <div v-if="showForm" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
+        <div class="absolute inset-0 bg-black/40" @click="showForm=false" />
+        <form class="admin-modal-panel relative w-full max-w-4xl max-h-[92vh] overflow-y-auto bg-white dark:bg-[#111118] rounded-xl p-4 sm:p-5 space-y-3" @submit.prevent="submit">
+          <input v-model="form.number" class="input-field" placeholder="Numero" required>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <select v-model.number="form.clientId" class="input-field" :disabled="!!form.quoteId">
+              <option :value="null">Aucun client</option>
+              <option v-for="c in clients.clients" :key="c.id" :value="c.id">{{ c.name }}</option>
+            </select>
+            <select v-model.number="form.quoteId" class="input-field">
+              <option :value="null">Aucun devis</option>
+              <option v-for="q in filteredQuotes" :key="q.id" :value="q.id">{{ q.number }} - {{ q.title }}</option>
+            </select>
+          </div>
+          <input v-model="form.currency" class="input-field" placeholder="Devise">
+          <div class="space-y-2 border border-gray-200 dark:border-white/[0.08] rounded-lg p-3">
+            <div class="flex items-center justify-between">
+              <p class="text-xs font-semibold uppercase text-gray-400">Lignes</p>
+              <button type="button" class="text-xs text-violet-600" @click="addItem">Ajouter</button>
+            </div>
+            <div v-for="(item, idx) in formItems" :key="idx" class="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
+              <input v-model="item.label" class="input-field sm:col-span-4" placeholder="Libelle">
+              <input v-model.number="item.quantity" type="number" step="0.1" min="0" class="input-field sm:col-span-2" placeholder="Qt">
+              <input v-model.number="item.unitPriceCents" type="number" min="0" class="input-field sm:col-span-3" placeholder="Prix (cts)">
+              <input v-model.number="item.taxRate" type="number" step="0.1" min="0" class="input-field sm:col-span-2" placeholder="TVA %">
+              <button type="button" class="text-xs text-red-500 sm:col-span-1 h-10" @click="removeItem(idx)">x</button>
+              <input v-model="item.description" class="input-field sm:col-span-12" placeholder="Description (optionnel)">
+            </div>
+            <div class="pt-2 text-xs text-gray-500 space-y-1">
+              <p>Sous-total: {{ formatAmount(draftTotals.subtotalCents, form.currency) }}</p>
+              <p>TVA: {{ formatAmount(draftTotals.taxCents, form.currency) }}</p>
+              <p class="font-semibold">Total: {{ formatAmount(draftTotals.totalCents, form.currency) }}</p>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <input v-model="form.issuedAt" type="date" class="input-field">
+            <input v-model="form.dueAt" type="date" class="input-field">
+            <input v-model="form.paidAt" type="date" class="input-field">
+          </div>
+          <select v-model="form.status" class="input-field">
+            <option value="draft">draft</option>
+            <option value="sent">sent</option>
+            <option value="paid">paid</option>
+            <option value="overdue">overdue</option>
+            <option value="cancelled">cancelled</option>
+          </select>
+          <textarea v-model="form.notes" rows="3" class="input-field" placeholder="Notes" />
+          <div class="admin-sticky-actions sticky bottom-0 bg-white dark:bg-[#111118] pt-2 flex justify-end gap-2">
+            <button type="button" class="px-3 py-2 text-sm" @click="showForm=false">Annuler</button>
+            <button class="px-4 py-2 rounded-lg bg-violet-600 text-white text-sm">Enregistrer</button>
+          </div>
+        </form>
+      </div>
+    </Transition>
   </div>
 </template>
