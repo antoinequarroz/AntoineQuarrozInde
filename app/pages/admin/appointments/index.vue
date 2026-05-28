@@ -11,6 +11,8 @@ const isOffline = ref(false)
 let onlineStateHandler: (() => void) | null = null
 const showForm = ref(false)
 const editing = ref<Appointment | null>(null)
+const selectedDate = ref<string | null>(null)
+const currentMonth = ref(new Date())
 const form = reactive({
   title: '',
   clientId: null as number | null,
@@ -22,6 +24,90 @@ const form = reactive({
   status: 'scheduled' as Appointment['status'],
 })
 const clientsById = computed(() => new Map(clients.clients.map(c => [c.id, c])))
+const weekdayLabels = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
+
+const monthLabel = computed(() => currentMonth.value.toLocaleDateString('fr-CH', { month: 'long', year: 'numeric' }))
+const monthMatrix = computed(() => {
+  const first = new Date(currentMonth.value.getFullYear(), currentMonth.value.getMonth(), 1)
+  const last = new Date(currentMonth.value.getFullYear(), currentMonth.value.getMonth() + 1, 0)
+  const startOffset = (first.getDay() + 6) % 7
+  const daysInMonth = last.getDate()
+  const cells: Array<{ key: string, date: string | null, day: number | null }> = []
+  for (let i = 0; i < startOffset; i++) cells.push({ key: `pad-start-${i}`, date: null, day: null })
+  for (let day = 1; day <= daysInMonth; day++) {
+    const d = new Date(currentMonth.value.getFullYear(), currentMonth.value.getMonth(), day)
+    const iso = d.toISOString().slice(0, 10)
+    cells.push({ key: iso, date: iso, day })
+  }
+  while (cells.length % 7 !== 0) cells.push({ key: `pad-end-${cells.length}`, date: null, day: null })
+  return cells
+})
+const eventsByDate = computed(() => {
+  const map = new Map<string, Appointment[]>()
+  for (const item of store.appointments) {
+    const iso = new Date(item.startsAt).toISOString().slice(0, 10)
+    const list = map.get(iso) || []
+    list.push(item)
+    map.set(iso, list)
+  }
+  return map
+})
+const visibleAppointments = computed(() => {
+  if (!selectedDate.value) return store.appointments
+  return store.appointments.filter((item) => new Date(item.startsAt).toISOString().slice(0, 10) === selectedDate.value)
+})
+
+function formatDateTime(value: string) {
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return value
+  return d.toLocaleString('fr-CH', { dateStyle: 'short', timeStyle: 'short' })
+}
+
+function previousMonth() {
+  currentMonth.value = new Date(currentMonth.value.getFullYear(), currentMonth.value.getMonth() - 1, 1)
+}
+
+function nextMonth() {
+  currentMonth.value = new Date(currentMonth.value.getFullYear(), currentMonth.value.getMonth() + 1, 1)
+}
+
+function toIcsDate(value: string) {
+  const d = new Date(value)
+  return d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z')
+}
+
+function escapeIcs(value: string) {
+  return value.replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/,/g, '\\,').replace(/;/g, '\\;')
+}
+
+function downloadIcs(item: Appointment) {
+  const uid = `appt-${item.id}@antoinequarroz.ch`
+  const now = toIcsDate(new Date().toISOString())
+  const lines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Antoine Quarroz//Agenda//FR',
+    'CALSCALE:GREGORIAN',
+    'BEGIN:VEVENT',
+    `UID:${uid}`,
+    `DTSTAMP:${now}`,
+    `DTSTART:${toIcsDate(item.startsAt)}`,
+    `DTEND:${toIcsDate(item.endsAt)}`,
+    `SUMMARY:${escapeIcs(item.title)}`,
+    item.description ? `DESCRIPTION:${escapeIcs(item.description)}` : '',
+    item.location ? `LOCATION:${escapeIcs(item.location)}` : '',
+    item.meetingUrl ? `URL:${escapeIcs(item.meetingUrl)}` : '',
+    'END:VEVENT',
+    'END:VCALENDAR',
+  ].filter(Boolean)
+  const blob = new Blob([lines.join('\r\n')], { type: 'text/calendar;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `rdv-${item.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') || item.id}.ics`
+  a.click()
+  URL.revokeObjectURL(url)
+}
 
 function openNew() {
   editing.value = null
@@ -108,6 +194,37 @@ onBeforeUnmount(() => {
       <button class="px-4 py-2 rounded-lg bg-violet-600 text-white text-sm" @click="openNew">Nouveau RDV</button>
     </div>
 
+    <div class="rounded-xl border border-gray-100 dark:border-white/[0.06] bg-white dark:bg-[#111118] p-3 sm:p-4">
+      <div class="flex items-center justify-between gap-2">
+        <button class="px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-white/[0.12] text-xs" @click="previousMonth">←</button>
+        <p class="text-sm font-semibold capitalize">{{ monthLabel }}</p>
+        <button class="px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-white/[0.12] text-xs" @click="nextMonth">→</button>
+      </div>
+      <div class="mt-3 grid grid-cols-7 gap-1 text-center">
+        <p v-for="day in weekdayLabels" :key="day" class="text-[11px] text-gray-400">{{ day }}</p>
+        <button
+          v-for="cell in monthMatrix"
+          :key="cell.key"
+          class="h-10 rounded-lg text-xs relative"
+          :class="[
+            !cell.date ? 'opacity-0 pointer-events-none' : 'hover:bg-gray-100 dark:hover:bg-white/[0.06]',
+            selectedDate === cell.date ? 'bg-violet-600 text-white hover:bg-violet-600' : 'text-gray-700 dark:text-gray-200',
+          ]"
+          @click="selectedDate = cell.date"
+        >
+          {{ cell.day }}
+          <span v-if="cell.date && eventsByDate.get(cell.date)?.length" class="absolute bottom-1 left-1/2 -translate-x-1/2 h-1.5 w-1.5 rounded-full bg-violet-500" :class="selectedDate === cell.date ? 'bg-white' : 'bg-violet-500'" />
+        </button>
+      </div>
+      <div class="mt-3 flex items-center justify-between">
+        <p class="text-xs text-gray-500">
+          <span v-if="selectedDate">Filtre: {{ selectedDate }}</span>
+          <span v-else>Tous les rendez-vous</span>
+        </p>
+        <button v-if="selectedDate" class="text-xs text-violet-600" @click="selectedDate = null">Réinitialiser</button>
+      </div>
+    </div>
+
     <div class="admin-table-wrap bg-white dark:bg-[#111118] border border-gray-100 dark:border-white/[0.06] rounded-xl overflow-hidden overflow-x-auto">
       <table class="admin-table w-full">
         <thead>
@@ -121,13 +238,14 @@ onBeforeUnmount(() => {
           </tr>
         </thead>
         <tbody>
-          <tr v-for="item in store.appointments" :key="item.id" class="border-b border-gray-50 dark:border-white/[0.03]">
+          <tr v-for="item in visibleAppointments" :key="item.id" class="border-b border-gray-50 dark:border-white/[0.03]">
             <td class="px-4 py-3 text-sm">{{ item.title }}</td>
             <td class="px-4 py-3 text-sm">{{ item.clientId ? clientsById.get(item.clientId)?.name || '-' : '-' }}</td>
-            <td class="px-4 py-3 text-sm">{{ item.startsAt }}</td>
-            <td class="px-4 py-3 text-sm">{{ item.endsAt }}</td>
+            <td class="px-4 py-3 text-sm">{{ formatDateTime(item.startsAt) }}</td>
+            <td class="px-4 py-3 text-sm">{{ formatDateTime(item.endsAt) }}</td>
             <td class="px-4 py-3 text-sm">{{ item.status }}</td>
             <td class="px-4 py-3 text-right space-x-2">
+              <button class="text-xs text-sky-600" @click="downloadIcs(item)">ICS</button>
               <button class="text-xs text-violet-600" @click="openEdit(item)">Editer</button>
               <button class="text-xs text-red-500" @click="del(item.id)">Supprimer</button>
             </td>
