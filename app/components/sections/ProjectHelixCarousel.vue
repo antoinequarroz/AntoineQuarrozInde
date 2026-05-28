@@ -28,9 +28,11 @@ const displayProjects = computed(() => {
   return props.projects
 })
 
-const desktopTrackStyle = computed(() => ({
-  height: `${Math.max(380, sourceTotal.value * 105)}vh`,
-}))
+const desktopTrackStyle = computed(() => {
+  const steps = Math.max(1, sourceTotal.value - 1)
+  const trackVh = Math.min(320, Math.max(210, 130 + steps * 62))
+  return { height: `${trackVh}vh` }
+})
 
 const progress = computed(() => {
   const vh = Math.max(1, viewportH.value)
