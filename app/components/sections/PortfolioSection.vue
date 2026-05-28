@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const { t } = useI18n()
 const store = useProjectsStore()
+const { track } = useMarketing()
 
 type PortfolioFilter = 'all' | 'web' | 'mobile' | 'cms'
 
@@ -25,6 +26,10 @@ const filtered = computed(() => {
     if (a.featured !== b.featured) return Number(b.featured) - Number(a.featured)
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   })
+})
+
+watch(activeFilter, (value) => {
+  track('portfolio_filter_change', { filter: value })
 })
 </script>
 
@@ -77,6 +82,22 @@ const filtered = computed(() => {
             {{ filter.count }}
           </span>
         </button>
+      </div>
+      <div class="relative z-30 mb-3 flex flex-wrap justify-center gap-2">
+        <a
+          href="/#contact"
+          class="rounded-lg bg-violet-600 text-white px-3.5 py-2 text-xs font-semibold"
+          @click="track('portfolio_contact_cta_click')"
+        >
+          Demander un projet similaire
+        </a>
+        <NuxtLink
+          to="/cas-clients-valais"
+          class="rounded-lg border border-violet-500/20 text-violet-700 dark:text-violet-200 px-3.5 py-2 text-xs font-semibold"
+          @click="track('portfolio_case_page_click')"
+        >
+          Voir plus de cas clients
+        </NuxtLink>
       </div>
       </div>
 

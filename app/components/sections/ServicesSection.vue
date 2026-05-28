@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const { t, locale } = useI18n()
 const isMobile = useMediaQuery('(max-width: 767px)')
+const { track } = useMarketing()
 
 type ServiceKey = 'vitrine' | 'mobile' | 'cms'
 
@@ -43,6 +44,12 @@ const offerMeta = computed(() => {
   return { left: 'Starter', center: 'Le plus demandé', right: 'Scale', cta: 'Démarrer le projet' }
 })
 
+const localZones = computed(() => {
+  if (locale.value === 'en') return 'Valais, Sion, Sierre, Martigny, Val d’Herens, Val d’Anniviers'
+  if (locale.value === 'de') return 'Wallis, Sitten, Siders, Martigny, Val d’Herens, Val d’Anniviers'
+  return 'Valais, Sion, Sierre, Martigny, Val d’Herens, Val d’Anniviers'
+})
+
 </script>
 
 <template>
@@ -64,6 +71,17 @@ const offerMeta = computed(() => {
           <span class="block section-heading-gradient">{{ t('services.title').split('\n')[1] }}</span>
         </h2>
         <p class="section-subtitle mx-auto text-center">{{ t('services.subtitle') }}</p>
+        <p class="mt-3 text-xs text-gray-500 dark:text-white/55 text-center">
+          Zones: {{ localZones }}
+        </p>
+        <div class="mt-3 flex flex-wrap justify-center gap-2">
+          <NuxtLink to="/creation-site-internet-valais" class="rounded-lg border border-violet-500/20 px-3 py-1.5 text-xs text-violet-700 dark:text-violet-200">
+            Sites web en Valais
+          </NuxtLink>
+          <NuxtLink to="/application-mobile-valais" class="rounded-lg border border-violet-500/20 px-3 py-1.5 text-xs text-violet-700 dark:text-violet-200">
+            Apps mobiles en Valais
+          </NuxtLink>
+        </div>
       </div>
 
       <div class="relative max-w-6xl mx-auto">
@@ -139,6 +157,7 @@ const offerMeta = computed(() => {
                 :class="index === 1
                   ? 'bg-violet-600 text-white hover:bg-violet-500'
                   : 'border border-violet-500/25 text-violet-700 hover:bg-violet-500/10 dark:border-violet-300/30 dark:text-violet-200 dark:hover:bg-violet-500/15'"
+                @click="track('services_cta_click', { service: service.key })"
               >
                 {{ offerMeta.cta }}
                 <svg class="w-4 h-4 transition-transform group-hover/link:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">

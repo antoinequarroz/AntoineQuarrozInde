@@ -8,6 +8,8 @@ const turnstileSiteKey = runtimeConfig.public.turnstileSiteKey as string
   name: '',
   email: '',
   subject: '',
+  budget: '',
+  timeline: '',
   message: '',
   website: '',
   startedAt: Date.now(),
@@ -71,8 +73,8 @@ async function handleSubmit() {
       body: {
         name: form.name,
         email: form.email,
-        subject: form.subject,
-        message: form.message,
+        subject: form.subject?.trim() || 'Nouveau projet',
+        message: `${form.message}\n\n---\nBudget: ${form.budget || '-'}\nDelai: ${form.timeline || '-'}`,
         website: form.website,
         startedAt: form.startedAt,
         turnstileToken: turnstileToken.value,
@@ -83,6 +85,8 @@ async function handleSubmit() {
     form.name = ''
     form.email = ''
     form.subject = ''
+    form.budget = ''
+    form.timeline = ''
     form.message = ''
     form.website = ''
     form.startedAt = Date.now()
@@ -203,16 +207,42 @@ const contactInfo = computed(() => [
               </div>
             </div>
 
-            <div>
-              <label class="block text-[11px] font-semibold text-gray-500 dark:text-white/50 uppercase tracking-wider mb-1.5">
-                {{ t('contact.form.subject') }}
-              </label>
+              <div>
+                <label class="block text-[11px] font-semibold text-gray-500 dark:text-white/50 uppercase tracking-wider mb-1.5">
+                  {{ t('contact.form.subject') }}
+                </label>
                 <input
                   v-model="form.subject"
                   type="text"
                   class="input-field"
                   :placeholder="t('contact.form.subject')"
                 >
+            </div>
+            <div class="grid sm:grid-cols-2 gap-4 md:gap-5">
+              <div>
+                <label class="block text-[11px] font-semibold text-gray-500 dark:text-white/50 uppercase tracking-wider mb-1.5">
+                  Budget
+                </label>
+                <select v-model="form.budget" class="input-field">
+                  <option value="">Sélectionner</option>
+                  <option value="<2k">Moins de 2k</option>
+                  <option value="2k-5k">2k - 5k</option>
+                  <option value="5k-10k">5k - 10k</option>
+                  <option value="10k+">10k+</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-gray-500 dark:text-white/50 uppercase tracking-wider mb-1.5">
+                  Délai cible
+                </label>
+                <select v-model="form.timeline" class="input-field">
+                  <option value="">Sélectionner</option>
+                  <option value="urgent">Urgent (&lt; 2 semaines)</option>
+                  <option value="1mois">1 mois</option>
+                  <option value="2-3mois">2 à 3 mois</option>
+                  <option value="flexible">Flexible</option>
+                </select>
+              </div>
             </div>
 
             <div>
@@ -262,6 +292,10 @@ const contactInfo = computed(() => [
               </svg>
               {{ status === 'sending' ? t('contact.form.sending') : t('contact.form.send') }}
             </button>
+            <p class="text-[11px] text-gray-500 dark:text-white/50 text-center">
+              Réponse rapide sur
+              <a :href="`mailto:${EMAIL}`" class="text-violet-600 dark:text-violet-300 underline" @click="track('contact_email_click')">{{ EMAIL }}</a>
+            </p>
           </form>
         </div>
       </div>
