@@ -76,7 +76,8 @@ create table if not exists public.contact_messages (
   email text not null,
   subject text,
   message text not null,
-  status text not null default 'new' check (status in ('new', 'replied')),
+  status text not null default 'new' check (status in ('new', 'in_progress', 'replied', 'archived')),
+  tags text[] not null default '{}',
   replied_at timestamptz,
   created_at timestamptz not null default now()
 );
@@ -170,6 +171,8 @@ create index if not exists idx_articles_organization_id on public.articles(organ
 create index if not exists idx_reviews_organization_id on public.reviews(organization_id);
 create index if not exists idx_marketing_events_organization_id on public.marketing_events(organization_id);
 create index if not exists idx_contact_messages_organization_id on public.contact_messages(organization_id);
+create index if not exists idx_contact_messages_status on public.contact_messages(status);
+create index if not exists idx_contact_messages_tags_gin on public.contact_messages using gin(tags);
 create index if not exists idx_org_memberships_user_id on public.organization_memberships(user_id);
 create index if not exists idx_org_memberships_org_id on public.organization_memberships(organization_id);
 create index if not exists idx_clients_organization_id on public.clients(organization_id);

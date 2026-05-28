@@ -4,7 +4,7 @@ export default defineEventHandler(async (event) => {
   const supabase = getSupabaseAdmin()
   const { data, error } = await supabase
     .from('contact_messages')
-    .select('id,name,email,subject,message,status,replied_at,created_at')
+    .select('id,name,email,subject,message,status,tags,replied_at,created_at')
     .eq('organization_id', org.id)
     .order('created_at', { ascending: false })
 
@@ -19,6 +19,7 @@ export default defineEventHandler(async (event) => {
     subject: item.subject,
     message: item.message,
     status: item.status,
+    tags: item.tags || [],
     repliedAt: item.replied_at,
     createdAt: item.created_at,
   }))

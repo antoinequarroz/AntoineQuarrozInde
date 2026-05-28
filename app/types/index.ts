@@ -25,7 +25,8 @@ export interface ContactMessage {
   email: string
   subject: string | null
   message: string
-  status: 'new' | 'replied'
+  status: 'new' | 'in_progress' | 'replied' | 'archived'
+  tags: string[]
   repliedAt: string | null
   createdAt: string
 }
