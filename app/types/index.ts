@@ -30,6 +30,29 @@ export interface ContactMessage {
   createdAt: string
 }
 
+export interface Client {
+  id: number
+  name: string
+  company: string | null
+  email: string
+  phone: string | null
+  status: 'lead' | 'active' | 'inactive'
+  notes: string | null
+  createdAt: string
+}
+
+export interface Task {
+  id: number
+  title: string
+  description: string | null
+  status: 'todo' | 'in_progress' | 'done'
+  priority: 'low' | 'medium' | 'high'
+  dueDate: string | null
+  clientId: number | null
+  projectId: number | null
+  createdAt: string
+}
+
 export type ServiceKey = 'vitrine' | 'mobile' | 'cms'
 
 export type Locale = 'fr' | 'en' | 'de'

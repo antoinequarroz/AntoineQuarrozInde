@@ -92,6 +92,31 @@ create table if not exists public.audit_logs (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.clients (
+  id bigint generated always as identity primary key,
+  organization_id uuid not null references public.organizations(id) on delete cascade,
+  name text not null,
+  company text,
+  email text not null,
+  phone text,
+  status text not null default 'lead' check (status in ('lead', 'active', 'inactive')),
+  notes text,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.tasks (
+  id bigint generated always as identity primary key,
+  organization_id uuid not null references public.organizations(id) on delete cascade,
+  client_id bigint references public.clients(id) on delete set null,
+  project_id bigint references public.projects(id) on delete set null,
+  title text not null,
+  description text,
+  status text not null default 'todo' check (status in ('todo', 'in_progress', 'done')),
+  priority text not null default 'medium' check (priority in ('low', 'medium', 'high')),
+  due_date date,
+  created_at timestamptz not null default now()
+);
+
 create index if not exists idx_projects_organization_id on public.projects(organization_id);
 create index if not exists idx_articles_organization_id on public.articles(organization_id);
 create index if not exists idx_reviews_organization_id on public.reviews(organization_id);
@@ -99,6 +124,10 @@ create index if not exists idx_marketing_events_organization_id on public.market
 create index if not exists idx_contact_messages_organization_id on public.contact_messages(organization_id);
 create index if not exists idx_org_memberships_user_id on public.organization_memberships(user_id);
 create index if not exists idx_org_memberships_org_id on public.organization_memberships(organization_id);
+create index if not exists idx_clients_organization_id on public.clients(organization_id);
+create index if not exists idx_tasks_organization_id on public.tasks(organization_id);
+create index if not exists idx_tasks_client_id on public.tasks(client_id);
+create index if not exists idx_tasks_project_id on public.tasks(project_id);
 
 alter table public.projects enable row level security;
 alter table public.articles enable row level security;
@@ -108,3 +137,5 @@ alter table public.contact_messages enable row level security;
 alter table public.organizations enable row level security;
 alter table public.organization_memberships enable row level security;
 alter table public.audit_logs enable row level security;
+alter table public.clients enable row level security;
+alter table public.tasks enable row level security;

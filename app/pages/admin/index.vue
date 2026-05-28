@@ -4,8 +4,28 @@ definePageMeta({ layout: 'admin', middleware: 'admin' })
 const projects = useProjectsStore()
 const articles = useArticlesStore()
 const reviews = useReviewsStore()
+const clients = useClientsStore()
+const tasks = useTasksStore()
 
 const stats = computed(() => [
+  {
+    label: 'Clients',
+    value: clients.clients.length,
+    sub: `${clients.active.length} actifs`,
+    icon: 'users',
+    href: '/admin/clients',
+    iconColor: 'text-emerald-400',
+    iconBg: 'bg-emerald-500/10',
+  },
+  {
+    label: 'Taches',
+    value: tasks.tasks.length,
+    sub: `${tasks.done.length} terminees`,
+    icon: 'check-square',
+    href: '/admin/tasks',
+    iconColor: 'text-cyan-400',
+    iconBg: 'bg-cyan-500/10',
+  },
   {
     label: 'Projets',
     value: projects.projects.length,
@@ -46,6 +66,16 @@ const stats = computed(() => [
 
 const recentProjects = computed(() => projects.projects.slice(0, 5))
 const recentArticles = computed(() => articles.articles.slice(0, 5))
+
+onMounted(async () => {
+  await Promise.all([
+    projects.ensureLoaded(),
+    articles.ensureLoaded(),
+    reviews.ensureLoaded(),
+    clients.ensureLoaded(),
+    tasks.ensureLoaded(),
+  ])
+})
 </script>
 
 <template>
@@ -82,7 +112,7 @@ const recentArticles = computed(() => articles.articles.slice(0, 5))
     </div>
 
     <!-- Stats row -->
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="grid grid-cols-2 lg:grid-cols-6 gap-4">
       <NuxtLink
         v-for="stat in stats"
         :key="stat.label"
@@ -105,6 +135,12 @@ const recentArticles = computed(() => articles.articles.slice(0, 5))
             </svg>
             <svg v-else-if="stat.icon === 'trending-up'" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
               <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>
+            </svg>
+            <svg v-else-if="stat.icon === 'users'" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+            <svg v-else-if="stat.icon === 'check-square'" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+              <polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
             </svg>
           </div>
         </div>
