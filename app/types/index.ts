@@ -65,6 +65,10 @@ export interface Quote {
   issuedAt: string | null
   validUntil: string | null
   notes: string | null
+  subtotalCents?: number
+  taxCents?: number
+  totalCents?: number
+  items?: QuoteItem[]
   createdAt: string
 }
 
@@ -80,7 +84,31 @@ export interface Invoice {
   dueAt: string | null
   paidAt: string | null
   notes: string | null
+  subtotalCents?: number
+  taxCents?: number
+  totalCents?: number
+  items?: InvoiceItem[]
   createdAt: string
+}
+
+export interface QuoteItem {
+  id?: number
+  label: string
+  description: string | null
+  quantity: number
+  unitPriceCents: number
+  taxRate: number
+  totalCents?: number
+}
+
+export interface InvoiceItem {
+  id?: number
+  label: string
+  description: string | null
+  quantity: number
+  unitPriceCents: number
+  taxRate: number
+  totalCents?: number
 }
 
 export interface Appointment {

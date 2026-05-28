@@ -18,6 +18,7 @@
     "@vueuse/motion": "^2.2.6",
     "@vueuse/nuxt": "^12.7.0",
     "nuxt": "^4.4.6",
+    "pdf-lib": "^1.17.1",
     "pinia": "^3.0.1",
     "resend": "^6.12.3",
     "three": "^0.177.0",

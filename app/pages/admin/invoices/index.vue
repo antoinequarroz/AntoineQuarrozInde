@@ -9,6 +9,7 @@ const toast = useToast()
 const showForm = ref(false)
 const editing = ref<Invoice | null>(null)
 const form = reactive({ number: '', clientId: null as number | null, quoteId: null as number | null, amountCents: 0, currency: 'CHF', status: 'draft' as Invoice['status'], issuedAt: '', dueAt: '', paidAt: '', notes: '' })
+const formItems = ref<Array<{ label: string, description: string | null, quantity: number, unitPriceCents: number, taxRate: number }>>([{ label: 'Prestation', description: null, quantity: 1, unitPriceCents: 0, taxRate: 8.1 }])
 const clientsById = computed(() => new Map(clients.clients.map(c => [c.id, c])))
 const quotesById = computed(() => new Map(quotes.quotes.map(q => [q.id, q])))
 const filteredQuotes = computed(() => {
@@ -32,9 +33,13 @@ watch(() => form.quoteId, () => {
   form.amountCents = selectedQuote.value.amountCents
   form.currency = selectedQuote.value.currency
 })
-function openNew() { editing.value = null; Object.assign(form, { number: '', clientId: null, quoteId: null, amountCents: 0, currency: 'CHF', status: 'draft', issuedAt: '', dueAt: '', paidAt: '', notes: '' }); showForm.value = true }
-function openEdit(x: Invoice) { editing.value = x; Object.assign(form, x); showForm.value = true }
-async function submit() { try { const payload = { ...form, issuedAt: form.issuedAt || null, dueAt: form.dueAt || null, paidAt: form.paidAt || null, notes: form.notes || null }; if (editing.value) await store.update(editing.value.id, payload as any); else await store.add(payload as any); showForm.value = false; toast.success('Enregistre') } catch { toast.error('Erreur') } }
+function openNew() { editing.value = null; Object.assign(form, { number: '', clientId: null, quoteId: null, amountCents: 0, currency: 'CHF', status: 'draft', issuedAt: '', dueAt: '', paidAt: '', notes: '' }); formItems.value = [{ label: 'Prestation', description: null, quantity: 1, unitPriceCents: 0, taxRate: 8.1 }]; showForm.value = true }
+function openEdit(x: Invoice) { editing.value = x; Object.assign(form, x); formItems.value = (x.items?.length ? x.items.map(i => ({ label: i.label, description: i.description, quantity: i.quantity, unitPriceCents: i.unitPriceCents, taxRate: i.taxRate })) : [{ label: 'Prestation', description: null, quantity: 1, unitPriceCents: 0, taxRate: 8.1 }]); showForm.value = true }
+function computeFormTotals(items: Array<{ quantity: number, unitPriceCents: number, taxRate: number }>) { const subtotalCents = items.reduce((acc, item) => acc + Math.round((Number(item.quantity) || 0) * (Number(item.unitPriceCents) || 0)), 0); const totalCents = items.reduce((acc, item) => { const line = Math.round((Number(item.quantity) || 0) * (Number(item.unitPriceCents) || 0)); return acc + Math.round(line * (1 + (Number(item.taxRate) || 0) / 100)) }, 0); return { subtotalCents, taxCents: Math.max(0, totalCents - subtotalCents), totalCents } }
+const draftTotals = computed(() => computeFormTotals(formItems.value))
+function addItem() { formItems.value.push({ label: '', description: null, quantity: 1, unitPriceCents: 0, taxRate: 8.1 }) }
+function removeItem(idx: number) { formItems.value.splice(idx, 1) }
+async function submit() { try { const totals = computeFormTotals(formItems.value); const payload = { ...form, amountCents: totals.totalCents, items: formItems.value, issuedAt: form.issuedAt || null, dueAt: form.dueAt || null, paidAt: form.paidAt || null, notes: form.notes || null }; if (editing.value) await store.update(editing.value.id, payload as any); else await store.add(payload as any); showForm.value = false; toast.success('Enregistre') } catch { toast.error('Erreur') } }
 async function del(id: number) { if (!confirm('Supprimer ?')) return; try { await store.remove(id); if (selectedId.value === id) selectedId.value = store.invoices[0]?.id ?? null; toast.success('Supprime') } catch { toast.error('Erreur') } }
 function formatAmount(amountCents: number, currency: string) { return `${(amountCents / 100).toFixed(2)} ${currency}` }
 function escapeCsv(value: string | number | null | undefined) { const str = value == null ? '' : String(value); return `"${str.replace(/"/g, '""')}"` }
@@ -86,6 +91,10 @@ function printSelected() {
   win.focus()
   win.print()
 }
+function downloadPdf() {
+  if (!selectedInvoice.value) { toast.error('Selectionne une facture'); return }
+  window.open(`/api/invoices/pdf?id=${selectedInvoice.value.id}`, '_blank')
+}
 onMounted(async () => {
   await Promise.all([store.ensureLoaded(), clients.ensureLoaded(), quotes.ensureLoaded()])
   if (route.query.new === '1') {
@@ -98,7 +107,7 @@ onMounted(async () => {
 </script>
 <template>
   <div class="space-y-5">
-    <div class="flex flex-wrap items-center justify-between gap-3"><h1 class="font-display font-semibold text-xl">Factures</h1><div class="flex items-center gap-2"><button class="px-3 py-2 rounded-lg border border-gray-200 dark:border-white/[0.12] text-sm" @click="exportCsv">Exporter CSV</button><button class="px-3 py-2 rounded-lg border border-gray-200 dark:border-white/[0.12] text-sm" @click="printSelected">Imprimer</button><button class="px-4 py-2 rounded-lg bg-violet-600 text-white text-sm" @click="openNew">Nouvelle</button></div></div>
+    <div class="flex flex-wrap items-center justify-between gap-3"><h1 class="font-display font-semibold text-xl">Factures</h1><div class="flex items-center gap-2"><button class="px-3 py-2 rounded-lg border border-gray-200 dark:border-white/[0.12] text-sm" @click="exportCsv">Exporter CSV</button><button class="px-3 py-2 rounded-lg border border-gray-200 dark:border-white/[0.12] text-sm" @click="printSelected">Imprimer</button><button class="px-3 py-2 rounded-lg border border-gray-200 dark:border-white/[0.12] text-sm" @click="downloadPdf">PDF</button><button class="px-4 py-2 rounded-lg bg-violet-600 text-white text-sm" @click="openNew">Nouvelle</button></div></div>
     <div class="grid lg:grid-cols-[1fr_320px] gap-4">
     <div class="bg-white dark:bg-[#111118] border border-gray-100 dark:border-white/[0.06] rounded-xl overflow-hidden">
       <table class="w-full">
@@ -113,7 +122,9 @@ onMounted(async () => {
         <div class="mt-4 space-y-2 text-sm">
           <p><span class="text-gray-400">Client:</span> {{ selectedInvoice.clientId ? clientsById.get(selectedInvoice.clientId)?.name || '-' : '-' }}</p>
           <p><span class="text-gray-400">Devis:</span> {{ selectedInvoice.quoteId ? quotesById.get(selectedInvoice.quoteId)?.number || '-' : '-' }}</p>
-          <p><span class="text-gray-400">Montant:</span> {{ formatAmount(selectedInvoice.amountCents, selectedInvoice.currency) }}</p>
+          <p><span class="text-gray-400">Montant:</span> {{ formatAmount(selectedInvoice.totalCents ?? selectedInvoice.amountCents, selectedInvoice.currency) }}</p>
+          <p><span class="text-gray-400">Sous-total:</span> {{ formatAmount(selectedInvoice.subtotalCents ?? selectedInvoice.amountCents, selectedInvoice.currency) }}</p>
+          <p><span class="text-gray-400">TVA:</span> {{ formatAmount(selectedInvoice.taxCents ?? 0, selectedInvoice.currency) }}</p>
           <p><span class="text-gray-400">Statut:</span> {{ selectedInvoice.status }}</p>
           <p><span class="text-gray-400">Emission:</span> {{ selectedInvoice.issuedAt || '-' }}</p>
           <p><span class="text-gray-400">Echeance:</span> {{ selectedInvoice.dueAt || '-' }}</p>
@@ -124,6 +135,6 @@ onMounted(async () => {
       <p v-else class="text-sm text-gray-400">Selectionne une facture.</p>
     </div>
     </div>
-    <Transition name="fade"><div v-if="showForm" class="fixed inset-0 z-50 flex items-center justify-center p-4"><div class="absolute inset-0 bg-black/40" @click="showForm=false"/><form class="relative w-full max-w-xl bg-white dark:bg-[#111118] rounded-xl p-5 space-y-3" @submit.prevent="submit"><input v-model="form.number" class="input-field" placeholder="Numero" required><select v-model.number="form.clientId" class="input-field" :disabled="!!form.quoteId"><option :value="null">Aucun client</option><option v-for="c in clients.clients" :key="c.id" :value="c.id">{{ c.name }}</option></select><select v-model.number="form.quoteId" class="input-field"><option :value="null">Aucun devis</option><option v-for="q in filteredQuotes" :key="q.id" :value="q.id">{{ q.number }} - {{ q.title }}</option></select><div class="grid grid-cols-2 gap-3"><input v-model.number="form.amountCents" type="number" min="0" class="input-field" placeholder="Montant (centimes)"><input v-model="form.currency" class="input-field" placeholder="Devise"></div><div class="grid grid-cols-3 gap-3"><input v-model="form.issuedAt" type="date" class="input-field"><input v-model="form.dueAt" type="date" class="input-field"><input v-model="form.paidAt" type="date" class="input-field"></div><select v-model="form.status" class="input-field"><option value="draft">draft</option><option value="sent">sent</option><option value="paid">paid</option><option value="overdue">overdue</option><option value="cancelled">cancelled</option></select><textarea v-model="form.notes" rows="3" class="input-field" placeholder="Notes"/><div class="flex justify-end gap-2"><button type="button" class="px-3 py-2 text-sm" @click="showForm=false">Annuler</button><button class="px-4 py-2 rounded-lg bg-violet-600 text-white text-sm">Enregistrer</button></div></form></div></Transition>
+    <Transition name="fade"><div v-if="showForm" class="fixed inset-0 z-50 flex items-center justify-center p-4"><div class="absolute inset-0 bg-black/40" @click="showForm=false"/><form class="relative w-full max-w-xl bg-white dark:bg-[#111118] rounded-xl p-5 space-y-3" @submit.prevent="submit"><input v-model="form.number" class="input-field" placeholder="Numero" required><select v-model.number="form.clientId" class="input-field" :disabled="!!form.quoteId"><option :value="null">Aucun client</option><option v-for="c in clients.clients" :key="c.id" :value="c.id">{{ c.name }}</option></select><select v-model.number="form.quoteId" class="input-field"><option :value="null">Aucun devis</option><option v-for="q in filteredQuotes" :key="q.id" :value="q.id">{{ q.number }} - {{ q.title }}</option></select><input v-model="form.currency" class="input-field" placeholder="Devise"><div class="space-y-2 border border-gray-200 dark:border-white/[0.08] rounded-lg p-3"><div class="flex items-center justify-between"><p class="text-xs font-semibold uppercase text-gray-400">Lignes</p><button type="button" class="text-xs text-violet-600" @click="addItem">Ajouter</button></div><div v-for="(item, idx) in formItems" :key="idx" class="grid grid-cols-12 gap-2 items-center"><input v-model="item.label" class="input-field col-span-4" placeholder="Libelle"><input v-model.number="item.quantity" type="number" step="0.1" min="0" class="input-field col-span-2" placeholder="Qt"><input v-model.number="item.unitPriceCents" type="number" min="0" class="input-field col-span-3" placeholder="Prix (cts)"><input v-model.number="item.taxRate" type="number" step="0.1" min="0" class="input-field col-span-2" placeholder="TVA %"><button type="button" class="text-xs text-red-500 col-span-1" @click="removeItem(idx)">x</button><input v-model="item.description" class="input-field col-span-12" placeholder="Description (optionnel)"></div><div class="pt-2 text-xs text-gray-500 space-y-1"><p>Sous-total: {{ formatAmount(draftTotals.subtotalCents, form.currency) }}</p><p>TVA: {{ formatAmount(draftTotals.taxCents, form.currency) }}</p><p class="font-semibold">Total: {{ formatAmount(draftTotals.totalCents, form.currency) }}</p></div></div><div class="grid grid-cols-3 gap-3"><input v-model="form.issuedAt" type="date" class="input-field"><input v-model="form.dueAt" type="date" class="input-field"><input v-model="form.paidAt" type="date" class="input-field"></div><select v-model="form.status" class="input-field"><option value="draft">draft</option><option value="sent">sent</option><option value="paid">paid</option><option value="overdue">overdue</option><option value="cancelled">cancelled</option></select><textarea v-model="form.notes" rows="3" class="input-field" placeholder="Notes"/><div class="flex justify-end gap-2"><button type="button" class="px-3 py-2 text-sm" @click="showForm=false">Annuler</button><button class="px-4 py-2 rounded-lg bg-violet-600 text-white text-sm">Enregistrer</button></div></form></div></Transition>
   </div>
 </template>

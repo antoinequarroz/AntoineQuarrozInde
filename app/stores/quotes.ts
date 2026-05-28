@@ -11,6 +11,18 @@ type QuoteRow = {
   issued_at: string | null
   valid_until: string | null
   notes: string | null
+  subtotal_cents?: number
+  tax_cents?: number
+  total_cents?: number
+  items?: Array<{
+    id: number
+    label: string
+    description: string | null
+    quantity: number
+    unit_price_cents: number
+    tax_rate: number
+    total_cents: number
+  }>
   created_at: string
 }
 
@@ -26,6 +38,18 @@ function mapQuote(row: QuoteRow): Quote {
     issuedAt: row.issued_at,
     validUntil: row.valid_until,
     notes: row.notes,
+    subtotalCents: row.subtotal_cents ?? row.amount_cents,
+    taxCents: row.tax_cents ?? 0,
+    totalCents: row.total_cents ?? row.amount_cents,
+    items: (row.items || []).map(item => ({
+      id: item.id,
+      label: item.label,
+      description: item.description,
+      quantity: Number(item.quantity),
+      unitPriceCents: item.unit_price_cents,
+      taxRate: Number(item.tax_rate),
+      totalCents: item.total_cents,
+    })),
     createdAt: row.created_at?.slice(0, 10) ?? '',
   }
 }
