@@ -26,7 +26,7 @@ async function insertBackfillLogs(
 ) {
   const { data: sourceRows, error: sourceError } = await supabase
     .from(sourceTable)
-    .select('id, client_id, created_at')
+    .select(sourceTable === 'clients' ? 'id, created_at' : 'id, client_id, created_at')
     .eq('organization_id', orgId)
 
   if (sourceError) throw createError({ statusCode: 500, message: sourceError.message })
