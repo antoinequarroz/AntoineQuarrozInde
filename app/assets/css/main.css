@@ -231,12 +231,49 @@
     padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
   }
 
+  .admin-modal-panel .grid > *,
+  .admin-modal-panel .flex > *,
+  .admin-modal-panel input,
+  .admin-modal-panel select,
+  .admin-modal-panel textarea {
+    min-width: 0;
+    max-width: 100%;
+  }
+
   .admin-sticky-actions {
     padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .admin-main-safe {
+    width: 100%;
+    min-width: 0;
+    overflow-x: clip;
+  }
+
+  .admin-text-wrap {
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 }
 
 @media (max-width: 640px) {
+  .admin-shell,
+  .admin-main {
+    overflow-x: clip;
+  }
+
+  .admin-main > * {
+    min-width: 0;
+  }
+
+  .admin-shell img,
+  .admin-shell svg,
+  .admin-shell video,
+  .admin-shell canvas,
+  .admin-shell iframe {
+    max-width: 100%;
+  }
+
   .admin-table {
     min-width: 680px;
   }
