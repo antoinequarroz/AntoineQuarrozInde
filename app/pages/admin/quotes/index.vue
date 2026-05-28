@@ -414,7 +414,7 @@ onMounted(async () => {
     <Transition name="fade">
       <div v-if="showForm" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
         <div class="absolute inset-0 bg-black/40" @click="showForm=false" />
-        <form class="admin-modal-panel relative w-full max-w-4xl max-h-[92vh] overflow-y-auto bg-white dark:bg-[#111118] rounded-xl p-4 sm:p-5 space-y-3" @submit.prevent="submit">
+        <form class="admin-modal-panel relative w-full max-w-4xl max-h-[92vh] overflow-y-auto overflow-x-hidden bg-white dark:bg-[#111118] rounded-xl p-4 sm:p-5 space-y-3" @submit.prevent="submit">
           <input v-model="form.number" class="input-field" placeholder="Numero" required>
           <select v-model.number="form.clientId" class="input-field">
             <option :value="null">Aucun client</option>
@@ -457,12 +457,12 @@ onMounted(async () => {
               <p class="text-xs font-semibold uppercase text-gray-400">Lignes</p>
               <button type="button" class="text-xs text-violet-600" @click="addItem">Ajouter</button>
             </div>
-            <div v-for="(item, idx) in form.items" :key="idx" class="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
+            <div v-for="(item, idx) in form.items" :key="idx" class="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center min-w-0">
               <input v-model="item.label" class="input-field sm:col-span-4" placeholder="Libelle">
               <input v-model.number="item.quantity" type="number" step="0.1" min="0" class="input-field sm:col-span-2" placeholder="Qt">
               <input v-model.number="item.unitPriceCents" type="number" min="0" class="input-field sm:col-span-3" placeholder="Prix (cts)">
               <input v-model.number="item.taxRate" type="number" step="0.1" min="0" class="input-field sm:col-span-2" placeholder="TVA %">
-              <button type="button" class="text-xs text-red-500 sm:col-span-1 h-10" @click="removeItem(idx)">x</button>
+              <button type="button" class="text-xs text-red-500 sm:col-span-1 h-10 rounded-lg border border-red-200/70 dark:border-red-400/25 w-full" @click="removeItem(idx)">Supprimer</button>
               <input v-model="item.description" class="input-field sm:col-span-12" placeholder="Description (optionnel)">
             </div>
             <div class="pt-2 text-xs text-gray-500 space-y-1">

@@ -20,6 +20,11 @@
     overflow-x: hidden;
   }
 
+  html,
+  #__nuxt {
+    overflow-x: hidden;
+  }
+
   * {
     @apply border-gray-200 dark:border-gray-800;
   }
@@ -229,6 +234,7 @@
   .admin-modal-panel {
     max-height: calc(100dvh - 1rem);
     padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
+    overflow-x: hidden;
   }
 
   .admin-modal-panel .grid > *,
@@ -247,6 +253,12 @@
   .admin-main-safe {
     width: 100%;
     min-width: 0;
+    overflow-x: clip;
+  }
+
+  .admin-shell {
+    width: 100%;
+    max-width: 100vw;
     overflow-x: clip;
   }
 

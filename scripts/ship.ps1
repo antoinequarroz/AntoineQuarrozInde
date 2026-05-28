@@ -3,7 +3,7 @@ param(
   [string]$CommitMessage = "",
 
   [Parameter(Mandatory = $false)]
-  [string]$KeyPath = "C:\Users\antoine.quarroz\Downloads\cléprivéVPSAntoineQuarroz.txt",
+  [string]$KeyPath = "",
 
   [Parameter(Mandatory = $false)]
   [string]$ServerHost = "179.237.65.71",
@@ -26,25 +26,33 @@ function Write-Step($msg) {
   Write-Host "[SHIP] $msg" -ForegroundColor Cyan
 }
 
+function Resolve-KeyPath([string]$InputPath) {
+  if (-not [string]::IsNullOrWhiteSpace($InputPath) -and (Test-Path -LiteralPath $InputPath)) {
+    return $InputPath
+  }
+
+  $downloadsDir = Join-Path $HOME "Downloads"
+  $candidate = Get-ChildItem -Path $downloadsDir -File -ErrorAction SilentlyContinue |
+    Where-Object {
+      $_.Name -like "*VPSAntoineQuarroz*.txt" -or
+      $_.Name -like "*VPS*Antoine*Quarroz*.txt"
+    } |
+    Select-Object -First 1
+
+  if ($candidate) {
+    Write-Step "Cle detectee automatiquement: $($candidate.FullName)"
+    return $candidate.FullName
+  }
+
+  throw "Key not found. Use -KeyPath or place your key in $downloadsDir"
+}
+
 $repoRoot = Split-Path -Parent $PSScriptRoot
 Set-Location $repoRoot
 
-if (-not (Test-Path -LiteralPath $KeyPath)) {
-  $downloadsDir = Join-Path $HOME "Downloads"
-  $autoKey = Get-ChildItem -Path $downloadsDir -File -ErrorAction SilentlyContinue |
-    Where-Object { $_.Name -like "*VPSAntoineQuarroz*.txt" } |
-    Select-Object -First 1
+$ResolvedKeyPath = Resolve-KeyPath $KeyPath
 
-  if ($autoKey) {
-    $KeyPath = $autoKey.FullName
-    Write-Step "Clé détectée automatiquement: $KeyPath"
-  }
-  else {
-    throw "Key not found: $KeyPath"
-  }
-}
-
-Write-Step "Vérification du dépôt git local"
+Write-Step "Verification du depot git local"
 git rev-parse --is-inside-work-tree | Out-Null
 
 Write-Step "Ajout des fichiers (git add .)"
@@ -64,7 +72,7 @@ if ($hasChanges) {
   git push origin $Branch
 }
 else {
-  Write-Step "Aucun changement git à commit. Je continue le déploiement."
+  Write-Step "Aucun changement git a commit. Je continue le deploiement."
 }
 
 $deployScript = Join-Path $PSScriptRoot "deploy-vps.ps1"
@@ -72,13 +80,13 @@ if (-not (Test-Path -LiteralPath $deployScript)) {
   throw "deploy-vps.ps1 not found at: $deployScript"
 }
 
-Write-Step "Déploiement VPS"
+Write-Step "Deploiement VPS"
 powershell.exe -ExecutionPolicy Bypass -File $deployScript `
-  -KeyPath $KeyPath `
+  -KeyPath $ResolvedKeyPath `
   -ServerHost $ServerHost `
   -User $User `
   -ProjectDir $ProjectDir `
   -Branch $Branch
 
 Write-Host ""
-Write-Host "Ship terminé." -ForegroundColor Green
+Write-Host "Ship termine." -ForegroundColor Green
