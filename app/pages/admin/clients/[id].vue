@@ -25,6 +25,38 @@ const nextAppointment = computed(() => {
     .filter(a => a.startsAt >= now && a.status === 'scheduled')
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt))[0] || null
 })
+const timeline = computed(() => {
+  const quoteEvents = clientQuotes.value.map(q => ({
+    key: `quote-${q.id}`,
+    type: 'devis',
+    title: `Devis ${q.number} (${q.status})`,
+    date: q.createdAt,
+    meta: `${(q.amountCents / 100).toFixed(2)} ${q.currency}`,
+  }))
+  const invoiceEvents = clientInvoices.value.map(i => ({
+    key: `invoice-${i.id}`,
+    type: 'facture',
+    title: `Facture ${i.number} (${i.status})`,
+    date: i.createdAt,
+    meta: `${(i.amountCents / 100).toFixed(2)} ${i.currency}`,
+  }))
+  const taskEvents = clientTasks.value.map(t => ({
+    key: `task-${t.id}`,
+    type: 'tache',
+    title: `Tache ${t.title} (${t.status})`,
+    date: t.createdAt,
+    meta: t.priority,
+  }))
+  const appointmentEvents = clientAppointments.value.map(a => ({
+    key: `appointment-${a.id}`,
+    type: 'rdv',
+    title: `RDV ${a.title} (${a.status})`,
+    date: a.createdAt,
+    meta: new Date(a.startsAt).toLocaleString('fr-CH'),
+  }))
+  return [...quoteEvents, ...invoiceEvents, ...taskEvents, ...appointmentEvents]
+    .sort((a, b) => b.date.localeCompare(a.date))
+})
 
 onMounted(async () => {
   await Promise.all([
@@ -125,6 +157,20 @@ onMounted(async () => {
           </div>
           <p v-else class="text-xs text-gray-400">Aucun rendez-vous</p>
         </div>
+      </div>
+
+      <div class="rounded-xl border border-gray-100 dark:border-white/10 bg-white dark:bg-[#111118] p-4">
+        <h2 class="text-sm font-semibold mb-3">Timeline activite</h2>
+        <div v-if="timeline.length" class="space-y-2">
+          <div v-for="event in timeline.slice(0, 12)" :key="event.key" class="flex items-start justify-between gap-3 border-b border-gray-100 dark:border-white/5 pb-2 last:border-0">
+            <div class="min-w-0">
+              <p class="text-sm text-gray-800 dark:text-gray-100 truncate">{{ event.title }}</p>
+              <p class="text-xs text-gray-400">{{ event.meta }}</p>
+            </div>
+            <span class="text-xs text-gray-400 whitespace-nowrap">{{ event.date }}</span>
+          </div>
+        </div>
+        <p v-else class="text-xs text-gray-400">Aucune activite pour ce client</p>
       </div>
     </template>
   </div>
