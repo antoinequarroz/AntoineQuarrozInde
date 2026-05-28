@@ -91,4 +91,3 @@ Deliverable fin Phase 3:
 4. Relances automatiques facture
 5. Portail client
 6. Stripe paiement facture
-
