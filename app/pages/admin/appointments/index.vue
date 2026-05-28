@@ -225,7 +225,28 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <div class="admin-table-wrap bg-white dark:bg-[#111118] border border-gray-100 dark:border-white/[0.06] rounded-xl overflow-hidden overflow-x-auto">
+    <div class="sm:hidden space-y-2">
+      <div
+        v-for="item in visibleAppointments"
+        :key="`m-${item.id}`"
+        class="rounded-xl border border-gray-100 dark:border-white/[0.06] bg-white dark:bg-[#111118] p-3"
+      >
+        <div class="flex items-start justify-between gap-2">
+          <p class="text-sm font-semibold">{{ item.title }}</p>
+          <span class="text-[11px] uppercase text-gray-400">{{ item.status }}</span>
+        </div>
+        <p class="mt-1 text-xs text-gray-500">{{ item.clientId ? clientsById.get(item.clientId)?.name || '-' : '-' }}</p>
+        <p class="mt-1 text-xs text-gray-500">Début: {{ formatDateTime(item.startsAt) }}</p>
+        <p class="mt-1 text-xs text-gray-500">Fin: {{ formatDateTime(item.endsAt) }}</p>
+        <div class="mt-3 flex items-center gap-3">
+          <button class="text-xs text-sky-600" @click="downloadIcs(item)">ICS</button>
+          <button class="text-xs text-violet-600" @click="openEdit(item)">Editer</button>
+          <button class="text-xs text-red-500" @click="del(item.id)">Supprimer</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="admin-table-wrap hidden sm:block bg-white dark:bg-[#111118] border border-gray-100 dark:border-white/[0.06] rounded-xl overflow-hidden overflow-x-auto">
       <table class="admin-table w-full">
         <thead>
           <tr class="border-b border-gray-100 dark:border-white/[0.06]">
