@@ -4,11 +4,13 @@ import type { Appointment } from '~/types'
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 
 const store = useAppointmentsStore()
+const clients = useClientsStore()
 const toast = useToast()
 const showForm = ref(false)
 const editing = ref<Appointment | null>(null)
 const form = reactive({
   title: '',
+  clientId: null as number | null,
   description: '',
   startsAt: '',
   endsAt: '',
@@ -16,11 +18,13 @@ const form = reactive({
   meetingUrl: '',
   status: 'scheduled' as Appointment['status'],
 })
+const clientsById = computed(() => new Map(clients.clients.map(c => [c.id, c])))
 
 function openNew() {
   editing.value = null
   Object.assign(form, {
     title: '',
+    clientId: null,
     description: '',
     startsAt: '',
     endsAt: '',
@@ -41,7 +45,6 @@ async function submit() {
   try {
     const payload = {
       ...form,
-      clientId: null,
       description: form.description || null,
       location: form.location || null,
       meetingUrl: form.meetingUrl || null,
@@ -65,7 +68,7 @@ async function del(id: number) {
   }
 }
 
-onMounted(() => store.ensureLoaded())
+onMounted(() => Promise.all([store.ensureLoaded(), clients.ensureLoaded()]))
 </script>
 
 <template>
@@ -80,6 +83,7 @@ onMounted(() => store.ensureLoaded())
         <thead>
           <tr class="border-b border-gray-100 dark:border-white/[0.06]">
             <th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Titre</th>
+            <th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Client</th>
             <th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Debut</th>
             <th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Fin</th>
             <th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Statut</th>
@@ -89,6 +93,7 @@ onMounted(() => store.ensureLoaded())
         <tbody>
           <tr v-for="item in store.appointments" :key="item.id" class="border-b border-gray-50 dark:border-white/[0.03]">
             <td class="px-4 py-3 text-sm">{{ item.title }}</td>
+            <td class="px-4 py-3 text-sm">{{ item.clientId ? clientsById.get(item.clientId)?.name || '-' : '-' }}</td>
             <td class="px-4 py-3 text-sm">{{ item.startsAt }}</td>
             <td class="px-4 py-3 text-sm">{{ item.endsAt }}</td>
             <td class="px-4 py-3 text-sm">{{ item.status }}</td>
@@ -106,6 +111,10 @@ onMounted(() => store.ensureLoaded())
         <div class="absolute inset-0 bg-black/40" @click="showForm = false" />
         <form class="relative w-full max-w-xl bg-white dark:bg-[#111118] rounded-xl p-5 space-y-3" @submit.prevent="submit">
           <input v-model="form.title" class="input-field" placeholder="Titre" required>
+          <select v-model.number="form.clientId" class="input-field">
+            <option :value="null">Aucun client</option>
+            <option v-for="c in clients.clients" :key="c.id" :value="c.id">{{ c.name }}</option>
+          </select>
           <textarea v-model="form.description" rows="3" class="input-field" placeholder="Description" />
           <div class="grid grid-cols-2 gap-3">
             <input v-model="form.startsAt" type="datetime-local" class="input-field" required>
