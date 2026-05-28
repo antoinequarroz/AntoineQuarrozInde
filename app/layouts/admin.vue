@@ -1,7 +1,16 @@
 <script setup lang="ts">
+import type { ContactMessage } from '~/types'
+
 const auth = useAuthStore()
 const router = useRouter()
 const route = useRoute()
+const clients = useClientsStore()
+const tasks = useTasksStore()
+const quotes = useQuotesStore()
+const invoices = useInvoicesStore()
+const appointments = useAppointmentsStore()
+const projects = useProjectsStore()
+const articles = useArticlesStore()
 
 const navItems = [
   { label: 'Dashboard', icon: 'grid', href: '/admin' },
@@ -19,6 +28,11 @@ const navItems = [
 
 const isSidebarOpen = ref(false)
 const isStandalone = ref(true)
+const showSearch = ref(false)
+const searchQuery = ref('')
+const showAlerts = ref(false)
+const messages = ref<ContactMessage[]>([])
+const loadingMessages = ref(false)
 
 function isActive(href: string) {
   if (href === '/admin') return route.path === '/admin'
@@ -35,10 +49,116 @@ const selectedOrganizationId = computed({
   set: (value: string) => auth.setCurrentOrganization(value),
 })
 
+const searchResults = computed(() => {
+  const q = searchQuery.value.trim().toLowerCase()
+  if (!q) return []
+  const out: Array<{ key: string, label: string, sub: string, to: string }> = []
+  for (const c of clients.clients) {
+    if ([c.name, c.company || '', c.email].join(' ').toLowerCase().includes(q)) {
+      out.push({ key: `client-${c.id}`, label: c.name, sub: `Client · ${c.email}`, to: `/admin/clients/${c.id}` })
+    }
+  }
+  for (const t of tasks.tasks) {
+    if ([t.title, t.description || ''].join(' ').toLowerCase().includes(q)) {
+      out.push({ key: `task-${t.id}`, label: t.title, sub: `Tache · ${t.status}`, to: '/admin/tasks' })
+    }
+  }
+  for (const qte of quotes.quotes) {
+    if ([qte.number, qte.title].join(' ').toLowerCase().includes(q)) {
+      out.push({ key: `quote-${qte.id}`, label: `${qte.number} · ${qte.title}`, sub: `Devis · ${qte.status}`, to: '/admin/quotes' })
+    }
+  }
+  for (const inv of invoices.invoices) {
+    if ([inv.number, inv.notes || ''].join(' ').toLowerCase().includes(q)) {
+      out.push({ key: `invoice-${inv.id}`, label: inv.number, sub: `Facture · ${inv.status}`, to: '/admin/invoices' })
+    }
+  }
+  for (const p of projects.projects) {
+    if ([p.title, p.description, p.tags.join(' ')].join(' ').toLowerCase().includes(q)) {
+      out.push({ key: `project-${p.id}`, label: p.title, sub: `Projet · ${p.category}`, to: '/admin/projects' })
+    }
+  }
+  for (const a of articles.articles) {
+    if ([a.title, a.excerpt, a.tags.join(' ')].join(' ').toLowerCase().includes(q)) {
+      out.push({ key: `article-${a.id}`, label: a.title, sub: `Article · ${a.published ? 'publie' : 'brouillon'}`, to: '/admin/articles' })
+    }
+  }
+  return out.slice(0, 20)
+})
+
+const alerts = computed(() => {
+  const now = new Date().toISOString()
+  const dueSoonIso = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+  const overdueCount = invoices.invoices.filter(i => i.status === 'overdue').length
+  const draftQuotes = quotes.quotes.filter(q => q.status === 'draft').length
+  const nextAppt = appointments.appointments
+    .filter(a => a.status === 'scheduled' && a.startsAt >= now)
+    .sort((a, b) => a.startsAt.localeCompare(b.startsAt))[0]
+  const dueTasks = tasks.tasks.filter(t => t.status !== 'done' && t.dueDate && t.dueDate <= dueSoonIso).length
+  const newMessages = messages.value.filter(m => m.status === 'new').length
+  const list: Array<{ id: string, text: string, to: string }> = []
+  if (overdueCount > 0) list.push({ id: 'overdue', text: `${overdueCount} facture(s) en retard`, to: '/admin/invoices' })
+  if (newMessages > 0) list.push({ id: 'messages', text: `${newMessages} nouveau(x) message(s)`, to: '/admin/messages' })
+  if (draftQuotes > 0) list.push({ id: 'quotes', text: `${draftQuotes} devis en brouillon`, to: '/admin/quotes' })
+  if (dueTasks > 0) list.push({ id: 'tasks', text: `${dueTasks} tache(s) a traiter sous 3 jours`, to: '/admin/tasks' })
+  if (nextAppt) list.push({ id: 'appt', text: `Prochain RDV: ${nextAppt.title}`, to: '/admin/appointments' })
+  return list
+})
+
+const unreadAlerts = computed(() => alerts.value.length)
+
+async function ensureSearchData() {
+  await Promise.all([
+    clients.ensureLoaded(),
+    tasks.ensureLoaded(),
+    quotes.ensureLoaded(),
+    invoices.ensureLoaded(),
+    appointments.ensureLoaded(),
+    projects.ensureLoaded(),
+    articles.ensureLoaded(),
+  ])
+}
+
+async function loadMessages() {
+  if (loadingMessages.value) return
+  loadingMessages.value = true
+  try {
+    messages.value = await $fetch<ContactMessage[]>('/api/messages', { headers: auth.authHeader() })
+  } catch {
+    messages.value = []
+  } finally {
+    loadingMessages.value = false
+  }
+}
+
+function openSearch() {
+  showSearch.value = true
+  void ensureSearchData()
+}
+
+function closeSearch() {
+  showSearch.value = false
+  searchQuery.value = ''
+}
+
+async function gotoResult(to: string) {
+  await router.push(to)
+  closeSearch()
+}
+
 onMounted(() => {
   const nav = window.navigator as Navigator & { standalone?: boolean }
   const mediaStandalone = window.matchMedia('(display-mode: standalone)').matches
   isStandalone.value = mediaStandalone || !!nav.standalone
+  window.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+      e.preventDefault()
+      openSearch()
+    }
+    if (e.key === 'Escape' && showSearch.value) closeSearch()
+  })
+  void ensureSearchData()
+  void loadMessages()
 })
 </script>
 
@@ -186,6 +306,14 @@ onMounted(() => {
           </span>
         </nav>
 
+        <button
+          class="hidden sm:inline-flex h-8 items-center gap-2 rounded-lg border border-gray-200 dark:border-white/[0.1] px-2.5 text-xs text-gray-500 dark:text-gray-300"
+          @click="openSearch"
+        >
+          Rechercher
+          <span class="rounded bg-gray-100 dark:bg-white/[0.08] px-1.5 py-0.5 text-[10px]">Ctrl K</span>
+        </button>
+
         <select
           v-if="auth.organizations.length > 0"
           v-model="selectedOrganizationId"
@@ -199,6 +327,32 @@ onMounted(() => {
             {{ org.name }} ({{ org.role }})
           </option>
         </select>
+
+        <div class="relative">
+          <button
+            class="relative h-8 w-8 rounded-lg border border-gray-200 dark:border-white/[0.1] text-gray-500 dark:text-gray-300"
+            @click="showAlerts = !showAlerts"
+          >
+            <svg class="mx-auto h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 00-12 0v3.2a2 2 0 01-.6 1.4L4 17h5m6 0a3 3 0 11-6 0m6 0H9"/>
+            </svg>
+            <span v-if="unreadAlerts" class="absolute -right-1 -top-1 rounded-full bg-red-500 px-1 text-[10px] text-white">{{ unreadAlerts }}</span>
+          </button>
+          <div v-if="showAlerts" class="absolute right-0 z-50 mt-2 w-72 rounded-xl border border-gray-200 bg-white p-2 shadow-xl dark:border-white/[0.1] dark:bg-[#171724]">
+            <p class="px-2 py-1 text-xs font-semibold text-gray-500">Notifications</p>
+            <div v-if="alerts.length" class="space-y-1">
+              <button
+                v-for="alert in alerts"
+                :key="alert.id"
+                class="w-full rounded-lg px-2 py-2 text-left text-xs text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-white/[0.06]"
+                @click="router.push(alert.to); showAlerts = false"
+              >
+                {{ alert.text }}
+              </button>
+            </div>
+            <p v-else class="px-2 py-2 text-xs text-gray-400">Aucune alerte</p>
+          </div>
+        </div>
 
         <UiThemeToggle />
       </header>
@@ -215,6 +369,32 @@ onMounted(() => {
       </main>
     </div>
   </div>
+
+  <Transition name="fade">
+    <div v-if="showSearch" class="fixed inset-0 z-[80] flex items-start justify-center bg-black/40 p-3 sm:p-6" @click.self="closeSearch">
+      <div class="w-full max-w-2xl rounded-2xl border border-gray-200 bg-white p-3 shadow-2xl dark:border-white/[0.1] dark:bg-[#151522]">
+        <input
+          v-model="searchQuery"
+          type="text"
+          autofocus
+          class="input-field"
+          placeholder="Rechercher clients, devis, factures, taches, projets, articles..."
+        >
+        <div class="mt-3 max-h-[60vh] overflow-y-auto">
+          <button
+            v-for="item in searchResults"
+            :key="item.key"
+            class="w-full rounded-lg px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-white/[0.06]"
+            @click="gotoResult(item.to)"
+          >
+            <p class="text-sm font-medium text-gray-800 dark:text-gray-100">{{ item.label }}</p>
+            <p class="text-xs text-gray-400">{{ item.sub }}</p>
+          </button>
+          <p v-if="searchQuery && !searchResults.length" class="px-3 py-6 text-center text-sm text-gray-400">Aucun resultat</p>
+        </div>
+      </div>
+    </div>
+  </Transition>
 </template>
 
 <style scoped>

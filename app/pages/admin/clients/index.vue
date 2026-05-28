@@ -8,6 +8,7 @@ const toast = useToast()
 
 const showForm = ref(false)
 const editing = ref<Client | null>(null)
+const selectedIds = ref<number[]>([])
 const form = reactive({
   name: '',
   company: '',
@@ -73,6 +74,41 @@ async function handleDelete(id: number) {
   }
 }
 
+const allSelected = computed(() => store.clients.length > 0 && selectedIds.value.length === store.clients.length)
+
+function toggleAll() {
+  if (allSelected.value) selectedIds.value = []
+  else selectedIds.value = store.clients.map(c => c.id)
+}
+
+function toggleOne(id: number) {
+  if (selectedIds.value.includes(id)) selectedIds.value = selectedIds.value.filter(x => x !== id)
+  else selectedIds.value.push(id)
+}
+
+async function bulkSetStatus(status: Client['status']) {
+  if (!selectedIds.value.length) return
+  try {
+    await Promise.all(selectedIds.value.map(id => store.update(id, { status })))
+    toast.success(`Statut mis a jour (${selectedIds.value.length})`)
+    selectedIds.value = []
+  } catch {
+    toast.error('Erreur action en lot')
+  }
+}
+
+async function bulkDelete() {
+  if (!selectedIds.value.length) return
+  if (!confirm(`Supprimer ${selectedIds.value.length} client(s) ?`)) return
+  try {
+    await Promise.all(selectedIds.value.map(id => store.remove(id)))
+    toast.success(`Clients supprimes (${selectedIds.value.length})`)
+    selectedIds.value = []
+  } catch {
+    toast.error('Erreur suppression en lot')
+  }
+}
+
 onMounted(() => store.ensureLoaded())
 </script>
 
@@ -86,6 +122,16 @@ onMounted(() => store.ensureLoaded())
       <button class="px-4 py-2 rounded-lg text-sm font-semibold bg-violet-600 hover:bg-violet-700 text-white" @click="openNew">Nouveau</button>
     </div>
 
+    <div v-if="selectedIds.length" class="rounded-xl border border-violet-200/60 bg-violet-50/70 dark:bg-violet-500/10 dark:border-violet-500/20 p-3">
+      <div class="flex flex-wrap items-center gap-2">
+        <p class="text-xs text-violet-700 dark:text-violet-300">{{ selectedIds.length }} selectionne(s)</p>
+        <button class="px-2.5 py-1.5 rounded-lg text-xs border border-gray-200 dark:border-white/[0.12]" @click="bulkSetStatus('lead')">Passer en lead</button>
+        <button class="px-2.5 py-1.5 rounded-lg text-xs border border-gray-200 dark:border-white/[0.12]" @click="bulkSetStatus('active')">Passer en active</button>
+        <button class="px-2.5 py-1.5 rounded-lg text-xs border border-gray-200 dark:border-white/[0.12]" @click="bulkSetStatus('inactive')">Passer en inactive</button>
+        <button class="px-2.5 py-1.5 rounded-lg text-xs bg-red-500 text-white" @click="bulkDelete">Supprimer</button>
+      </div>
+    </div>
+
     <div class="space-y-3">
       <div class="sm:hidden space-y-2">
         <div
@@ -93,6 +139,10 @@ onMounted(() => store.ensureLoaded())
           :key="`mobile-${client.id}`"
           class="rounded-xl border p-3 bg-white dark:bg-[#111118] border-gray-100 dark:border-white/[0.06]"
         >
+          <label class="mb-2 flex items-center gap-2 text-xs text-gray-500">
+            <input :checked="selectedIds.includes(client.id)" type="checkbox" @change="toggleOne(client.id)">
+            Selectionner
+          </label>
           <div class="flex items-start justify-between gap-2">
             <div>
               <p class="text-sm font-medium text-gray-800 dark:text-gray-200">{{ client.name }}</p>
@@ -117,6 +167,9 @@ onMounted(() => store.ensureLoaded())
       <table class="admin-table w-full">
         <thead>
           <tr class="border-b border-gray-100 dark:border-white/[0.06]">
+            <th class="text-left px-5 py-3 text-xs text-gray-400 uppercase">
+              <input :checked="allSelected" type="checkbox" @change="toggleAll">
+            </th>
             <th class="text-left px-5 py-3 text-xs text-gray-400 uppercase">Nom</th>
             <th class="text-left px-5 py-3 text-xs text-gray-400 uppercase hidden sm:table-cell">Contact</th>
             <th class="text-left px-5 py-3 text-xs text-gray-400 uppercase">Statut</th>
@@ -125,6 +178,9 @@ onMounted(() => store.ensureLoaded())
         </thead>
         <tbody>
           <tr v-for="client in store.clients" :key="client.id" class="border-b border-gray-50 dark:border-white/[0.03] last:border-0">
+            <td class="px-5 py-3">
+              <input :checked="selectedIds.includes(client.id)" type="checkbox" @change="toggleOne(client.id)">
+            </td>
             <td class="px-5 py-3">
               <p class="text-sm font-medium text-gray-800 dark:text-gray-200">{{ client.name }}</p>
               <p class="text-xs text-gray-400">{{ client.company || 'Independant' }}</p>
