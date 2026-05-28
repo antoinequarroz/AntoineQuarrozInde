@@ -9,6 +9,7 @@ const tasks = useTasksStore()
 const quotes = useQuotesStore()
 const invoices = useInvoicesStore()
 const appointments = useAppointmentsStore()
+const auth = useAuthStore()
 const toast = useToast()
 
 const stats = computed(() => [
@@ -119,6 +120,8 @@ const pipeline = computed(() => {
   return { leads, activeClients, sentQuotes, acceptedQuotes, sentInvoices, paidInvoices, quoteConv, cashConv }
 })
 const runningAutomation = ref(false)
+const runningEmailReminders = ref(false)
+const reminderRuns = ref<Array<{ id: number, action: string, payload: Record<string, any>, created_at: string }>>([])
 
 function daysFromNow(isoDate: string) {
   const now = new Date()
@@ -181,6 +184,34 @@ async function runPipelineAutomation() {
   }
 }
 
+async function loadReminderRuns() {
+  try {
+    const data = await $fetch<Array<{ id: number, action: string, payload: Record<string, any>, created_at: string }>>('/api/admin/pipeline/runs', {
+      headers: auth.authHeader(),
+    })
+    reminderRuns.value = data || []
+  } catch {
+    reminderRuns.value = []
+  }
+}
+
+async function sendReminderEmails() {
+  if (runningEmailReminders.value) return
+  runningEmailReminders.value = true
+  try {
+    const result = await $fetch<{ sentCount: number, skippedCount: number, failedCount: number }>('/api/admin/pipeline/reminders', {
+      method: 'POST',
+      headers: auth.authHeader(),
+    })
+    toast.success(`Relances email: ${result.sentCount} envoyee(s), ${result.skippedCount} ignoree(s), ${result.failedCount} echec(s)`)
+    await loadReminderRuns()
+  } catch {
+    toast.error('Erreur envoi relances email')
+  } finally {
+    runningEmailReminders.value = false
+  }
+}
+
 onMounted(async () => {
   await Promise.all([
     projects.ensureLoaded(),
@@ -191,6 +222,7 @@ onMounted(async () => {
     quotes.ensureLoaded(),
     invoices.ensureLoaded(),
     appointments.ensureLoaded(),
+    loadReminderRuns(),
   ])
 })
 </script>
@@ -338,6 +370,38 @@ onMounted(async () => {
         >
           {{ runningAutomation ? 'Generation...' : 'Generer les relances' }}
         </button>
+      </div>
+      <div class="mt-2 flex items-center justify-between gap-3 rounded-lg border border-gray-100 dark:border-white/[0.06] p-3">
+        <p class="text-xs text-gray-500">Envoyer les relances email aux clients (1 seul envoi par cible et par jour).</p>
+        <button
+          class="px-3 py-2 rounded-lg bg-sky-600 text-white text-xs disabled:opacity-60"
+          :disabled="runningEmailReminders"
+          @click="sendReminderEmails"
+        >
+          {{ runningEmailReminders ? 'Envoi...' : 'Envoyer relances email' }}
+        </button>
+      </div>
+      <div class="mt-3 rounded-lg border border-gray-100 dark:border-white/[0.06] p-3">
+        <div class="flex items-center justify-between gap-2">
+          <p class="text-xs font-semibold uppercase text-gray-400">Historique relances</p>
+          <button class="text-xs text-violet-600" @click="loadReminderRuns">Rafraichir</button>
+        </div>
+        <div v-if="reminderRuns.length" class="mt-2 space-y-1.5">
+          <div
+            v-for="run in reminderRuns.slice(0, 8)"
+            :key="run.id"
+            class="rounded-md bg-gray-50 dark:bg-white/[0.03] px-2.5 py-2 text-xs text-gray-600 dark:text-gray-300"
+          >
+            <template v-if="run.action === 'pipeline_reminder_run'">
+              Run: {{ run.payload?.sentCount || 0 }} envoye(s), {{ run.payload?.skippedCount || 0 }} ignoree(s), {{ run.payload?.failedCount || 0 }} echec(s)
+            </template>
+            <template v-else>
+              Email {{ run.payload?.targetType }} {{ run.payload?.number }} → {{ run.payload?.email }}
+            </template>
+            <span class="ml-2 text-gray-400">{{ new Date(run.created_at).toLocaleString() }}</span>
+          </div>
+        </div>
+        <p v-else class="mt-2 text-xs text-gray-400">Aucun envoi pour le moment.</p>
       </div>
     </div>
 
