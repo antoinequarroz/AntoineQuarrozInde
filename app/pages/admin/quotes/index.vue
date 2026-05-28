@@ -39,7 +39,18 @@ const form = reactive({
 
 const clientsById = computed(() => new Map(clients.clients.map(c => [c.id, c])))
 const selectedId = ref<number | null>(null)
+const search = ref('')
+const statusFilter = ref<'all' | Quote['status']>('all')
 const selectedQuote = computed(() => store.quotes.find(q => q.id === selectedId.value) ?? null)
+const filteredQuotes = computed(() => {
+  const q = search.value.trim().toLowerCase()
+  return store.quotes.filter((x) => {
+    const byStatus = statusFilter.value === 'all' || x.status === statusFilter.value
+    if (!byStatus) return false
+    if (!q) return true
+    return [x.number, x.title, x.notes || '', clientsById.value.get(x.clientId || 0)?.name || ''].join(' ').toLowerCase().includes(q)
+  })
+})
 
 function formatAmount(amountCents: number, currency: string) {
   return `${(amountCents / 100).toFixed(2)} ${currency}`
@@ -288,6 +299,10 @@ onMounted(async () => {
     const id = Number(route.query.clientId || 0)
     if (id) form.clientId = id
   }
+  const qStatus = String(route.query.status || '')
+  if (qStatus === 'draft' || qStatus === 'sent' || qStatus === 'accepted' || qStatus === 'rejected') statusFilter.value = qStatus
+  const qSearch = String(route.query.search || '')
+  if (qSearch) search.value = qSearch
   if (store.quotes.length) selectedId.value = store.quotes[0].id
 })
 </script>
@@ -303,12 +318,22 @@ onMounted(async () => {
         <button class="px-4 py-2 rounded-lg bg-violet-600 text-white text-sm" @click="openNew">Nouveau</button>
       </div>
     </div>
+    <div class="rounded-xl border border-gray-100 dark:border-white/[0.06] bg-white dark:bg-[#111118] p-3 grid grid-cols-1 sm:grid-cols-[1fr_170px] gap-2">
+      <input v-model="search" class="input-field" placeholder="Rechercher devis...">
+      <select v-model="statusFilter" class="input-field">
+        <option value="all">Tous statuts</option>
+        <option value="draft">draft</option>
+        <option value="sent">sent</option>
+        <option value="accepted">accepted</option>
+        <option value="rejected">rejected</option>
+      </select>
+    </div>
 
     <div class="grid lg:grid-cols-[1fr_320px] gap-4">
       <div class="space-y-3">
         <div class="sm:hidden space-y-2">
           <button
-            v-for="q in store.quotes"
+            v-for="q in filteredQuotes"
             :key="`mobile-${q.id}`"
             class="w-full rounded-xl border p-3 text-left bg-white dark:bg-[#111118] border-gray-100 dark:border-white/[0.06]"
             :class="selectedId === q.id ? 'ring-1 ring-violet-500/60' : ''"
@@ -343,7 +368,7 @@ onMounted(async () => {
           </thead>
           <tbody>
             <tr
-              v-for="q in store.quotes"
+              v-for="q in filteredQuotes"
               :key="q.id"
               class="border-b border-gray-50 dark:border-white/[0.03] cursor-pointer"
               :class="selectedId === q.id ? 'bg-violet-50/60 dark:bg-violet-500/10' : ''"

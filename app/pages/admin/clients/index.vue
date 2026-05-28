@@ -5,6 +5,7 @@ definePageMeta({ layout: 'admin', middleware: 'admin' })
 
 const store = useClientsStore()
 const toast = useToast()
+const route = useRoute()
 
 const showForm = ref(false)
 const editing = ref<Client | null>(null)
@@ -166,6 +167,10 @@ const filteredClients = computed(() => {
 onMounted(() => {
   store.ensureLoaded()
   loadViews()
+  const qStatus = String(route.query.status || '')
+  if (qStatus === 'lead' || qStatus === 'active' || qStatus === 'inactive') statusFilter.value = qStatus
+  const qSearch = String(route.query.search || '')
+  if (qSearch) search.value = qSearch
 })
 </script>
 

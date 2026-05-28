@@ -17,7 +17,18 @@ const filteredQuotes = computed(() => {
   return quotes.quotes.filter(q => q.clientId === form.clientId)
 })
 const selectedId = ref<number | null>(null)
+const search = ref('')
+const statusFilter = ref<'all' | Invoice['status']>('all')
 const selectedInvoice = computed(() => store.invoices.find(i => i.id === selectedId.value) ?? null)
+const filteredInvoices = computed(() => {
+  const q = search.value.trim().toLowerCase()
+  return store.invoices.filter((x) => {
+    const byStatus = statusFilter.value === 'all' || x.status === statusFilter.value || (statusFilter.value === 'sent' && x.status === 'overdue')
+    if (!byStatus) return false
+    if (!q) return true
+    return [x.number, x.notes || '', clientsById.value.get(x.clientId || 0)?.name || ''].join(' ').toLowerCase().includes(q)
+  })
+})
 const selectedQuote = computed(() => {
   if (!form.quoteId) return null
   return quotes.quotes.find(q => q.id === form.quoteId) ?? null
@@ -112,17 +123,31 @@ onMounted(async () => {
     const id = Number(route.query.clientId || 0)
     if (id) form.clientId = id
   }
+  const qStatus = String(route.query.status || '')
+  if (qStatus === 'draft' || qStatus === 'sent' || qStatus === 'paid' || qStatus === 'overdue' || qStatus === 'cancelled') statusFilter.value = qStatus
+  const qSearch = String(route.query.search || '')
+  if (qSearch) search.value = qSearch
   if (store.invoices.length) selectedId.value = store.invoices[0].id
 })
 </script>
 <template>
   <div class="space-y-5">
     <div class="flex flex-wrap items-center justify-between gap-3"><h1 class="font-display font-semibold text-xl">Factures</h1><div class="admin-page-actions"><button class="px-3 py-2 rounded-lg border border-gray-200 dark:border-white/[0.12] text-sm" @click="exportCsv">Exporter CSV</button><button class="px-3 py-2 rounded-lg border border-gray-200 dark:border-white/[0.12] text-sm" @click="printSelected">Imprimer</button><button class="px-3 py-2 rounded-lg border border-gray-200 dark:border-white/[0.12] text-sm" @click="downloadPdf">PDF</button><button class="px-4 py-2 rounded-lg bg-violet-600 text-white text-sm" @click="openNew">Nouvelle</button></div></div>
+    <div class="rounded-xl border border-gray-100 dark:border-white/[0.06] bg-white dark:bg-[#111118] p-3 grid grid-cols-1 sm:grid-cols-[1fr_170px] gap-2">
+      <input v-model="search" class="input-field" placeholder="Rechercher facture...">
+      <select v-model="statusFilter" class="input-field">
+        <option value="all">Tous statuts</option>
+        <option value="draft">draft</option>
+        <option value="sent">sent / overdue</option>
+        <option value="paid">paid</option>
+        <option value="cancelled">cancelled</option>
+      </select>
+    </div>
     <div class="grid lg:grid-cols-[1fr_320px] gap-4">
     <div class="space-y-3">
       <div class="sm:hidden space-y-2">
         <button
-          v-for="q in store.invoices"
+          v-for="q in filteredInvoices"
           :key="`mobile-${q.id}`"
           class="w-full rounded-xl border p-3 text-left bg-white dark:bg-[#111118] border-gray-100 dark:border-white/[0.06]"
           :class="selectedId === q.id ? 'ring-1 ring-violet-500/60' : ''"
@@ -146,7 +171,7 @@ onMounted(async () => {
     <div class="admin-table-wrap hidden sm:block bg-white dark:bg-[#111118] border border-gray-100 dark:border-white/[0.06] rounded-xl overflow-hidden">
       <table class="admin-table w-full">
         <thead><tr class="border-b border-gray-100 dark:border-white/[0.06]"><th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Numero</th><th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Client</th><th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Devis</th><th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Montant</th><th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Echeance</th><th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Statut</th><th class="text-right px-4 py-3 text-xs uppercase text-gray-400">Actions</th></tr></thead>
-        <tbody><tr v-for="q in store.invoices" :key="q.id" class="border-b border-gray-50 dark:border-white/[0.03] cursor-pointer" :class="selectedId === q.id ? 'bg-violet-50/60 dark:bg-violet-500/10' : ''" @click="selectedId = q.id"><td class="px-4 py-3 text-sm">{{ q.number }}</td><td class="px-4 py-3 text-sm">{{ q.clientId ? clientsById.get(q.clientId)?.name || '-' : '-' }}</td><td class="px-4 py-3 text-sm">{{ q.quoteId ? quotesById.get(q.quoteId)?.number || '-' : '-' }}</td><td class="px-4 py-3 text-sm">{{ formatAmount(q.amountCents, q.currency) }}</td><td class="px-4 py-3 text-sm">{{ q.dueAt || '-' }}</td><td class="px-4 py-3 text-sm">{{ q.status }}</td><td class="px-4 py-3 text-right space-x-2"><button class="text-xs text-emerald-600" @click.stop="quickSetStatus(q.id, 'paid')">Paye</button><button class="text-xs text-amber-600" @click.stop="quickSetStatus(q.id, 'sent')">Envoyee</button><button class="text-xs text-violet-600" @click.stop="openEdit(q)">Editer</button><button class="text-xs text-red-500" @click.stop="del(q.id)">Supprimer</button></td></tr></tbody>
+        <tbody><tr v-for="q in filteredInvoices" :key="q.id" class="border-b border-gray-50 dark:border-white/[0.03] cursor-pointer" :class="selectedId === q.id ? 'bg-violet-50/60 dark:bg-violet-500/10' : ''" @click="selectedId = q.id"><td class="px-4 py-3 text-sm">{{ q.number }}</td><td class="px-4 py-3 text-sm">{{ q.clientId ? clientsById.get(q.clientId)?.name || '-' : '-' }}</td><td class="px-4 py-3 text-sm">{{ q.quoteId ? quotesById.get(q.quoteId)?.number || '-' : '-' }}</td><td class="px-4 py-3 text-sm">{{ formatAmount(q.amountCents, q.currency) }}</td><td class="px-4 py-3 text-sm">{{ q.dueAt || '-' }}</td><td class="px-4 py-3 text-sm">{{ q.status }}</td><td class="px-4 py-3 text-right space-x-2"><button class="text-xs text-emerald-600" @click.stop="quickSetStatus(q.id, 'paid')">Paye</button><button class="text-xs text-amber-600" @click.stop="quickSetStatus(q.id, 'sent')">Envoyee</button><button class="text-xs text-violet-600" @click.stop="openEdit(q)">Editer</button><button class="text-xs text-red-500" @click.stop="del(q.id)">Supprimer</button></td></tr></tbody>
       </table>
     </div>
     </div>

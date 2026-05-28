@@ -106,6 +106,17 @@ const todayPanel = computed(() => {
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt))[0]
   return { dueTasks, overdueInvoices, pendingQuotes, nextAppointment }
 })
+const pipeline = computed(() => {
+  const leads = clients.clients.filter(c => c.status === 'lead').length
+  const activeClients = clients.clients.filter(c => c.status === 'active').length
+  const sentQuotes = quotes.quotes.filter(q => q.status === 'sent').length
+  const acceptedQuotes = quotes.quotes.filter(q => q.status === 'accepted').length
+  const sentInvoices = invoices.invoices.filter(i => i.status === 'sent' || i.status === 'overdue').length
+  const paidInvoices = invoices.invoices.filter(i => i.status === 'paid').length
+  const quoteConv = sentQuotes > 0 ? Math.round((acceptedQuotes / sentQuotes) * 100) : 0
+  const cashConv = sentInvoices > 0 ? Math.round((paidInvoices / sentInvoices) * 100) : 0
+  return { leads, activeClients, sentQuotes, acceptedQuotes, sentInvoices, paidInvoices, quoteConv, cashConv }
+})
 
 onMounted(async () => {
   await Promise.all([
@@ -223,6 +234,37 @@ onMounted(async () => {
           <p class="text-xs text-gray-400">Prochain RDV</p>
           <p class="mt-1 text-sm font-semibold line-clamp-2">{{ todayPanel.nextAppointment?.title || 'Aucun' }}</p>
         </NuxtLink>
+      </div>
+    </div>
+
+    <div class="bg-white dark:bg-[#111118] border border-gray-100 dark:border-white/[0.06] rounded-xl p-4 sm:p-5">
+      <div class="flex items-center justify-between gap-3">
+        <h2 class="text-sm font-semibold text-gray-800 dark:text-gray-200">Pipeline commercial</h2>
+        <span class="text-xs text-gray-400">Lead → Devis → Facture → Paiement</span>
+      </div>
+      <div class="mt-3 grid grid-cols-2 lg:grid-cols-6 gap-2">
+        <NuxtLink to="/admin/clients?status=lead" class="rounded-lg border border-gray-100 dark:border-white/[0.06] p-3">
+          <p class="text-[11px] text-gray-400">Leads</p><p class="text-lg font-semibold">{{ pipeline.leads }}</p>
+        </NuxtLink>
+        <NuxtLink to="/admin/clients?status=active" class="rounded-lg border border-gray-100 dark:border-white/[0.06] p-3">
+          <p class="text-[11px] text-gray-400">Clients actifs</p><p class="text-lg font-semibold">{{ pipeline.activeClients }}</p>
+        </NuxtLink>
+        <NuxtLink to="/admin/quotes?status=sent" class="rounded-lg border border-gray-100 dark:border-white/[0.06] p-3">
+          <p class="text-[11px] text-gray-400">Devis envoyés</p><p class="text-lg font-semibold">{{ pipeline.sentQuotes }}</p>
+        </NuxtLink>
+        <NuxtLink to="/admin/quotes?status=accepted" class="rounded-lg border border-gray-100 dark:border-white/[0.06] p-3">
+          <p class="text-[11px] text-gray-400">Devis acceptés</p><p class="text-lg font-semibold">{{ pipeline.acceptedQuotes }}</p>
+        </NuxtLink>
+        <NuxtLink to="/admin/invoices?status=sent" class="rounded-lg border border-gray-100 dark:border-white/[0.06] p-3">
+          <p class="text-[11px] text-gray-400">Factures à encaisser</p><p class="text-lg font-semibold">{{ pipeline.sentInvoices }}</p>
+        </NuxtLink>
+        <NuxtLink to="/admin/invoices?status=paid" class="rounded-lg border border-gray-100 dark:border-white/[0.06] p-3">
+          <p class="text-[11px] text-gray-400">Factures payées</p><p class="text-lg font-semibold">{{ pipeline.paidInvoices }}</p>
+        </NuxtLink>
+      </div>
+      <div class="mt-3 grid sm:grid-cols-2 gap-2 text-xs">
+        <p class="rounded-lg bg-gray-50 dark:bg-white/[0.03] px-3 py-2">Conversion devis: <span class="font-semibold">{{ pipeline.quoteConv }}%</span></p>
+        <p class="rounded-lg bg-gray-50 dark:bg-white/[0.03] px-3 py-2">Encaissement factures: <span class="font-semibold">{{ pipeline.cashConv }}%</span></p>
       </div>
     </div>
 
