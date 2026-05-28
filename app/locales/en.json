@@ -9,6 +9,10 @@
   },
   "hero": {
     "badge": "Available for new projects",
+    "title_1": "I help companies",
+    "title_2": "win more clients",
+    "title_3": "through better digital products.",
+    "subtitle": "Conversion-focused websites and apps, delivered fast with premium execution quality.",
     "variant_a": {
       "title_1": "I help companies",
       "title_2": "win more clients",
@@ -33,7 +37,15 @@
     "skills_title": "Technologies",
     "years": "years of experience",
     "projects": "delivered projects",
-    "clients": "happy clients"
+    "clients": "happy clients",
+    "fact_location": "Valais, Switzerland 🇨🇭",
+    "fact_title": "Web & Mobile Developer",
+    "fact_since": "Freelancing since 2020",
+    "label_1": "Profile",
+    "label_2": "Approach",
+    "quote": "A good website doesn't get noticed. It convinces, guides, and converts — without the visitor realising why.",
+    "tools_title": "Tech Stack",
+    "available": "Available"
   },
   "services": {
     "badge": "Services",
@@ -118,6 +130,15 @@
       }
     },
     "coming_soon": "Projects coming soon..."
+  },
+  "blog": {
+    "badge": "Blog",
+    "title": "Recent\nthoughts.",
+    "subtitle": "Articles on web development, UX and digital creation.",
+    "read": "Read article",
+    "view_all": "View all articles",
+    "preview": "Article preview",
+    "open": "Read full article"
   },
   "contact": {
     "badge": "Contact",

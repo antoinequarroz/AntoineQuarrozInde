@@ -9,6 +9,10 @@
   },
   "hero": {
     "badge": "Verfügbar für neue Projekte",
+    "title_1": "Ich helfe Unternehmen,",
+    "title_2": "mehr Kunden",
+    "title_3": "über digitale Produkte zu gewinnen.",
+    "subtitle": "Conversion-orientierte Websites und Apps mit schneller Umsetzung und hoher Qualitätsausführung.",
     "variant_a": {
       "title_1": "Ich helfe Unternehmen,",
       "title_2": "mehr Kunden",
@@ -33,7 +37,15 @@
     "skills_title": "Technologien",
     "years": "Jahre Erfahrung",
     "projects": "abgeschlossene Projekte",
-    "clients": "zufriedene Kunden"
+    "clients": "zufriedene Kunden",
+    "fact_location": "Wallis, Schweiz 🇨🇭",
+    "fact_title": "Web- & Mobile-Entwickler",
+    "fact_since": "Freelancer seit 2020",
+    "label_1": "Profil",
+    "label_2": "Ansatz",
+    "quote": "Eine gute Website fällt nicht auf. Sie überzeugt, führt und konvertiert — ohne dass der Besucher merkt, warum.",
+    "tools_title": "Tech Stack",
+    "available": "Verfügbar"
   },
   "services": {
     "badge": "Leistungen",
@@ -118,6 +130,15 @@
       }
     },
     "coming_soon": "Projekte bald verfügbar..."
+  },
+  "blog": {
+    "badge": "Blog",
+    "title": "Aktuelle\nGedanken.",
+    "subtitle": "Artikel über Web-Entwicklung, UX und digitale Gestaltung.",
+    "read": "Artikel lesen",
+    "view_all": "Alle Artikel ansehen",
+    "preview": "Artikelvorschau",
+    "open": "Vollständigen Artikel lesen"
   },
   "contact": {
     "badge": "Kontakt",

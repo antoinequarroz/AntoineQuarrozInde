@@ -9,6 +9,10 @@
   },
   "hero": {
     "badge": "Disponible pour de nouveaux mandats",
+    "title_1": "J'aide les entreprises à",
+    "title_2": "gagner des clients",
+    "title_3": "avec leur site web.",
+    "subtitle": "Sites vitrines et applications orientés conversion, avec une exécution rapide et un niveau de qualité premium.",
     "variant_a": {
       "title_1": "J'aide les entreprises à",
       "title_2": "gagner des clients",
@@ -33,7 +37,15 @@
     "skills_title": "Technologies",
     "years": "ans d'expérience",
     "projects": "projets livrés",
-    "clients": "clients satisfaits"
+    "clients": "clients satisfaits",
+    "fact_location": "Valais, Suisse 🇨🇭",
+    "fact_title": "Développeur Web & Mobile",
+    "fact_since": "Freelance depuis 2020",
+    "label_1": "Profil",
+    "label_2": "Approche",
+    "quote": "Un bon site ne se remarque pas. Il convainc, il guide, et il convertit — sans que le visiteur réalise pourquoi.",
+    "tools_title": "Stack technique",
+    "available": "Disponible"
   },
   "services": {
     "badge": "Services",
@@ -118,6 +130,15 @@
       }
     },
     "coming_soon": "Projets bientôt disponibles..."
+  },
+  "blog": {
+    "badge": "Blog",
+    "title": "Réflexions\nrécentes.",
+    "subtitle": "Articles sur le développement web, l'UX et la création digitale.",
+    "read": "Lire l'article",
+    "view_all": "Voir tous les articles",
+    "preview": "Aperçu de l'article",
+    "open": "Lire l'article complet"
   },
   "contact": {
     "badge": "Contact",

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 const { t } = useI18n();
-const { track } = useMarketing();
 
 const sceneUrl = "https://prod.spline.design/PyzDhpQ9E5f1E3MT/scene.splinecode";
 </script>
