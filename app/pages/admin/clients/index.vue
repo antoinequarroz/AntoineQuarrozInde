@@ -113,6 +113,7 @@ onMounted(() => store.ensureLoaded())
               </span>
             </td>
             <td class="px-5 py-3 text-right space-x-2">
+              <NuxtLink :to="`/admin/clients/${client.id}`" class="text-xs text-sky-600">Voir</NuxtLink>
               <button class="text-xs text-violet-600" @click="openEdit(client)">Editer</button>
               <button class="text-xs text-red-500" @click="handleDelete(client.id)">Supprimer</button>
             </td>

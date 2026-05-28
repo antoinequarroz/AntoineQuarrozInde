@@ -4,6 +4,7 @@ definePageMeta({ layout: 'admin', middleware: 'admin' })
 const store = useInvoicesStore()
 const clients = useClientsStore()
 const quotes = useQuotesStore()
+const route = useRoute()
 const toast = useToast()
 const showForm = ref(false)
 const editing = ref<Invoice | null>(null)
@@ -33,7 +34,14 @@ function openNew() { editing.value = null; Object.assign(form, { number: '', cli
 function openEdit(x: Invoice) { editing.value = x; Object.assign(form, x); showForm.value = true }
 async function submit() { try { const payload = { ...form, issuedAt: form.issuedAt || null, dueAt: form.dueAt || null, paidAt: form.paidAt || null, notes: form.notes || null }; if (editing.value) await store.update(editing.value.id, payload as any); else await store.add(payload as any); showForm.value = false; toast.success('Enregistre') } catch { toast.error('Erreur') } }
 async function del(id: number) { if (!confirm('Supprimer ?')) return; try { await store.remove(id); toast.success('Supprime') } catch { toast.error('Erreur') } }
-onMounted(() => Promise.all([store.ensureLoaded(), clients.ensureLoaded(), quotes.ensureLoaded()]))
+onMounted(async () => {
+  await Promise.all([store.ensureLoaded(), clients.ensureLoaded(), quotes.ensureLoaded()])
+  if (route.query.new === '1') {
+    openNew()
+    const id = Number(route.query.clientId || 0)
+    if (id) form.clientId = id
+  }
+})
 </script>
 <template>
   <div class="space-y-5">

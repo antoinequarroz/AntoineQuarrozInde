@@ -5,6 +5,7 @@ definePageMeta({ layout: 'admin', middleware: 'admin' })
 
 const store = useAppointmentsStore()
 const clients = useClientsStore()
+const route = useRoute()
 const toast = useToast()
 const showForm = ref(false)
 const editing = ref<Appointment | null>(null)
@@ -68,7 +69,14 @@ async function del(id: number) {
   }
 }
 
-onMounted(() => Promise.all([store.ensureLoaded(), clients.ensureLoaded()]))
+onMounted(async () => {
+  await Promise.all([store.ensureLoaded(), clients.ensureLoaded()])
+  if (route.query.new === '1') {
+    openNew()
+    const id = Number(route.query.clientId || 0)
+    if (id) form.clientId = id
+  }
+})
 </script>
 
 <template>
