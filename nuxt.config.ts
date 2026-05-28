@@ -74,6 +74,7 @@
     adminEmail: process.env.ADMIN_EMAIL || '',
     public: {
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'https://www.antoinequarroz.dev',
+      defaultOrganizationSlug: process.env.DEFAULT_ORGANIZATION_SLUG || '',
       turnstileSiteKey: process.env.TURNSTILE_SITE_KEY || '',
       supabaseUrl: process.env.SUPABASE_URL || '',
       supabaseAnonKey: process.env.SUPABASE_ANON_KEY || '',

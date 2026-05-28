@@ -1,8 +1,32 @@
 export const useAuthStore = defineStore('auth', () => {
+  type OrganizationMembership = {
+    id: string
+    name: string
+    slug: string
+    role: 'owner' | 'admin' | 'manager' | 'viewer' | 'client'
+  }
+
   const isAuthenticated = ref(false)
   const accessToken = ref<string | null>(null)
   const userEmail = ref<string | null>(null)
+  const organizations = ref<OrganizationMembership[]>([])
+  const currentOrganizationId = ref<string | null>(null)
   const loading = ref(false)
+
+  async function loadOrganizations() {
+    if (!accessToken.value) return
+    const rows = await $fetch<OrganizationMembership[]>('/api/admin/organizations', {
+      headers: { authorization: `Bearer ${accessToken.value}` },
+    })
+    organizations.value = rows
+
+    if (rows.length > 0) {
+      const validCurrent = rows.some(o => o.id === currentOrganizationId.value)
+      if (!validCurrent) currentOrganizationId.value = rows[0].id
+    } else {
+      currentOrganizationId.value = null
+    }
+  }
 
   async function checkSession() {
     const client = useSupabaseClient()
@@ -11,6 +35,12 @@ export const useAuthStore = defineStore('auth', () => {
     isAuthenticated.value = !!session
     accessToken.value = session?.access_token ?? null
     userEmail.value = session?.user?.email ?? null
+    if (isAuthenticated.value) {
+      await loadOrganizations()
+    } else {
+      organizations.value = []
+      currentOrganizationId.value = null
+    }
     return isAuthenticated.value
   }
 
@@ -23,6 +53,7 @@ export const useAuthStore = defineStore('auth', () => {
       isAuthenticated.value = true
       accessToken.value = data.session.access_token
       userEmail.value = data.user?.email ?? null
+      await loadOrganizations()
       return true
     }
     finally {
@@ -36,11 +67,37 @@ export const useAuthStore = defineStore('auth', () => {
     isAuthenticated.value = false
     accessToken.value = null
     userEmail.value = null
+    organizations.value = []
+    currentOrganizationId.value = null
   }
 
   function authHeader() {
-    return accessToken.value ? { authorization: `Bearer ${accessToken.value}` } : {}
+    if (!accessToken.value) return {}
+    const headers: Record<string, string> = {
+      authorization: `Bearer ${accessToken.value}`,
+    }
+    if (currentOrganizationId.value) {
+      headers['x-organization-id'] = currentOrganizationId.value
+    }
+    return headers
   }
 
-  return { isAuthenticated, accessToken, userEmail, loading, checkSession, login, logout, authHeader }
+  function setCurrentOrganization(id: string) {
+    currentOrganizationId.value = id
+  }
+
+  return {
+    isAuthenticated,
+    accessToken,
+    userEmail,
+    organizations,
+    currentOrganizationId,
+    loading,
+    checkSession,
+    login,
+    logout,
+    authHeader,
+    setCurrentOrganization,
+    loadOrganizations,
+  }
 })

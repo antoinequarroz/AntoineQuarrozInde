@@ -1,10 +1,11 @@
 export default defineEventHandler(async (event) => {
-  await requireAdmin(event)
+  const { org } = await requireAdmin(event)
 
   const supabase = getSupabaseAdmin()
   const { data, error } = await supabase
     .from('contact_messages')
     .select('id,name,email,subject,message,status,replied_at,created_at')
+    .eq('organization_id', org.id)
     .order('created_at', { ascending: false })
 
   if (error) {

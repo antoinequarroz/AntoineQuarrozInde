@@ -15,6 +15,7 @@ function escapeHtml(input: string) {
 }
 
 export default defineEventHandler(async (event) => {
+  const org = await resolveOrganizationContext(event)
   const ip = getRequestIP(event, { xForwardedFor: true }) || 'unknown'
   const now = Date.now()
   const hits = (ipHits.get(ip) || []).filter((ts) => now - ts < RATE_WINDOW_MS)
@@ -78,6 +79,7 @@ export default defineEventHandler(async (event) => {
   const safeSubjectHtml = escapeHtml(safeSubject)
 
   const { error: saveError } = await supabase.from('contact_messages').insert({
+    organization_id: org?.id ?? null,
     name: String(name),
     email: String(email),
     subject: safeSubject,

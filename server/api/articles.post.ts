@@ -1,9 +1,10 @@
 export default defineEventHandler(async (event) => {
-  await requireAdmin(event)
+  const { org } = await requireAdmin(event)
   const body = await readBody(event)
   const supabase = getSupabaseAdmin()
 
   const payload = {
+    organization_id: org.id,
     title: body.title,
     slug: body.slug,
     excerpt: body.excerpt,

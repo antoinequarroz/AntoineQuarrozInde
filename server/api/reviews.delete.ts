@@ -1,5 +1,5 @@
 export default defineEventHandler(async (event) => {
-  await requireAdmin(event)
+  const { org } = await requireAdmin(event)
   const { id } = getQuery(event)
   const numericId = Number(id)
   if (!numericId) throw createError({ statusCode: 400, message: 'Missing review id' })
@@ -8,6 +8,7 @@ export default defineEventHandler(async (event) => {
   const { error } = await supabase
     .from('reviews')
     .delete()
+    .eq('organization_id', org.id)
     .eq('id', numericId)
 
   if (error) {

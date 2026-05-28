@@ -10,7 +10,7 @@ function escapeHtml(input: string) {
 }
 
 export default defineEventHandler(async (event) => {
-  await requireAdmin(event)
+  const { org } = await requireAdmin(event)
   const body = await readBody(event)
   const id = Number(body?.id)
   const replySubject = String(body?.subject || '').trim()
@@ -32,6 +32,7 @@ export default defineEventHandler(async (event) => {
   const { data: contact, error: findError } = await supabase
     .from('contact_messages')
     .select('id,name,email')
+    .eq('organization_id', org.id)
     .eq('id', id)
     .maybeSingle()
 
@@ -64,6 +65,7 @@ export default defineEventHandler(async (event) => {
   await supabase
     .from('contact_messages')
     .update({ status: 'replied', replied_at: new Date().toISOString() })
+    .eq('organization_id', org.id)
     .eq('id', id)
 
   return { success: true }

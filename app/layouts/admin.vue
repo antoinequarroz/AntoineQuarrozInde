@@ -22,6 +22,11 @@ async function handleLogout() {
   await auth.logout()
   await router.push('/admin/login')
 }
+
+const selectedOrganizationId = computed({
+  get: () => auth.currentOrganizationId || '',
+  set: (value: string) => auth.setCurrentOrganization(value),
+})
 </script>
 
 <template>
@@ -138,6 +143,20 @@ async function handleLogout() {
             {{ $route.path.split('/').pop() }}
           </span>
         </nav>
+
+        <select
+          v-if="auth.organizations.length > 0"
+          v-model="selectedOrganizationId"
+          class="h-8 px-2.5 rounded-lg border border-gray-200 dark:border-white/[0.1] bg-white dark:bg-[#181826] text-xs text-gray-700 dark:text-gray-200"
+        >
+          <option
+            v-for="org in auth.organizations"
+            :key="org.id"
+            :value="org.id"
+          >
+            {{ org.name }} ({{ org.role }})
+          </option>
+        </select>
 
         <UiThemeToggle />
       </header>
