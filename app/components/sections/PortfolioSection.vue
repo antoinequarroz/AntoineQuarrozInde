@@ -29,7 +29,7 @@ const filtered = computed(() => {
 </script>
 
 <template>
-  <section id="portfolio" class="section-padding section-surface overflow-visible">
+  <section id="portfolio" class="pb-14 md:pb-24 lg:pb-28 section-surface overflow-visible">
     <div class="section-background">
       <div class="section-grid" />
     </div>
