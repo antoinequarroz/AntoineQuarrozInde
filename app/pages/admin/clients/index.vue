@@ -12,8 +12,10 @@ const editing = ref<Client | null>(null)
 const selectedIds = ref<number[]>([])
 const search = ref('')
 const statusFilter = ref<'all' | Client['status']>('all')
+const viewMode = ref<'table' | 'kanban'>('table')
 const viewName = ref('')
 const savedViews = ref<Array<{ name: string, search: string, status: 'all' | Client['status'] }>>([])
+const draggingClientId = ref<number | null>(null)
 const form = reactive({
   name: '',
   company: '',
@@ -62,6 +64,25 @@ function applyView(view: { name: string, search: string, status: 'all' | Client[
 function removeView(name: string) {
   savedViews.value = savedViews.value.filter(v => v.name !== name)
   persistViews()
+}
+
+function startDrag(id: number) {
+  draggingClientId.value = id
+}
+
+async function moveClientToStatus(status: Client['status']) {
+  const id = draggingClientId.value
+  if (!id) return
+  const current = store.clients.find(c => c.id === id)
+  if (!current || current.status === status) return
+  try {
+    await store.update(id, { status })
+    toast.success(`Client passe en ${status}`)
+  } catch {
+    toast.error('Erreur deplacement')
+  } finally {
+    draggingClientId.value = null
+  }
 }
 
 function openNew() {
@@ -163,6 +184,11 @@ const filteredClients = computed(() => {
     return [client.name, client.company || '', client.email, client.phone || ''].join(' ').toLowerCase().includes(q)
   })
 })
+const kanbanColumns = computed(() => ([
+  { key: 'lead' as const, label: 'Leads', items: filteredClients.value.filter(c => c.status === 'lead') },
+  { key: 'active' as const, label: 'Actifs', items: filteredClients.value.filter(c => c.status === 'active') },
+  { key: 'inactive' as const, label: 'Inactifs', items: filteredClients.value.filter(c => c.status === 'inactive') },
+]))
 
 onMounted(() => {
   store.ensureLoaded()
@@ -195,6 +221,10 @@ onMounted(() => {
         </select>
       </div>
       <div class="flex flex-wrap items-center gap-2">
+        <div class="inline-flex rounded-lg border border-gray-200 dark:border-white/[0.12] overflow-hidden">
+          <button class="px-2.5 py-1.5 text-xs" :class="viewMode === 'table' ? 'bg-violet-600 text-white' : 'bg-transparent'" @click="viewMode='table'">Table</button>
+          <button class="px-2.5 py-1.5 text-xs" :class="viewMode === 'kanban' ? 'bg-violet-600 text-white' : 'bg-transparent'" @click="viewMode='kanban'">Kanban</button>
+        </div>
         <input v-model="viewName" class="input-field !h-9 !py-1.5 !text-xs max-w-[220px]" placeholder="Nom de vue">
         <button class="px-2.5 py-1.5 rounded-lg text-xs border border-gray-200 dark:border-white/[0.12]" @click="saveCurrentView">Sauver la vue</button>
         <button class="px-2.5 py-1.5 rounded-lg text-xs border border-gray-200 dark:border-white/[0.12]" @click="search=''; statusFilter='all'">Reset</button>
@@ -221,7 +251,7 @@ onMounted(() => {
       </div>
     </div>
 
-    <div class="space-y-3">
+    <div v-if="viewMode === 'table'" class="space-y-3">
       <div class="sm:hidden space-y-2">
         <div
           v-for="client in filteredClients"
@@ -293,6 +323,39 @@ onMounted(() => {
         </tbody>
       </table>
       </div>
+    </div>
+
+    <div v-else class="grid grid-cols-1 lg:grid-cols-3 gap-3">
+      <section
+        v-for="col in kanbanColumns"
+        :key="col.key"
+        class="rounded-xl border border-gray-100 dark:border-white/[0.06] bg-white dark:bg-[#111118] p-3 min-h-[320px]"
+        @dragover.prevent
+        @drop.prevent="moveClientToStatus(col.key)"
+      >
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="text-sm font-semibold">{{ col.label }}</h3>
+          <span class="text-xs text-gray-400">{{ col.items.length }}</span>
+        </div>
+        <div class="space-y-2">
+          <article
+            v-for="client in col.items"
+            :key="`kanban-${client.id}`"
+            draggable="true"
+            class="rounded-lg border border-gray-100 dark:border-white/[0.06] bg-gray-50/70 dark:bg-white/[0.03] p-2.5 cursor-move"
+            @dragstart="startDrag(client.id)"
+          >
+            <p class="text-sm font-medium">{{ client.name }}</p>
+            <p class="text-xs text-gray-500">{{ client.company || 'Independant' }}</p>
+            <p class="text-xs text-gray-400 mt-1">{{ client.email }}</p>
+            <div class="mt-2 flex items-center gap-2">
+              <NuxtLink :to="`/admin/clients/${client.id}`" class="text-xs text-sky-600">Voir</NuxtLink>
+              <button class="text-xs text-violet-600" @click="openEdit(client)">Editer</button>
+            </div>
+          </article>
+          <p v-if="!col.items.length" class="text-xs text-gray-400 py-6 text-center">Aucun client</p>
+        </div>
+      </section>
     </div>
 
     <Transition name="fade">
