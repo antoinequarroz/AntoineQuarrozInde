@@ -34,7 +34,9 @@
       "Bash(git add *)",
       "Bash(echo \"PID: $!\")",
       "Bash(pkill -f \"nuxt dev\")",
-      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\antoine.quarroz\\\\Desktop\\\\LabDev\\\\AntoineQuarrozInde\" -Recurse -Directory -Name)"
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\antoine.quarroz\\\\Desktop\\\\LabDev\\\\AntoineQuarrozInde\" -Recurse -Directory -Name)",
+      "PowerShell(taskkill /PID 44672 /F)",
+      "PowerShell(Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess | ForEach-Object { taskkill /PID $_ /F })"
     ]
   }
 }

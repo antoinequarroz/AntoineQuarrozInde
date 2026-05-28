@@ -9,10 +9,10 @@
   },
   "hero": {
     "badge": "Available for new projects",
-    "title_1": "I help companies",
-    "title_2": "win more clients",
-    "title_3": "through better digital products.",
-    "subtitle": "Conversion-focused websites and apps, delivered fast with premium execution quality.",
+    "title_1": "Websites and apps",
+    "title_2": "that stand out",
+    "title_3": "from the very first second.",
+    "subtitle": "Polished design, fast code, quick turnaround. For local businesses and startups that refuse to look like everyone else.",
     "variant_a": {
       "title_1": "I help companies",
       "title_2": "win more clients",
@@ -31,9 +31,9 @@
   },
   "about": {
     "badge": "About",
-    "title": "Passionate about code,\nobsessed with details.",
-    "description_1": "I'm Antoine Quarroz, a web & mobile developer based in Valais, Switzerland. With expertise in modern technologies, I transform your ideas into high-performance, beautiful digital products.",
-    "description_2": "My approach combines technical rigor and design sensibility to deliver solutions that not only work perfectly, but also impress visually.",
+    "title": "I don't just write code.\nI build what people remember.",
+    "description_1": "Antoine Quarroz, independent developer based in Valais. Since 2020, I've been guiding local businesses and startups from the first mockup to launch — no middleman, no vague deadlines.",
+    "description_2": "Most developers don't think about design. Most designers don't think about performance. I work on both at the same time — because one without the other doesn't really serve anyone.",
     "skills_title": "Technologies",
     "years": "years of experience",
     "projects": "delivered projects",
@@ -43,7 +43,7 @@
     "fact_since": "Freelancing since 2020",
     "label_1": "Profile",
     "label_2": "Approach",
-    "quote": "A good website doesn't get noticed. It convinces, guides, and converts — without the visitor realising why.",
+    "quote": "Design attracts. Performance retains. And when both arrive fast — that genuinely changes something for a business.",
     "tools_title": "Tech Stack",
     "available": "Available"
   },
@@ -53,7 +53,7 @@
     "subtitle": "Complete digital solutions, from design to deployment.",
     "vitrine": {
       "title": "Showcase Websites",
-      "description": "Modern, fast, SEO-optimized websites that perfectly reflect your brand and convert your visitors.",
+      "description": "A website that reflects your credibility, loads in under 2 seconds and naturally guides visitors toward action.",
       "features": [
         "Custom design",
         "100% responsive",
@@ -63,7 +63,7 @@
     },
     "mobile": {
       "title": "Mobile Applications",
-      "description": "Native or cross-platform iOS and Android apps, intuitive and performant, delivering an exceptional user experience.",
+      "description": "iOS and Android apps built to be smooth from day one, stable in production and easy to scale.",
       "features": [
         "iOS & Android",
         "Polished UI/UX",
@@ -73,7 +73,7 @@
     },
     "cms": {
       "title": "CMS Solutions",
-      "description": "Custom content management systems designed to let you manage your business with complete autonomy.",
+      "description": "A back-office designed for you, not a technician. Edit, publish, adjust — with full independence.",
       "features": [
         "Intuitive interface",
         "Fully custom",
@@ -142,7 +142,7 @@
   },
   "contact": {
     "badge": "Contact",
-    "title": "Let's start your\nproject together.",
+    "title": "Got a project in mind?\nLet's talk about it this week.",
     "subtitle": "Have an idea? A project? Let's chat over a virtual coffee.",
     "form": {
       "name": "Your name",

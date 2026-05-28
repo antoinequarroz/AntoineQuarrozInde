@@ -9,10 +9,10 @@
   },
   "hero": {
     "badge": "Verfügbar für neue Projekte",
-    "title_1": "Ich helfe Unternehmen,",
-    "title_2": "mehr Kunden",
-    "title_3": "über digitale Produkte zu gewinnen.",
-    "subtitle": "Conversion-orientierte Websites und Apps mit schneller Umsetzung und hoher Qualitätsausführung.",
+    "title_1": "Websites und Apps,",
+    "title_2": "die im Gedächtnis bleiben",
+    "title_3": "— vom ersten Moment an.",
+    "subtitle": "Durchdachtes Design, performanter Code, schnelle Lieferung. Für lokale Unternehmen und Startups, die nicht wie alle anderen aussehen wollen.",
     "variant_a": {
       "title_1": "Ich helfe Unternehmen,",
       "title_2": "mehr Kunden",
@@ -31,9 +31,9 @@
   },
   "about": {
     "badge": "Über mich",
-    "title": "Leidenschaft für Code,\nObsession für Details.",
-    "description_1": "Ich bin Antoine Quarroz, Web- & Mobile-Entwickler aus dem Wallis, Schweiz. Mit Expertise in modernen Technologien verwandle ich Ihre Ideen in leistungsstarke, ästhetische digitale Produkte.",
-    "description_2": "Mein Ansatz verbindet technische Präzision mit Designgefühl, um Lösungen zu liefern, die nicht nur perfekt funktionieren, sondern auch visuell beeindrucken.",
+    "title": "Ich schreibe nicht nur Code.\nIch baue, was im Gedächtnis bleibt.",
+    "description_1": "Antoine Quarroz, selbstständiger Entwickler aus dem Wallis. Seit 2020 begleite ich lokale Unternehmen und Startups vom ersten Entwurf bis zum Launch — ohne Zwischenhändler, ohne vage Fristen.",
+    "description_2": "Die meisten Entwickler denken nicht an Design. Die meisten Designer nicht an Performance. Ich arbeite an beidem gleichzeitig — weil das eine ohne das andere kaum etwas bringt.",
     "skills_title": "Technologien",
     "years": "Jahre Erfahrung",
     "projects": "abgeschlossene Projekte",
@@ -43,7 +43,7 @@
     "fact_since": "Freelancer seit 2020",
     "label_1": "Profil",
     "label_2": "Ansatz",
-    "quote": "Eine gute Website fällt nicht auf. Sie überzeugt, führt und konvertiert — ohne dass der Besucher merkt, warum.",
+    "quote": "Design zieht an. Performance hält fest. Und wenn beides schnell kommt — verändert das wirklich etwas für ein Business.",
     "tools_title": "Tech Stack",
     "available": "Verfügbar"
   },
@@ -53,7 +53,7 @@
     "subtitle": "Komplette digitale Lösungen, von der Konzeption bis zur Inbetriebnahme.",
     "vitrine": {
       "title": "Showcase-Websites",
-      "description": "Moderne, schnelle und SEO-optimierte Websites, die Ihre Marke perfekt widerspiegeln und Besucher konvertieren.",
+      "description": "Eine Website, die Ihre Seriosität widerspiegelt, in unter 2 Sekunden lädt und Besucher natürlich zur Aktion führt.",
       "features": [
         "Individuelles Design",
         "100% responsive",
@@ -63,7 +63,7 @@
     },
     "mobile": {
       "title": "Mobile Applikationen",
-      "description": "Native oder Cross-Platform iOS- und Android-Apps, intuitiv und leistungsstark für ein außergewöhnliches Nutzererlebnis.",
+      "description": "iOS und Android, konzipiert für Flüssigkeit vom ersten Start, stabil in der Produktion und einfach weiterzuentwickeln.",
       "features": [
         "iOS & Android",
         "Durchdachtes UI/UX",
@@ -73,7 +73,7 @@
     },
     "cms": {
       "title": "CMS-Lösungen",
-      "description": "Maßgeschneiderte Content-Management-Systeme, die Ihnen ermöglichen, Ihr Business selbstständig zu verwalten.",
+      "description": "Ein Back-Office für Sie, nicht für Techniker. Bearbeiten, veröffentlichen, anpassen — in voller Autonomie.",
       "features": [
         "Intuitive Oberfläche",
         "Maßgeschneidert",
@@ -142,7 +142,7 @@
   },
   "contact": {
     "badge": "Kontakt",
-    "title": "Starten wir Ihr\nProjekt gemeinsam.",
+    "title": "Ein Projekt im Kopf?\nWir können diese Woche darüber sprechen.",
     "subtitle": "Eine Idee? Ein Projekt? Lassen Sie uns darüber sprechen.",
     "form": {
       "name": "Ihr Name",

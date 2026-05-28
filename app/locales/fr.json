@@ -9,10 +9,10 @@
   },
   "hero": {
     "badge": "Disponible pour de nouveaux mandats",
-    "title_1": "J'aide les entreprises à",
-    "title_2": "gagner des clients",
-    "title_3": "avec leur site web.",
-    "subtitle": "Sites vitrines et applications orientés conversion, avec une exécution rapide et un niveau de qualité premium.",
+    "title_1": "Des sites et apps",
+    "title_2": "qui s'imposent",
+    "title_3": "dès le premier regard.",
+    "subtitle": "Design soigné, code performant, livraison rapide. Pour les entreprises locales et les startups qui ne veulent pas ressembler à tout le monde.",
     "variant_a": {
       "title_1": "J'aide les entreprises à",
       "title_2": "gagner des clients",
@@ -31,9 +31,9 @@
   },
   "about": {
     "badge": "À propos",
-    "title": "Passionné par le code,\nobsédé par les détails.",
-    "description_1": "Je m'appelle Antoine Quarroz, développeur web & mobile basé en Valais, Suisse. Fort d'une expertise en technologies modernes, je transforme vos idées en produits digitaux performants et esthétiques.",
-    "description_2": "Mon approche combine rigueur technique et sensibilité design pour livrer des solutions qui non seulement fonctionnent parfaitement, mais qui impressionnent aussi visuellement.",
+    "title": "Je ne fais pas que coder.\nJe construis ce que les gens retiennent.",
+    "description_1": "Antoine Quarroz, développeur indépendant basé en Valais. Depuis 2020, j'accompagne des entreprises locales et des startups de la maquette jusqu'à la mise en ligne — sans intermédiaire, sans délais flous.",
+    "description_2": "La plupart des devs ne pensent pas design. La plupart des designers ne pensent pas performance. Moi, je travaille les deux en même temps — parce que l'un sans l'autre ne sert pas grand chose.",
     "skills_title": "Technologies",
     "years": "ans d'expérience",
     "projects": "projets livrés",
@@ -43,7 +43,7 @@
     "fact_since": "Freelance depuis 2020",
     "label_1": "Profil",
     "label_2": "Approche",
-    "quote": "Un bon site ne se remarque pas. Il convainc, il guide, et il convertit — sans que le visiteur réalise pourquoi.",
+    "quote": "Le design attire. La performance retient. Et quand les deux arrivent vite — ça change vraiment quelque chose pour un business.",
     "tools_title": "Stack technique",
     "available": "Disponible"
   },
@@ -53,7 +53,7 @@
     "subtitle": "Des solutions digitales complètes, de la conception à la mise en ligne.",
     "vitrine": {
       "title": "Sites Vitrine",
-      "description": "Des sites web modernes, rapides et optimisés SEO qui reflètent parfaitement votre image de marque et convertissent vos visiteurs.",
+      "description": "Un site qui reflète votre sérieux, se charge en moins de 2 secondes et guide naturellement le visiteur vers l'action.",
       "features": [
         "Design sur mesure",
         "100% responsive",
@@ -63,7 +63,7 @@
     },
     "mobile": {
       "title": "Applications Mobiles",
-      "description": "Des applications iOS et Android natives ou cross-platform, intuitives et performantes qui offrent une expérience utilisateur exceptionnelle.",
+      "description": "iOS et Android, conçus pour être fluides dès le premier lancement, stables en prod et simples à faire évoluer.",
       "features": [
         "iOS & Android",
         "UI/UX soigné",
@@ -73,7 +73,7 @@
     },
     "cms": {
       "title": "Solutions CMS",
-      "description": "Des systèmes de gestion de contenu sur mesure, pensés pour vous permettre de gérer votre business en toute autonomie.",
+      "description": "Un back-office pensé pour vous, pas pour un technicien. Modifiez, publiez, ajustez — en totale autonomie.",
       "features": [
         "Interface intuitive",
         "Sur mesure",
@@ -142,7 +142,7 @@
   },
   "contact": {
     "badge": "Contact",
-    "title": "Démarrons votre\nprojet ensemble.",
+    "title": "Un projet en tête ?\nOn peut en parler cette semaine.",
     "subtitle": "Une idée ? Un projet ? Parlons-en autour d'un café virtuel.",
     "form": {
       "name": "Votre nom",
