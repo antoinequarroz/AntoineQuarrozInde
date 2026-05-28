@@ -158,7 +158,13 @@
   .input-field {
     padding: 0.65rem 0.75rem;
     border-radius: 0.65rem;
-    font-size: 0.9rem;
+    font-size: 16px;
+  }
+
+  input,
+  select,
+  textarea {
+    font-size: 16px;
   }
 
   .section-container {
@@ -381,7 +387,7 @@
   .admin-shell select.input-field,
   .admin-shell textarea.input-field {
     min-height: 2.55rem;
-    font-size: 0.9rem;
+    font-size: 16px;
   }
 
   .admin-shell .admin-main .text-sm {
