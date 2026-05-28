@@ -83,7 +83,7 @@ watch(activeFilter, (value) => {
           </span>
         </button>
       </div>
-      <div class="relative z-30 mb-3 flex flex-wrap justify-center gap-2">
+      <div class="relative z-30 mb-3 flex flex-wrap justify-center gap-2 md:hidden">
         <a
           href="/#contact"
           class="rounded-lg bg-violet-600 text-white px-3.5 py-2 text-xs font-semibold"
