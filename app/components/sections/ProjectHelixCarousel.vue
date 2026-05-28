@@ -9,9 +9,6 @@ const props = defineProps<{
 }>()
 
 const { t } = useI18n()
-const isMounted = ref(false)
-onMounted(() => { isMounted.value = true })
-
 const rootRef = ref<HTMLElement | null>(null)
 const { top, height } = useElementBounding(rootRef)
 const { height: viewportH, width: viewportW } = useWindowSize()
@@ -28,11 +25,9 @@ const displayProjects = computed(() => {
   return props.projects
 })
 
-const desktopTrackStyle = computed(() => {
-  const steps = Math.max(1, sourceTotal.value - 1)
-  const trackVh = Math.min(320, Math.max(210, 130 + steps * 62))
-  return { height: `${trackVh}vh` }
-})
+const desktopTrackStyle = computed(() => ({
+  height: `${Math.max(380, sourceTotal.value * 105)}vh`,
+}))
 
 const progress = computed(() => {
   const vh = Math.max(1, viewportH.value)
@@ -156,20 +151,20 @@ function cardStyle(index: number) {
         </div>
       </div>
 
-      <div v-if="isMounted" class="hidden md:block relative left-1/2 w-screen -translate-x-1/2" :style="desktopTrackStyle">
+      <div class="hidden md:block relative left-1/2 w-screen -translate-x-1/2" :style="desktopTrackStyle">
         <div class="sticky top-20 xl:top-24 flex h-[calc(100vh-5rem)] xl:h-[calc(100vh-6rem)] min-h-[420px] items-center justify-center overflow-hidden">
           <div class="absolute inset-0 bg-[linear-gradient(180deg,rgba(246,246,251,0.92),rgba(238,242,255,0.76)_45%,rgba(246,246,251,0.94)),radial-gradient(circle_at_50%_47%,rgba(124,58,237,0.18),transparent_36%),radial-gradient(circle_at_54%_42%,rgba(34,211,238,0.14),transparent_26%)] dark:bg-[linear-gradient(180deg,rgba(6,6,14,0.94),rgba(9,9,18,0.82)_45%,rgba(6,6,14,0.96)),radial-gradient(circle_at_50%_47%,rgba(124,58,237,0.22),transparent_36%),radial-gradient(circle_at_54%_42%,rgba(34,211,238,0.16),transparent_26%)]" />
           <div class="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-[#070710] via-[#070710]/60 to-transparent" />
           <div class="absolute inset-x-0 top-10 mx-auto h-px max-w-6xl bg-gradient-to-r from-transparent via-violet-400/30 to-transparent" />
-          <div class="absolute left-1/2 top-[54%] h-[36rem] w-[17rem] -translate-x-1/2 -translate-y-1/2 rounded-[999px] border border-violet-500/15 dark:border-white/10" />
-          <div class="absolute left-1/2 top-[54%] h-[27rem] w-[10rem] -translate-x-1/2 -translate-y-1/2 rounded-[999px] border border-cyan-400/15 dark:border-cyan-300/10" />
-          <div class="absolute left-1/2 top-[54%] h-[52vh] w-px -translate-x-1/2 -translate-y-1/2 bg-gradient-to-b from-transparent via-violet-400/25 to-transparent" />
-          <div class="absolute left-1/2 top-[54%] h-[6.5rem] w-[6.5rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-violet-500/10 blur-3xl dark:bg-violet-400/15" />
+          <div class="absolute left-1/2 top-[51.5%] h-[36rem] w-[17rem] -translate-x-1/2 -translate-y-1/2 rounded-[999px] border border-violet-500/15 dark:border-white/10" />
+          <div class="absolute left-1/2 top-[51.5%] h-[27rem] w-[10rem] -translate-x-1/2 -translate-y-1/2 rounded-[999px] border border-cyan-400/15 dark:border-cyan-300/10" />
+          <div class="absolute left-1/2 top-[51.5%] h-[52vh] w-px -translate-x-1/2 -translate-y-1/2 bg-gradient-to-b from-transparent via-violet-400/25 to-transparent" />
+          <div class="absolute left-1/2 top-[51.5%] h-[6.5rem] w-[6.5rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-violet-500/10 blur-3xl dark:bg-violet-400/15" />
 
-          <aside class="absolute left-[max(1rem,calc((100vw-1040px)/2))] top-[54%] z-[1200] w-[17.5rem] xl:w-[19rem] -translate-y-1/2">
+          <aside class="absolute left-[max(1rem,calc((100vw-1040px)/2))] top-[51.5%] z-[1200] w-[17.5rem] xl:w-[19rem] -translate-y-1/2">
             <div
               v-if="activeProject"
-              class="relative overflow-hidden rounded-[1.45rem] border border-violet-500/15 bg-white/[0.8] p-4 xl:p-4.5 shadow-2xl shadow-violet-500/10 backdrop-blur-xl dark:border-white/10 dark:bg-black/35"
+              class="relative overflow-hidden rounded-[1.45rem] border border-violet-500/15 bg-white/[0.8] p-4.5 xl:p-5 shadow-2xl shadow-violet-500/10 backdrop-blur-xl dark:border-white/10 dark:bg-black/35"
             >
               <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-400/70 to-transparent" />
               <div class="flex items-center justify-between gap-4">
@@ -186,16 +181,16 @@ function cardStyle(index: number) {
               <h3 class="mt-4 font-display text-[1.45rem] xl:text-[1.7rem] font-bold leading-tight text-gray-950 dark:text-white">
                 {{ activeProject.title }}
               </h3>
-              <p class="mt-2 line-clamp-4 text-[13px] leading-relaxed text-gray-600 dark:text-gray-300">
+              <p class="mt-3 line-clamp-6 text-[13px] leading-relaxed text-gray-600 dark:text-gray-300">
                 {{ activeProject.description }}
               </p>
 
-              <div class="mt-3 grid grid-cols-2 gap-2">
+              <div class="mt-4 grid grid-cols-2 gap-2.5">
                 <div class="rounded-2xl border border-violet-500/10 bg-white/65 p-3 dark:border-white/10 dark:bg-white/[0.04]">
                   <div class="text-[10px] font-bold uppercase tracking-[0.16em] text-violet-600 dark:text-violet-300">
                     {{ t('portfolio.context') }}
                   </div>
-                  <p class="mt-1 line-clamp-3 text-[11px] leading-relaxed text-gray-600 dark:text-gray-300">
+                  <p class="mt-1.5 line-clamp-4 text-[11px] leading-relaxed text-gray-600 dark:text-gray-300">
                     {{ activeCase.context }}
                   </p>
                 </div>
@@ -203,7 +198,7 @@ function cardStyle(index: number) {
                   <div class="text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-700 dark:text-cyan-300">
                     {{ t('portfolio.impact') }}
                   </div>
-                  <p class="mt-1 line-clamp-3 text-[11px] leading-relaxed text-gray-600 dark:text-gray-300">
+                  <p class="mt-1.5 line-clamp-4 text-[11px] leading-relaxed text-gray-600 dark:text-gray-300">
                     {{ activeCase.impact }}
                   </p>
                 </div>
@@ -241,7 +236,7 @@ function cardStyle(index: number) {
             </div>
           </aside>
 
-          <div class="absolute right-[max(1rem,calc((100vw-1040px)/2))] top-[54%] z-[1200] w-[13.5rem] xl:w-[14.5rem] -translate-y-1/2 rounded-[1.1rem] border border-violet-500/15 bg-white/65 p-3 xl:p-3.5 text-sm text-gray-600 shadow-xl shadow-violet-500/10 backdrop-blur-xl dark:border-white/10 dark:bg-black/25 dark:text-gray-300">
+          <div class="absolute right-[max(1rem,calc((100vw-1040px)/2))] top-[51.5%] z-[1200] w-[13.5rem] xl:w-[14.5rem] -translate-y-1/2 rounded-[1.1rem] border border-violet-500/15 bg-white/65 p-3 xl:p-3.5 text-sm text-gray-600 shadow-xl shadow-violet-500/10 backdrop-blur-xl dark:border-white/10 dark:bg-black/25 dark:text-gray-300">
             <div class="text-[10px] font-bold uppercase tracking-[0.18em] text-violet-600 dark:text-violet-300">
               {{ activeCategoryLabel }}
             </div>
@@ -288,7 +283,7 @@ function cardStyle(index: number) {
               <article
                 v-for="(project, index) in displayProjects"
                 :key="`${project.id}-${index}`"
-                class="absolute left-1/2 top-[54%] h-[20.5rem] xl:h-[22rem] w-[16.2rem] xl:w-[17.5rem] overflow-hidden rounded-[1.25rem] xl:rounded-[1.4rem] border border-white/15 bg-[#11111b] shadow-2xl shadow-black/35 transition-[opacity,transform] duration-[120ms] ease-out [backface-visibility:hidden] will-change-transform"
+                class="absolute left-1/2 top-[51.5%] h-[20.5rem] xl:h-[22rem] w-[16.2rem] xl:w-[17.5rem] overflow-hidden rounded-[1.25rem] xl:rounded-[1.4rem] border border-white/15 bg-[#11111b] shadow-2xl shadow-black/35 transition-[opacity,transform] duration-[120ms] ease-out [backface-visibility:hidden] will-change-transform"
                 :style="cardStyle(index)"
               >
                 <div class="relative h-36 xl:h-44 overflow-hidden bg-[#10101b]">
