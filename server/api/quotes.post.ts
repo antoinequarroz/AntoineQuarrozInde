@@ -1,5 +1,5 @@
 export default defineEventHandler(async (event) => {
-  const { org } = await requireAdmin(event)
+  const { org, user } = await requireAdmin(event)
   const body = await readBody(event)
   const supabase = getSupabaseAdmin()
   const payload = {
@@ -17,5 +17,14 @@ export default defineEventHandler(async (event) => {
   if (!payload.number || !payload.title) throw createError({ statusCode: 400, message: 'Missing fields' })
   const { data, error } = await supabase.from('quotes').insert(payload).select('*').single()
   if (error) throw createError({ statusCode: 500, message: error.message })
+  await logAudit({
+    organizationId: org.id,
+    actorUserId: user?.id,
+    action: 'quote.create',
+    entityType: 'quote',
+    entityId: data.id,
+    clientId: data.client_id,
+    payload: { number: data.number, title: data.title, status: data.status, amount_cents: data.amount_cents },
+  })
   return data
 })

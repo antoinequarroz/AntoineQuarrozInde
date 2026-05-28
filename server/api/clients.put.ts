@@ -1,5 +1,5 @@
 export default defineEventHandler(async (event) => {
-  const { org } = await requireAdmin(event)
+  const { org, user } = await requireAdmin(event)
   const body = await readBody(event)
   const id = Number(body.id)
   if (!id) throw createError({ statusCode: 400, message: 'Missing client id' })
@@ -27,5 +27,14 @@ export default defineEventHandler(async (event) => {
     .single()
 
   if (error) throw createError({ statusCode: 500, message: error.message })
+  await logAudit({
+    organizationId: org.id,
+    actorUserId: user?.id,
+    action: 'client.update',
+    entityType: 'client',
+    entityId: data.id,
+    clientId: data.id,
+    payload: { name: data.name, email: data.email, status: data.status },
+  })
   return data
 })

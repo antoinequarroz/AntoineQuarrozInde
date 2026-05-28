@@ -88,6 +88,7 @@ create table if not exists public.audit_logs (
   action text not null,
   entity_type text,
   entity_id text,
+  client_id bigint references public.clients(id) on delete set null,
   payload jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now()
 );
@@ -175,6 +176,8 @@ create index if not exists idx_clients_organization_id on public.clients(organiz
 create index if not exists idx_tasks_organization_id on public.tasks(organization_id);
 create index if not exists idx_tasks_client_id on public.tasks(client_id);
 create index if not exists idx_tasks_project_id on public.tasks(project_id);
+create index if not exists idx_audit_logs_organization_id on public.audit_logs(organization_id);
+create index if not exists idx_audit_logs_client_id on public.audit_logs(client_id);
 create index if not exists idx_quotes_organization_id on public.quotes(organization_id);
 create index if not exists idx_invoices_organization_id on public.invoices(organization_id);
 create index if not exists idx_appointments_organization_id on public.appointments(organization_id);

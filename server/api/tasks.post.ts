@@ -1,5 +1,5 @@
 export default defineEventHandler(async (event) => {
-  const { org } = await requireAdmin(event)
+  const { org, user } = await requireAdmin(event)
   const body = await readBody(event)
   const supabase = getSupabaseAdmin()
 
@@ -23,5 +23,14 @@ export default defineEventHandler(async (event) => {
     .single()
 
   if (error) throw createError({ statusCode: 500, message: error.message })
+  await logAudit({
+    organizationId: org.id,
+    actorUserId: user?.id,
+    action: 'task.create',
+    entityType: 'task',
+    entityId: data.id,
+    clientId: data.client_id,
+    payload: { title: data.title, status: data.status, priority: data.priority },
+  })
   return data
 })

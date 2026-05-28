@@ -1,5 +1,5 @@
 export default defineEventHandler(async (event) => {
-  const { org } = await requireAdmin(event)
+  const { org, user } = await requireAdmin(event)
   const body = await readBody(event)
   const supabase = getSupabaseAdmin()
   const payload = {
@@ -18,5 +18,14 @@ export default defineEventHandler(async (event) => {
   }
   const { data, error } = await supabase.from('appointments').insert(payload).select('*').single()
   if (error) throw createError({ statusCode: 500, message: error.message })
+  await logAudit({
+    organizationId: org.id,
+    actorUserId: user?.id,
+    action: 'appointment.create',
+    entityType: 'appointment',
+    entityId: data.id,
+    clientId: data.client_id,
+    payload: { title: data.title, status: data.status, starts_at: data.starts_at },
+  })
   return data
 })

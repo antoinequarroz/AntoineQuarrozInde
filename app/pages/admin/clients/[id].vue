@@ -9,6 +9,8 @@ const tasksStore = useTasksStore()
 const quotesStore = useQuotesStore()
 const invoicesStore = useInvoicesStore()
 const appointmentsStore = useAppointmentsStore()
+const auth = useAuthStore()
+const auditLogs = ref<Array<{ id: number, action: string, entity_type: string, entity_id: string | null, payload: any, created_at: string }>>([])
 
 const client = computed(() => clientsStore.clients.find(c => c.id === clientId.value) || null)
 const clientTasks = computed(() => tasksStore.tasks.filter(t => t.clientId === clientId.value))
@@ -26,36 +28,18 @@ const nextAppointment = computed(() => {
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt))[0] || null
 })
 const timeline = computed(() => {
-  const quoteEvents = clientQuotes.value.map(q => ({
-    key: `quote-${q.id}`,
-    type: 'devis',
-    title: `Devis ${q.number} (${q.status})`,
-    date: q.createdAt,
-    meta: `${(q.amountCents / 100).toFixed(2)} ${q.currency}`,
-  }))
-  const invoiceEvents = clientInvoices.value.map(i => ({
-    key: `invoice-${i.id}`,
-    type: 'facture',
-    title: `Facture ${i.number} (${i.status})`,
-    date: i.createdAt,
-    meta: `${(i.amountCents / 100).toFixed(2)} ${i.currency}`,
-  }))
-  const taskEvents = clientTasks.value.map(t => ({
-    key: `task-${t.id}`,
-    type: 'tache',
-    title: `Tache ${t.title} (${t.status})`,
-    date: t.createdAt,
-    meta: t.priority,
-  }))
-  const appointmentEvents = clientAppointments.value.map(a => ({
-    key: `appointment-${a.id}`,
-    type: 'rdv',
-    title: `RDV ${a.title} (${a.status})`,
-    date: a.createdAt,
-    meta: new Date(a.startsAt).toLocaleString('fr-CH'),
-  }))
-  return [...quoteEvents, ...invoiceEvents, ...taskEvents, ...appointmentEvents]
-    .sort((a, b) => b.date.localeCompare(a.date))
+  return auditLogs.value.map((log) => {
+    const payload = log.payload || {}
+    const title = payload.title || payload.name || payload.number || `${log.entity_type} ${log.entity_id || ''}`.trim()
+    const status = payload.status ? ` (${payload.status})` : ''
+    const meta = payload.amount_cents != null ? `${(Number(payload.amount_cents) / 100).toFixed(2)} CHF` : (payload.email || payload.priority || '')
+    return {
+      key: `audit-${log.id}`,
+      title: `${log.action} · ${title}${status}`,
+      meta,
+      date: log.created_at?.slice(0, 19).replace('T', ' ') || '',
+    }
+  })
 })
 
 onMounted(async () => {
@@ -66,6 +50,10 @@ onMounted(async () => {
     invoicesStore.ensureLoaded(),
     appointmentsStore.ensureLoaded(),
   ])
+  auditLogs.value = await $fetch('/api/audit', {
+    query: { clientId: clientId.value, limit: 80 },
+    headers: auth.authHeader(),
+  })
 })
 </script>
 

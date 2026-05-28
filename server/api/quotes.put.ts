@@ -1,5 +1,5 @@
 export default defineEventHandler(async (event) => {
-  const { org } = await requireAdmin(event)
+  const { org, user } = await requireAdmin(event)
   const body = await readBody(event)
   const id = Number(body.id)
   if (!id) throw createError({ statusCode: 400, message: 'Missing quote id' })
@@ -23,5 +23,14 @@ export default defineEventHandler(async (event) => {
     .select('*')
     .single()
   if (error) throw createError({ statusCode: 500, message: error.message })
+  await logAudit({
+    organizationId: org.id,
+    actorUserId: user?.id,
+    action: 'quote.update',
+    entityType: 'quote',
+    entityId: data.id,
+    clientId: data.client_id,
+    payload: { number: data.number, title: data.title, status: data.status, amount_cents: data.amount_cents },
+  })
   return data
 })

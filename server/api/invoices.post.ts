@@ -1,5 +1,5 @@
 export default defineEventHandler(async (event) => {
-  const { org } = await requireAdmin(event)
+  const { org, user } = await requireAdmin(event)
   const body = await readBody(event)
   const supabase = getSupabaseAdmin()
   const payload = {
@@ -18,5 +18,14 @@ export default defineEventHandler(async (event) => {
   if (!payload.number) throw createError({ statusCode: 400, message: 'Missing number' })
   const { data, error } = await supabase.from('invoices').insert(payload).select('*').single()
   if (error) throw createError({ statusCode: 500, message: error.message })
+  await logAudit({
+    organizationId: org.id,
+    actorUserId: user?.id,
+    action: 'invoice.create',
+    entityType: 'invoice',
+    entityId: data.id,
+    clientId: data.client_id,
+    payload: { number: data.number, status: data.status, amount_cents: data.amount_cents },
+  })
   return data
 })
