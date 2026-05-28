@@ -9,6 +9,10 @@ const toast = useToast()
 const showForm = ref(false)
 const editing = ref<Client | null>(null)
 const selectedIds = ref<number[]>([])
+const search = ref('')
+const statusFilter = ref<'all' | Client['status']>('all')
+const viewName = ref('')
+const savedViews = ref<Array<{ name: string, search: string, status: 'all' | Client['status'] }>>([])
 const form = reactive({
   name: '',
   company: '',
@@ -20,6 +24,43 @@ const form = reactive({
 
 function resetForm() {
   Object.assign(form, { name: '', company: '', email: '', phone: '', status: 'lead', notes: '' })
+}
+
+const FILTER_VIEWS_KEY = 'aq_admin_clients_views_v1'
+
+function loadViews() {
+  try {
+    const raw = localStorage.getItem(FILTER_VIEWS_KEY)
+    if (!raw) return
+    const parsed = JSON.parse(raw)
+    if (Array.isArray(parsed)) savedViews.value = parsed
+  } catch {}
+}
+
+function persistViews() {
+  localStorage.setItem(FILTER_VIEWS_KEY, JSON.stringify(savedViews.value))
+}
+
+function saveCurrentView() {
+  const name = viewName.value.trim()
+  if (!name) return
+  const existing = savedViews.value.findIndex(v => v.name.toLowerCase() === name.toLowerCase())
+  const payload = { name, search: search.value, status: statusFilter.value }
+  if (existing >= 0) savedViews.value[existing] = payload
+  else savedViews.value.push(payload)
+  persistViews()
+  viewName.value = ''
+  toast.success('Vue sauvegardee')
+}
+
+function applyView(view: { name: string, search: string, status: 'all' | Client['status'] }) {
+  search.value = view.search
+  statusFilter.value = view.status
+}
+
+function removeView(name: string) {
+  savedViews.value = savedViews.value.filter(v => v.name !== name)
+  persistViews()
 }
 
 function openNew() {
@@ -74,11 +115,14 @@ async function handleDelete(id: number) {
   }
 }
 
-const allSelected = computed(() => store.clients.length > 0 && selectedIds.value.length === store.clients.length)
+const allSelected = computed(() => filteredClients.value.length > 0 && filteredClients.value.every(c => selectedIds.value.includes(c.id)))
 
 function toggleAll() {
-  if (allSelected.value) selectedIds.value = []
-  else selectedIds.value = store.clients.map(c => c.id)
+  if (allSelected.value) {
+    selectedIds.value = selectedIds.value.filter(id => !filteredClients.value.some(c => c.id === id))
+  } else {
+    selectedIds.value = Array.from(new Set([...selectedIds.value, ...filteredClients.value.map(c => c.id)]))
+  }
 }
 
 function toggleOne(id: number) {
@@ -109,7 +153,20 @@ async function bulkDelete() {
   }
 }
 
-onMounted(() => store.ensureLoaded())
+const filteredClients = computed(() => {
+  const q = search.value.trim().toLowerCase()
+  return store.clients.filter((client) => {
+    const byStatus = statusFilter.value === 'all' || client.status === statusFilter.value
+    if (!byStatus) return false
+    if (!q) return true
+    return [client.name, client.company || '', client.email, client.phone || ''].join(' ').toLowerCase().includes(q)
+  })
+})
+
+onMounted(() => {
+  store.ensureLoaded()
+  loadViews()
+})
 </script>
 
 <template>
@@ -120,6 +177,33 @@ onMounted(() => store.ensureLoaded())
         <p class="text-sm text-gray-400 mt-0.5">{{ store.clients.length }} client(s)</p>
       </div>
       <button class="px-4 py-2 rounded-lg text-sm font-semibold bg-violet-600 hover:bg-violet-700 text-white" @click="openNew">Nouveau</button>
+    </div>
+
+    <div class="rounded-xl border border-gray-100 dark:border-white/[0.06] bg-white dark:bg-[#111118] p-3 space-y-3">
+      <div class="grid grid-cols-1 sm:grid-cols-[1fr_160px] gap-2">
+        <input v-model="search" class="input-field" placeholder="Rechercher client, societe, email...">
+        <select v-model="statusFilter" class="input-field">
+          <option value="all">Tous statuts</option>
+          <option value="lead">Lead</option>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+        </select>
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <input v-model="viewName" class="input-field !h-9 !py-1.5 !text-xs max-w-[220px]" placeholder="Nom de vue">
+        <button class="px-2.5 py-1.5 rounded-lg text-xs border border-gray-200 dark:border-white/[0.12]" @click="saveCurrentView">Sauver la vue</button>
+        <button class="px-2.5 py-1.5 rounded-lg text-xs border border-gray-200 dark:border-white/[0.12]" @click="search=''; statusFilter='all'">Reset</button>
+      </div>
+      <div v-if="savedViews.length" class="flex flex-wrap gap-2">
+        <div
+          v-for="view in savedViews"
+          :key="view.name"
+          class="inline-flex items-center gap-1 rounded-lg border border-gray-200 dark:border-white/[0.12] px-2 py-1"
+        >
+          <button class="text-xs" @click="applyView(view)">{{ view.name }}</button>
+          <button class="text-[11px] text-red-500" @click="removeView(view.name)">x</button>
+        </div>
+      </div>
     </div>
 
     <div v-if="selectedIds.length" class="rounded-xl border border-violet-200/60 bg-violet-50/70 dark:bg-violet-500/10 dark:border-violet-500/20 p-3">
@@ -135,7 +219,7 @@ onMounted(() => store.ensureLoaded())
     <div class="space-y-3">
       <div class="sm:hidden space-y-2">
         <div
-          v-for="client in store.clients"
+          v-for="client in filteredClients"
           :key="`mobile-${client.id}`"
           class="rounded-xl border p-3 bg-white dark:bg-[#111118] border-gray-100 dark:border-white/[0.06]"
         >
@@ -177,7 +261,7 @@ onMounted(() => store.ensureLoaded())
           </tr>
         </thead>
         <tbody>
-          <tr v-for="client in store.clients" :key="client.id" class="border-b border-gray-50 dark:border-white/[0.03] last:border-0">
+          <tr v-for="client in filteredClients" :key="client.id" class="border-b border-gray-50 dark:border-white/[0.03] last:border-0">
             <td class="px-5 py-3">
               <input :checked="selectedIds.includes(client.id)" type="checkbox" @change="toggleOne(client.id)">
             </td>

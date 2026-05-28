@@ -207,6 +207,15 @@ async function del(id: number) {
   }
 }
 
+async function quickSetStatus(id: number, status: Quote['status']) {
+  try {
+    await store.update(id, { status } as any)
+    toast.success(`Statut: ${status}`)
+  } catch {
+    toast.error('Erreur statut')
+  }
+}
+
 function escapeCsv(value: string | number | null | undefined) {
   const str = value == null ? '' : String(value)
   return `"${str.replace(/"/g, '""')}"`
@@ -313,6 +322,7 @@ onMounted(async () => {
             <p class="mt-1 text-xs text-gray-500">{{ q.clientId ? clientsById.get(q.clientId)?.name || '-' : '-' }}</p>
             <p class="mt-2 text-sm font-medium">{{ formatAmount(q.amountCents, q.currency) }}</p>
             <div class="mt-3 flex items-center gap-3">
+              <button class="text-xs text-emerald-600" @click.stop="quickSetStatus(q.id, 'accepted')">Accepter</button>
               <button class="text-xs text-violet-600" @click.stop="openEdit(q)">Editer</button>
               <button class="text-xs text-red-500" @click.stop="del(q.id)">Supprimer</button>
             </div>
@@ -345,6 +355,8 @@ onMounted(async () => {
               <td class="px-4 py-3 text-sm">{{ formatAmount(q.amountCents, q.currency) }}</td>
               <td class="px-4 py-3 text-sm">{{ q.status }}</td>
               <td class="px-4 py-3 text-right space-x-2">
+                <button class="text-xs text-emerald-600" @click.stop="quickSetStatus(q.id, 'accepted')">Accepter</button>
+                <button class="text-xs text-amber-600" @click.stop="quickSetStatus(q.id, 'sent')">Marquer envoye</button>
                 <button class="text-xs text-violet-600" @click.stop="openEdit(q)">Editer</button>
                 <button class="text-xs text-red-500" @click.stop="del(q.id)">Supprimer</button>
               </td>

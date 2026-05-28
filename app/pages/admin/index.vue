@@ -96,6 +96,16 @@ const stats = computed(() => [
 
 const recentProjects = computed(() => projects.projects.slice(0, 5))
 const recentArticles = computed(() => articles.articles.slice(0, 5))
+const todayIso = computed(() => new Date().toISOString().slice(0, 10))
+const todayPanel = computed(() => {
+  const dueTasks = tasks.tasks.filter(t => t.status !== 'done' && t.dueDate && t.dueDate <= todayIso.value).length
+  const overdueInvoices = invoices.invoices.filter(i => i.status === 'overdue').length
+  const pendingQuotes = quotes.quotes.filter(q => q.status === 'sent').length
+  const nextAppointment = appointments.appointments
+    .filter(a => a.status === 'scheduled' && a.startsAt >= new Date().toISOString())
+    .sort((a, b) => a.startsAt.localeCompare(b.startsAt))[0]
+  return { dueTasks, overdueInvoices, pendingQuotes, nextAppointment }
+})
 
 onMounted(async () => {
   await Promise.all([
@@ -189,6 +199,31 @@ onMounted(async () => {
         <div class="font-display font-bold text-2xl sm:text-3xl text-gray-900 dark:text-white leading-none mb-1.5">{{ stat.value }}</div>
         <div class="text-xs text-gray-400 dark:text-gray-500">{{ stat.sub }}</div>
       </NuxtLink>
+    </div>
+
+    <div class="bg-white dark:bg-[#111118] border border-gray-100 dark:border-white/[0.06] rounded-xl p-4 sm:p-5">
+      <div class="flex items-center justify-between gap-3">
+        <h2 class="text-sm font-semibold text-gray-800 dark:text-gray-200">Aujourd hui</h2>
+        <span class="text-xs text-gray-400">{{ todayIso }}</span>
+      </div>
+      <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <NuxtLink to="/admin/tasks" class="rounded-lg border border-gray-100 dark:border-white/[0.06] p-3">
+          <p class="text-xs text-gray-400">Taches a traiter</p>
+          <p class="mt-1 text-lg font-semibold">{{ todayPanel.dueTasks }}</p>
+        </NuxtLink>
+        <NuxtLink to="/admin/invoices" class="rounded-lg border border-gray-100 dark:border-white/[0.06] p-3">
+          <p class="text-xs text-gray-400">Factures en retard</p>
+          <p class="mt-1 text-lg font-semibold">{{ todayPanel.overdueInvoices }}</p>
+        </NuxtLink>
+        <NuxtLink to="/admin/quotes" class="rounded-lg border border-gray-100 dark:border-white/[0.06] p-3">
+          <p class="text-xs text-gray-400">Devis en attente</p>
+          <p class="mt-1 text-lg font-semibold">{{ todayPanel.pendingQuotes }}</p>
+        </NuxtLink>
+        <NuxtLink to="/admin/appointments" class="rounded-lg border border-gray-100 dark:border-white/[0.06] p-3">
+          <p class="text-xs text-gray-400">Prochain RDV</p>
+          <p class="mt-1 text-sm font-semibold line-clamp-2">{{ todayPanel.nextAppointment?.title || 'Aucun' }}</p>
+        </NuxtLink>
+      </div>
     </div>
 
     <!-- Content grid -->
