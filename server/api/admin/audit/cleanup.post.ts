@@ -3,14 +3,14 @@ type AuditCleanupRow = {
 }
 
 export default defineEventHandler(async (event) => {
-  const { org } = await requireAdmin(event)
+  const { org, user } = await requireAdmin(event)
   const supabase = getSupabaseAdmin()
 
   const { data: rows, error: findError } = await supabase
     .from('audit_logs')
     .select('id')
     .eq('organization_id', org.id)
-    .eq('payload->>source', 'backfill')
+    .contains('payload', { source: 'backfill' })
 
   if (findError) throw createError({ statusCode: 500, message: findError.message })
 
@@ -23,5 +23,16 @@ export default defineEventHandler(async (event) => {
     .in('id', ids)
 
   if (deleteError) throw createError({ statusCode: 500, message: deleteError.message })
+  await logAudit({
+    organizationId: org.id,
+    actorUserId: user.id,
+    action: 'audit_backfill_cleanup',
+    entityType: 'audit_maintenance',
+    payload: {
+      source: 'system',
+      actorEmail: user.email || null,
+      deleted: ids.length,
+    },
+  })
   return { deleted: ids.length }
 })

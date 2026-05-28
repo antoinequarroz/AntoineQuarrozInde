@@ -75,7 +75,7 @@ async function insertBackfillLogs(
 }
 
 export default defineEventHandler(async (event) => {
-  const { org } = await requireAdmin(event)
+  const { org, user } = await requireAdmin(event)
   const supabase = getSupabaseAdmin()
 
   const result: BackfillResult = {
@@ -85,6 +85,18 @@ export default defineEventHandler(async (event) => {
     invoicesInserted: await insertBackfillLogs(supabase, org.id, 'invoices', 'invoice_created', 'invoice'),
     appointmentsInserted: await insertBackfillLogs(supabase, org.id, 'appointments', 'appointment_created', 'appointment'),
   }
+
+  await logAudit({
+    organizationId: org.id,
+    actorUserId: user.id,
+    action: 'audit_backfill_run',
+    entityType: 'audit_maintenance',
+    payload: {
+      source: 'system',
+      actorEmail: user.email || null,
+      ...result,
+    },
+  })
 
   return result
 })
