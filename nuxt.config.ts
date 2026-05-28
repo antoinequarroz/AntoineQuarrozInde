@@ -1,4 +1,4 @@
-export default defineNuxtConfig({
+﻿export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
 
@@ -20,7 +20,7 @@ export default defineNuxtConfig({
 
   i18n: {
     locales: [
-      { code: 'fr', iso: 'fr-CH', name: 'Français' },
+      { code: 'fr', iso: 'fr-CH', name: 'FranÃ§ais' },
       { code: 'en', iso: 'en-US', name: 'English' },
       { code: 'de', iso: 'de-CH', name: 'Deutsch' },
     ],
@@ -37,13 +37,13 @@ export default defineNuxtConfig({
   app: {
     head: {
       titleTemplate: '%s',
-      title: 'Antoine Quarroz — Développeur Web en Valais',
+      title: 'Antoine Quarroz â€” DÃ©veloppeur Web en Valais',
       meta: [
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
         {
           name: 'description',
-          content: 'Antoine Quarroz, développeur web & mobile freelance basé en Valais (Suisse). Création de sites web, applications mobiles et CMS sur mesure.',
+          content: 'Antoine Quarroz, dÃ©veloppeur web & mobile freelance basÃ© en Valais (Suisse). CrÃ©ation de sites web, applications mobiles et CMS sur mesure.',
         },
         { name: 'format-detection', content: 'telephone=no' },
         { property: 'og:type', content: 'website' },
@@ -51,7 +51,11 @@ export default defineNuxtConfig({
         { name: 'twitter:card', content: 'summary_large_image' },
       ],
       link: [
+        { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
         { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
+        { rel: 'icon', type: 'image/png', sizes: '48x48', href: '/favicon-48x48.png' },
+        { rel: 'icon', type: 'image/png', sizes: '96x96', href: '/favicon-96x96.png' },
+        { rel: 'apple-touch-icon', sizes: '180x180', href: '/apple-touch-icon.png' },
         { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
         { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
         {
@@ -81,3 +85,4 @@ export default defineNuxtConfig({
     strict: true,
   },
 })
+
