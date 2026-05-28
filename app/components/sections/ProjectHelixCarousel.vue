@@ -9,6 +9,9 @@ const props = defineProps<{
 }>()
 
 const { t } = useI18n()
+const isMounted = ref(false)
+onMounted(() => { isMounted.value = true })
+
 const rootRef = ref<HTMLElement | null>(null)
 const { top, height } = useElementBounding(rootRef)
 const { height: viewportH, width: viewportW } = useWindowSize()
@@ -151,7 +154,7 @@ function cardStyle(index: number) {
         </div>
       </div>
 
-      <div class="hidden md:block relative left-1/2 w-screen -translate-x-1/2" :style="desktopTrackStyle">
+      <div v-if="isMounted" class="hidden md:block relative left-1/2 w-screen -translate-x-1/2" :style="desktopTrackStyle">
         <div class="sticky top-20 xl:top-24 flex h-[calc(100vh-5rem)] xl:h-[calc(100vh-6rem)] min-h-[420px] items-center justify-center overflow-hidden">
           <div class="absolute inset-0 bg-[linear-gradient(180deg,rgba(246,246,251,0.92),rgba(238,242,255,0.76)_45%,rgba(246,246,251,0.94)),radial-gradient(circle_at_50%_47%,rgba(124,58,237,0.18),transparent_36%),radial-gradient(circle_at_54%_42%,rgba(34,211,238,0.14),transparent_26%)] dark:bg-[linear-gradient(180deg,rgba(6,6,14,0.94),rgba(9,9,18,0.82)_45%,rgba(6,6,14,0.96)),radial-gradient(circle_at_50%_47%,rgba(124,58,237,0.22),transparent_36%),radial-gradient(circle_at_54%_42%,rgba(34,211,238,0.16),transparent_26%)]" />
           <div class="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-[#070710] via-[#070710]/60 to-transparent" />
