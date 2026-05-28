@@ -17,9 +17,17 @@ const filteredQuotes = computed(() => {
   return quotes.quotes.filter(q => q.clientId === form.clientId)
 })
 const selectedId = ref<number | null>(null)
+const viewMode = ref<'table' | 'kanban'>('table')
 const search = ref('')
 const statusFilter = ref<'all' | Invoice['status']>('all')
 const selectedInvoice = computed(() => store.invoices.find(i => i.id === selectedId.value) ?? null)
+const invoiceStatuses: Array<Invoice['status']> = ['draft', 'sent', 'overdue', 'paid', 'cancelled']
+const kanbanInvoices = computed(() =>
+  invoiceStatuses.map(status => ({
+    status,
+    items: filteredInvoices.value.filter(i => i.status === status),
+  })),
+)
 const filteredInvoices = computed(() => {
   const q = search.value.trim().toLowerCase()
   return store.invoices.filter((x) => {
@@ -60,6 +68,29 @@ async function quickSetStatus(id: number, status: Invoice['status']) {
     toast.success(`Statut: ${status}`)
   } catch {
     toast.error('Erreur statut')
+  }
+}
+function upsertNoteLine(source: string | null | undefined, key: string, value: string) {
+  const lines = (source || '').split('\n').filter(Boolean)
+  const prefix = `[${key}] `
+  const next = lines.filter(line => !line.startsWith(prefix))
+  next.push(`${prefix}${value}`)
+  return next.join('\n').trim()
+}
+async function markInvoiceEvent(i: Invoice, event: 'sent_at' | 'viewed_at' | 'paid_signal_at') {
+  try {
+    const now = new Date().toISOString()
+    const notes = upsertNoteLine(i.notes, event, now)
+    const patch: Partial<Invoice> = { notes }
+    if (event === 'sent_at') patch.status = 'sent'
+    if (event === 'paid_signal_at') {
+      patch.status = 'paid'
+      patch.paidAt = now.slice(0, 10)
+    }
+    await store.update(i.id, patch as any)
+    toast.success('Evenement enregistre')
+  } catch {
+    toast.error('Erreur evenement')
   }
 }
 function formatAmount(amountCents: number, currency: string) { return `${(amountCents / 100).toFixed(2)} ${currency}` }
@@ -142,9 +173,34 @@ onMounted(async () => {
         <option value="paid">paid</option>
         <option value="cancelled">cancelled</option>
       </select>
+      <div class="sm:col-span-2 flex items-center gap-2 pt-1">
+        <button class="px-3 py-1.5 text-xs rounded-lg border" :class="viewMode==='table' ? 'bg-violet-600 text-white border-violet-600' : 'border-gray-200 dark:border-white/[0.12]'" @click="viewMode='table'">Table</button>
+        <button class="px-3 py-1.5 text-xs rounded-lg border" :class="viewMode==='kanban' ? 'bg-violet-600 text-white border-violet-600' : 'border-gray-200 dark:border-white/[0.12]'" @click="viewMode='kanban'">Kanban</button>
+      </div>
     </div>
     <div class="grid lg:grid-cols-[1fr_320px] gap-4">
     <div class="space-y-3">
+      <div v-if="viewMode==='kanban'" class="grid grid-cols-1 xl:grid-cols-5 gap-3">
+        <div v-for="col in kanbanInvoices" :key="`i-col-${col.status}`" class="rounded-xl border border-gray-100 dark:border-white/[0.06] bg-white dark:bg-[#111118] p-3 space-y-2">
+          <p class="text-xs uppercase text-gray-400">{{ col.status }} ({{ col.items.length }})</p>
+          <button
+            v-for="i in col.items"
+            :key="`kanban-${i.id}`"
+            class="w-full rounded-lg border border-gray-100 dark:border-white/[0.08] p-2.5 text-left"
+            @click="selectedId = i.id"
+          >
+            <p class="text-sm font-semibold">{{ i.number }}</p>
+            <p class="text-xs text-gray-500 line-clamp-1">{{ i.clientId ? clientsById.get(i.clientId)?.name || '-' : '-' }}</p>
+            <p class="text-xs mt-1">{{ formatAmount(i.amountCents, i.currency) }}</p>
+            <div class="mt-2 flex flex-wrap gap-2">
+              <button v-if="i.status!=='sent'" class="text-[11px] text-amber-600" @click.stop="quickSetStatus(i.id,'sent')">Envoyer</button>
+              <button v-if="i.status!=='paid'" class="text-[11px] text-emerald-600" @click.stop="quickSetStatus(i.id,'paid')">Payer</button>
+              <button class="text-[11px] text-violet-600" @click.stop="openEdit(i)">Editer</button>
+            </div>
+          </button>
+        </div>
+      </div>
+
       <div class="sm:hidden space-y-2">
         <button
           v-for="q in filteredInvoices"
@@ -168,7 +224,7 @@ onMounted(async () => {
         </button>
       </div>
 
-    <div class="admin-table-wrap hidden sm:block bg-white dark:bg-[#111118] border border-gray-100 dark:border-white/[0.06] rounded-xl overflow-hidden">
+    <div v-if="viewMode==='table'" class="admin-table-wrap hidden sm:block bg-white dark:bg-[#111118] border border-gray-100 dark:border-white/[0.06] rounded-xl overflow-hidden">
       <table class="admin-table w-full">
         <thead><tr class="border-b border-gray-100 dark:border-white/[0.06]"><th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Numero</th><th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Client</th><th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Devis</th><th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Montant</th><th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Echeance</th><th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Statut</th><th class="text-right px-4 py-3 text-xs uppercase text-gray-400">Actions</th></tr></thead>
         <tbody><tr v-for="q in filteredInvoices" :key="q.id" class="border-b border-gray-50 dark:border-white/[0.03] cursor-pointer" :class="selectedId === q.id ? 'bg-violet-50/60 dark:bg-violet-500/10' : ''" @click="selectedId = q.id"><td class="px-4 py-3 text-sm">{{ q.number }}</td><td class="px-4 py-3 text-sm">{{ q.clientId ? clientsById.get(q.clientId)?.name || '-' : '-' }}</td><td class="px-4 py-3 text-sm">{{ q.quoteId ? quotesById.get(q.quoteId)?.number || '-' : '-' }}</td><td class="px-4 py-3 text-sm">{{ formatAmount(q.amountCents, q.currency) }}</td><td class="px-4 py-3 text-sm">{{ q.dueAt || '-' }}</td><td class="px-4 py-3 text-sm">{{ q.status }}</td><td class="px-4 py-3 text-right space-x-2"><button class="text-xs text-emerald-600" @click.stop="quickSetStatus(q.id, 'paid')">Paye</button><button class="text-xs text-amber-600" @click.stop="quickSetStatus(q.id, 'sent')">Envoyee</button><button class="text-xs text-violet-600" @click.stop="openEdit(q)">Editer</button><button class="text-xs text-red-500" @click.stop="del(q.id)">Supprimer</button></td></tr></tbody>
@@ -189,6 +245,11 @@ onMounted(async () => {
           <p><span class="text-gray-400">Emission:</span> {{ selectedInvoice.issuedAt || '-' }}</p>
           <p><span class="text-gray-400">Echeance:</span> {{ selectedInvoice.dueAt || '-' }}</p>
           <p><span class="text-gray-400">Paye le:</span> {{ selectedInvoice.paidAt || '-' }}</p>
+        </div>
+        <div class="mt-4 grid grid-cols-2 gap-2">
+          <button class="px-2 py-1.5 rounded-lg border border-gray-200 dark:border-white/[0.12] text-xs" @click="markInvoiceEvent(selectedInvoice, 'sent_at')">Marquer envoyee</button>
+          <button class="px-2 py-1.5 rounded-lg border border-gray-200 dark:border-white/[0.12] text-xs" @click="markInvoiceEvent(selectedInvoice, 'viewed_at')">Marquer vue</button>
+          <button class="px-2 py-1.5 rounded-lg border border-emerald-300/60 text-emerald-600 text-xs col-span-2" @click="markInvoiceEvent(selectedInvoice, 'paid_signal_at')">Marquer payee (preuve)</button>
         </div>
         <p class="text-xs text-gray-500 mt-4 whitespace-pre-wrap">{{ selectedInvoice.notes || 'Aucune note' }}</p>
       </template>

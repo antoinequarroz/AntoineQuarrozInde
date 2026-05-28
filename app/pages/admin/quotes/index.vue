@@ -39,9 +39,17 @@ const form = reactive({
 
 const clientsById = computed(() => new Map(clients.clients.map(c => [c.id, c])))
 const selectedId = ref<number | null>(null)
+const viewMode = ref<'table' | 'kanban'>('table')
 const search = ref('')
 const statusFilter = ref<'all' | Quote['status']>('all')
 const selectedQuote = computed(() => store.quotes.find(q => q.id === selectedId.value) ?? null)
+const quoteStatuses: Array<Quote['status']> = ['draft', 'sent', 'accepted', 'rejected']
+const kanbanQuotes = computed(() =>
+  quoteStatuses.map(status => ({
+    status,
+    items: filteredQuotes.value.filter(q => q.status === status),
+  })),
+)
 const filteredQuotes = computed(() => {
   const q = search.value.trim().toLowerCase()
   return store.quotes.filter((x) => {
@@ -227,6 +235,39 @@ async function quickSetStatus(id: number, status: Quote['status']) {
   }
 }
 
+function upsertNoteLine(source: string | null | undefined, key: string, value: string) {
+  const lines = (source || '').split('\n').filter(Boolean)
+  const prefix = `[${key}] `
+  const next = lines.filter(line => !line.startsWith(prefix))
+  next.push(`${prefix}${value}`)
+  return next.join('\n').trim()
+}
+
+async function markQuoteEvent(q: Quote, event: 'sent_at' | 'viewed_at' | 'signed_at') {
+  try {
+    const now = new Date().toISOString()
+    const notes = upsertNoteLine(q.notes, event, now)
+    const patch: Partial<Quote> = { notes }
+    if (event === 'sent_at') patch.status = 'sent'
+    if (event === 'signed_at') patch.status = 'accepted'
+    await store.update(q.id, patch as any)
+    toast.success('Evenement enregistre')
+  } catch {
+    toast.error('Erreur evenement')
+  }
+}
+
+function sendQuoteMailto(q: Quote) {
+  const client = q.clientId ? clientsById.value.get(q.clientId) : null
+  if (!client?.email) {
+    toast.error('Email client manquant')
+    return
+  }
+  const subject = encodeURIComponent(`Devis ${q.number} - ${q.title}`)
+  const body = encodeURIComponent(`Bonjour ${client.name},\n\nVeuillez trouver votre devis ${q.number}.\nLien PDF: ${window.location.origin}/api/quotes/pdf?id=${q.id}\n\nCordialement,\nAntoine Quarroz`)
+  window.location.href = `mailto:${client.email}?subject=${subject}&body=${body}`
+}
+
 function escapeCsv(value: string | number | null | undefined) {
   const str = value == null ? '' : String(value)
   return `"${str.replace(/"/g, '""')}"`
@@ -327,10 +368,35 @@ onMounted(async () => {
         <option value="accepted">accepted</option>
         <option value="rejected">rejected</option>
       </select>
+      <div class="sm:col-span-2 flex items-center gap-2 pt-1">
+        <button class="px-3 py-1.5 text-xs rounded-lg border" :class="viewMode==='table' ? 'bg-violet-600 text-white border-violet-600' : 'border-gray-200 dark:border-white/[0.12]'" @click="viewMode='table'">Table</button>
+        <button class="px-3 py-1.5 text-xs rounded-lg border" :class="viewMode==='kanban' ? 'bg-violet-600 text-white border-violet-600' : 'border-gray-200 dark:border-white/[0.12]'" @click="viewMode='kanban'">Kanban</button>
+      </div>
     </div>
 
     <div class="grid lg:grid-cols-[1fr_320px] gap-4">
       <div class="space-y-3">
+        <div v-if="viewMode==='kanban'" class="grid grid-cols-1 xl:grid-cols-4 gap-3">
+          <div v-for="col in kanbanQuotes" :key="`q-col-${col.status}`" class="rounded-xl border border-gray-100 dark:border-white/[0.06] bg-white dark:bg-[#111118] p-3 space-y-2">
+            <p class="text-xs uppercase text-gray-400">{{ col.status }} ({{ col.items.length }})</p>
+            <button
+              v-for="q in col.items"
+              :key="`kanban-${q.id}`"
+              class="w-full rounded-lg border border-gray-100 dark:border-white/[0.08] p-2.5 text-left"
+              @click="selectedId = q.id"
+            >
+              <p class="text-sm font-semibold">{{ q.number }}</p>
+              <p class="text-xs text-gray-500 line-clamp-1">{{ q.title }}</p>
+              <p class="text-xs mt-1">{{ formatAmount(q.amountCents, q.currency) }}</p>
+              <div class="mt-2 flex flex-wrap gap-2">
+                <button v-if="q.status!=='sent'" class="text-[11px] text-amber-600" @click.stop="quickSetStatus(q.id,'sent')">Envoyer</button>
+                <button v-if="q.status!=='accepted'" class="text-[11px] text-emerald-600" @click.stop="quickSetStatus(q.id,'accepted')">Accepter</button>
+                <button class="text-[11px] text-violet-600" @click.stop="openEdit(q)">Editer</button>
+              </div>
+            </button>
+          </div>
+        </div>
+
         <div class="sm:hidden space-y-2">
           <button
             v-for="q in filteredQuotes"
@@ -354,7 +420,7 @@ onMounted(async () => {
           </button>
         </div>
 
-        <div class="admin-table-wrap hidden sm:block bg-white dark:bg-[#111118] border border-gray-100 dark:border-white/[0.06] rounded-xl overflow-hidden">
+        <div v-if="viewMode==='table'" class="admin-table-wrap hidden sm:block bg-white dark:bg-[#111118] border border-gray-100 dark:border-white/[0.06] rounded-xl overflow-hidden">
           <table class="admin-table w-full">
           <thead>
             <tr class="border-b border-gray-100 dark:border-white/[0.06]">
@@ -404,6 +470,12 @@ onMounted(async () => {
             <p><span class="text-gray-400">Statut:</span> {{ selectedQuote.status }}</p>
             <p><span class="text-gray-400">Emission:</span> {{ selectedQuote.issuedAt || '-' }}</p>
             <p><span class="text-gray-400">Valide jusqu'au:</span> {{ selectedQuote.validUntil || '-' }}</p>
+          </div>
+          <div class="mt-4 grid grid-cols-2 gap-2">
+            <button class="px-2 py-1.5 rounded-lg border border-gray-200 dark:border-white/[0.12] text-xs" @click="sendQuoteMailto(selectedQuote)">Envoyer email</button>
+            <button class="px-2 py-1.5 rounded-lg border border-gray-200 dark:border-white/[0.12] text-xs" @click="markQuoteEvent(selectedQuote, 'sent_at')">Marquer envoye</button>
+            <button class="px-2 py-1.5 rounded-lg border border-gray-200 dark:border-white/[0.12] text-xs" @click="markQuoteEvent(selectedQuote, 'viewed_at')">Marquer vu</button>
+            <button class="px-2 py-1.5 rounded-lg border border-emerald-300/60 text-emerald-600 text-xs" @click="markQuoteEvent(selectedQuote, 'signed_at')">Marquer signe</button>
           </div>
           <p class="text-xs text-gray-500 mt-4 whitespace-pre-wrap">{{ selectedQuote.notes || 'Aucune note' }}</p>
         </template>

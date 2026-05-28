@@ -119,6 +119,34 @@ const pipeline = computed(() => {
   const cashConv = sentInvoices > 0 ? Math.round((paidInvoices / sentInvoices) * 100) : 0
   return { leads, activeClients, sentQuotes, acceptedQuotes, sentInvoices, paidInvoices, quoteConv, cashConv }
 })
+function startOfMonthIso() {
+  const d = new Date()
+  return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10)
+}
+function addDaysIso(base: Date, days: number) {
+  const d = new Date(base)
+  d.setDate(d.getDate() + days)
+  return d.toISOString().slice(0, 10)
+}
+const business = computed(() => {
+  const monthStart = startOfMonthIso()
+  const now = new Date()
+  const next30 = addDaysIso(now, 30)
+  const mtdRevenue = invoices.invoices
+    .filter(i => i.status === 'paid' && i.paidAt && i.paidAt >= monthStart)
+    .reduce((sum, i) => sum + (i.totalCents ?? i.amountCents), 0)
+  const expected30 = invoices.invoices
+    .filter(i => ['sent', 'overdue'].includes(i.status) && i.dueAt && i.dueAt <= next30)
+    .reduce((sum, i) => sum + (i.totalCents ?? i.amountCents), 0)
+  const avgQuote = quotes.quotes.length
+    ? Math.round(quotes.quotes.reduce((sum, q) => sum + (q.totalCents ?? q.amountCents), 0) / quotes.quotes.length)
+    : 0
+  const overdueCount = invoices.invoices.filter(i => i.status === 'overdue').length
+  return { mtdRevenue, expected30, avgQuote, overdueCount }
+})
+function money(cents: number) {
+  return `${(cents / 100).toFixed(2)} CHF`
+}
 const runningAutomation = ref(false)
 const runningEmailReminders = ref(false)
 const reminderRuns = ref<Array<{ id: number, action: string, payload: Record<string, any>, created_at: string }>>([])
@@ -328,6 +356,52 @@ onMounted(async () => {
         <NuxtLink to="/admin/appointments" class="rounded-lg border border-gray-100 dark:border-white/[0.06] p-3">
           <p class="text-xs text-gray-400">Prochain RDV</p>
           <p class="mt-1 text-sm font-semibold line-clamp-2">{{ todayPanel.nextAppointment?.title || 'Aucun' }}</p>
+        </NuxtLink>
+      </div>
+    </div>
+
+    <div class="bg-white dark:bg-[#111118] border border-gray-100 dark:border-white/[0.06] rounded-xl p-4 sm:p-5">
+      <div class="flex items-center justify-between gap-3">
+        <h2 class="text-sm font-semibold text-gray-800 dark:text-gray-200">Pilotage business</h2>
+        <span class="text-xs text-gray-400">Financier & conversion</span>
+      </div>
+      <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div class="rounded-lg border border-gray-100 dark:border-white/[0.06] p-3">
+          <p class="text-xs text-gray-400">CA encaissé (mois)</p>
+          <p class="mt-1 text-lg font-semibold">{{ money(business.mtdRevenue) }}</p>
+        </div>
+        <div class="rounded-lg border border-gray-100 dark:border-white/[0.06] p-3">
+          <p class="text-xs text-gray-400">Encaissement attendu 30j</p>
+          <p class="mt-1 text-lg font-semibold">{{ money(business.expected30) }}</p>
+        </div>
+        <div class="rounded-lg border border-gray-100 dark:border-white/[0.06] p-3">
+          <p class="text-xs text-gray-400">Panier moyen devis</p>
+          <p class="mt-1 text-lg font-semibold">{{ money(business.avgQuote) }}</p>
+        </div>
+        <div class="rounded-lg border border-gray-100 dark:border-white/[0.06] p-3">
+          <p class="text-xs text-gray-400">Factures en retard</p>
+          <p class="mt-1 text-lg font-semibold">{{ business.overdueCount }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white dark:bg-[#111118] border border-gray-100 dark:border-white/[0.06] rounded-xl p-4 sm:p-5">
+      <div class="flex items-center justify-between gap-3">
+        <h2 class="text-sm font-semibold text-gray-800 dark:text-gray-200">Documents & signatures</h2>
+        <span class="text-xs text-gray-400">Parcours devis/facture</span>
+      </div>
+      <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+        <NuxtLink to="/admin/quotes" class="rounded-lg border border-gray-100 dark:border-white/[0.06] p-3 hover:border-violet-300 dark:hover:border-violet-500/20">
+          Envoyer un devis
+        </NuxtLink>
+        <NuxtLink to="/admin/quotes" class="rounded-lg border border-gray-100 dark:border-white/[0.06] p-3 hover:border-violet-300 dark:hover:border-violet-500/20">
+          Marquer vu / signé
+        </NuxtLink>
+        <NuxtLink to="/admin/invoices" class="rounded-lg border border-gray-100 dark:border-white/[0.06] p-3 hover:border-violet-300 dark:hover:border-violet-500/20">
+          Emettre facture PDF
+        </NuxtLink>
+        <NuxtLink to="/admin/invoices" class="rounded-lg border border-gray-100 dark:border-white/[0.06] p-3 hover:border-violet-300 dark:hover:border-violet-500/20">
+          Suivre paiement
         </NuxtLink>
       </div>
     </div>
