@@ -3,8 +3,14 @@ const { t } = useI18n()
 const { track } = useMarketing()
 const runtimeConfig = useRuntimeConfig()
 const turnstileSiteKey = runtimeConfig.public.turnstileSiteKey as string
+const isClient = import.meta.client
+const isLocalhost = isClient
+  ? ['localhost', '127.0.0.1'].includes(window.location.hostname)
+  : false
+const shouldUseTurnstile = !!turnstileSiteKey && !isLocalhost
+const turnstileReady = ref(false)
 
-  const form = reactive({
+const form = reactive({
   name: '',
   email: '',
   subject: '',
@@ -22,13 +28,13 @@ type FormStatus = 'idle' | 'sending' | 'success' | 'error'
 const status = ref<FormStatus>('idle')
 
 useHead({
-  script: turnstileSiteKey
+  script: shouldUseTurnstile
     ? [{ src: 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit', async: true, defer: true }]
     : [],
 })
 
 const renderTurnstile = () => {
-  if (!turnstileSiteKey || !turnstileContainer.value) return
+  if (!shouldUseTurnstile || !turnstileContainer.value) return
   const turnstile = (window as any).turnstile
   if (!turnstile || turnstileWidgetId.value) return
 
@@ -47,7 +53,8 @@ const renderTurnstile = () => {
 }
 
 onMounted(() => {
-  if (!turnstileSiteKey) return
+  if (!shouldUseTurnstile) return
+  turnstileReady.value = true
   const waitForTurnstile = () => {
     if ((window as any).turnstile) {
       renderTurnstile()
@@ -60,7 +67,7 @@ onMounted(() => {
 
 async function handleSubmit() {
   if (status.value === 'sending') return
-  if (turnstileSiteKey && !turnstileToken.value) {
+  if (shouldUseTurnstile && !turnstileToken.value) {
     status.value = 'error'
     setTimeout(() => { status.value = 'idle' }, 5000)
     return
@@ -159,7 +166,12 @@ const contactInfo = computed(() => [
           :visible="{ opacity: 1, x: 0, transition: { duration: 600 } }"
           class="lg:col-span-2"
         >
-          <UiBookingCalendar />
+          <ClientOnly>
+            <UiBookingCalendar />
+            <template #fallback>
+              <div class="card-glass p-4 max-[390px]:p-3.5 h-full min-h-[360px]" />
+            </template>
+          </ClientOnly>
         </div>
 
         <!-- Form -->
@@ -246,9 +258,11 @@ const contactInfo = computed(() => [
             </div>
 
             <div>
-              <div v-if="turnstileSiteKey" class="mb-3">
-                <div ref="turnstileContainer" />
-              </div>
+              <ClientOnly>
+                <div v-if="shouldUseTurnstile && turnstileReady" class="mb-3">
+                  <div ref="turnstileContainer" />
+                </div>
+              </ClientOnly>
               <label class="block text-[11px] font-semibold text-gray-500 dark:text-white/50 uppercase tracking-wider mb-1.5">
                 {{ t('contact.form.message') }}
               </label>

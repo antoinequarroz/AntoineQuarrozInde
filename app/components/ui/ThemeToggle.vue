@@ -1,22 +1,25 @@
 <script setup lang="ts">
 const colorMode = useColorMode()
-const isMobile = useMediaQuery('(max-width: 767px)')
+const mounted = ref(false)
+const isDark = computed(() => colorMode.preference === 'dark' || colorMode.value === 'dark')
 
-const isDark = computed(() => colorMode.value === 'dark')
+onMounted(() => {
+  mounted.value = true
+})
 
 function toggle() {
-  if (isMobile.value) return
   colorMode.preference = isDark.value ? 'light' : 'dark'
 }
 </script>
 
 <template>
   <button
-    v-if="!isMobile"
+    v-if="mounted"
     class="relative w-8 h-8 rounded-lg flex items-center justify-center
            bg-gray-100 dark:bg-gray-800/50 hover:bg-violet-100 dark:hover:bg-violet-500/20
            text-gray-500 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400
-           transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-violet-500/50"
+           transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-violet-500/50
+           max-md:hidden"
     :aria-label="isDark ? $t('theme.toggle_light') : $t('theme.toggle_dark')"
     @click="toggle"
   >

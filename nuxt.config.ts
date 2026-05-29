@@ -133,6 +133,12 @@
     },
   },
 
+  vue: {
+    compilerOptions: {
+      isCustomElement: tag => tag === 'spline-viewer',
+    },
+  },
+
   runtimeConfig: {
     resendApiKey: process.env.RESEND_API_KEY || '',
     contactEmail: process.env.CONTACT_EMAIL || 'info@antoinequarroz.ch',

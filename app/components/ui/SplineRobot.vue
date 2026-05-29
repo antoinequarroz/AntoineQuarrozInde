@@ -14,7 +14,7 @@ const props = withDefaults(defineProps<Props>(), {
 onMounted(() => {
   if (document.querySelector('script[data-spline-viewer]')) return
   const script = document.createElement('script')
-  script.src = 'https://unpkg.com/@splinetool/viewer@1.9.59/build/spline-viewer.js'
+  script.src = 'https://unpkg.com/@splinetool/viewer@latest/build/spline-viewer.js'
   script.type = 'module'
   script.setAttribute('data-spline-viewer', 'true')
   document.head.appendChild(script)
@@ -22,7 +22,12 @@ onMounted(() => {
 </script>
 
 <template>
-  <div :class="['pointer-events-none', props.className, props.opacityClass]">
-    <spline-viewer :url="props.sceneUrl" class="w-full h-full" loading-anim-type="none" />
-  </div>
+  <ClientOnly>
+    <div :class="['pointer-events-none', props.className, props.opacityClass]">
+      <spline-viewer :url="props.sceneUrl" class="w-full h-full" loading-anim-type="none" />
+    </div>
+    <template #fallback>
+      <div :class="['pointer-events-none', props.className, props.opacityClass]" />
+    </template>
+  </ClientOnly>
 </template>

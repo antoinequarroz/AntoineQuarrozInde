@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const { t } = useI18n()
 const store = useProjectsStore()
+const mounted = ref(false)
 
 type PortfolioFilter = 'all' | 'web' | 'mobile' | 'cms'
 
@@ -25,6 +26,10 @@ const filtered = computed(() => {
     if (a.featured !== b.featured) return Number(b.featured) - Number(a.featured)
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   })
+})
+
+onMounted(() => {
+  mounted.value = true
 })
 </script>
 
@@ -80,27 +85,33 @@ const filtered = computed(() => {
       </div>
       </div>
 
-      <!-- Skeleton while loading -->
-      <template v-if="store.loading">
-        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div
-            v-for="i in 3"
-            :key="i"
-            class="rounded-[1.9rem] overflow-hidden border border-violet-500/10 dark:border-white/10 bg-white/70 dark:bg-white/[0.04] animate-pulse"
-          >
-            <div class="h-56 bg-violet-500/8 dark:bg-violet-400/8" />
-            <div class="p-5 space-y-3">
-              <div class="h-2.5 w-1/4 rounded-full bg-violet-500/10 dark:bg-white/10" />
-              <div class="h-5 w-2/3 rounded-full bg-gray-200 dark:bg-white/10" />
-              <div class="h-3 w-full rounded-full bg-gray-100 dark:bg-white/[0.06]" />
-              <div class="h-3 w-4/5 rounded-full bg-gray-100 dark:bg-white/[0.06]" />
+      <ClientOnly>
+        <template v-if="mounted && store.loading">
+          <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div
+              v-for="i in 3"
+              :key="i"
+              class="rounded-[1.9rem] overflow-hidden border border-violet-500/10 dark:border-white/10 bg-white/70 dark:bg-white/[0.04] animate-pulse"
+            >
+              <div class="h-56 bg-violet-500/8 dark:bg-violet-400/8" />
+              <div class="p-5 space-y-3">
+                <div class="h-2.5 w-1/4 rounded-full bg-violet-500/10 dark:bg-white/10" />
+                <div class="h-5 w-2/3 rounded-full bg-gray-200 dark:bg-white/10" />
+                <div class="h-3 w-full rounded-full bg-gray-100 dark:bg-white/[0.06]" />
+                <div class="h-3 w-4/5 rounded-full bg-gray-100 dark:bg-white/[0.06]" />
+              </div>
             </div>
           </div>
+        </template>
+        <div v-else class="mt-0">
+          <SectionsProjectHelixCarousel :projects="filtered" :active-category="activeFilter" />
         </div>
-      </template>
-      <div v-else class="mt-0">
-        <SectionsProjectHelixCarousel :projects="filtered" :active-category="activeFilter" />
-      </div>
+        <template #fallback>
+          <div class="mt-0">
+            <div class="h-[80vh] min-h-[420px]" />
+          </div>
+        </template>
+      </ClientOnly>
     </div>
   </section>
 </template>
