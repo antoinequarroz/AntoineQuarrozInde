@@ -64,7 +64,7 @@
     },
     workbox: {
       globPatterns: ['**/*.{js,css,html,png,svg,ico,woff2}'],
-      navigateFallback: '/offline',
+      navigateFallback: '/',
       navigateFallbackDenylist: [/^\/api\//, /^\/admin\//],
       cleanupOutdatedCaches: true,
       clientsClaim: true,
