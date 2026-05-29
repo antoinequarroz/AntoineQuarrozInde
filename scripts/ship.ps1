@@ -16,6 +16,10 @@ param(
 
   [Parameter(Mandatory = $false)]
   [string]$Branch = "main"
+
+  ,
+  [Parameter(Mandatory = $false)]
+  [switch]$AllowPortfolioChanges
 )
 
 Set-StrictMode -Version Latest
@@ -58,7 +62,22 @@ git rev-parse --is-inside-work-tree | Out-Null
 Write-Step "Ajout des fichiers (git add .)"
 git add .
 
-$hasChanges = (git diff --cached --name-only)
+$stagedFiles = @(git diff --cached --name-only)
+$protectedPortfolioFiles = @(
+  "app/assets/css/main.css",
+  "app/components/sections/PortfolioSection.vue",
+  "app/components/sections/ProjectHelixCarousel.vue"
+)
+
+$blockedPortfolioChanges = @($stagedFiles | Where-Object { $protectedPortfolioFiles -contains $_ })
+if ($blockedPortfolioChanges.Count -gt 0 -and -not $AllowPortfolioChanges) {
+  Write-Host ""
+  Write-Host "Portfolio stable protection active. Changes detected in:" -ForegroundColor Yellow
+  $blockedPortfolioChanges | ForEach-Object { Write-Host " - $_" -ForegroundColor Yellow }
+  throw "Deploy blocked. Re-run with -AllowPortfolioChanges if this is intentional."
+}
+
+$hasChanges = $stagedFiles
 
 if ($hasChanges) {
   if ([string]::IsNullOrWhiteSpace($CommitMessage)) {
