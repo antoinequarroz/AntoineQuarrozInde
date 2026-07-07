@@ -182,17 +182,23 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="space-y-5">
-    <div class="flex items-center justify-between">
-      <div>
-        <h1 class="font-display font-semibold text-xl">Agenda</h1>
-        <p v-if="isOffline || store.pendingCount > 0 || store.syncing" class="text-xs text-amber-500 mt-1">
-          <span v-if="store.syncing">Synchronisation en cours...</span>
-          <span v-else-if="isOffline">Hors ligne: modifications en attente ({{ store.pendingCount }})</span>
-          <span v-else>Modifications en attente: {{ store.pendingCount }}</span>
-        </p>
+    <section class="relative overflow-hidden rounded-lg border border-gray-200 bg-white px-4 py-4 shadow-sm dark:border-white/[0.08] dark:bg-[#111118] sm:px-5">
+      <div class="pointer-events-none absolute -top-16 right-[8%] h-48 w-48 rounded-full bg-violet-500/10 blur-3xl" />
+      <div class="pointer-events-none absolute -bottom-20 left-[6%] h-40 w-40 rounded-full bg-emerald-400/10 blur-3xl" />
+      <div class="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div class="min-w-0">
+          <span class="rounded-md bg-gradient-brand px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white">Agenda</span>
+          <h1 class="mt-2 font-display text-2xl font-semibold text-gray-950 dark:text-white sm:text-3xl">Agenda</h1>
+          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Planifie et suis tes rendez-vous clients.</p>
+          <p v-if="isOffline || store.pendingCount > 0 || store.syncing" class="mt-1 text-xs text-amber-500">
+            <span v-if="store.syncing">Synchronisation en cours...</span>
+            <span v-else-if="isOffline">Hors ligne: modifications en attente ({{ store.pendingCount }})</span>
+            <span v-else>Modifications en attente: {{ store.pendingCount }}</span>
+          </p>
+        </div>
+        <button class="inline-flex h-10 shrink-0 items-center justify-center rounded-lg bg-gradient-brand px-4 text-xs font-semibold text-white shadow-glow-sm transition hover:opacity-90" @click="openNew">Nouveau RDV</button>
       </div>
-      <button class="px-4 py-2 rounded-lg bg-violet-600 text-white text-sm" @click="openNew">Nouveau RDV</button>
-    </div>
+    </section>
 
     <div class="rounded-xl border border-gray-100 dark:border-white/[0.06] bg-white dark:bg-[#111118] p-3 sm:p-4">
       <div class="flex items-center justify-between gap-2">

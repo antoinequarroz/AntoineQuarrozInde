@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { ContactMessage } from '~/types'
+
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 
 const route = useRoute()
@@ -10,7 +12,9 @@ const quotesStore = useQuotesStore()
 const invoicesStore = useInvoicesStore()
 const appointmentsStore = useAppointmentsStore()
 const auth = useAuthStore()
+
 const auditLogs = ref<Array<{ id: number, action: string, entity_type: string, entity_id: string | null, payload: any, created_at: string }>>([])
+const relatedMessages = ref<ContactMessage[]>([])
 
 const client = computed(() => clientsStore.clients.find(c => c.id === clientId.value) || null)
 const clientTasks = computed(() => tasksStore.tasks.filter(t => t.clientId === clientId.value))
@@ -27,19 +31,34 @@ const nextAppointment = computed(() => {
     .filter(a => a.startsAt >= now && a.status === 'scheduled')
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt))[0] || null
 })
+
 const timeline = computed(() => {
-  return auditLogs.value.map((log) => {
+  const auditEvents = auditLogs.value.map((log) => {
     const payload = log.payload || {}
     const title = payload.title || payload.name || payload.number || `${log.entity_type} ${log.entity_id || ''}`.trim()
     const status = payload.status ? ` (${payload.status})` : ''
-    const meta = payload.amount_cents != null ? `${(Number(payload.amount_cents) / 100).toFixed(2)} CHF` : (payload.email || payload.priority || '')
+    const meta = payload.amount_cents != null
+      ? `${(Number(payload.amount_cents) / 100).toFixed(2)} CHF`
+      : (payload.email || payload.priority || '')
+
     return {
       key: `audit-${log.id}`,
       title: `${log.action} · ${title}${status}`,
       meta,
       date: log.created_at?.slice(0, 19).replace('T', ' ') || '',
+      sortDate: log.created_at || '',
     }
   })
+
+  const messageEvents = relatedMessages.value.map(message => ({
+    key: `message-${message.id}`,
+    title: `message_contact · ${message.subject || 'Nouveau message'}`,
+    meta: `${message.name} (${message.status})`,
+    date: message.createdAt?.slice(0, 19).replace('T', ' ') || '',
+    sortDate: message.createdAt || '',
+  }))
+
+  return [...messageEvents, ...auditEvents].sort((a, b) => b.sortDate.localeCompare(a.sortDate))
 })
 
 onMounted(async () => {
@@ -50,10 +69,18 @@ onMounted(async () => {
     invoicesStore.ensureLoaded(),
     appointmentsStore.ensureLoaded(),
   ])
+
   auditLogs.value = await $fetch('/api/audit', {
     query: { clientId: clientId.value, limit: 80 },
     headers: auth.authHeader(),
   })
+
+  if (client.value?.email) {
+    relatedMessages.value = await $fetch('/api/messages', {
+      query: { email: client.value.email },
+      headers: auth.authHeader(),
+    })
+  }
 })
 </script>
 
@@ -63,7 +90,7 @@ onMounted(async () => {
       <div class="min-w-0">
         <NuxtLink to="/admin/clients" class="text-xs text-gray-400 hover:text-gray-600">← Retour clients</NuxtLink>
         <h1 class="font-display font-semibold text-2xl text-gray-900 dark:text-white mt-1">{{ client.name }}</h1>
-        <p class="text-sm text-gray-400 admin-text-wrap">{{ client.company || 'Independant' }} · {{ client.email }}</p>
+        <p class="text-sm text-gray-400 admin-text-wrap">{{ client.company || 'Indépendant' }} · {{ client.email }}</p>
       </div>
       <div class="grid grid-cols-1 sm:flex items-stretch sm:items-center gap-2 w-full sm:w-auto">
         <NuxtLink :to="`/admin/quotes?new=1&clientId=${client.id}`" class="px-3 py-2 rounded-lg bg-violet-600 text-white text-xs font-semibold text-center">Nouveau devis</NuxtLink>
@@ -89,7 +116,7 @@ onMounted(async () => {
           <p class="text-xs text-gray-500 mt-1">{{ (totalInvoices / 100).toFixed(2) }} CHF</p>
         </div>
         <div class="rounded-xl border border-gray-100 dark:border-white/10 bg-white dark:bg-[#111118] p-4">
-          <p class="text-xs text-gray-400 uppercase">Impayees</p>
+          <p class="text-xs text-gray-400 uppercase">Impayées</p>
           <p class="font-display font-bold text-xl mt-1">{{ overdueInvoices.length }}</p>
           <p class="text-xs text-gray-500 mt-1">statut overdue</p>
         </div>
@@ -103,7 +130,7 @@ onMounted(async () => {
 
       <div class="grid lg:grid-cols-2 gap-4 min-w-0">
         <div class="rounded-xl border border-gray-100 dark:border-white/10 bg-white dark:bg-[#111118] p-4">
-          <h2 class="text-sm font-semibold mb-3">Devis recents</h2>
+          <h2 class="text-sm font-semibold mb-3">Devis récents</h2>
           <div v-if="clientQuotes.length" class="space-y-2">
             <div v-for="q in clientQuotes.slice(0, 5)" :key="q.id" class="flex items-center justify-between gap-3 text-sm min-w-0">
               <span class="truncate">{{ q.number }} · {{ q.title }}</span>
@@ -114,7 +141,7 @@ onMounted(async () => {
         </div>
 
         <div class="rounded-xl border border-gray-100 dark:border-white/10 bg-white dark:bg-[#111118] p-4">
-          <h2 class="text-sm font-semibold mb-3">Factures recentes</h2>
+          <h2 class="text-sm font-semibold mb-3">Factures récentes</h2>
           <div v-if="clientInvoices.length" class="space-y-2">
             <div v-for="i in clientInvoices.slice(0, 5)" :key="i.id" class="flex items-center justify-between gap-3 text-sm min-w-0">
               <span class="truncate">{{ i.number }} · {{ i.status }}</span>
@@ -125,14 +152,14 @@ onMounted(async () => {
         </div>
 
         <div class="rounded-xl border border-gray-100 dark:border-white/10 bg-white dark:bg-[#111118] p-4">
-          <h2 class="text-sm font-semibold mb-3">Taches</h2>
+          <h2 class="text-sm font-semibold mb-3">Tâches</h2>
           <div v-if="clientTasks.length" class="space-y-2">
             <div v-for="t in clientTasks.slice(0, 6)" :key="t.id" class="flex items-center justify-between gap-3 text-sm min-w-0">
               <span class="truncate">{{ t.title }}</span>
               <span class="text-gray-400 whitespace-nowrap">{{ t.status }}</span>
             </div>
           </div>
-          <p v-else class="text-xs text-gray-400">Aucune tache</p>
+          <p v-else class="text-xs text-gray-400">Aucune tâche</p>
         </div>
 
         <div class="rounded-xl border border-gray-100 dark:border-white/10 bg-white dark:bg-[#111118] p-4">
@@ -148,7 +175,21 @@ onMounted(async () => {
       </div>
 
       <div class="rounded-xl border border-gray-100 dark:border-white/10 bg-white dark:bg-[#111118] p-4 min-w-0">
-        <h2 class="text-sm font-semibold mb-3">Timeline activite</h2>
+        <h2 class="text-sm font-semibold mb-3">Messages liés</h2>
+        <div v-if="relatedMessages.length" class="space-y-2">
+          <div v-for="message in relatedMessages.slice(0, 6)" :key="message.id" class="flex items-start justify-between gap-3 border-b border-gray-100 dark:border-white/5 pb-2 last:border-0">
+            <div class="min-w-0">
+              <p class="text-sm text-gray-800 dark:text-gray-100 truncate">{{ message.subject || 'Nouveau message' }}</p>
+              <p class="text-xs text-gray-400 admin-text-wrap">{{ message.message }}</p>
+            </div>
+            <span class="text-xs text-gray-400 whitespace-nowrap">{{ message.createdAt?.slice(0, 10) }}</span>
+          </div>
+        </div>
+        <p v-else class="text-xs text-gray-400">Aucun message lié pour cet email</p>
+      </div>
+
+      <div class="rounded-xl border border-gray-100 dark:border-white/10 bg-white dark:bg-[#111118] p-4 min-w-0">
+        <h2 class="text-sm font-semibold mb-3">Timeline activité</h2>
         <div v-if="timeline.length" class="space-y-2">
           <div v-for="event in timeline.slice(0, 12)" :key="event.key" class="flex items-start justify-between gap-3 border-b border-gray-100 dark:border-white/5 pb-2 last:border-0">
             <div class="min-w-0">
@@ -158,7 +199,7 @@ onMounted(async () => {
             <span class="text-xs text-gray-400 whitespace-nowrap">{{ event.date }}</span>
           </div>
         </div>
-        <p v-else class="text-xs text-gray-400">Aucune activite pour ce client</p>
+        <p v-else class="text-xs text-gray-400">Aucune activité pour ce client</p>
       </div>
     </template>
   </div>

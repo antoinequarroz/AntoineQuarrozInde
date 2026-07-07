@@ -21,7 +21,7 @@
 
   i18n: {
     locales: [
-      { code: 'fr', iso: 'fr-CH', name: 'FranÃ§ais' },
+      { code: 'fr', iso: 'fr-CH', name: 'Français' },
       { code: 'en', iso: 'en-US', name: 'English' },
       { code: 'de', iso: 'de-CH', name: 'Deutsch' },
     ],
@@ -102,7 +102,7 @@
   app: {
     head: {
       titleTemplate: '%s',
-      title: 'Antoine Quarroz â€” DÃ©veloppeur Web en Valais',
+      title: 'Antoine Quarroz — Développeur Web en Valais',
       meta: [
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover' },
@@ -110,7 +110,7 @@
         { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' },
         {
           name: 'description',
-          content: 'Antoine Quarroz, dÃ©veloppeur web & mobile freelance basÃ© en Valais (Suisse). CrÃ©ation de sites web, applications mobiles et CMS sur mesure.',
+          content: 'Antoine Quarroz, développeur web & mobile freelance basé en Valais (Suisse). Création de sites web, applications mobiles et CMS sur mesure.',
         },
         { name: 'format-detection', content: 'telephone=no' },
         { property: 'og:type', content: 'website' },

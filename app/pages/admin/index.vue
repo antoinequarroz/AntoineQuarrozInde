@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { ContactMessage } from '~/types'
+
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 
 const projects = useProjectsStore()
@@ -12,199 +14,349 @@ const appointments = useAppointmentsStore()
 const auth = useAuthStore()
 const toast = useToast()
 
-const stats = computed(() => [
-  {
-    label: 'Clients',
-    value: clients.clients.length,
-    sub: `${clients.active.length} actifs`,
-    icon: 'users',
-    href: '/admin/clients',
-    iconColor: 'text-emerald-400',
-    iconBg: 'bg-emerald-500/10',
-  },
-  {
-    label: 'Taches',
-    value: tasks.tasks.length,
-    sub: `${tasks.done.length} terminees`,
-    icon: 'check-square',
-    href: '/admin/tasks',
-    iconColor: 'text-cyan-400',
-    iconBg: 'bg-cyan-500/10',
-  },
-  {
-    label: 'Devis',
-    value: quotes.quotes.length,
-    sub: `${quotes.quotes.filter(x => x.status === 'accepted').length} acceptes`,
-    icon: 'file-plus',
-    href: '/admin/quotes',
-    iconColor: 'text-amber-400',
-    iconBg: 'bg-amber-500/10',
-  },
-  {
-    label: 'Factures',
-    value: invoices.invoices.length,
-    sub: `${invoices.invoices.filter(x => x.status === 'paid').length} payees`,
-    icon: 'receipt',
-    href: '/admin/invoices',
-    iconColor: 'text-sky-400',
-    iconBg: 'bg-sky-500/10',
-  },
-  {
-    label: 'RDV',
-    value: appointments.appointments.length,
-    sub: `${appointments.appointments.filter(x => x.status === 'scheduled').length} prevus`,
-    icon: 'calendar',
-    href: '/admin/appointments',
-    iconColor: 'text-lime-400',
-    iconBg: 'bg-lime-500/10',
-  },
-  {
-    label: 'Projets',
-    value: projects.projects.length,
-    sub: `${projects.featured.length} mis en avant`,
-    icon: 'folder',
-    href: '/admin/projects',
-    iconColor: 'text-violet-500',
-    iconBg: 'bg-violet-500/10',
-  },
-  {
-    label: 'Articles',
-    value: articles.articles.length,
-    sub: `${articles.published.length} publiés`,
-    icon: 'file-text',
-    href: '/admin/articles',
-    iconColor: 'text-purple-400',
-    iconBg: 'bg-purple-500/10',
-  },
-  {
-    label: 'Avis clients',
-    value: reviews.reviews.length,
-    sub: `${reviews.visible.length} visibles`,
-    icon: 'star',
-    href: '/admin/reviews',
-    iconColor: 'text-pink-400',
-    iconBg: 'bg-pink-500/10',
-  },
-  {
-    label: 'Note moyenne',
-    value: reviews.avgRating.toFixed(1),
-    sub: 'sur 5 étoiles',
-    icon: 'trending-up',
-    href: '/admin/reviews',
-    iconColor: 'text-indigo-400',
-    iconBg: 'bg-indigo-500/10',
-  },
-])
-
-const recentProjects = computed(() => projects.projects.slice(0, 5))
-const recentArticles = computed(() => articles.articles.slice(0, 5))
-const todayIso = computed(() => new Date().toISOString().slice(0, 10))
-const todayPanel = computed(() => {
-  const dueTasks = tasks.tasks.filter(t => t.status !== 'done' && t.dueDate && t.dueDate <= todayIso.value).length
-  const overdueInvoices = invoices.invoices.filter(i => i.status === 'overdue').length
-  const pendingQuotes = quotes.quotes.filter(q => q.status === 'sent').length
-  const nextAppointment = appointments.appointments
-    .filter(a => a.status === 'scheduled' && a.startsAt >= new Date().toISOString())
-    .sort((a, b) => a.startsAt.localeCompare(b.startsAt))[0]
-  return { dueTasks, overdueInvoices, pendingQuotes, nextAppointment }
-})
-const pipeline = computed(() => {
-  const leads = clients.clients.filter(c => c.status === 'lead').length
-  const activeClients = clients.clients.filter(c => c.status === 'active').length
-  const sentQuotes = quotes.quotes.filter(q => q.status === 'sent').length
-  const acceptedQuotes = quotes.quotes.filter(q => q.status === 'accepted').length
-  const sentInvoices = invoices.invoices.filter(i => i.status === 'sent' || i.status === 'overdue').length
-  const paidInvoices = invoices.invoices.filter(i => i.status === 'paid').length
-  const quoteConv = sentQuotes > 0 ? Math.round((acceptedQuotes / sentQuotes) * 100) : 0
-  const cashConv = sentInvoices > 0 ? Math.round((paidInvoices / sentInvoices) * 100) : 0
-  return { leads, activeClients, sentQuotes, acceptedQuotes, sentInvoices, paidInvoices, quoteConv, cashConv }
-})
-function startOfMonthIso() {
-  const d = new Date()
-  return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10)
-}
-function addDaysIso(base: Date, days: number) {
-  const d = new Date(base)
-  d.setDate(d.getDate() + days)
-  return d.toISOString().slice(0, 10)
-}
-const business = computed(() => {
-  const monthStart = startOfMonthIso()
-  const now = new Date()
-  const next30 = addDaysIso(now, 30)
-  const mtdRevenue = invoices.invoices
-    .filter(i => i.status === 'paid' && i.paidAt && i.paidAt >= monthStart)
-    .reduce((sum, i) => sum + (i.totalCents ?? i.amountCents), 0)
-  const expected30 = invoices.invoices
-    .filter(i => ['sent', 'overdue'].includes(i.status) && i.dueAt && i.dueAt <= next30)
-    .reduce((sum, i) => sum + (i.totalCents ?? i.amountCents), 0)
-  const avgQuote = quotes.quotes.length
-    ? Math.round(quotes.quotes.reduce((sum, q) => sum + (q.totalCents ?? q.amountCents), 0) / quotes.quotes.length)
-    : 0
-  const overdueCount = invoices.invoices.filter(i => i.status === 'overdue').length
-  return { mtdRevenue, expected30, avgQuote, overdueCount }
-})
-function money(cents: number) {
-  return `${(cents / 100).toFixed(2)} CHF`
-}
+const messages = ref<ContactMessage[]>([])
 const runningAutomation = ref(false)
 const runningEmailReminders = ref(false)
 const reminderRuns = ref<Array<{ id: number, action: string, payload: Record<string, any>, created_at: string }>>([])
 
+const todayIso = computed(() => new Date().toISOString().slice(0, 10))
+const nowIso = computed(() => new Date().toISOString())
+const todayLabel = computed(() => new Date().toLocaleDateString('fr-CH', {
+  weekday: 'long',
+  day: '2-digit',
+  month: 'long',
+}))
+
+const openTasks = computed(() =>
+  tasks.tasks
+    .filter(task => task.status !== 'done')
+    .sort((a, b) => String(a.dueDate || '9999-12-31').localeCompare(String(b.dueDate || '9999-12-31'))),
+)
+
+const dueTasks = computed(() => openTasks.value.filter(task => task.dueDate && task.dueDate <= todayIso.value))
+
+const overdueInvoices = computed(() =>
+  invoices.invoices
+    .filter(invoice => invoice.status === 'overdue')
+    .sort((a, b) => String(a.dueAt || '').localeCompare(String(b.dueAt || ''))),
+)
+
+const pendingQuotes = computed(() =>
+  quotes.quotes
+    .filter(quote => quote.status === 'sent')
+    .sort((a, b) => String(a.validUntil || '').localeCompare(String(b.validUntil || ''))),
+)
+
+const nextAppointments = computed(() =>
+  appointments.appointments
+    .filter(appointment => appointment.status === 'scheduled' && appointment.startsAt >= nowIso.value)
+    .sort((a, b) => a.startsAt.localeCompare(b.startsAt))
+    .slice(0, 5),
+)
+
+const newMessages = computed(() =>
+  messages.value
+    .filter(message => message.status === 'new')
+    .slice(0, 6),
+)
+
+const monthRevenue = computed(() => {
+  const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10)
+
+  return invoices.invoices
+    .filter(invoice => invoice.status === 'paid' && invoice.paidAt && invoice.paidAt >= monthStart)
+    .reduce((sum, invoice) => sum + (invoice.totalCents ?? invoice.amountCents), 0)
+})
+
+const expectedRevenue = computed(() => {
+  const next30 = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+
+  return invoices.invoices
+    .filter(invoice => ['sent', 'overdue'].includes(invoice.status) && invoice.dueAt && invoice.dueAt <= next30)
+    .reduce((sum, invoice) => sum + (invoice.totalCents ?? invoice.amountCents), 0)
+})
+
+const quoteValue = computed(() =>
+  pendingQuotes.value.reduce((sum, quote) => sum + (quote.totalCents ?? quote.amountCents), 0),
+)
+
+const metrics = computed(() => [
+  {
+    label: 'A encaisser',
+    value: money(expectedRevenue.value),
+    meta: `${overdueInvoices.value.length} retard(s)`,
+    icon: 'receipt',
+    to: '/admin/invoices',
+    tone: 'text-rose-600 bg-rose-50 dark:text-rose-300 dark:bg-rose-500/10',
+    bar: 'bg-rose-500',
+  },
+  {
+    label: 'Pipeline devis',
+    value: money(quoteValue.value),
+    meta: `${pendingQuotes.value.length} devis envoyes`,
+    icon: 'file-plus',
+    to: '/admin/quotes',
+    tone: 'text-sky-600 bg-sky-50 dark:text-sky-300 dark:bg-sky-500/10',
+    bar: 'bg-sky-500',
+  },
+  {
+    label: 'Actions dues',
+    value: dueTasks.value.length,
+    meta: `${openTasks.value.length} taches ouvertes`,
+    icon: 'check-square',
+    to: '/admin/tasks',
+    tone: 'text-amber-700 bg-amber-50 dark:text-amber-300 dark:bg-amber-500/10',
+    bar: 'bg-amber-500',
+  },
+  {
+    label: 'Leads neufs',
+    value: newMessages.value.length,
+    meta: `${clients.clients.filter(client => client.status === 'lead').length} leads CRM`,
+    icon: 'users',
+    to: '/admin/crm',
+    tone: 'text-emerald-700 bg-emerald-50 dark:text-emerald-300 dark:bg-emerald-500/10',
+    bar: 'bg-emerald-500',
+  },
+])
+
+const priorities = computed(() => {
+  const items: Array<{
+    id: string
+    title: string
+    meta: string
+    to: string
+    icon: string
+    label: string
+    tone: string
+    chip: string
+  }> = []
+
+  if (overdueInvoices.value.length) {
+    items.push({
+      id: 'overdue',
+      title: 'Relancer les factures en retard',
+      meta: `${overdueInvoices.value.length} facture(s), ${money(overdueInvoices.value.reduce((sum, invoice) => sum + (invoice.totalCents ?? invoice.amountCents), 0))}`,
+      to: '/admin/invoices?status=overdue',
+      icon: 'receipt',
+      label: 'Urgent',
+      tone: 'border-l-rose-500',
+      chip: 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300',
+    })
+  }
+
+  if (newMessages.value.length) {
+    items.push({
+      id: 'messages',
+      title: 'Qualifier les nouveaux messages',
+      meta: `${newMessages.value.length} lead(s) entrants depuis la vitrine`,
+      to: '/admin/messages',
+      icon: 'mail',
+      label: 'Lead',
+      tone: 'border-l-emerald-500',
+      chip: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300',
+    })
+  }
+
+  if (dueTasks.value.length) {
+    items.push({
+      id: 'tasks',
+      title: 'Terminer les taches dues',
+      meta: `${dueTasks.value.length} echeance(s) aujourd'hui ou en retard`,
+      to: '/admin/tasks',
+      icon: 'check-square',
+      label: 'Delivery',
+      tone: 'border-l-amber-500',
+      chip: 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300',
+    })
+  }
+
+  if (pendingQuotes.value.length) {
+    items.push({
+      id: 'quotes',
+      title: 'Suivre les devis envoyes',
+      meta: `${pendingQuotes.value.length} devis ouverts, ${money(quoteValue.value)} en attente`,
+      to: '/admin/quotes?status=sent',
+      icon: 'file-plus',
+      label: 'Sales',
+      tone: 'border-l-sky-500',
+      chip: 'bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300',
+    })
+  }
+
+  if (nextAppointments.value.length) {
+    items.push({
+      id: 'appointments',
+      title: 'Preparer les prochains rendez-vous',
+      meta: `${nextAppointments.value.length} rendez-vous programme(s)`,
+      to: '/admin/appointments',
+      icon: 'calendar',
+      label: 'Agenda',
+      tone: 'border-l-violet-500',
+      chip: 'bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300',
+    })
+  }
+
+  return items
+})
+
+const commercialRows = computed(() => {
+  const rows: Array<{
+    id: string
+    type: string
+    title: string
+    meta: string
+    value: string
+    to: string
+    tone: string
+  }> = []
+
+  for (const message of newMessages.value) {
+    rows.push({
+      id: `message-${message.id}`,
+      type: 'Lead',
+      title: message.name,
+      meta: message.subject || message.email,
+      value: 'Nouveau',
+      to: '/admin/messages',
+      tone: 'text-emerald-700 bg-emerald-50 dark:text-emerald-300 dark:bg-emerald-500/10',
+    })
+  }
+
+  for (const invoice of overdueInvoices.value.slice(0, 4)) {
+    rows.push({
+      id: `invoice-${invoice.id}`,
+      type: 'Facture',
+      title: invoice.number,
+      meta: clientName(invoice.clientId),
+      value: money(invoice.totalCents ?? invoice.amountCents),
+      to: '/admin/invoices',
+      tone: 'text-rose-700 bg-rose-50 dark:text-rose-300 dark:bg-rose-500/10',
+    })
+  }
+
+  for (const quote of pendingQuotes.value.slice(0, 4)) {
+    rows.push({
+      id: `quote-${quote.id}`,
+      type: 'Devis',
+      title: quote.number,
+      meta: clientName(quote.clientId),
+      value: money(quote.totalCents ?? quote.amountCents),
+      to: '/admin/quotes',
+      tone: 'text-sky-700 bg-sky-50 dark:text-sky-300 dark:bg-sky-500/10',
+    })
+  }
+
+  return rows.slice(0, 8)
+})
+
+const productionRows = computed(() =>
+  openTasks.value.slice(0, 5).map(task => ({
+    id: task.id,
+    title: task.title,
+    meta: task.dueDate ? `Echeance ${task.dueDate}` : 'Sans echeance',
+    status: task.priority,
+  })),
+)
+
+const recentProjects = computed(() => projects.projects.slice(0, 3))
+const recentArticles = computed(() => articles.articles.slice(0, 3))
+
+function money(cents: number) {
+  return `${(cents / 100).toFixed(0)} CHF`
+}
+
 function daysFromNow(isoDate: string) {
   const now = new Date()
-  const d = new Date(isoDate)
-  return Math.ceil((d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+  const date = new Date(isoDate)
+  return Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+}
+
+function formatDateTime(value: string) {
+  return new Date(value).toLocaleString('fr-CH', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+function clientName(clientId: number | null) {
+  if (!clientId) return 'Sans client'
+  return clients.clients.find(client => client.id === clientId)?.name || `Client #${clientId}`
+}
+
+async function loadReminderRuns() {
+  try {
+    reminderRuns.value = await $fetch('/api/admin/pipeline/runs', {
+      headers: auth.authHeader(),
+    })
+  } catch {
+    reminderRuns.value = []
+  }
+}
+
+async function loadMessages() {
+  try {
+    messages.value = await $fetch('/api/messages', {
+      headers: auth.authHeader(),
+    })
+  } catch {
+    messages.value = []
+  }
 }
 
 async function runPipelineAutomation() {
   if (runningAutomation.value) return
   runningAutomation.value = true
+
   try {
     await Promise.all([tasks.ensureLoaded(), quotes.ensureLoaded(), invoices.ensureLoaded(), clients.ensureLoaded()])
-    const existingTitles = new Set(tasks.tasks.map(t => t.title))
+    const existingTitles = new Set(tasks.tasks.map(task => task.title))
     let created = 0
 
-    for (const q of quotes.quotes) {
-      if (q.status !== 'sent' || !q.validUntil) continue
-      const d = daysFromNow(q.validUntil)
-      if (d < 0 || d > 3) continue
-      const key = `[RELANCE DEVIS ${q.number}]`
-      if (existingTitles.has(key)) continue
+    for (const quote of quotes.quotes) {
+      if (quote.status !== 'sent' || !quote.validUntil) continue
+      const days = daysFromNow(quote.validUntil)
+      if (days < 0 || days > 3) continue
+      const title = `[RELANCE DEVIS ${quote.number}]`
+      if (existingTitles.has(title)) continue
+
       await tasks.add({
-        title: key,
-        description: `Relancer le devis ${q.number} (${q.title}) avant expiration (${q.validUntil}).`,
+        title,
+        description: `Relancer le devis ${quote.number} (${quote.title}) avant expiration (${quote.validUntil}).`,
         status: 'todo',
-        priority: d <= 1 ? 'high' : 'medium',
-        dueDate: q.validUntil,
-        clientId: q.clientId ?? null,
+        priority: days <= 1 ? 'high' : 'medium',
+        dueDate: quote.validUntil,
+        clientId: quote.clientId ?? null,
         projectId: null,
       })
-      existingTitles.add(key)
+
+      existingTitles.add(title)
       created++
     }
 
-    for (const inv of invoices.invoices) {
-      if (!['sent', 'overdue'].includes(inv.status) || !inv.dueAt) continue
-      const d = daysFromNow(inv.dueAt)
-      if (d > 2) continue
-      const key = `[RELANCE FACTURE ${inv.number}]`
-      if (existingTitles.has(key)) continue
+    for (const invoice of invoices.invoices) {
+      if (!['sent', 'overdue'].includes(invoice.status) || !invoice.dueAt) continue
+      const days = daysFromNow(invoice.dueAt)
+      if (days > 2) continue
+      const title = `[RELANCE FACTURE ${invoice.number}]`
+      if (existingTitles.has(title)) continue
+
       await tasks.add({
-        title: key,
-        description: `Relancer la facture ${inv.number} (echeance ${inv.dueAt}).`,
+        title,
+        description: `Relancer la facture ${invoice.number} (echeance ${invoice.dueAt}).`,
         status: 'todo',
-        priority: d < 0 ? 'high' : 'medium',
-        dueDate: inv.dueAt,
-        clientId: inv.clientId ?? null,
+        priority: days < 0 ? 'high' : 'medium',
+        dueDate: invoice.dueAt,
+        clientId: invoice.clientId ?? null,
         projectId: null,
       })
-      existingTitles.add(key)
+
+      existingTitles.add(title)
       created++
     }
 
-    if (created > 0) toast.success(`${created} relance(s) ajoutee(s) dans Taches`)
-    else toast.success('Aucune nouvelle relance a generer')
+    toast.success(created > 0 ? `${created} relance(s) ajoutee(s)` : 'Aucune nouvelle relance a generer')
   } catch {
     toast.error('Erreur pendant la generation des relances')
   } finally {
@@ -212,26 +364,17 @@ async function runPipelineAutomation() {
   }
 }
 
-async function loadReminderRuns() {
-  try {
-    const data = await $fetch<Array<{ id: number, action: string, payload: Record<string, any>, created_at: string }>>('/api/admin/pipeline/runs', {
-      headers: auth.authHeader(),
-    })
-    reminderRuns.value = data || []
-  } catch {
-    reminderRuns.value = []
-  }
-}
-
 async function sendReminderEmails() {
   if (runningEmailReminders.value) return
   runningEmailReminders.value = true
+
   try {
     const result = await $fetch<{ sentCount: number, skippedCount: number, failedCount: number }>('/api/admin/pipeline/reminders', {
       method: 'POST',
       headers: auth.authHeader(),
     })
-    toast.success(`Relances email: ${result.sentCount} envoyee(s), ${result.skippedCount} ignoree(s), ${result.failedCount} echec(s)`)
+
+    toast.success(`Emails: ${result.sentCount} envoye(s), ${result.skippedCount} ignore(s), ${result.failedCount} echec(s)`)
     await loadReminderRuns()
   } catch {
     toast.error('Erreur envoi relances email')
@@ -251,317 +394,313 @@ onMounted(async () => {
     invoices.ensureLoaded(),
     appointments.ensureLoaded(),
     loadReminderRuns(),
+    loadMessages(),
   ])
 })
 </script>
 
 <template>
-  <div class="space-y-6">
-
-    <!-- Welcome banner -->
-    <div class="relative rounded-2xl overflow-hidden bg-gradient-to-br from-violet-600 to-purple-700 p-6 shadow-lg">
-      <div class="absolute inset-0 opacity-10">
-        <div class="absolute -top-8 -right-8 w-40 h-40 rounded-full bg-white/20 blur-2xl" />
-        <div class="absolute -bottom-8 -left-8 w-32 h-32 rounded-full bg-white/10 blur-2xl" />
-      </div>
-      <div class="relative flex items-center justify-between">
-        <div>
-          <h1 class="font-display font-bold text-xl text-white mb-1">Bonjour, Antoine 👋</h1>
-          <p class="text-sm text-violet-200">Gérez votre contenu et vos projets depuis ici.</p>
+  <div class="space-y-4 lg:space-y-5">
+    <section class="relative overflow-hidden rounded-lg border border-gray-200 bg-white px-4 py-4 shadow-sm dark:border-white/[0.08] dark:bg-[#111118] sm:px-5">
+      <div class="pointer-events-none absolute -top-20 right-[6%] h-56 w-56 rounded-full bg-violet-500/10 blur-3xl" />
+      <div class="pointer-events-none absolute -bottom-24 left-[10%] h-48 w-48 rounded-full bg-cyan-400/10 blur-3xl" />
+      <div class="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div class="min-w-0">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="rounded-md bg-gradient-brand px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white">
+              Admin
+            </span>
+            <span class="text-xs text-gray-400 capitalize">{{ todayLabel }}</span>
+          </div>
+          <h1 class="mt-2 font-display text-2xl font-semibold text-gray-950 dark:text-white sm:text-3xl">
+            Tableau de bord
+          </h1>
+          <p class="mt-1 max-w-2xl text-sm leading-6 text-gray-500 dark:text-gray-400">
+            Priorites, pipeline et prochaines actions. Une seule vue pour savoir quoi traiter maintenant.
+          </p>
         </div>
-        <div class="hidden sm:flex gap-2">
-          <NuxtLink
-            to="/admin/projects?new=1"
-            class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white/15 hover:bg-white/25
-                   text-white text-xs font-semibold transition-all backdrop-blur-sm border border-white/20"
-          >
-            + Projet
+
+        <div class="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end">
+          <NuxtLink to="/admin/messages" class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-gray-200 px-3 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-white/[0.12] dark:text-gray-200 dark:hover:bg-white/[0.04]">
+            <AdminAdminIcon icon="mail" class="h-4 w-4" />
+            Inbox
           </NuxtLink>
-          <NuxtLink
-            to="/admin/articles?new=1"
-            class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white/15 hover:bg-white/25
-                   text-white text-xs font-semibold transition-all backdrop-blur-sm border border-white/20"
-          >
-            + Article
+          <NuxtLink to="/admin/tasks" class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-gray-200 px-3 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-white/[0.12] dark:text-gray-200 dark:hover:bg-white/[0.04]">
+            <AdminAdminIcon icon="check-square" class="h-4 w-4" />
+            Taches
+          </NuxtLink>
+          <NuxtLink to="/admin/quotes?new=1" class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-gray-950 px-3 text-xs font-semibold text-white transition hover:bg-gray-800 dark:bg-white dark:text-gray-950">
+            <AdminAdminIcon icon="file-plus" class="h-4 w-4" />
+            Devis
           </NuxtLink>
         </div>
       </div>
-    </div>
+    </section>
 
-    <!-- Stats row -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4">
+    <section class="grid grid-cols-2 gap-2.5 xl:grid-cols-4">
       <NuxtLink
-        v-for="stat in stats"
-        :key="stat.label"
-        :to="stat.href"
-        class="group bg-white dark:bg-[#111118] border border-gray-100 dark:border-white/[0.06]
-               rounded-xl p-5 hover:border-violet-200 dark:hover:border-violet-500/20
-               hover:shadow-sm transition-all duration-200"
+        v-for="metric in metrics"
+        :key="metric.label"
+        :to="metric.to"
+        class="group relative min-h-[112px] overflow-hidden rounded-lg border border-gray-200 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-md dark:border-white/[0.08] dark:bg-[#111118] dark:hover:border-white/[0.16] sm:p-4"
       >
-        <div class="flex items-center justify-between mb-4">
-          <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{{ stat.label }}</span>
-          <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" :class="[stat.iconBg, stat.iconColor]">
-            <svg v-if="stat.icon === 'folder'" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-            </svg>
-            <svg v-else-if="stat.icon === 'file-text'" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/>
-            </svg>
-            <svg v-else-if="stat.icon === 'star'" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-            </svg>
-            <svg v-else-if="stat.icon === 'trending-up'" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-              <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>
-            </svg>
-            <svg v-else-if="stat.icon === 'users'" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-            </svg>
-            <svg v-else-if="stat.icon === 'check-square'" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-              <polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
-            </svg>
-            <svg v-else-if="stat.icon === 'file-plus'" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/>
-            </svg>
-            <svg v-else-if="stat.icon === 'receipt'" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-              <path d="M4 3h16v18l-3-2-3 2-3-2-3 2-3-2-3 2V3z"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/>
-            </svg>
-            <svg v-else-if="stat.icon === 'calendar'" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-              <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-            </svg>
+        <span class="absolute inset-x-0 top-0 h-1" :class="metric.bar" />
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <p class="truncate text-xs font-medium text-gray-500 dark:text-gray-400">{{ metric.label }}</p>
+            <p class="mt-2 truncate text-xl font-semibold text-gray-950 dark:text-white sm:text-2xl">{{ metric.value }}</p>
           </div>
+          <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg" :class="metric.tone">
+            <AdminAdminIcon :icon="metric.icon" class="h-4 w-4" />
+          </span>
         </div>
-        <div class="font-display font-bold text-2xl sm:text-3xl text-gray-900 dark:text-white leading-none mb-1.5">{{ stat.value }}</div>
-        <div class="text-xs text-gray-400 dark:text-gray-500">{{ stat.sub }}</div>
+        <p class="mt-3 truncate text-xs text-gray-400">{{ metric.meta }}</p>
       </NuxtLink>
-    </div>
+    </section>
 
-    <div class="bg-white dark:bg-[#111118] border border-gray-100 dark:border-white/[0.06] rounded-xl p-4 sm:p-5">
-      <div class="flex items-center justify-between gap-3">
-        <h2 class="text-sm font-semibold text-gray-800 dark:text-gray-200">Aujourd hui</h2>
-        <span class="text-xs text-gray-400">{{ todayIso }}</span>
-      </div>
-      <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <NuxtLink to="/admin/tasks" class="rounded-lg border border-gray-100 dark:border-white/[0.06] p-3">
-          <p class="text-xs text-gray-400">Taches a traiter</p>
-          <p class="mt-1 text-lg font-semibold">{{ todayPanel.dueTasks }}</p>
-        </NuxtLink>
-        <NuxtLink to="/admin/invoices" class="rounded-lg border border-gray-100 dark:border-white/[0.06] p-3">
-          <p class="text-xs text-gray-400">Factures en retard</p>
-          <p class="mt-1 text-lg font-semibold">{{ todayPanel.overdueInvoices }}</p>
-        </NuxtLink>
-        <NuxtLink to="/admin/quotes" class="rounded-lg border border-gray-100 dark:border-white/[0.06] p-3">
-          <p class="text-xs text-gray-400">Devis en attente</p>
-          <p class="mt-1 text-lg font-semibold">{{ todayPanel.pendingQuotes }}</p>
-        </NuxtLink>
-        <NuxtLink to="/admin/appointments" class="rounded-lg border border-gray-100 dark:border-white/[0.06] p-3">
-          <p class="text-xs text-gray-400">Prochain RDV</p>
-          <p class="mt-1 text-sm font-semibold line-clamp-2">{{ todayPanel.nextAppointment?.title || 'Aucun' }}</p>
-        </NuxtLink>
-      </div>
-    </div>
+    <section class="grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(300px,0.65fr)]">
+      <div class="rounded-lg border border-gray-200 bg-white shadow-sm dark:border-white/[0.08] dark:bg-[#111118]">
+        <div class="flex items-center justify-between gap-3 border-b border-gray-100 px-4 py-3 dark:border-white/[0.06] sm:px-5">
+          <div class="min-w-0">
+            <h2 class="text-sm font-semibold text-gray-950 dark:text-white">Priorites</h2>
+            <p class="mt-0.5 text-xs text-gray-400">A traiter dans l'ordre.</p>
+          </div>
+          <NuxtLink to="/admin/tasks" class="shrink-0 text-xs font-semibold text-gray-600 hover:text-gray-950 dark:text-gray-300 dark:hover:text-white">
+            Tout voir
+          </NuxtLink>
+        </div>
 
-    <div class="bg-white dark:bg-[#111118] border border-gray-100 dark:border-white/[0.06] rounded-xl p-4 sm:p-5">
-      <div class="flex items-center justify-between gap-3">
-        <h2 class="text-sm font-semibold text-gray-800 dark:text-gray-200">Pilotage business</h2>
-        <span class="text-xs text-gray-400">Financier & conversion</span>
-      </div>
-      <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <div class="rounded-lg border border-gray-100 dark:border-white/[0.06] p-3">
-          <p class="text-xs text-gray-400">CA encaissé (mois)</p>
-          <p class="mt-1 text-lg font-semibold">{{ money(business.mtdRevenue) }}</p>
-        </div>
-        <div class="rounded-lg border border-gray-100 dark:border-white/[0.06] p-3">
-          <p class="text-xs text-gray-400">Encaissement attendu 30j</p>
-          <p class="mt-1 text-lg font-semibold">{{ money(business.expected30) }}</p>
-        </div>
-        <div class="rounded-lg border border-gray-100 dark:border-white/[0.06] p-3">
-          <p class="text-xs text-gray-400">Panier moyen devis</p>
-          <p class="mt-1 text-lg font-semibold">{{ money(business.avgQuote) }}</p>
-        </div>
-        <div class="rounded-lg border border-gray-100 dark:border-white/[0.06] p-3">
-          <p class="text-xs text-gray-400">Factures en retard</p>
-          <p class="mt-1 text-lg font-semibold">{{ business.overdueCount }}</p>
-        </div>
-      </div>
-    </div>
-
-    <div class="bg-white dark:bg-[#111118] border border-gray-100 dark:border-white/[0.06] rounded-xl p-4 sm:p-5">
-      <div class="flex items-center justify-between gap-3">
-        <h2 class="text-sm font-semibold text-gray-800 dark:text-gray-200">Documents & signatures</h2>
-        <span class="text-xs text-gray-400">Parcours devis/facture</span>
-      </div>
-      <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
-        <NuxtLink to="/admin/quotes" class="rounded-lg border border-gray-100 dark:border-white/[0.06] p-3 hover:border-violet-300 dark:hover:border-violet-500/20">
-          Envoyer un devis
-        </NuxtLink>
-        <NuxtLink to="/admin/quotes" class="rounded-lg border border-gray-100 dark:border-white/[0.06] p-3 hover:border-violet-300 dark:hover:border-violet-500/20">
-          Marquer vu / signé
-        </NuxtLink>
-        <NuxtLink to="/admin/invoices" class="rounded-lg border border-gray-100 dark:border-white/[0.06] p-3 hover:border-violet-300 dark:hover:border-violet-500/20">
-          Emettre facture PDF
-        </NuxtLink>
-        <NuxtLink to="/admin/invoices" class="rounded-lg border border-gray-100 dark:border-white/[0.06] p-3 hover:border-violet-300 dark:hover:border-violet-500/20">
-          Suivre paiement
-        </NuxtLink>
-      </div>
-    </div>
-
-    <div class="bg-white dark:bg-[#111118] border border-gray-100 dark:border-white/[0.06] rounded-xl p-4 sm:p-5">
-      <div class="flex items-center justify-between gap-3">
-        <h2 class="text-sm font-semibold text-gray-800 dark:text-gray-200">Pipeline commercial</h2>
-        <span class="text-xs text-gray-400">Lead → Devis → Facture → Paiement</span>
-      </div>
-      <div class="mt-3 grid grid-cols-2 lg:grid-cols-6 gap-2">
-        <NuxtLink to="/admin/clients?status=lead" class="rounded-lg border border-gray-100 dark:border-white/[0.06] p-3">
-          <p class="text-[11px] text-gray-400">Leads</p><p class="text-lg font-semibold">{{ pipeline.leads }}</p>
-        </NuxtLink>
-        <NuxtLink to="/admin/clients?status=active" class="rounded-lg border border-gray-100 dark:border-white/[0.06] p-3">
-          <p class="text-[11px] text-gray-400">Clients actifs</p><p class="text-lg font-semibold">{{ pipeline.activeClients }}</p>
-        </NuxtLink>
-        <NuxtLink to="/admin/quotes?status=sent" class="rounded-lg border border-gray-100 dark:border-white/[0.06] p-3">
-          <p class="text-[11px] text-gray-400">Devis envoyés</p><p class="text-lg font-semibold">{{ pipeline.sentQuotes }}</p>
-        </NuxtLink>
-        <NuxtLink to="/admin/quotes?status=accepted" class="rounded-lg border border-gray-100 dark:border-white/[0.06] p-3">
-          <p class="text-[11px] text-gray-400">Devis acceptés</p><p class="text-lg font-semibold">{{ pipeline.acceptedQuotes }}</p>
-        </NuxtLink>
-        <NuxtLink to="/admin/invoices?status=sent" class="rounded-lg border border-gray-100 dark:border-white/[0.06] p-3">
-          <p class="text-[11px] text-gray-400">Factures à encaisser</p><p class="text-lg font-semibold">{{ pipeline.sentInvoices }}</p>
-        </NuxtLink>
-        <NuxtLink to="/admin/invoices?status=paid" class="rounded-lg border border-gray-100 dark:border-white/[0.06] p-3">
-          <p class="text-[11px] text-gray-400">Factures payées</p><p class="text-lg font-semibold">{{ pipeline.paidInvoices }}</p>
-        </NuxtLink>
-      </div>
-      <div class="mt-3 grid sm:grid-cols-2 gap-2 text-xs">
-        <p class="rounded-lg bg-gray-50 dark:bg-white/[0.03] px-3 py-2">Conversion devis: <span class="font-semibold">{{ pipeline.quoteConv }}%</span></p>
-        <p class="rounded-lg bg-gray-50 dark:bg-white/[0.03] px-3 py-2">Encaissement factures: <span class="font-semibold">{{ pipeline.cashConv }}%</span></p>
-      </div>
-      <div class="mt-3 flex items-center justify-between gap-3 rounded-lg border border-gray-100 dark:border-white/[0.06] p-3">
-        <p class="text-xs text-gray-500">Automatiser les relances en taches (devis a 3 jours, factures dues/overdue).</p>
-        <button
-          class="px-3 py-2 rounded-lg bg-violet-600 text-white text-xs disabled:opacity-60"
-          :disabled="runningAutomation"
-          @click="runPipelineAutomation"
-        >
-          {{ runningAutomation ? 'Generation...' : 'Generer les relances' }}
-        </button>
-      </div>
-      <div class="mt-2 flex items-center justify-between gap-3 rounded-lg border border-gray-100 dark:border-white/[0.06] p-3">
-        <p class="text-xs text-gray-500">Envoyer les relances email aux clients (1 seul envoi par cible et par jour).</p>
-        <button
-          class="px-3 py-2 rounded-lg bg-sky-600 text-white text-xs disabled:opacity-60"
-          :disabled="runningEmailReminders"
-          @click="sendReminderEmails"
-        >
-          {{ runningEmailReminders ? 'Envoi...' : 'Envoyer relances email' }}
-        </button>
-      </div>
-      <div class="mt-3 rounded-lg border border-gray-100 dark:border-white/[0.06] p-3">
-        <div class="flex items-center justify-between gap-2">
-          <p class="text-xs font-semibold uppercase text-gray-400">Historique relances</p>
-          <button class="text-xs text-violet-600" @click="loadReminderRuns">Rafraichir</button>
-        </div>
-        <div v-if="reminderRuns.length" class="mt-2 space-y-1.5">
-          <div
-            v-for="run in reminderRuns.slice(0, 8)"
-            :key="run.id"
-            class="rounded-md bg-gray-50 dark:bg-white/[0.03] px-2.5 py-2 text-xs text-gray-600 dark:text-gray-300"
+        <div v-if="priorities.length" class="divide-y divide-gray-100 dark:divide-white/[0.06]">
+          <NuxtLink
+            v-for="item in priorities"
+            :key="item.id"
+            :to="item.to"
+            class="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-l-4 px-4 py-3 transition hover:bg-gray-50 dark:hover:bg-white/[0.03] sm:px-5"
+            :class="item.tone"
           >
-            <template v-if="run.action === 'pipeline_reminder_run'">
-              Run: {{ run.payload?.sentCount || 0 }} envoye(s), {{ run.payload?.skippedCount || 0 }} ignoree(s), {{ run.payload?.failedCount || 0 }} echec(s)
-            </template>
-            <template v-else>
-              Email {{ run.payload?.targetType }} {{ run.payload?.number }} → {{ run.payload?.email }}
-            </template>
-            <span class="ml-2 text-gray-400">{{ new Date(run.created_at).toLocaleString() }}</span>
-          </div>
+            <span class="inline-flex h-9 w-9 items-center justify-center rounded-lg" :class="item.chip">
+              <AdminAdminIcon :icon="item.icon" class="h-4 w-4" />
+            </span>
+            <div class="min-w-0">
+              <div class="flex min-w-0 items-center gap-2">
+                <p class="truncate text-sm font-semibold text-gray-950 dark:text-white">{{ item.title }}</p>
+                <span class="hidden rounded-md px-2 py-0.5 text-[11px] font-semibold sm:inline-flex" :class="item.chip">
+                  {{ item.label }}
+                </span>
+              </div>
+              <p class="mt-1 truncate text-xs text-gray-500 dark:text-gray-400">{{ item.meta }}</p>
+            </div>
+            <span class="text-lg leading-none text-gray-300 transition group-hover:text-gray-500 dark:text-gray-600">›</span>
+          </NuxtLink>
         </div>
-        <p v-else class="mt-2 text-xs text-gray-400">Aucun envoi pour le moment.</p>
+
+        <AdminAdminEmptyState v-else title="Aucune priorite critique" body="Le cockpit est propre pour l'instant." />
       </div>
-    </div>
 
-    <!-- Content grid -->
-    <div class="grid lg:grid-cols-2 gap-4">
-
-      <!-- Recent projects -->
-      <div class="bg-white dark:bg-[#111118] border border-gray-100 dark:border-white/[0.06] rounded-xl overflow-hidden flex flex-col">
-        <div class="flex items-center justify-between px-5 py-3.5 border-b border-gray-100 dark:border-white/[0.06]">
-          <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">Projets récents</span>
-          <NuxtLink to="/admin/projects" class="text-xs text-violet-500 hover:text-violet-600 font-medium transition-colors">Voir tout →</NuxtLink>
+      <aside class="rounded-lg border border-gray-200 bg-white shadow-sm dark:border-white/[0.08] dark:bg-[#111118]">
+        <div class="flex items-center justify-between gap-3 border-b border-gray-100 px-4 py-3 dark:border-white/[0.06]">
+          <div>
+            <h2 class="text-sm font-semibold text-gray-950 dark:text-white">Aujourd'hui</h2>
+            <p class="mt-0.5 text-xs text-gray-400">Agenda proche.</p>
+          </div>
+          <NuxtLink to="/admin/appointments" class="text-xs font-semibold text-gray-600 hover:text-gray-950 dark:text-gray-300 dark:hover:text-white">
+            Agenda
+          </NuxtLink>
         </div>
-        <div class="flex-1">
-          <div v-if="recentProjects.length">
-            <div
-              v-for="project in recentProjects"
-              :key="project.id"
-              class="flex items-center gap-3 px-5 py-3 border-b border-gray-50 dark:border-white/[0.03] last:border-0
-                     hover:bg-gray-50/50 dark:hover:bg-white/[0.02] transition-colors"
-            >
-              <div class="w-8 h-8 rounded-lg bg-violet-50 dark:bg-violet-500/10 flex items-center justify-center flex-shrink-0">
-                <svg class="w-4 h-4 text-violet-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-                </svg>
+
+        <div v-if="nextAppointments.length" class="divide-y divide-gray-100 dark:divide-white/[0.06]">
+          <NuxtLink
+            v-for="appointment in nextAppointments"
+            :key="appointment.id"
+            to="/admin/appointments"
+            class="block px-4 py-3 transition hover:bg-gray-50 dark:hover:bg-white/[0.03]"
+          >
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <p class="truncate text-sm font-semibold text-gray-950 dark:text-white">{{ appointment.title }}</p>
+                <p class="mt-1 truncate text-xs text-gray-500 dark:text-gray-400">{{ clientName(appointment.clientId) }}</p>
               </div>
-              <div class="flex-1 min-w-0">
-                <p class="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{{ project.title }}</p>
-                <p class="text-xs text-gray-400 truncate">{{ project.category }}{{ project.tags.length ? ` · ${project.tags.slice(0, 2).join(', ')}` : '' }}</p>
-              </div>
-              <span
-                class="text-[11px] font-semibold px-2 py-0.5 rounded-md flex-shrink-0"
-                :class="project.featured
-                  ? 'bg-yellow-50 text-yellow-600 dark:bg-yellow-500/10 dark:text-yellow-400'
-                  : 'bg-gray-50 text-gray-400 dark:bg-white/[0.04] dark:text-gray-500'"
+              <p class="shrink-0 text-right text-xs font-medium text-gray-500 dark:text-gray-400">{{ formatDateTime(appointment.startsAt) }}</p>
+            </div>
+          </NuxtLink>
+        </div>
+
+        <AdminAdminEmptyState v-else title="Agenda libre" body="Aucun rendez-vous programme." />
+      </aside>
+    </section>
+
+    <section class="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+      <div class="rounded-lg border border-gray-200 bg-white shadow-sm dark:border-white/[0.08] dark:bg-[#111118]">
+        <div class="flex items-center justify-between gap-3 border-b border-gray-100 px-4 py-3 dark:border-white/[0.06] sm:px-5">
+          <div class="min-w-0">
+            <h2 class="text-sm font-semibold text-gray-950 dark:text-white">Pipeline commercial</h2>
+            <p class="mt-0.5 text-xs text-gray-400">{{ money(monthRevenue) }} encaisses ce mois-ci.</p>
+          </div>
+          <NuxtLink to="/admin/clients" class="shrink-0 text-xs font-semibold text-gray-600 hover:text-gray-950 dark:text-gray-300 dark:hover:text-white">
+            CRM
+          </NuxtLink>
+        </div>
+
+        <div v-if="commercialRows.length" class="divide-y divide-gray-100 dark:divide-white/[0.06]">
+          <NuxtLink
+            v-for="row in commercialRows"
+            :key="row.id"
+            :to="row.to"
+            class="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 transition hover:bg-gray-50 dark:hover:bg-white/[0.03] sm:px-5"
+          >
+            <span class="rounded-md px-2 py-1 text-[11px] font-semibold" :class="row.tone">{{ row.type }}</span>
+            <div class="min-w-0">
+              <p class="truncate text-sm font-semibold text-gray-950 dark:text-white">{{ row.title }}</p>
+              <p class="mt-1 truncate text-xs text-gray-500 dark:text-gray-400">{{ row.meta }}</p>
+            </div>
+            <p class="shrink-0 text-right text-xs font-semibold text-gray-700 dark:text-gray-200">{{ row.value }}</p>
+          </NuxtLink>
+        </div>
+
+        <AdminAdminEmptyState v-else title="Pipeline calme" body="Aucun lead, devis ou impaye critique." />
+      </div>
+
+      <div class="rounded-lg border border-gray-200 bg-white shadow-sm dark:border-white/[0.08] dark:bg-[#111118]">
+        <div class="flex items-center justify-between gap-3 border-b border-gray-100 px-4 py-3 dark:border-white/[0.06] sm:px-5">
+          <div class="min-w-0">
+            <h2 class="text-sm font-semibold text-gray-950 dark:text-white">Execution</h2>
+            <p class="mt-0.5 text-xs text-gray-400">Taches, projets et contenu.</p>
+          </div>
+          <NuxtLink to="/admin/projects" class="shrink-0 text-xs font-semibold text-gray-600 hover:text-gray-950 dark:text-gray-300 dark:hover:text-white">
+            Projets
+          </NuxtLink>
+        </div>
+
+        <div class="grid gap-0 divide-y divide-gray-100 dark:divide-white/[0.06]">
+          <div v-if="productionRows.length" class="px-4 py-3 sm:px-5">
+            <p class="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-400">Taches ouvertes</p>
+            <div class="space-y-2">
+              <NuxtLink
+                v-for="task in productionRows"
+                :key="task.id"
+                to="/admin/tasks"
+                class="flex items-center justify-between gap-3 rounded-lg bg-gray-50 px-3 py-2 transition hover:bg-gray-100 dark:bg-white/[0.03] dark:hover:bg-white/[0.06]"
               >
-                {{ project.featured ? '★ featured' : project.category }}
-              </span>
+                <div class="min-w-0">
+                  <p class="truncate text-sm font-medium text-gray-950 dark:text-white">{{ task.title }}</p>
+                  <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{{ task.meta }}</p>
+                </div>
+                <span class="shrink-0 rounded-md bg-white px-2 py-1 text-[11px] font-medium text-gray-500 ring-1 ring-gray-200 dark:bg-white/[0.04] dark:text-gray-300 dark:ring-white/[0.08]">
+                  {{ task.status }}
+                </span>
+              </NuxtLink>
             </div>
           </div>
-          <div v-else class="flex flex-col items-center justify-center py-12 gap-2">
-            <p class="text-sm text-gray-400">Aucun projet</p>
-            <NuxtLink to="/admin/projects?new=1" class="text-xs text-violet-500 hover:text-violet-600 font-medium transition-colors">+ Créer le premier</NuxtLink>
-          </div>
-        </div>
-      </div>
 
-      <!-- Recent articles -->
-      <div class="bg-white dark:bg-[#111118] border border-gray-100 dark:border-white/[0.06] rounded-xl overflow-hidden flex flex-col">
-        <div class="flex items-center justify-between px-5 py-3.5 border-b border-gray-100 dark:border-white/[0.06]">
-          <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">Articles récents</span>
-          <NuxtLink to="/admin/articles" class="text-xs text-violet-500 hover:text-violet-600 font-medium transition-colors">Voir tout →</NuxtLink>
-        </div>
-        <div class="flex-1">
-          <div v-if="recentArticles.length">
-            <div
-              v-for="article in recentArticles"
-              :key="article.id"
-              class="flex items-center gap-3 px-5 py-3 border-b border-gray-50 dark:border-white/[0.03] last:border-0
-                     hover:bg-gray-50/50 dark:hover:bg-white/[0.02] transition-colors"
-            >
-              <div class="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-500/10 flex items-center justify-center flex-shrink-0">
-                <svg class="w-4 h-4 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
-                </svg>
+          <div class="grid gap-0 divide-y divide-gray-100 dark:divide-white/[0.06] sm:grid-cols-2 sm:divide-x sm:divide-y-0">
+            <div class="px-4 py-3 sm:px-5">
+              <p class="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-400">Projets recents</p>
+              <div class="space-y-2">
+                <NuxtLink
+                  v-for="project in recentProjects"
+                  :key="project.id"
+                  to="/admin/projects"
+                  class="flex items-center gap-2.5 rounded-lg bg-gray-50 px-3 py-2 transition hover:bg-gray-100 dark:bg-white/[0.03] dark:hover:bg-white/[0.06]"
+                >
+                  <div class="h-9 w-9 shrink-0 overflow-hidden rounded-md">
+                    <img v-if="project.image" :src="project.image" class="h-full w-full object-cover" alt="">
+                    <div v-else class="flex h-full w-full items-center justify-center bg-violet-100 text-violet-500 dark:bg-violet-500/10 dark:text-violet-400">
+                      <AdminAdminIcon icon="folder" class="h-4 w-4" />
+                    </div>
+                  </div>
+                  <div class="min-w-0">
+                    <p class="truncate text-sm font-medium text-gray-950 dark:text-white">{{ project.title }}</p>
+                    <span
+                      class="mt-0.5 inline-flex rounded px-1.5 py-0.5 text-[10px] font-semibold"
+                      :class="{
+                        web: 'bg-violet-100 text-violet-600 dark:bg-violet-500/10 dark:text-violet-400',
+                        mobile: 'bg-pink-100 text-pink-600 dark:bg-pink-500/10 dark:text-pink-400',
+                        cms: 'bg-indigo-100 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400',
+                      }[project.category]"
+                    >{{ project.category }}</span>
+                  </div>
+                </NuxtLink>
+                <p v-if="!recentProjects.length" class="text-xs text-gray-400">Aucun projet.</p>
               </div>
-              <div class="flex-1 min-w-0">
-                <p class="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{{ article.title }}</p>
-                <p class="text-xs text-gray-400">{{ article.createdAt }} · {{ article.readTime }} min</p>
+            </div>
+
+            <div class="px-4 py-3 sm:px-5">
+              <p class="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-400">Articles recents</p>
+              <div class="space-y-2">
+                <NuxtLink
+                  v-for="article in recentArticles"
+                  :key="article.id"
+                  to="/admin/articles"
+                  class="flex items-center gap-2.5 rounded-lg bg-gray-50 px-3 py-2 transition hover:bg-gray-100 dark:bg-white/[0.03] dark:hover:bg-white/[0.06]"
+                >
+                  <div class="h-9 w-9 shrink-0 overflow-hidden rounded-md">
+                    <img v-if="article.coverImage" :src="article.coverImage" class="h-full w-full object-cover" alt="">
+                    <div v-else class="flex h-full w-full items-center justify-center bg-fuchsia-100 text-fuchsia-500 dark:bg-fuchsia-500/10 dark:text-fuchsia-400">
+                      <AdminAdminIcon icon="file-text" class="h-4 w-4" />
+                    </div>
+                  </div>
+                  <div class="min-w-0">
+                    <p class="truncate text-sm font-medium text-gray-950 dark:text-white">{{ article.title }}</p>
+                    <span
+                      class="mt-0.5 inline-flex rounded px-1.5 py-0.5 text-[10px] font-semibold"
+                      :class="article.published ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' : 'bg-gray-100 text-gray-500 dark:bg-white/[0.06] dark:text-gray-400'"
+                    >{{ article.published ? 'publie' : 'brouillon' }}</span>
+                  </div>
+                </NuxtLink>
+                <p v-if="!recentArticles.length" class="text-xs text-gray-400">Aucun article.</p>
               </div>
-              <span
-                class="text-[11px] font-semibold px-2 py-0.5 rounded-md flex-shrink-0"
-                :class="article.published
-                  ? 'bg-green-50 text-green-600 dark:bg-green-500/10 dark:text-green-400'
-                  : 'bg-gray-50 text-gray-400 dark:bg-white/[0.04] dark:text-gray-500'"
-              >
-                {{ article.published ? 'publié' : 'brouillon' }}
-              </span>
             </div>
           </div>
-          <div v-else class="flex flex-col items-center justify-center py-12 gap-2">
-            <p class="text-sm text-gray-400">Aucun article</p>
-            <NuxtLink to="/admin/articles?new=1" class="text-xs text-violet-500 hover:text-violet-600 font-medium transition-colors">+ Écrire le premier</NuxtLink>
-          </div>
         </div>
       </div>
-    </div>
+    </section>
 
+    <section class="rounded-lg border border-gray-200 bg-white shadow-sm dark:border-white/[0.08] dark:bg-[#111118]">
+      <div class="flex flex-col gap-3 border-b border-gray-100 px-4 py-3 dark:border-white/[0.06] sm:flex-row sm:items-center sm:justify-between sm:px-5">
+        <div class="min-w-0">
+          <h2 class="text-sm font-semibold text-gray-950 dark:text-white">Automatisation</h2>
+          <p class="mt-0.5 text-xs text-gray-400">Relances devis/factures et historique des envois.</p>
+        </div>
+        <div class="grid grid-cols-1 gap-2 sm:flex">
+          <button
+            class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-gray-200 px-3 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 disabled:opacity-60 dark:border-white/[0.12] dark:text-gray-200 dark:hover:bg-white/[0.04]"
+            :disabled="runningAutomation"
+            @click="runPipelineAutomation"
+          >
+            <AdminAdminIcon icon="zap" class="h-4 w-4" />
+            {{ runningAutomation ? 'Generation...' : 'Creer les taches' }}
+          </button>
+          <button
+            class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-gray-950 px-3 text-xs font-semibold text-white transition hover:bg-gray-800 disabled:opacity-60 dark:bg-white dark:text-gray-950"
+            :disabled="runningEmailReminders"
+            @click="sendReminderEmails"
+          >
+            <AdminAdminIcon icon="mail" class="h-4 w-4" />
+            {{ runningEmailReminders ? 'Envoi...' : 'Envoyer emails' }}
+          </button>
+        </div>
+      </div>
+
+      <div class="px-4 py-3 sm:px-5">
+        <div v-if="reminderRuns.length" class="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+          <div
+            v-for="run in reminderRuns.slice(0, 6)"
+            :key="run.id"
+            class="rounded-lg bg-gray-50 px-3 py-2 dark:bg-white/[0.03]"
+          >
+            <p class="truncate text-xs font-semibold text-gray-700 dark:text-gray-200">
+              <template v-if="run.action === 'pipeline_reminder_run'">
+                {{ run.payload?.sentCount || 0 }} envoye(s), {{ run.payload?.skippedCount || 0 }} ignore(s), {{ run.payload?.failedCount || 0 }} echec(s)
+              </template>
+              <template v-else>
+                {{ run.payload?.targetType || 'email' }} {{ run.payload?.number || '' }}
+              </template>
+            </p>
+            <p class="mt-1 truncate text-xs text-gray-400">{{ new Date(run.created_at).toLocaleString('fr-CH') }}</p>
+          </div>
+        </div>
+        <p v-else class="text-xs text-gray-400">Aucun run disponible.</p>
+      </div>
+    </section>
   </div>
 </template>

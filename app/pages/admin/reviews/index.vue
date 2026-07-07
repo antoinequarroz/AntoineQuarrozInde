@@ -69,21 +69,26 @@ async function handleDelete(id: number) {
   <div class="space-y-5">
 
     <!-- Header -->
-    <div class="flex items-center justify-between gap-4">
-      <div>
-        <h1 class="font-display font-semibold text-xl text-gray-900 dark:text-white">Avis clients</h1>
-        <p class="text-sm text-gray-400 mt-0.5">{{ store.reviews.length }} avis · note moy. {{ store.avgRating.toFixed(1) }}/5 · {{ store.visible.length }} visibles</p>
+    <section class="relative overflow-hidden rounded-lg border border-gray-200 bg-white px-4 py-4 shadow-sm dark:border-white/[0.08] dark:bg-[#111118] sm:px-5">
+      <div class="pointer-events-none absolute -top-16 right-[8%] h-48 w-48 rounded-full bg-amber-500/10 blur-3xl" />
+      <div class="pointer-events-none absolute -bottom-20 left-[6%] h-40 w-40 rounded-full bg-fuchsia-400/10 blur-3xl" />
+      <div class="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div class="min-w-0">
+          <span class="rounded-md bg-gradient-brand px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white">Avis clients</span>
+          <h1 class="mt-2 font-display text-2xl font-semibold text-gray-950 dark:text-white sm:text-3xl">Avis clients</h1>
+          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ store.reviews.length }} avis · note moy. {{ store.avgRating.toFixed(1) }}/5 · {{ store.visible.length }} visibles</p>
+        </div>
+        <button
+          class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-gradient-brand px-4 text-xs font-semibold text-white shadow-glow-sm transition hover:opacity-90"
+          @click="openNew"
+        >
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+          </svg>
+          Ajouter
+        </button>
       </div>
-      <button
-        class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold bg-violet-600 hover:bg-violet-700 text-white transition-colors"
-        @click="openNew"
-      >
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
-        </svg>
-        Ajouter
-      </button>
-    </div>
+    </section>
 
     <!-- Modal -->
     <Transition name="modal">

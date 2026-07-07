@@ -90,6 +90,55 @@ export default defineEventHandler(async (event) => {
     console.warn('[contact] unable to persist contact_messages:', saveError.message)
   }
 
+  let linkedClientId: number | null = null
+  if (org?.id) {
+    const normalizedEmail = String(email).trim().toLowerCase()
+    const { data: existingClient } = await supabase
+      .from('clients')
+      .select('id,name,email,status')
+      .eq('organization_id', org.id)
+      .ilike('email', normalizedEmail)
+      .maybeSingle()
+
+    if (existingClient) {
+      linkedClientId = Number(existingClient.id)
+    } else {
+      const { data: createdClient, error: clientError } = await supabase
+        .from('clients')
+        .insert({
+          organization_id: org.id,
+          name: String(name),
+          company: null,
+          email: normalizedEmail,
+          phone: null,
+          status: 'lead',
+          notes: `Lead cree automatiquement depuis le formulaire de contact.\nSujet: ${safeSubject}\n\n${String(message)}`,
+        })
+        .select('id,name,email,status')
+        .single()
+
+      if (clientError) {
+        console.warn('[contact] unable to create lead client:', clientError.message)
+      } else if (createdClient) {
+        linkedClientId = Number(createdClient.id)
+        await logAudit({
+          organizationId: org.id,
+          action: 'lead_created_from_contact',
+          entityType: 'client',
+          entityId: createdClient.id,
+          clientId: linkedClientId,
+          payload: {
+            name: createdClient.name,
+            email: createdClient.email,
+            status: createdClient.status,
+            source: 'contact_form',
+            subject: safeSubject,
+          },
+        })
+      }
+    }
+  }
+
   const { error } = await resend.emails.send({
     from: 'Portfolio <info@antoinequarroz.ch>',
     to: config.contactEmail,
@@ -113,5 +162,5 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 500, message: 'Erreur lors de l\'envoi' })
   }
 
-  return { success: true }
+  return { success: true, clientId: linkedClientId }
 })

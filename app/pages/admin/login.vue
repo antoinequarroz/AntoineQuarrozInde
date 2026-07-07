@@ -22,16 +22,13 @@ async function handleLogin() {
 
 <template>
   <div class="min-h-screen bg-surface-light-secondary dark:bg-surface-dark flex items-center justify-center p-4">
-    <!-- Background -->
     <div class="absolute inset-0 overflow-hidden pointer-events-none">
       <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-violet-600/10 rounded-full blur-3xl" />
       <div class="absolute bottom-1/4 right-1/4 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl" />
     </div>
 
     <div class="relative w-full max-w-md">
-      <!-- Card -->
       <div class="card-glass p-8 sm:p-10">
-        <!-- Logo -->
         <div class="flex justify-center mb-8">
           <div class="flex items-center gap-3">
             <div class="w-12 h-12 rounded-2xl bg-gradient-brand flex items-center justify-center shadow-glow">
@@ -48,10 +45,10 @@ async function handleLogin() {
           Connexion
         </h1>
         <p class="text-gray-500 dark:text-gray-400 text-center text-sm mb-8">
-          Accès réservé à l'administrateur
+          Acces reserve a l'administrateur
         </p>
 
-        <form @submit.prevent="handleLogin" class="space-y-5">
+        <form class="space-y-5" @submit.prevent="handleLogin">
           <div>
             <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
               Email
@@ -74,7 +71,7 @@ async function handleLogin() {
               v-model="password"
               type="password"
               class="input-field"
-              placeholder="••••••••"
+              placeholder="Mot de passe"
               required
             >
           </div>
@@ -82,7 +79,9 @@ async function handleLogin() {
           <Transition name="fade">
             <div v-if="error" class="flex items-center gap-2 p-3 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm">
               <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
               </svg>
               {{ error }}
             </div>
@@ -98,7 +97,8 @@ async function handleLogin() {
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>
             <svg v-else class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
             </svg>
             {{ auth.loading ? 'Connexion...' : 'Se connecter' }}
           </button>
