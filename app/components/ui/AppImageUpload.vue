@@ -123,7 +123,7 @@ function clear() {
                 />
             </svg>
             <p class="text-xs text-gray-400">Cliquer ou glisser une image</p>
-            <p class="text-[11px] text-gray-300 dark:text-gray-600 mt-0.5">
+            <p class="text-xs text-gray-300 dark:text-gray-600 mt-0.5">
                 JPG, PNG, WebP — redimensionné auto
             </p>
         </div>

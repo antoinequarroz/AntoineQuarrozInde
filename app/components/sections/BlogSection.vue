@@ -19,15 +19,40 @@ const stackItems = computed(() =>
   })),
 )
 
-const selectedArticle = ref<null | (typeof stackItems.value[number])>(null)
+interface ArticlePreview {
+  id: string | number
+  title: string
+  description?: string
+  imageSrc?: string | null
+  href?: string
+  ctaLabel?: string
+  tag?: string
+  readTime?: number
+  content?: string
+  createdAt?: string
+}
 
-function openArticlePreview(item: (typeof stackItems.value[number])) {
+const selectedArticle = ref<ArticlePreview | null>(null)
+const articleDialogOpen = computed({
+  get: () => selectedArticle.value !== null,
+  set: (open) => {
+    if (!open) selectedArticle.value = null
+  },
+})
+
+function openArticlePreview(item: ArticlePreview) {
   selectedArticle.value = item
 }
 
 function closeArticlePreview() {
   selectedArticle.value = null
 }
+
+const { dialogRef, handleDialogKeydown } = useAccessibleDialog(
+  articleDialogOpen,
+  closeArticlePreview,
+  '[data-dialog-close]',
+)
 </script>
 
 <template>
@@ -79,7 +104,7 @@ function closeArticlePreview() {
           class="rounded-xl border border-violet-300/20 bg-white/60 dark:bg-white/[0.04] px-3 py-2"
         >
           <p class="text-xs text-gray-500 dark:text-white/50">{{ article.createdAt }}</p>
-          <p class="text-[13px] md:text-sm font-semibold text-gray-900 dark:text-white mt-0.5 line-clamp-1">{{ article.title }}</p>
+          <p class="text-sm md:text-sm font-semibold text-gray-900 dark:text-white mt-0.5 line-clamp-1">{{ article.title }}</p>
         </div>
       </div>
     </div>
@@ -87,18 +112,25 @@ function closeArticlePreview() {
     <Transition name="article-modal">
       <div
         v-if="selectedArticle"
+        ref="dialogRef"
         class="fixed inset-0 z-[70] bg-black/65 backdrop-blur-sm flex items-center justify-center p-4"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="article-preview-title"
+        tabindex="-1"
         @click.self="closeArticlePreview"
+        @keydown="handleDialogKeydown"
       >
         <article class="w-full max-w-3xl max-h-[82vh] overflow-hidden rounded-2xl border border-violet-300/25 bg-[#0a0d1c] shadow-[0_24px_90px_rgba(0,0,0,0.55)]">
           <div class="flex items-start justify-between gap-4 p-5 border-b border-white/10">
             <div>
               <p class="text-xs text-violet-300/85">{{ selectedArticle.createdAt }} · {{ selectedArticle.readTime }} min</p>
-              <h3 class="mt-1 font-display text-2xl font-bold text-white leading-tight">{{ selectedArticle.title }}</h3>
+              <h3 id="article-preview-title" class="mt-1 font-display text-2xl font-bold text-white leading-tight">{{ selectedArticle.title }}</h3>
             </div>
             <button
               type="button"
-              class="w-9 h-9 rounded-full border border-white/20 text-white/80 hover:text-white hover:bg-white/10 transition"
+              data-dialog-close
+              class="w-11 h-11 flex-shrink-0 rounded-full border border-white/20 text-white/80 hover:text-white hover:bg-white/10 transition"
               aria-label="Fermer"
               @click="closeArticlePreview"
             >
@@ -108,7 +140,7 @@ function closeArticlePreview() {
 
           <div class="p-5 overflow-y-auto max-h-[52vh] no-scrollbar">
             <p class="text-sm text-white/75 leading-relaxed mb-4">{{ selectedArticle.description }}</p>
-            <div class="whitespace-pre-line text-[15px] text-white/88 leading-relaxed">
+            <div class="whitespace-pre-line text-base text-white/88 leading-relaxed">
               {{ selectedArticle.content }}
             </div>
           </div>

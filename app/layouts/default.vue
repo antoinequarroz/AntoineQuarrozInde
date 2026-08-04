@@ -14,7 +14,6 @@ onMounted(() => {
 
 <template>
   <div>
-    <UiCustomCursor />
     <LayoutAppHeader />
     <main>
       <slot />

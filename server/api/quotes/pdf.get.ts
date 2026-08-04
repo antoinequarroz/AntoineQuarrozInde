@@ -1,4 +1,4 @@
-import { buildBillingPdf } from '../../utils/pdfBilling'
+import { buildBillingDocument } from '../../utils/billingDocument'
 
 export default defineEventHandler(async (event) => {
   const { org } = await requireAdmin(event)
@@ -14,9 +14,14 @@ export default defineEventHandler(async (event) => {
     .single()
   if (error || !quote) throw createError({ statusCode: 404, message: 'Quote not found' })
 
+  const { data: organization } = await supabase
+    .from('organizations')
+    .select('*')
+    .eq('id', org.id)
+    .single()
   const { data: client } = await supabase
     .from('clients')
-    .select('name')
+    .select('*')
     .eq('organization_id', org.id)
     .eq('id', quote.client_id)
     .single()
@@ -27,27 +32,16 @@ export default defineEventHandler(async (event) => {
     .eq('quote_id', id)
     .order('position', { ascending: true })
 
-  const pdf = await buildBillingPdf({
-    title: 'Devis',
-    number: quote.number,
-    clientName: client?.name || '-',
-    currency: quote.currency,
-    issuedAt: quote.issued_at,
-    status: quote.status,
-    notes: quote.notes,
-    subtotalCents: quote.subtotal_cents ?? quote.amount_cents,
-    taxCents: quote.tax_cents ?? 0,
-    totalCents: quote.total_cents ?? quote.amount_cents,
-    items: (items || []).map(item => ({
-      label: item.label,
-      quantity: Number(item.quantity),
-      unitPriceCents: item.unit_price_cents,
-      taxRate: Number(item.tax_rate),
-      totalCents: item.total_cents,
-    })),
+  const { pdf, engine } = await buildBillingDocument({
+    kind: 'quote',
+    document: quote,
+    organization: organization || org,
+    client,
+    items: items || [],
   })
 
   setHeader(event, 'Content-Type', 'application/pdf')
   setHeader(event, 'Content-Disposition', `attachment; filename="devis-${quote.number}.pdf"`)
+  setHeader(event, 'X-PDF-Engine', engine)
   return pdf
 })

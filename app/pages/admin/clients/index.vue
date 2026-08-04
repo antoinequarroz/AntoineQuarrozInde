@@ -36,6 +36,8 @@ function initials(name: string) {
 }
 
 const showForm = ref(false)
+const closeForm = () => { showForm.value = false }
+const { dialogRef, handleDialogKeydown } = useAccessibleDialog(showForm, closeForm)
 const editing = ref<Client | null>(null)
 const selectedIds = ref<number[]>([])
 const viewName = ref('')
@@ -55,6 +57,11 @@ const form = reactive({
   phone: '',
   status: 'active' as Client['status'],
   notes: '',
+  billingStreet: '',
+  billingBuilding: '',
+  billingPostalCode: '',
+  billingCity: '',
+  billingCountry: 'CH',
 })
 
 const queryState = computed(() => {
@@ -85,7 +92,7 @@ const pageData = ref<{ items: Client[], total: number, page: number, pageSize: n
 const loading = ref(false)
 
 function resetForm() {
-  Object.assign(form, { name: '', company: '', email: '', phone: '', status: 'active', notes: '' })
+  Object.assign(form, { name: '', company: '', email: '', phone: '', status: 'active', notes: '', billingStreet: '', billingBuilding: '', billingPostalCode: '', billingCity: '', billingCountry: 'CH' })
 }
 
 function openNew() {
@@ -103,6 +110,11 @@ function openEdit(client: Client) {
     phone: client.phone || '',
     status: client.status,
     notes: client.notes || '',
+    billingStreet: client.billingStreet || '',
+    billingBuilding: client.billingBuilding || '',
+    billingPostalCode: client.billingPostalCode || '',
+    billingCity: client.billingCity || '',
+    billingCountry: client.billingCountry || 'CH',
   })
   showForm.value = true
 }
@@ -337,10 +349,9 @@ onMounted(async () => {
   <div class="space-y-5">
     <section class="relative overflow-hidden rounded-lg border border-gray-200 bg-white px-4 py-4 shadow-sm dark:border-white/[0.08] dark:bg-[#111118] sm:px-5">
       <div class="pointer-events-none absolute -top-16 right-[8%] h-48 w-48 rounded-full bg-violet-500/10 blur-3xl" />
-      <div class="pointer-events-none absolute -bottom-20 left-[6%] h-40 w-40 rounded-full bg-cyan-400/10 blur-3xl" />
       <div class="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div class="min-w-0">
-          <span class="rounded-md bg-gradient-brand px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white">Clients</span>
+          <span class="rounded-md bg-gradient-brand px-2 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white">Clients</span>
           <h1 class="mt-2 font-display text-2xl font-semibold text-gray-950 dark:text-white sm:text-3xl">Clients</h1>
           <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ pageData.total }} client(s)</p>
         </div>
@@ -381,7 +392,7 @@ onMounted(async () => {
           class="inline-flex items-center gap-1 rounded-lg border border-gray-200 dark:border-white/[0.12] px-2 py-1"
         >
           <button class="text-xs" @click="applyView(view)">{{ view.name }}</button>
-          <button class="text-[11px] text-red-500" @click="removeView(view.name)">x</button>
+          <button class="text-xs text-red-500" @click="removeView(view.name)">x</button>
         </div>
       </div>
     </AdminAdminToolbar>
@@ -416,7 +427,7 @@ onMounted(async () => {
                 <p class="text-xs text-gray-400">{{ client.company || 'Indépendant' }}</p>
               </div>
             </div>
-            <span class="text-[11px] px-2 py-1 rounded-md" :class="client.status === 'active' ? 'bg-green-50 text-green-700 dark:bg-green-500/10 dark:text-green-300' : 'bg-gray-100 text-gray-500 dark:bg-white/[0.06] dark:text-gray-400'">
+            <span class="text-xs px-2 py-1 rounded-md" :class="client.status === 'active' ? 'bg-green-50 text-green-700 dark:bg-green-500/10 dark:text-green-300' : 'bg-gray-100 text-gray-500 dark:bg-white/[0.06] dark:text-gray-400'">
               {{ client.status }}
             </span>
           </div>
@@ -532,10 +543,10 @@ onMounted(async () => {
     </div>
 
     <Transition name="fade">
-      <div v-if="showForm" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
+      <div v-if="showForm" ref="dialogRef" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4" role="dialog" aria-modal="true" aria-labelledby="client-form-title" tabindex="-1" @keydown="handleDialogKeydown">
         <div class="absolute inset-0 bg-black/40" @click="showForm = false" />
         <form class="admin-modal-panel relative w-full max-w-2xl max-h-[92vh] overflow-y-auto bg-white dark:bg-[#111118] rounded-xl p-4 sm:p-5 space-y-3" @submit.prevent="handleSubmit">
-          <h2 class="font-semibold text-gray-900 dark:text-white">{{ editing ? 'Modifier client' : 'Nouveau client' }}</h2>
+          <h2 id="client-form-title" class="font-semibold text-gray-900 dark:text-white">{{ editing ? 'Modifier client' : 'Nouveau client' }}</h2>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <input v-model="form.name" class="input-field" placeholder="Nom" required>
             <input v-model="form.company" class="input-field" placeholder="Société">
@@ -549,6 +560,18 @@ onMounted(async () => {
             <option value="inactive">Inactif</option>
           </select>
           <textarea v-model="form.notes" rows="3" class="input-field" placeholder="Notes" />
+          <fieldset class="space-y-3 rounded-lg border border-gray-200 p-3 dark:border-white/[0.08]">
+            <legend class="px-1 text-xs font-semibold uppercase text-gray-500">Adresse de facturation</legend>
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_120px]">
+              <label class="space-y-1 text-xs text-gray-500">Rue<input v-model="form.billingStreet" class="input-field" autocomplete="street-address"></label>
+              <label class="space-y-1 text-xs text-gray-500">N°<input v-model="form.billingBuilding" class="input-field"></label>
+            </div>
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-[130px_1fr_90px]">
+              <label class="space-y-1 text-xs text-gray-500">NPA<input v-model="form.billingPostalCode" class="input-field" autocomplete="postal-code"></label>
+              <label class="space-y-1 text-xs text-gray-500">Localité<input v-model="form.billingCity" class="input-field" autocomplete="address-level2"></label>
+              <label class="space-y-1 text-xs text-gray-500">Pays<input v-model="form.billingCountry" maxlength="2" class="input-field" autocomplete="country"></label>
+            </div>
+          </fieldset>
           <div class="sticky bottom-0 bg-white dark:bg-[#111118] pt-2 flex justify-end gap-2">
             <button type="button" class="px-3 py-2 text-sm" @click="showForm = false">Annuler</button>
             <button type="submit" class="px-4 py-2 rounded-lg bg-violet-600 text-white text-sm">Enregistrer</button>

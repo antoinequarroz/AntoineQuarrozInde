@@ -13,8 +13,8 @@
     "title_2": "expériences digitales",
     "title_3": "qui marquent.",
     "subtitle": "Développeur web & mobile freelance basé en Suisse. Je conçois et développe des sites vitrine, applications mobiles et solutions CMS sur mesure.",
-    "cta_primary": "Voir mes projets",
-    "cta_secondary": "Discutons ensemble",
+    "cta_primary": "Parler de votre projet",
+    "cta_secondary": "Voir mes réalisations",
     "scroll": "Défiler"
   },
   "about": {
@@ -132,6 +132,18 @@
       "name": "Votre nom",
       "email": "Votre email",
       "subject": "Sujet",
+      "budget": "Budget indicatif",
+      "budget_select": "Sélectionner un budget",
+      "budget_under_2k": "Moins de 2 000 CHF",
+      "budget_2_5k": "2 000 à 5 000 CHF",
+      "budget_5_10k": "5 000 à 10 000 CHF",
+      "budget_over_10k": "Plus de 10 000 CHF",
+      "timeline": "Délai cible",
+      "timeline_select": "Sélectionner un délai",
+      "timeline_urgent": "Urgent (moins de 2 semaines)",
+      "timeline_month": "Environ 1 mois",
+      "timeline_quarter": "2 à 3 mois",
+      "timeline_flexible": "Flexible",
       "message": "Votre message",
       "send": "Envoyer le message",
       "sending": "Envoi en cours...",
@@ -151,6 +163,9 @@
     "made_with": "Fait avec ♥ en Valais",
     "col_nav": "Navigation",
     "col_contact": "Contact"
+  },
+  "business": {
+    "status": { "draft": "Brouillon", "sent": "Envoyé", "accepted": "Accepté", "rejected": "Refusé", "paid": "Payé", "overdue": "En retard", "cancelled": "Annulé", "todo": "À faire", "in_progress": "En cours", "done": "Terminé", "scheduled": "Planifié", "completed": "Terminé", "new": "Nouveau", "replied": "Répondu", "archived": "Archivé", "lead": "Prospect", "active": "Actif", "inactive": "Inactif" }
   },
   "theme": {
     "toggle_dark": "Mode sombre",

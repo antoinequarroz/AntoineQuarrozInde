@@ -50,12 +50,14 @@ async function handleLogin() {
 
         <form class="space-y-5" @submit.prevent="handleLogin">
           <div>
-            <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+            <label for="admin-email" class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
               Email
             </label>
             <input
+              id="admin-email"
               v-model="email"
               type="email"
+              autocomplete="username"
               class="input-field"
               placeholder="admin@domaine.com"
               required
@@ -64,12 +66,14 @@ async function handleLogin() {
           </div>
 
           <div>
-            <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+            <label for="admin-password" class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
               Mot de passe
             </label>
             <input
+              id="admin-password"
               v-model="password"
               type="password"
+              autocomplete="current-password"
               class="input-field"
               placeholder="Mot de passe"
               required
@@ -77,7 +81,7 @@ async function handleLogin() {
           </div>
 
           <Transition name="fade">
-            <div v-if="error" class="flex items-center gap-2 p-3 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm">
+            <div v-if="error" role="alert" aria-live="assertive" class="flex items-center gap-2 p-3 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm">
               <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <circle cx="12" cy="12" r="10" />
                 <line x1="12" y1="8" x2="12" y2="12" />

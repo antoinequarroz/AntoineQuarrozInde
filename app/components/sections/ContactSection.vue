@@ -194,25 +194,29 @@ const contactInfo = computed(() => [
             </div>
             <div class="grid sm:grid-cols-2 gap-4 md:gap-5">
               <div>
-                <label class="block text-[11px] font-semibold text-gray-500 dark:text-white/50 uppercase tracking-wider mb-1.5">
+                <label for="contact-name" class="block text-xs font-semibold text-gray-500 dark:text-white/50 uppercase tracking-wider mb-1.5">
                   {{ t('contact.form.name') }}
                 </label>
                 <input
+                  id="contact-name"
                   v-model="form.name"
                   type="text"
                   required
+                  autocomplete="name"
                   class="input-field"
                   :placeholder="t('contact.form.name')"
                 >
               </div>
               <div>
-                <label class="block text-[11px] font-semibold text-gray-500 dark:text-white/50 uppercase tracking-wider mb-1.5">
+                <label for="contact-email" class="block text-xs font-semibold text-gray-500 dark:text-white/50 uppercase tracking-wider mb-1.5">
                   {{ t('contact.form.email') }}
                 </label>
                 <input
+                  id="contact-email"
                   v-model="form.email"
                   type="email"
                   required
+                  autocomplete="email"
                   class="input-field"
                   :placeholder="t('contact.form.email')"
                 >
@@ -220,39 +224,41 @@ const contactInfo = computed(() => [
             </div>
 
               <div>
-                <label class="block text-[11px] font-semibold text-gray-500 dark:text-white/50 uppercase tracking-wider mb-1.5">
+                <label for="contact-subject" class="block text-xs font-semibold text-gray-500 dark:text-white/50 uppercase tracking-wider mb-1.5">
                   {{ t('contact.form.subject') }}
                 </label>
                 <input
+                  id="contact-subject"
                   v-model="form.subject"
                   type="text"
+                  autocomplete="off"
                   class="input-field"
                   :placeholder="t('contact.form.subject')"
                 >
             </div>
             <div class="grid sm:grid-cols-2 gap-4 md:gap-5">
               <div>
-                <label class="block text-[11px] font-semibold text-gray-500 dark:text-white/50 uppercase tracking-wider mb-1.5">
-                  Budget
+                <label for="contact-budget" class="block text-xs font-semibold text-gray-500 dark:text-white/50 uppercase tracking-wider mb-1.5">
+                  {{ t('contact.form.budget') }}
                 </label>
-                <select v-model="form.budget" class="input-field">
-                  <option value="">Sélectionner</option>
-                  <option value="<2k">Moins de 2k</option>
-                  <option value="2k-5k">2k - 5k</option>
-                  <option value="5k-10k">5k - 10k</option>
-                  <option value="10k+">10k+</option>
+                <select id="contact-budget" v-model="form.budget" class="input-field" autocomplete="off">
+                  <option value="">{{ t('contact.form.budget_select') }}</option>
+                  <option value="<2k">{{ t('contact.form.budget_under_2k') }}</option>
+                  <option value="2k-5k">{{ t('contact.form.budget_2_5k') }}</option>
+                  <option value="5k-10k">{{ t('contact.form.budget_5_10k') }}</option>
+                  <option value="10k+">{{ t('contact.form.budget_over_10k') }}</option>
                 </select>
               </div>
               <div>
-                <label class="block text-[11px] font-semibold text-gray-500 dark:text-white/50 uppercase tracking-wider mb-1.5">
-                  Délai cible
+                <label for="contact-timeline" class="block text-xs font-semibold text-gray-500 dark:text-white/50 uppercase tracking-wider mb-1.5">
+                  {{ t('contact.form.timeline') }}
                 </label>
-                <select v-model="form.timeline" class="input-field">
-                  <option value="">Sélectionner</option>
-                  <option value="urgent">Urgent (&lt; 2 semaines)</option>
-                  <option value="1mois">1 mois</option>
-                  <option value="2-3mois">2 à 3 mois</option>
-                  <option value="flexible">Flexible</option>
+                <select id="contact-timeline" v-model="form.timeline" class="input-field" autocomplete="off">
+                  <option value="">{{ t('contact.form.timeline_select') }}</option>
+                  <option value="urgent">{{ t('contact.form.timeline_urgent') }}</option>
+                  <option value="1mois">{{ t('contact.form.timeline_month') }}</option>
+                  <option value="2-3mois">{{ t('contact.form.timeline_quarter') }}</option>
+                  <option value="flexible">{{ t('contact.form.timeline_flexible') }}</option>
                 </select>
               </div>
             </div>
@@ -263,10 +269,11 @@ const contactInfo = computed(() => [
                   <div ref="turnstileContainer" />
                 </div>
               </ClientOnly>
-              <label class="block text-[11px] font-semibold text-gray-500 dark:text-white/50 uppercase tracking-wider mb-1.5">
+              <label for="contact-message" class="block text-xs font-semibold text-gray-500 dark:text-white/50 uppercase tracking-wider mb-1.5">
                 {{ t('contact.form.message') }}
               </label>
               <textarea
+                id="contact-message"
                 v-model="form.message"
                 rows="5"
                 required
@@ -277,13 +284,13 @@ const contactInfo = computed(() => [
 
             <!-- Status messages -->
             <Transition name="fade">
-              <div v-if="status === 'success'" class="flex items-center gap-2 p-2.5 rounded-xl bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 text-[13px]">
+              <div v-if="status === 'success'" role="status" aria-live="polite" class="flex items-center gap-2 p-2.5 rounded-xl bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 text-sm">
                 <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 {{ t('contact.form.success') }}
               </div>
-              <div v-else-if="status === 'error'" class="flex items-center gap-2 p-2.5 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-[13px]">
+              <div v-else-if="status === 'error'" role="alert" aria-live="assertive" class="flex items-center gap-2 p-2.5 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm">
                 <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
@@ -306,7 +313,7 @@ const contactInfo = computed(() => [
               </svg>
               {{ status === 'sending' ? t('contact.form.sending') : t('contact.form.send') }}
             </button>
-            <p class="text-[11px] text-gray-500 dark:text-white/50 text-center">
+            <p class="text-xs text-gray-500 dark:text-white/50 text-center">
               Réponse rapide sur
               <a :href="`mailto:${EMAIL}`" class="text-violet-600 dark:text-violet-300 underline" @click="track('contact_email_click')">{{ EMAIL }}</a>
             </p>

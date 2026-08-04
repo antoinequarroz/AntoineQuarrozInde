@@ -63,6 +63,8 @@
       ],
     },
     workbox: {
+      // The lazy-loaded Spline viewer bundle is slightly above Workbox's 2 MiB default.
+      maximumFileSizeToCacheInBytes: 2.5 * 1024 * 1024,
       globPatterns: ['**/*.{js,css,html,png,svg,ico,woff2}'],
       navigateFallback: '/',
       navigateFallbackDenylist: [/^\/api\//, /^\/admin\//],

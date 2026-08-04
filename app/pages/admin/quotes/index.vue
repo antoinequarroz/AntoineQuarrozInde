@@ -7,8 +7,11 @@ const store = useQuotesStore()
 const clients = useClientsStore()
 const route = useRoute()
 const toast = useToast()
+const { statusLabel } = useBusinessLabels()
 
 const showForm = ref(false)
+const closeForm = () => { showForm.value = false }
+const { dialogRef, handleDialogKeydown } = useAccessibleDialog(showForm, closeForm)
 const editing = ref<Quote | null>(null)
 const offerTemplate = ref<'custom' | 'vitrine' | 'ecommerce' | 'landing' | 'maintenance'>('custom')
 const quoteMeta = reactive({
@@ -306,7 +309,7 @@ function printSelected() {
   const html = `
     <html>
       <head><title>Devis ${q.number}</title></head>
-      <body style="font-family: Arial, sans-serif; padding: 24px; color: #111;">
+      <body style="font-family: Inter, ui-sans-serif, system-ui, sans-serif; padding: 24px; color: #111827;">
         <h1 style="margin:0 0 16px;">Devis ${q.number}</h1>
         <p><strong>Client:</strong> ${client}</p>
         <p><strong>Titre:</strong> ${q.title}</p>
@@ -352,10 +355,9 @@ onMounted(async () => {
   <div class="space-y-5">
     <section class="relative overflow-hidden rounded-lg border border-gray-200 bg-white px-4 py-4 shadow-sm dark:border-white/[0.08] dark:bg-[#111118] sm:px-5">
       <div class="pointer-events-none absolute -top-16 right-[8%] h-48 w-48 rounded-full bg-violet-500/10 blur-3xl" />
-      <div class="pointer-events-none absolute -bottom-20 left-[6%] h-40 w-40 rounded-full bg-sky-400/10 blur-3xl" />
       <div class="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div class="min-w-0">
-          <span class="rounded-md bg-gradient-brand px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white">Devis</span>
+          <span class="rounded-md bg-gradient-brand px-2 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white">Devis</span>
           <h1 class="mt-2 font-display text-2xl font-semibold text-gray-950 dark:text-white sm:text-3xl">Devis</h1>
           <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Cree, envoie et suis tes devis jusqu'a la signature.</p>
         </div>
@@ -371,8 +373,8 @@ onMounted(async () => {
       <input v-model="search" class="input-field" placeholder="Rechercher devis...">
       <select v-model="statusFilter" class="input-field">
         <option value="all">Tous statuts</option>
-        <option value="draft">draft</option>
-        <option value="sent">sent</option>
+        <option value="draft">{{ statusLabel('draft') }}</option>
+        <option value="sent">{{ statusLabel('sent') }}</option>
         <option value="accepted">accepted</option>
         <option value="rejected">rejected</option>
       </select>
@@ -386,7 +388,7 @@ onMounted(async () => {
       <div class="space-y-3">
         <div v-if="viewMode==='kanban'" class="grid grid-cols-1 xl:grid-cols-4 gap-3">
           <div v-for="col in kanbanQuotes" :key="`q-col-${col.status}`" class="rounded-xl border border-gray-100 dark:border-white/[0.06] bg-white dark:bg-[#111118] p-3 space-y-2">
-            <p class="text-xs uppercase text-gray-400">{{ col.status }} ({{ col.items.length }})</p>
+            <p class="text-xs uppercase text-gray-400">{{ statusLabel(col.status) }} ({{ col.items.length }})</p>
             <button
               v-for="q in col.items"
               :key="`kanban-${q.id}`"
@@ -397,9 +399,9 @@ onMounted(async () => {
               <p class="text-xs text-gray-500 line-clamp-1">{{ q.title }}</p>
               <p class="text-xs mt-1">{{ formatAmount(q.amountCents, q.currency) }}</p>
               <div class="mt-2 flex flex-wrap gap-2">
-                <button v-if="q.status!=='sent'" class="text-[11px] text-amber-600" @click.stop="quickSetStatus(q.id,'sent')">Envoyer</button>
-                <button v-if="q.status!=='accepted'" class="text-[11px] text-emerald-600" @click.stop="quickSetStatus(q.id,'accepted')">Accepter</button>
-                <button class="text-[11px] text-violet-600" @click.stop="openEdit(q)">Editer</button>
+                <button v-if="q.status!=='sent'" class="text-xs text-amber-600" @click.stop="quickSetStatus(q.id,'sent')">Envoyer</button>
+                <button v-if="q.status!=='accepted'" class="text-xs text-emerald-600" @click.stop="quickSetStatus(q.id,'accepted')">Accepter</button>
+                <button class="text-xs text-violet-600" @click.stop="openEdit(q)">Editer</button>
               </div>
             </button>
           </div>
@@ -415,7 +417,7 @@ onMounted(async () => {
           >
             <div class="flex items-start justify-between gap-2">
               <p class="text-sm font-semibold">{{ q.number }}</p>
-              <span class="text-[11px] uppercase text-gray-400">{{ q.status }}</span>
+              <span class="text-xs uppercase text-gray-400">{{ statusLabel(q.status) }}</span>
             </div>
             <p class="mt-1 text-sm text-gray-600 dark:text-gray-300 line-clamp-1">{{ q.title }}</p>
             <p class="mt-1 text-xs text-gray-500">{{ q.clientId ? clientsById.get(q.clientId)?.name || '-' : '-' }}</p>
@@ -452,7 +454,7 @@ onMounted(async () => {
               <td class="px-4 py-3 text-sm">{{ q.clientId ? clientsById.get(q.clientId)?.name || '-' : '-' }}</td>
               <td class="px-4 py-3 text-sm">{{ q.title }}</td>
               <td class="px-4 py-3 text-sm">{{ formatAmount(q.amountCents, q.currency) }}</td>
-              <td class="px-4 py-3 text-sm">{{ q.status }}</td>
+              <td class="px-4 py-3 text-sm">{{ statusLabel(q.status) }}</td>
               <td class="px-4 py-3 text-right space-x-2">
                 <button class="text-xs text-emerald-600" @click.stop="quickSetStatus(q.id, 'accepted')">Accepter</button>
                 <button class="text-xs text-amber-600" @click.stop="quickSetStatus(q.id, 'sent')">Marquer envoye</button>
@@ -475,7 +477,7 @@ onMounted(async () => {
             <p><span class="text-gray-400">Montant:</span> {{ formatAmount(selectedQuote.totalCents ?? selectedQuote.amountCents, selectedQuote.currency) }}</p>
             <p><span class="text-gray-400">Sous-total:</span> {{ formatAmount(selectedQuote.subtotalCents ?? selectedQuote.amountCents, selectedQuote.currency) }}</p>
             <p><span class="text-gray-400">TVA:</span> {{ formatAmount(selectedQuote.taxCents ?? 0, selectedQuote.currency) }}</p>
-            <p><span class="text-gray-400">Statut:</span> {{ selectedQuote.status }}</p>
+            <p><span class="text-gray-400">Statut:</span> {{ statusLabel(selectedQuote.status) }}</p>
             <p><span class="text-gray-400">Emission:</span> {{ selectedQuote.issuedAt || '-' }}</p>
             <p><span class="text-gray-400">Valide jusqu'au:</span> {{ selectedQuote.validUntil || '-' }}</p>
           </div>
@@ -492,9 +494,10 @@ onMounted(async () => {
     </div>
 
     <Transition name="fade">
-      <div v-if="showForm" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
+      <div v-if="showForm" ref="dialogRef" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4" role="dialog" aria-modal="true" aria-labelledby="quote-form-title" tabindex="-1" @keydown="handleDialogKeydown">
         <div class="absolute inset-0 bg-black/40" @click="showForm=false" />
         <form class="admin-modal-panel relative w-full max-w-4xl max-h-[92vh] overflow-y-auto overflow-x-hidden bg-white dark:bg-[#111118] rounded-xl p-4 sm:p-5 space-y-3" @submit.prevent="submit">
+          <h2 id="quote-form-title" class="font-semibold text-gray-900 dark:text-white">{{ editing ? 'Modifier le devis' : 'Nouveau devis' }}</h2>
           <input v-model="form.number" class="input-field" placeholder="Numero" required>
           <select v-model.number="form.clientId" class="input-field">
             <option :value="null">Aucun client</option>
@@ -556,8 +559,8 @@ onMounted(async () => {
             <input v-model="form.validUntil" type="date" class="input-field">
           </div>
           <select v-model="form.status" class="input-field">
-            <option value="draft">draft</option>
-            <option value="sent">sent</option>
+            <option value="draft">{{ statusLabel('draft') }}</option>
+            <option value="sent">{{ statusLabel('sent') }}</option>
             <option value="accepted">accepted</option>
             <option value="rejected">rejected</option>
           </select>

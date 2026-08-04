@@ -1,0 +1,179 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-04T12:00:00+02:00",
+  "title": "Design System: Antoine Quarroz — Studio digital premium",
+  "extensions": {
+    "colorMeta": {
+      "violet-signature": {
+        "role": "primary",
+        "displayName": "Violet signature",
+        "canonical": "#7c3aed",
+        "tonalRamp": ["#21064a", "#3b0b80", "#5515ae", "#6d28d9", "#7c3aed", "#a78bfa", "#ddd6fe", "#f5f3ff"]
+      },
+      "violet-studio": {
+        "role": "primary",
+        "displayName": "Violet studio",
+        "canonical": "#a78bfa",
+        "tonalRamp": ["#24104f", "#3c1c7a", "#5b32a3", "#7c5bd0", "#a78bfa", "#c4b5fd", "#e4ddff", "#f7f4ff"]
+      },
+      "cyan-electrique": {
+        "role": "secondary",
+        "displayName": "Cyan électrique",
+        "canonical": "#22d3ee",
+        "tonalRamp": ["#042f36", "#07515d", "#08798a", "#06a4bc", "#22d3ee", "#67e8f9", "#baeef6", "#ecfeff"]
+      },
+      "nuit-studio": {
+        "role": "neutral",
+        "displayName": "Nuit studio",
+        "canonical": "#080810",
+        "tonalRamp": ["#080810", "#13131f", "#252536", "#414158", "#66667c", "#9393a5", "#c8c8d2", "#f4f4f7"]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display studio",
+        "purpose": "Hero et déclarations publiques à forte valeur."
+      },
+      "body": {
+        "displayName": "Lecture fonctionnelle",
+        "purpose": "Contenus, formulaires et données du back-office."
+      }
+    },
+    "shadows": [
+      {
+        "name": "glow-sm",
+        "value": "0 0 15px #7c3aed30",
+        "purpose": "Logo, petit accent ou contrôle prioritaire."
+      },
+      {
+        "name": "glow",
+        "value": "0 0 30px #7c3aed40",
+        "purpose": "Survol d'un composant public important."
+      },
+      {
+        "name": "glow-lg",
+        "value": "0 0 60px #7c3aed50",
+        "purpose": "Moment immersif exceptionnel."
+      },
+      {
+        "name": "admin-low",
+        "value": "0 1px 2px rgba(0,0,0,0.05)",
+        "purpose": "Séparation discrète des surfaces administratives."
+      }
+    ],
+    "motion": [
+      {
+        "name": "state-fast",
+        "value": "200ms ease",
+        "purpose": "Survol, focus et activation des contrôles."
+      },
+      {
+        "name": "surface-smooth",
+        "value": "300ms ease",
+        "purpose": "Menus, panneaux et changement d'apparence."
+      },
+      {
+        "name": "ambient-drift",
+        "value": "12s ease-in-out infinite",
+        "purpose": "Orbes décoratives du hero uniquement."
+      }
+    ],
+    "breakpoints": [
+      { "name": "xs-tight", "value": "390px" },
+      { "name": "xs", "value": "430px" },
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "xl", "value": "1280px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Action principale publique ou administrative.",
+      "html": "<button class=\"ds-btn-primary\">Démarrer un projet</button>",
+      "css": ".ds-btn-primary { display:inline-flex;align-items:center;gap:8px;padding:12px 24px;border:0;border-radius:12px;background:linear-gradient(135deg,#7c3aed 0%,#a855f7 50%,#c084fc 100%);color:#fff;font:600 16px/1.25 'Space Grotesk',system-ui,sans-serif;transition:transform 200ms ease,opacity 200ms ease,box-shadow 200ms ease;cursor:pointer}.ds-btn-primary:hover{opacity:.9;transform:scale(1.05);box-shadow:0 0 30px #7c3aed40}.ds-btn-primary:active{transform:scale(1)}.ds-btn-primary:focus-visible{outline:2px solid #7c3aed;outline-offset:2px}"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Action secondaire sans concurrencer l'appel principal.",
+      "html": "<button class=\"ds-btn-secondary\">Voir les réalisations</button>",
+      "css": ".ds-btn-secondary{display:inline-flex;align-items:center;gap:8px;padding:12px 24px;border:2px solid rgba(124,58,237,.3);border-radius:12px;background:transparent;color:#7c3aed;font:600 16px/1.25 'Space Grotesk',system-ui,sans-serif;transition:transform 200ms ease,background 200ms ease,border-color 200ms ease;cursor:pointer}.ds-btn-secondary:hover{border-color:#7c3aed;background:rgba(124,58,237,.1);transform:scale(1.05)}.ds-btn-secondary:focus-visible{outline:2px solid #7c3aed;outline-offset:2px}"
+    },
+    {
+      "name": "Input Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Champ cohérent pour le contact public et le back-office.",
+      "html": "<label class=\"ds-field-label\">Nom du projet<input class=\"ds-input\" placeholder=\"Votre projet\"></label>",
+      "css": ".ds-field-label{display:grid;gap:6px;color:#374151;font:600 12px/1.25 Inter,system-ui,sans-serif}.ds-input{width:100%;padding:12px 16px;border:1px solid #e5e7eb;border-radius:12px;background:#f9fafb;color:#111827;font:400 16px/1.5 Inter,system-ui,sans-serif;transition:border-color 200ms ease,box-shadow 200ms ease}.ds-input:focus{outline:none;border-color:#7c3aed;box-shadow:0 0 0 3px rgba(124,58,237,.2)}"
+    },
+    {
+      "name": "Brand Badge",
+      "kind": "chip",
+      "description": "Catégorie ou statut compact de la vitrine.",
+      "html": "<span class=\"ds-badge\"><span class=\"ds-badge-dot\"></span>Studio digital</span>",
+      "css": ".ds-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border:1px solid rgba(124,58,237,.2);border-radius:9999px;background:rgba(124,58,237,.1);color:#7c3aed;font:600 12px/1.25 Inter,system-ui,sans-serif}.ds-badge-dot{width:6px;height:6px;border-radius:50%;background:#22d3ee;box-shadow:0 0 10px rgba(34,211,238,.45)}"
+    },
+    {
+      "name": "Glass Card",
+      "kind": "card",
+      "refersTo": "card-public",
+      "description": "Surface publique expressive avec profondeur contrôlée.",
+      "html": "<article class=\"ds-glass-card\"><span class=\"ds-card-kicker\">Projet récent</span><h3>Une expérience claire et mémorable</h3><p>Le verre souligne le contenu sans en réduire la lisibilité.</p></article>",
+      "css": ".ds-glass-card{max-width:360px;padding:24px;border:1px solid rgba(124,58,237,.16);border-radius:16px;background:rgba(255,255,255,.82);color:#111827;box-shadow:0 0 15px #7c3aed30;backdrop-filter:blur(20px);font-family:Inter,system-ui,sans-serif;transition:transform 500ms ease,box-shadow 500ms ease}.ds-glass-card:hover{transform:translateY(-4px);box-shadow:0 0 30px #7c3aed40}.ds-glass-card h3{margin:8px 0;font:700 21px/1.2 'Space Grotesk',system-ui,sans-serif}.ds-glass-card p{margin:0;color:#4b5563;line-height:1.6}.ds-card-kicker{color:#7c3aed;font-size:12px;font-weight:600}"
+    },
+    {
+      "name": "Admin Card",
+      "kind": "card",
+      "refersTo": "card-admin",
+      "description": "Surface de travail calme et structurée.",
+      "html": "<section class=\"ds-admin-card\"><span>Factures en attente</span><strong>4</strong><small>À traiter cette semaine</small></section>",
+      "css": ".ds-admin-card{display:grid;gap:8px;min-width:240px;padding:20px;border:1px solid #f3f4f6;border-radius:12px;background:#fff;color:#111827;box-shadow:0 1px 2px rgba(0,0,0,.05);font-family:Inter,system-ui,sans-serif;transition:border-color 200ms ease,box-shadow 200ms ease}.ds-admin-card:hover{border-color:#ddd6fe;box-shadow:0 4px 10px rgba(0,0,0,.07)}.ds-admin-card span{font-size:12px;color:#6b7280}.ds-admin-card strong{font:700 28px/1 'Space Grotesk',system-ui,sans-serif}.ds-admin-card small{font-size:12px;color:#9ca3af}"
+    },
+    {
+      "name": "Floating Navigation",
+      "kind": "nav",
+      "description": "Capsule vitrée de navigation publique.",
+      "html": "<nav class=\"ds-nav\"><span class=\"ds-mark\">AQ</span><a href=\"#services\">Services</a><a href=\"#portfolio\">Projets</a><a class=\"ds-nav-cta\" href=\"#contact\">Contact</a></nav>",
+      "css": ".ds-nav{display:flex;align-items:center;gap:24px;padding:8px 10px;border:1px solid rgba(255,255,255,.2);border-radius:9999px;background:rgba(8,8,16,.78);color:#fff;backdrop-filter:blur(20px);box-shadow:0 8px 32px rgba(0,0,0,.16);font:500 14px/1 Inter,system-ui,sans-serif}.ds-nav a{color:rgba(255,255,255,.82);text-decoration:none;transition:color 200ms ease}.ds-nav a:hover{color:#fff}.ds-nav a:focus-visible{outline:2px solid #22d3ee;outline-offset:3px}.ds-mark{display:grid;place-items:center;width:36px;height:36px;border-radius:12px;background:linear-gradient(135deg,#7c3aed,#a855f7,#c084fc);font:700 12px/1 'Space Grotesk',system-ui,sans-serif;box-shadow:0 0 15px #7c3aed30}.ds-nav .ds-nav-cta{padding:10px 16px;border-radius:9999px;background:#7c3aed;color:#fff}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Le Studio digital premium lumineux",
+    "overview": "Le système conserve l'univers actuel d'Antoine Quarroz : une base sombre, des violets reconnaissables, un cyan électrique et des effets technologiques. Sa progression n'est pas une refonte, mais une montée en gamme : moins d'effets concurrents, davantage de hiérarchie et une exécution plus nette pour inspirer confiance à des prospects professionnels. La vitrine est le territoire expressif. Elle peut devenir immersive dans ses moments forts — hero, portfolio et transitions importantes — grâce au verre, aux halos et aux gradients. L'administration adopte la même signature de marque avec une densité plus calme, des surfaces structurées et des accents réservés aux états et actions utiles.",
+    "keyCharacteristics": [
+      "Identité violet/cyan immédiatement reconnaissable.",
+      "Contraste entre vitrine expressive et back-office opérationnel.",
+      "Verre lumineux employé comme accent, jamais comme texture uniforme.",
+      "Typographie géométrique pour l'impact, typographie neutre pour la lecture.",
+      "Responsive et modes clair/sombre traités comme des états de premier rang."
+    ],
+    "rules": [
+      { "name": "The Two-Light Rule", "body": "Le violet porte la marque et le cyan signale l'énergie ou l'interaction ; ne pas introduire une troisième couleur lumineuse décorative.", "section": "colors" },
+      { "name": "The Controlled Glow Rule", "body": "Un halo doit soutenir un point focal, un état interactif ou une transition de section. Une surface ordinaire reste calme.", "section": "colors" },
+      { "name": "The Display Is Earned Rule", "body": "Space Grotesk en très grand format est réservé aux messages à forte valeur ; l'interface administrative privilégie la taille et la densité utiles.", "section": "typography" },
+      { "name": "The Dual-Density Rule", "body": "La vitrine vend par le rythme et l'espace ; l'administration sert par la densité, l'alignement et la répétition cohérente.", "section": "layout" },
+      { "name": "The Immersion Has a Boundary Rule", "body": "Les effets immersifs vivent dans les moments de démonstration ; ils ne traversent pas les tableaux, formulaires ou listes de travail.", "section": "elevation" },
+      { "name": "The Radius Hierarchy Rule", "body": "8px pour la navigation compacte, 12px pour les contrôles, 16px pour les cartes, 24px pour les surfaces vedettes et la pilule uniquement pour les objets réellement linéaires.", "section": "shapes" }
+    ],
+    "dos": [
+      "Do conserver le duo Violet signature / Cyan électrique comme repère de marque.",
+      "Do réserver les halos puissants aux actions et zones de démonstration importantes.",
+      "Do employer des surfaces plus sobres, denses et prévisibles dans l'administration.",
+      "Do maintenir un focus clavier visible, un contraste lisible et une alternative aux animations.",
+      "Do vérifier les mêmes composants en clair, sombre, mobile et desktop."
+    ],
+    "donts": [
+      "Don't remplacer cette identité par une esthétique SaaS générique ou entièrement neutre.",
+      "Don't appliquer verre, flou, gradient et lueur simultanément à toutes les cartes.",
+      "Don't transformer l'administration en page marketing ou réduire sa densité opérationnelle.",
+      "Don't employer des animations permanentes sur les contenus de travail.",
+      "Don't inventer de nouvelles couleurs d'accent sans rôle fonctionnel explicite."
+    ]
+  }
+}

@@ -4,11 +4,55 @@ definePageMeta({ layout: 'admin', middleware: 'admin' })
 const store = useInvoicesStore()
 const clients = useClientsStore()
 const quotes = useQuotesStore()
+const auth = useAuthStore()
+const { statusLabel } = useBusinessLabels()
 const route = useRoute()
 const toast = useToast()
 const showForm = ref(false)
+const closeForm = () => { showForm.value = false }
+const { dialogRef, handleDialogKeydown } = useAccessibleDialog(showForm, closeForm)
 const editing = ref<Invoice | null>(null)
-const form = reactive({ number: '', clientId: null as number | null, quoteId: null as number | null, amountCents: 0, currency: 'CHF', status: 'draft' as Invoice['status'], issuedAt: '', dueAt: '', paidAt: '', notes: '' })
+const showBillingProfile = ref(false)
+const savingBillingProfile = ref(false)
+const billingProfile = reactive({
+  billingName: '', billingStreet: '', billingBuilding: '', billingPostalCode: '', billingCity: '', billingCountry: 'CH',
+  billingEmail: '', billingPhone: '', billingIban: '', billingUid: '', billingTerms: 'Paiement selon l’échéance indiquée.',
+})
+const billingProfileComplete = computed(() => Boolean(
+  billingProfile.billingName && billingProfile.billingStreet && billingProfile.billingPostalCode
+  && billingProfile.billingCity && billingProfile.billingCountry && billingProfile.billingIban,
+))
+
+async function loadBillingProfile() {
+  try {
+    const row = await $fetch<Record<string, string | null>>('/api/admin/billing-profile', { headers: auth.authHeader() })
+    Object.assign(billingProfile, {
+      billingName: row.billing_name || '', billingStreet: row.billing_street || '', billingBuilding: row.billing_building || '',
+      billingPostalCode: row.billing_postal_code || '', billingCity: row.billing_city || '', billingCountry: row.billing_country || 'CH',
+      billingEmail: row.billing_email || '', billingPhone: row.billing_phone || '', billingIban: row.billing_iban || '',
+      billingUid: row.billing_uid || '', billingTerms: row.billing_terms || '',
+    })
+  }
+  catch {
+    toast.error('Le profil de facturation nécessite la migration Supabase 20260804.')
+  }
+}
+
+async function saveBillingProfile() {
+  savingBillingProfile.value = true
+  try {
+    await $fetch('/api/admin/billing-profile', { method: 'PUT', body: billingProfile, headers: auth.authHeader() })
+    toast.success('Profil de facturation enregistré')
+    showBillingProfile.value = false
+  }
+  catch (error: any) {
+    toast.error(error?.data?.message || 'Impossible d’enregistrer le profil de facturation')
+  }
+  finally {
+    savingBillingProfile.value = false
+  }
+}
+const form = reactive({ number: '', clientId: null as number | null, quoteId: null as number | null, amountCents: 0, currency: 'CHF', status: 'draft' as Invoice['status'], issuedAt: '', dueAt: '', paidAt: '', notes: '', paymentReferenceType: 'NON' as Invoice['paymentReferenceType'], paymentReference: '' })
 const formItems = ref<Array<{ label: string, description: string | null, quantity: number, unitPriceCents: number, taxRate: number }>>([{ label: 'Prestation', description: null, quantity: 1, unitPriceCents: 0, taxRate: 8.1 }])
 const clientsById = computed(() => new Map(clients.clients.map(c => [c.id, c])))
 const quotesById = computed(() => new Map(quotes.quotes.map(q => [q.id, q])))
@@ -52,7 +96,7 @@ watch(() => form.quoteId, () => {
   form.amountCents = selectedQuote.value.amountCents
   form.currency = selectedQuote.value.currency
 })
-function openNew() { editing.value = null; Object.assign(form, { number: '', clientId: null, quoteId: null, amountCents: 0, currency: 'CHF', status: 'draft', issuedAt: '', dueAt: '', paidAt: '', notes: '' }); formItems.value = [{ label: 'Prestation', description: null, quantity: 1, unitPriceCents: 0, taxRate: 8.1 }]; showForm.value = true }
+function openNew() { editing.value = null; Object.assign(form, { number: '', clientId: null, quoteId: null, amountCents: 0, currency: 'CHF', status: 'draft', issuedAt: '', dueAt: '', paidAt: '', notes: '', paymentReferenceType: 'NON', paymentReference: '' }); formItems.value = [{ label: 'Prestation', description: null, quantity: 1, unitPriceCents: 0, taxRate: 8.1 }]; showForm.value = true }
 function openEdit(x: Invoice) { editing.value = x; Object.assign(form, x); formItems.value = (x.items?.length ? x.items.map(i => ({ label: i.label, description: i.description, quantity: i.quantity, unitPriceCents: i.unitPriceCents, taxRate: i.taxRate })) : [{ label: 'Prestation', description: null, quantity: 1, unitPriceCents: 0, taxRate: 8.1 }]); showForm.value = true }
 function computeFormTotals(items: Array<{ quantity: number, unitPriceCents: number, taxRate: number }>) { const subtotalCents = items.reduce((acc, item) => acc + Math.round((Number(item.quantity) || 0) * (Number(item.unitPriceCents) || 0)), 0); const totalCents = items.reduce((acc, item) => { const line = Math.round((Number(item.quantity) || 0) * (Number(item.unitPriceCents) || 0)); return acc + Math.round(line * (1 + (Number(item.taxRate) || 0) / 100)) }, 0); return { subtotalCents, taxCents: Math.max(0, totalCents - subtotalCents), totalCents } }
 const draftTotals = computed(() => computeFormTotals(formItems.value))
@@ -125,7 +169,7 @@ function printSelected() {
   const quote = i.quoteId ? (quotesById.value.get(i.quoteId)?.number || '-') : '-'
   const html = `
     <html><head><title>Facture ${i.number}</title></head>
-    <body style="font-family: Arial, sans-serif; padding: 24px; color: #111;">
+    <body style="font-family: Inter, system-ui, sans-serif; padding: 24px; color: #111827;">
       <h1 style="margin:0 0 16px;">Facture ${i.number}</h1>
       <p><strong>Client:</strong> ${client}</p>
       <p><strong>Devis:</strong> ${quote}</p>
@@ -148,7 +192,7 @@ function downloadPdf() {
   window.open(`/api/invoices/pdf?id=${selectedInvoice.value.id}`, '_blank')
 }
 onMounted(async () => {
-  await Promise.all([store.ensureLoaded(), clients.ensureLoaded(), quotes.ensureLoaded()])
+  await Promise.all([store.ensureLoaded(), clients.ensureLoaded(), quotes.ensureLoaded(), loadBillingProfile()])
   if (route.query.new === '1') {
     openNew()
     const id = Number(route.query.clientId || 0)
@@ -164,11 +208,10 @@ onMounted(async () => {
 <template>
   <div class="space-y-5">
     <section class="relative overflow-hidden rounded-lg border border-gray-200 bg-white px-4 py-4 shadow-sm dark:border-white/[0.08] dark:bg-[#111118] sm:px-5">
-      <div class="pointer-events-none absolute -top-16 right-[8%] h-48 w-48 rounded-full bg-rose-500/10 blur-3xl" />
-      <div class="pointer-events-none absolute -bottom-20 left-[6%] h-40 w-40 rounded-full bg-amber-400/10 blur-3xl" />
+      <div class="pointer-events-none absolute -top-16 right-[8%] h-48 w-48 rounded-full bg-violet-500/10 blur-3xl" />
       <div class="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div class="min-w-0">
-          <span class="rounded-md bg-gradient-brand px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white">Facturation</span>
+          <span class="rounded-md bg-gradient-brand px-2 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white">Facturation</span>
           <h1 class="mt-2 font-display text-2xl font-semibold text-gray-950 dark:text-white sm:text-3xl">Factures</h1>
           <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Emets, encaisse et relance tes factures clients.</p>
         </div>
@@ -176,18 +219,39 @@ onMounted(async () => {
           <button class="inline-flex h-10 items-center justify-center rounded-lg border border-gray-200 px-3 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-white/[0.12] dark:text-gray-200 dark:hover:bg-white/[0.04]" @click="exportCsv">Exporter CSV</button>
           <button class="inline-flex h-10 items-center justify-center rounded-lg border border-gray-200 px-3 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-white/[0.12] dark:text-gray-200 dark:hover:bg-white/[0.04]" @click="printSelected">Imprimer</button>
           <button class="inline-flex h-10 items-center justify-center rounded-lg border border-gray-200 px-3 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-white/[0.12] dark:text-gray-200 dark:hover:bg-white/[0.04]" @click="downloadPdf">PDF</button>
+          <button class="inline-flex h-10 items-center justify-center rounded-lg border px-3 text-xs font-semibold transition" :class="billingProfileComplete ? 'border-emerald-300 text-emerald-700 dark:border-emerald-500/30 dark:text-emerald-300' : 'border-amber-300 text-amber-700 dark:border-amber-500/30 dark:text-amber-300'" @click="showBillingProfile = !showBillingProfile">Profil PDF</button>
           <button class="inline-flex h-10 items-center justify-center rounded-lg bg-gradient-brand px-4 text-xs font-semibold text-white shadow-glow-sm transition hover:opacity-90" @click="openNew">Nouvelle</button>
         </div>
       </div>
     </section>
+    <form v-if="showBillingProfile" class="rounded-xl border border-violet-200 bg-white p-4 shadow-sm dark:border-violet-500/20 dark:bg-[#111118]" @submit.prevent="saveBillingProfile">
+      <div class="mb-4 flex items-start justify-between gap-3">
+        <div><h2 class="font-semibold text-gray-950 dark:text-white">Profil de facturation</h2><p class="mt-1 text-sm text-gray-500">Ces données alimentent les devis Typst et les QR-factures suisses.</p></div>
+        <span class="rounded-lg px-2 py-1 text-xs" :class="billingProfileComplete ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' : 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'">{{ billingProfileComplete ? 'Complet' : 'À compléter' }}</span>
+      </div>
+      <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+        <label class="space-y-1 text-xs text-gray-500">Nom légal<input v-model="billingProfile.billingName" class="input-field" required autocomplete="organization"></label>
+        <label class="space-y-1 text-xs text-gray-500">E-mail<input v-model="billingProfile.billingEmail" type="email" class="input-field" autocomplete="email"></label>
+        <label class="space-y-1 text-xs text-gray-500">Rue<input v-model="billingProfile.billingStreet" class="input-field" required autocomplete="street-address"></label>
+        <label class="space-y-1 text-xs text-gray-500">N°<input v-model="billingProfile.billingBuilding" class="input-field"></label>
+        <label class="space-y-1 text-xs text-gray-500">NPA<input v-model="billingProfile.billingPostalCode" class="input-field" required autocomplete="postal-code"></label>
+        <label class="space-y-1 text-xs text-gray-500">Localité<input v-model="billingProfile.billingCity" class="input-field" required autocomplete="address-level2"></label>
+        <label class="space-y-1 text-xs text-gray-500">Pays (ISO)<input v-model="billingProfile.billingCountry" maxlength="2" class="input-field" required autocomplete="country"></label>
+        <label class="space-y-1 text-xs text-gray-500">Téléphone<input v-model="billingProfile.billingPhone" class="input-field" autocomplete="tel"></label>
+        <label class="space-y-1 text-xs text-gray-500 md:col-span-2">IBAN ou QR-IBAN<input v-model="billingProfile.billingIban" class="input-field font-mono" required autocomplete="off"></label>
+        <label class="space-y-1 text-xs text-gray-500">IDE / TVA<input v-model="billingProfile.billingUid" class="input-field"></label>
+        <label class="space-y-1 text-xs text-gray-500">Conditions<input v-model="billingProfile.billingTerms" class="input-field"></label>
+      </div>
+      <div class="mt-4 flex justify-end gap-2"><button type="button" class="min-h-11 px-4 text-sm" @click="showBillingProfile = false">Annuler</button><button class="min-h-11 rounded-lg bg-violet-600 px-4 text-sm font-semibold text-white disabled:opacity-60" :disabled="savingBillingProfile">{{ savingBillingProfile ? 'Enregistrement…' : 'Enregistrer le profil' }}</button></div>
+    </form>
     <div class="rounded-xl border border-gray-100 dark:border-white/[0.06] bg-white dark:bg-[#111118] p-3 grid grid-cols-1 sm:grid-cols-[1fr_170px] gap-2">
       <input v-model="search" class="input-field" placeholder="Rechercher facture...">
       <select v-model="statusFilter" class="input-field">
         <option value="all">Tous statuts</option>
-        <option value="draft">draft</option>
-        <option value="sent">sent / overdue</option>
-        <option value="paid">paid</option>
-        <option value="cancelled">cancelled</option>
+        <option value="draft">{{ statusLabel('draft') }}</option>
+        <option value="sent">{{ statusLabel('sent') }} / {{ statusLabel('overdue') }}</option>
+        <option value="paid">{{ statusLabel('paid') }}</option>
+        <option value="cancelled">{{ statusLabel('cancelled') }}</option>
       </select>
       <div class="sm:col-span-2 flex items-center gap-2 pt-1">
         <button class="px-3 py-1.5 text-xs rounded-lg border" :class="viewMode==='table' ? 'bg-violet-600 text-white border-violet-600' : 'border-gray-200 dark:border-white/[0.12]'" @click="viewMode='table'">Table</button>
@@ -198,7 +262,7 @@ onMounted(async () => {
     <div class="space-y-3">
       <div v-if="viewMode==='kanban'" class="grid grid-cols-1 xl:grid-cols-5 gap-3">
         <div v-for="col in kanbanInvoices" :key="`i-col-${col.status}`" class="rounded-xl border border-gray-100 dark:border-white/[0.06] bg-white dark:bg-[#111118] p-3 space-y-2">
-          <p class="text-xs uppercase text-gray-400">{{ col.status }} ({{ col.items.length }})</p>
+          <p class="text-xs uppercase text-gray-400">{{ statusLabel(col.status) }} ({{ col.items.length }})</p>
           <button
             v-for="i in col.items"
             :key="`kanban-${i.id}`"
@@ -209,9 +273,9 @@ onMounted(async () => {
             <p class="text-xs text-gray-500 line-clamp-1">{{ i.clientId ? clientsById.get(i.clientId)?.name || '-' : '-' }}</p>
             <p class="text-xs mt-1">{{ formatAmount(i.amountCents, i.currency) }}</p>
             <div class="mt-2 flex flex-wrap gap-2">
-              <button v-if="i.status!=='sent'" class="text-[11px] text-amber-600" @click.stop="quickSetStatus(i.id,'sent')">Envoyer</button>
-              <button v-if="i.status!=='paid'" class="text-[11px] text-emerald-600" @click.stop="quickSetStatus(i.id,'paid')">Payer</button>
-              <button class="text-[11px] text-violet-600" @click.stop="openEdit(i)">Editer</button>
+              <button v-if="i.status!=='sent'" class="text-xs text-amber-600" @click.stop="quickSetStatus(i.id,'sent')">Envoyer</button>
+              <button v-if="i.status!=='paid'" class="text-xs text-emerald-600" @click.stop="quickSetStatus(i.id,'paid')">Payer</button>
+              <button class="text-xs text-violet-600" @click.stop="openEdit(i)">Editer</button>
             </div>
           </button>
         </div>
@@ -227,7 +291,7 @@ onMounted(async () => {
         >
           <div class="flex items-start justify-between gap-2">
             <p class="text-sm font-semibold">{{ q.number }}</p>
-            <span class="text-[11px] uppercase text-gray-400">{{ q.status }}</span>
+            <span class="text-xs uppercase text-gray-400">{{ statusLabel(q.status) }}</span>
           </div>
           <p class="mt-1 text-xs text-gray-500">{{ q.clientId ? clientsById.get(q.clientId)?.name || '-' : '-' }}</p>
           <p class="mt-1 text-xs text-gray-500">Echeance: {{ q.dueAt || '-' }}</p>
@@ -243,7 +307,7 @@ onMounted(async () => {
     <div v-if="viewMode==='table'" class="admin-table-wrap hidden sm:block bg-white dark:bg-[#111118] border border-gray-100 dark:border-white/[0.06] rounded-xl overflow-hidden">
       <table class="admin-table w-full">
         <thead><tr class="border-b border-gray-100 dark:border-white/[0.06]"><th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Numero</th><th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Client</th><th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Devis</th><th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Montant</th><th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Echeance</th><th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Statut</th><th class="text-right px-4 py-3 text-xs uppercase text-gray-400">Actions</th></tr></thead>
-        <tbody><tr v-for="q in filteredInvoices" :key="q.id" class="border-b border-gray-50 dark:border-white/[0.03] cursor-pointer" :class="selectedId === q.id ? 'bg-violet-50/60 dark:bg-violet-500/10' : ''" @click="selectedId = q.id"><td class="px-4 py-3 text-sm">{{ q.number }}</td><td class="px-4 py-3 text-sm">{{ q.clientId ? clientsById.get(q.clientId)?.name || '-' : '-' }}</td><td class="px-4 py-3 text-sm">{{ q.quoteId ? quotesById.get(q.quoteId)?.number || '-' : '-' }}</td><td class="px-4 py-3 text-sm">{{ formatAmount(q.amountCents, q.currency) }}</td><td class="px-4 py-3 text-sm">{{ q.dueAt || '-' }}</td><td class="px-4 py-3 text-sm">{{ q.status }}</td><td class="px-4 py-3 text-right space-x-2"><button class="text-xs text-emerald-600" @click.stop="quickSetStatus(q.id, 'paid')">Paye</button><button class="text-xs text-amber-600" @click.stop="quickSetStatus(q.id, 'sent')">Envoyee</button><button class="text-xs text-violet-600" @click.stop="openEdit(q)">Editer</button><button class="text-xs text-red-500" @click.stop="del(q.id)">Supprimer</button></td></tr></tbody>
+        <tbody><tr v-for="q in filteredInvoices" :key="q.id" class="border-b border-gray-50 dark:border-white/[0.03] cursor-pointer" :class="selectedId === q.id ? 'bg-violet-50/60 dark:bg-violet-500/10' : ''" @click="selectedId = q.id"><td class="px-4 py-3 text-sm">{{ q.number }}</td><td class="px-4 py-3 text-sm">{{ q.clientId ? clientsById.get(q.clientId)?.name || '-' : '-' }}</td><td class="px-4 py-3 text-sm">{{ q.quoteId ? quotesById.get(q.quoteId)?.number || '-' : '-' }}</td><td class="px-4 py-3 text-sm">{{ formatAmount(q.amountCents, q.currency) }}</td><td class="px-4 py-3 text-sm">{{ q.dueAt || '-' }}</td><td class="px-4 py-3 text-sm">{{ statusLabel(q.status) }}</td><td class="px-4 py-3 text-right space-x-2"><button class="text-xs text-emerald-600" @click.stop="quickSetStatus(q.id, 'paid')">Paye</button><button class="text-xs text-amber-600" @click.stop="quickSetStatus(q.id, 'sent')">Envoyee</button><button class="text-xs text-violet-600" @click.stop="openEdit(q)">Editer</button><button class="text-xs text-red-500" @click.stop="del(q.id)">Supprimer</button></td></tr></tbody>
       </table>
     </div>
     </div>
@@ -257,7 +321,7 @@ onMounted(async () => {
           <p><span class="text-gray-400">Montant:</span> {{ formatAmount(selectedInvoice.totalCents ?? selectedInvoice.amountCents, selectedInvoice.currency) }}</p>
           <p><span class="text-gray-400">Sous-total:</span> {{ formatAmount(selectedInvoice.subtotalCents ?? selectedInvoice.amountCents, selectedInvoice.currency) }}</p>
           <p><span class="text-gray-400">TVA:</span> {{ formatAmount(selectedInvoice.taxCents ?? 0, selectedInvoice.currency) }}</p>
-          <p><span class="text-gray-400">Statut:</span> {{ selectedInvoice.status }}</p>
+          <p><span class="text-gray-400">Statut:</span> {{ statusLabel(selectedInvoice.status) }}</p>
           <p><span class="text-gray-400">Emission:</span> {{ selectedInvoice.issuedAt || '-' }}</p>
           <p><span class="text-gray-400">Echeance:</span> {{ selectedInvoice.dueAt || '-' }}</p>
           <p><span class="text-gray-400">Paye le:</span> {{ selectedInvoice.paidAt || '-' }}</p>
@@ -273,9 +337,10 @@ onMounted(async () => {
     </div>
     </div>
     <Transition name="fade">
-      <div v-if="showForm" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
+      <div v-if="showForm" ref="dialogRef" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4" role="dialog" aria-modal="true" aria-labelledby="invoice-form-title" tabindex="-1" @keydown="handleDialogKeydown">
         <div class="absolute inset-0 bg-black/40" @click="showForm=false" />
         <form class="admin-modal-panel relative w-full max-w-4xl max-h-[92vh] overflow-y-auto overflow-x-hidden bg-white dark:bg-[#111118] rounded-xl p-4 sm:p-5 space-y-3" @submit.prevent="submit">
+          <h2 id="invoice-form-title" class="font-semibold text-gray-900 dark:text-white">{{ editing ? 'Modifier la facture' : 'Nouvelle facture' }}</h2>
           <input v-model="form.number" class="input-field" placeholder="Numero" required>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <select v-model.number="form.clientId" class="input-field" :disabled="!!form.quoteId">
@@ -313,13 +378,29 @@ onMounted(async () => {
             <input v-model="form.paidAt" type="date" class="input-field">
           </div>
           <select v-model="form.status" class="input-field">
-            <option value="draft">draft</option>
-            <option value="sent">sent</option>
-            <option value="paid">paid</option>
-            <option value="overdue">overdue</option>
-            <option value="cancelled">cancelled</option>
+            <option value="draft">{{ statusLabel('draft') }}</option>
+            <option value="sent">{{ statusLabel('sent') }}</option>
+            <option value="paid">{{ statusLabel('paid') }}</option>
+            <option value="overdue">{{ statusLabel('overdue') }}</option>
+            <option value="cancelled">{{ statusLabel('cancelled') }}</option>
           </select>
           <textarea v-model="form.notes" rows="3" class="input-field" placeholder="Notes" />
+          <fieldset class="space-y-3 rounded-lg border border-gray-200 p-3 dark:border-white/[0.08]">
+            <legend class="px-1 text-xs font-semibold uppercase text-gray-500">QR-facture suisse</legend>
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-[150px_1fr]">
+              <label class="space-y-1 text-xs text-gray-500">Type de référence
+                <select v-model="form.paymentReferenceType" class="input-field">
+                  <option value="NON">Sans référence</option>
+                  <option value="SCOR">Référence créancier (SCOR)</option>
+                  <option value="QRR">Référence QR (QRR)</option>
+                </select>
+              </label>
+              <label v-if="form.paymentReferenceType !== 'NON'" class="space-y-1 text-xs text-gray-500">Référence
+                <input v-model="form.paymentReference" class="input-field" :placeholder="form.paymentReferenceType === 'QRR' ? '27 chiffres' : 'RF…'">
+              </label>
+            </div>
+            <p class="text-xs text-gray-500">Le QR est ajouté uniquement si le profil de facturation, l’adresse client, l’IBAN et la référence sont valides.</p>
+          </fieldset>
           <div class="admin-sticky-actions sticky bottom-0 bg-white dark:bg-[#111118] pt-2 flex justify-end gap-2">
             <button type="button" class="px-3 py-2 text-sm" @click="showForm=false">Annuler</button>
             <button class="px-4 py-2 rounded-lg bg-violet-600 text-white text-sm">Enregistrer</button>

@@ -5,8 +5,11 @@ definePageMeta({ layout: 'admin', middleware: 'admin' })
 
 const store = useTasksStore()
 const toast = useToast()
+const { statusLabel } = useBusinessLabels()
 
 const showForm = ref(false)
+const closeForm = () => { showForm.value = false }
+const { dialogRef, handleDialogKeydown } = useAccessibleDialog(showForm, closeForm)
 const editing = ref<Task | null>(null)
 const isOffline = ref(false)
 let onlineStateHandler: (() => void) | null = null
@@ -96,11 +99,10 @@ onBeforeUnmount(() => {
 <template>
   <div class="space-y-5">
     <section class="relative overflow-hidden rounded-lg border border-gray-200 bg-white px-4 py-4 shadow-sm dark:border-white/[0.08] dark:bg-[#111118] sm:px-5">
-      <div class="pointer-events-none absolute -top-16 right-[8%] h-48 w-48 rounded-full bg-cyan-500/10 blur-3xl" />
-      <div class="pointer-events-none absolute -bottom-20 left-[6%] h-40 w-40 rounded-full bg-violet-400/10 blur-3xl" />
+      <div class="pointer-events-none absolute -top-16 right-[8%] h-48 w-48 rounded-full bg-violet-500/10 blur-3xl" />
       <div class="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div class="min-w-0">
-          <span class="rounded-md bg-gradient-brand px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white">Taches</span>
+          <span class="rounded-md bg-gradient-brand px-2 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white">Taches</span>
           <h1 class="mt-2 font-display text-2xl font-semibold text-gray-950 dark:text-white sm:text-3xl">Taches</h1>
           <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ store.tasks.length }} tache(s), {{ store.done.length }} terminee(s)</p>
           <p v-if="isOffline || store.pendingCount > 0 || store.syncing" class="mt-1 text-xs text-amber-500">
@@ -133,7 +135,7 @@ onBeforeUnmount(() => {
             <td class="px-5 py-3">
               <span class="text-xs px-2 py-1 rounded-md"
                 :class="task.status === 'done' ? 'bg-green-50 text-green-700 dark:bg-green-500/10 dark:text-green-300' : task.status === 'in_progress' ? 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300' : 'bg-yellow-50 text-yellow-700 dark:bg-yellow-500/10 dark:text-yellow-300'">
-                {{ task.status }}
+                {{ statusLabel(task.status) }}
               </span>
             </td>
             <td class="px-5 py-3 hidden sm:table-cell text-xs text-gray-500">{{ task.priority }}</td>
@@ -148,17 +150,17 @@ onBeforeUnmount(() => {
     </div>
 
     <Transition name="fade">
-      <div v-if="showForm" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div v-if="showForm" ref="dialogRef" class="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="task-form-title" tabindex="-1" @keydown="handleDialogKeydown">
         <div class="absolute inset-0 bg-black/40" @click="showForm = false" />
         <form class="admin-modal-panel relative w-full max-w-xl bg-white dark:bg-[#111118] rounded-xl p-5 space-y-3" @submit.prevent="handleSubmit">
-          <h2 class="font-semibold text-gray-900 dark:text-white">{{ editing ? 'Modifier tache' : 'Nouvelle tache' }}</h2>
+          <h2 id="task-form-title" class="font-semibold text-gray-900 dark:text-white">{{ editing ? 'Modifier tache' : 'Nouvelle tache' }}</h2>
           <input v-model="form.title" class="input-field" placeholder="Titre" required>
           <textarea v-model="form.description" rows="3" class="input-field" placeholder="Description" />
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <select v-model="form.status" class="input-field">
-              <option value="todo">Todo</option>
-              <option value="in_progress">In progress</option>
-              <option value="done">Done</option>
+              <option value="todo">{{ statusLabel('todo') }}</option>
+              <option value="in_progress">{{ statusLabel('in_progress') }}</option>
+              <option value="done">{{ statusLabel('done') }}</option>
             </select>
             <select v-model="form.priority" class="input-field">
               <option value="low">Low</option>

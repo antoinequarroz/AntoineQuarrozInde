@@ -1,4 +1,18 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+const { locale } = useI18n()
+
+const documentLanguage = computed(() => ({
+  fr: 'fr-CH',
+  en: 'en-US',
+  de: 'de-CH',
+}[locale.value] ?? locale.value))
+
+useHead(() => ({
+  htmlAttrs: {
+    lang: documentLanguage.value,
+  },
+}))
+</script>
 
 <template>
     <div>

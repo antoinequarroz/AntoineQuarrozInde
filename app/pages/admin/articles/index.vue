@@ -8,6 +8,8 @@ const route = useRoute()
 const toast = useToast()
 
 const showForm = ref(route.query.new === '1')
+const closeForm = () => { showForm.value = false }
+const { dialogRef, handleDialogKeydown } = useAccessibleDialog(showForm, closeForm, '[data-dialog-close]')
 const editingArticle = ref<Article | null>(null)
 const previewMode = ref(false)
 
@@ -115,13 +117,13 @@ function renderMarkdown(md: string): string {
 
     <!-- Modal -->
     <Transition name="modal">
-      <div v-if="showForm" class="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+      <div v-if="showForm" ref="dialogRef" class="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="article-form-title" tabindex="-1" @keydown="handleDialogKeydown">
         <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="showForm = false" />
         <div class="admin-modal-panel relative w-full max-w-4xl bg-white dark:bg-[#111118] rounded-2xl shadow-2xl border border-gray-100 dark:border-white/[0.08] my-4 overflow-y-auto">
 
           <!-- Modal header -->
           <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-white/[0.06]">
-            <h2 class="font-display font-semibold text-base text-gray-900 dark:text-white">
+            <h2 id="article-form-title" class="font-display font-semibold text-base text-gray-900 dark:text-white">
               {{ editingArticle ? 'Modifier l\'article' : 'Nouvel article' }}
             </h2>
             <div class="flex items-center gap-2">
@@ -140,7 +142,7 @@ function renderMarkdown(md: string): string {
                   @click="previewMode = true"
                 >Aperçu</button>
               </div>
-              <button class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 dark:hover:bg-white/[0.06] transition-all" @click="showForm = false">
+              <button type="button" data-dialog-close aria-label="Fermer" class="w-11 h-11 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 dark:hover:bg-white/[0.06] transition-all" @click="showForm = false">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
@@ -158,36 +160,36 @@ function renderMarkdown(md: string): string {
               @submit.prevent="handleSubmit"
             >
               <div>
-                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Titre *</label>
-                <input v-model="form.title" type="text" class="input-field" placeholder="Titre de l'article" required>
+                <label for="article-title" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Titre *</label>
+                <input id="article-title" v-model="form.title" type="text" class="input-field" placeholder="Titre de l'article" required>
               </div>
               <div>
-                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Résumé *</label>
-                <textarea v-model="form.excerpt" rows="2" class="input-field resize-none" placeholder="Court résumé..." required />
+                <label for="article-excerpt" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Résumé *</label>
+                <textarea id="article-excerpt" v-model="form.excerpt" rows="2" class="input-field resize-none" placeholder="Court résumé..." required />
               </div>
               <div>
-                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Contenu Markdown *</label>
-                <textarea v-model="form.content" rows="10" class="input-field resize-none font-mono text-xs leading-relaxed" placeholder="# Titre&#10;&#10;Votre contenu..." required />
+                <label for="article-content" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Contenu Markdown *</label>
+                <textarea id="article-content" v-model="form.content" rows="10" class="input-field resize-none font-mono text-xs leading-relaxed" placeholder="# Titre&#10;&#10;Votre contenu..." required />
               </div>
               <div>
-                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Image de couverture</label>
+                <p class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Image de couverture</p>
                 <UiAppImageUpload v-model="form.coverImage" />
               </div>
               <div class="grid grid-cols-2 gap-4">
                 <div>
-                  <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Tags</label>
-                  <input v-model="form.tags" type="text" class="input-field" placeholder="Vue 3, Web">
+                  <label for="article-tags" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Tags</label>
+                  <input id="article-tags" v-model="form.tags" type="text" class="input-field" placeholder="Vue 3, Web">
                 </div>
                 <div>
-                  <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Temps de lecture (min)</label>
-                  <input v-model.number="form.readTime" type="number" min="1" max="60" class="input-field">
+                  <label for="article-read-time" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Temps de lecture (min)</label>
+                  <input id="article-read-time" v-model.number="form.readTime" type="number" min="1" max="60" class="input-field">
                 </div>
               </div>
               <div class="flex items-center gap-3">
-                <button type="button" class="relative w-10 h-6 rounded-full transition-colors duration-200 flex-shrink-0" :class="form.published ? 'bg-violet-500' : 'bg-gray-200 dark:bg-gray-700'" @click="form.published = !form.published">
+                <button type="button" role="switch" :aria-checked="form.published" aria-label="Publié" class="relative w-10 h-6 rounded-full transition-colors duration-200 flex-shrink-0 before:absolute before:-inset-2.5 before:rounded-xl" :class="form.published ? 'bg-violet-500' : 'bg-gray-200 dark:bg-gray-700'" @click="form.published = !form.published">
                   <span class="absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200" :class="form.published ? 'translate-x-4' : 'translate-x-0'" />
                 </button>
-                <label class="text-sm text-gray-600 dark:text-gray-300 cursor-pointer" @click="form.published = !form.published">Publié</label>
+                <span class="text-sm text-gray-600 dark:text-gray-300">Publié</span>
               </div>
               <div class="admin-sticky-actions sticky bottom-0 bg-white dark:bg-[#111118] flex gap-3 pt-2 border-t border-gray-100 dark:border-white/[0.06]">
                 <button type="submit" class="flex-1 py-2.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold transition-colors">

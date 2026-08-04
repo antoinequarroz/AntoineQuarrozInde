@@ -11,20 +11,22 @@ const props = withDefaults(defineProps<Props>(), {
   opacityClass: 'opacity-100',
 })
 
+const viewerReady = ref(false)
+
+async function loadViewer() {
+  await import('@splinetool/viewer')
+  viewerReady.value = true
+}
+
 onMounted(() => {
-  if (document.querySelector('script[data-spline-viewer]')) return
-  const script = document.createElement('script')
-  script.src = 'https://unpkg.com/@splinetool/viewer@latest/build/spline-viewer.js'
-  script.type = 'module'
-  script.setAttribute('data-spline-viewer', 'true')
-  document.head.appendChild(script)
+  void loadViewer()
 })
 </script>
 
 <template>
   <ClientOnly>
     <div :class="['pointer-events-none', props.className, props.opacityClass]">
-      <spline-viewer :url="props.sceneUrl" class="w-full h-full" loading-anim-type="none" />
+      <spline-viewer v-if="viewerReady" :url="props.sceneUrl" class="w-full h-full" loading-anim-type="none" />
     </div>
     <template #fallback>
       <div :class="['pointer-events-none', props.className, props.opacityClass]" />

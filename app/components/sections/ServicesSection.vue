@@ -1,6 +1,5 @@
 <script setup lang="ts">
 const { t, locale } = useI18n()
-const isMobile = useMediaQuery('(max-width: 767px)')
 const { track } = useMarketing()
 
 type ServiceKey = 'vitrine' | 'mobile' | 'cms'
@@ -25,7 +24,7 @@ const serviceFeatures: Record<string, Record<ServiceKey, string[]>> = {
 
 const features = computed(() => {
   const lang = locale.value as 'fr' | 'en' | 'de'
-  return serviceFeatures[lang] ?? serviceFeatures.fr
+  return serviceFeatures[lang] ?? serviceFeatures.fr!
 })
 
 const services = computed(() => [
@@ -75,10 +74,10 @@ const localZones = computed(() => {
           Zones: {{ localZones }}
         </p>
         <div class="mt-3 flex flex-wrap justify-center gap-2">
-          <NuxtLink to="/creation-site-internet-valais" class="rounded-lg border border-violet-500/20 px-3 py-1.5 text-xs text-violet-700 dark:text-violet-200">
+          <NuxtLink to="/creation-site-internet-valais" class="inline-flex min-h-11 items-center rounded-lg border border-violet-500/20 px-3 py-1.5 text-xs text-violet-700 dark:text-violet-200">
             Sites web en Valais
           </NuxtLink>
-          <NuxtLink to="/application-mobile-valais" class="rounded-lg border border-violet-500/20 px-3 py-1.5 text-xs text-violet-700 dark:text-violet-200">
+          <NuxtLink to="/application-mobile-valais" class="inline-flex min-h-11 items-center rounded-lg border border-violet-500/20 px-3 py-1.5 text-xs text-violet-700 dark:text-violet-200">
             Apps mobiles en Valais
           </NuxtLink>
         </div>
@@ -101,7 +100,7 @@ const localZones = computed(() => {
           >
             <div class="absolute -top-3 left-6">
               <span
-                class="px-3 py-1 rounded-full text-[10px] font-bold tracking-[0.14em] uppercase border"
+                class="px-3 py-1 rounded-full text-xs font-bold tracking-[0.14em] uppercase border"
                 :class="index === 1
                   ? 'bg-violet-600 text-white border-violet-400/40'
                   : 'bg-white text-violet-700 border-violet-300/50 dark:bg-[#191d35] dark:text-violet-200 dark:border-violet-300/25'"
@@ -134,15 +133,16 @@ const localZones = computed(() => {
               <h3 class="mb-3 font-display text-xl font-bold text-gray-950 dark:text-white">
                 {{ t(`services.${service.key}.title`) }}
               </h3>
-              <p class="mb-5 flex-1 text-[13px] md:text-sm leading-relaxed text-gray-700 dark:text-white/80">
+              <p class="mb-5 flex-1 text-sm md:text-sm leading-relaxed text-gray-700 dark:text-white/80">
                 {{ t(`services.${service.key}.description`) }}
               </p>
 
               <ul class="mb-5 space-y-1.5">
                 <li
-                  v-for="feature in (isMobile ? service.features.slice(0, 3) : service.features)"
+                  v-for="(feature, featureIndex) in service.features"
                   :key="feature"
-                  class="flex items-center gap-2 text-[13px] md:text-sm text-gray-900 dark:text-white/90"
+                  class="flex items-center gap-2 text-sm md:text-sm text-gray-900 dark:text-white/90"
+                  :class="featureIndex === 3 ? 'max-md:hidden' : ''"
                 >
                   <svg class="h-4 w-4 flex-shrink-0 text-violet-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                     <polyline points="20 6 9 17 4 12" />

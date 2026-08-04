@@ -97,10 +97,9 @@ onBeforeUnmount(() => {
       <div class="pointer-events-none absolute inset-x-0 bottom-0 mx-auto h-36 w-[72%] rounded-full bg-black/35 blur-3xl" />
 
       <div class="absolute inset-0 flex items-end justify-center [perspective:1200px]">
-        <button
+        <article
           v-for="entry in visibleItems"
           :key="entry.item.id"
-          type="button"
           class="absolute bottom-0 w-[min(90vw,720px)] md:w-[640px] h-[340px] md:h-[360px] rounded-2xl overflow-hidden border transition-all duration-500 text-left"
           :class="entry.off === 0
             ? 'border-violet-300/40 shadow-[0_24px_70px_rgba(91,33,182,0.35)]'
@@ -109,7 +108,6 @@ onBeforeUnmount(() => {
             zIndex: String(30 - entry.abs),
             transform: `translateX(${entry.off * stepX}px) translateY(${entry.abs * 14 - (entry.off === 0 ? 18 : 0)}px) rotateZ(${entry.off * stepDeg}deg) scale(${entry.off === 0 ? 1.02 : 0.92}) translateZ(${-entry.abs * 80}px)`,
           }"
-          @click="active = entry.i; emit('card-click', entry.item)"
         >
           <div class="absolute inset-0 bg-gradient-to-br from-violet-950/85 via-indigo-950/70 to-slate-950/80" />
           <img
@@ -123,10 +121,10 @@ onBeforeUnmount(() => {
 
           <div class="relative z-10 h-full p-5 md:p-6 flex flex-col justify-end">
             <div class="flex items-center gap-2 mb-2">
-              <span v-if="entry.item.tag" class="px-2 py-1 rounded-full text-[10px] tracking-wide uppercase bg-violet-400/20 text-violet-100 border border-violet-300/30">
+              <span v-if="entry.item.tag" class="px-2 py-1 rounded-full text-xs tracking-wide uppercase bg-violet-400/20 text-violet-100 border border-violet-300/30">
                 {{ entry.item.tag }}
               </span>
-              <span v-if="entry.item.readTime" class="text-[11px] text-white/70">{{ entry.item.readTime }} min</span>
+              <span v-if="entry.item.readTime" class="text-xs text-white/70">{{ entry.item.readTime }} min</span>
             </div>
             <h3 class="font-display text-xl md:text-2xl font-bold text-white leading-tight">
               {{ entry.item.title }}
@@ -134,11 +132,18 @@ onBeforeUnmount(() => {
             <p v-if="entry.item.description" class="mt-2 text-sm text-white/80 line-clamp-2 max-w-xl">
               {{ entry.item.description }}
             </p>
-            <div class="mt-4">
+            <div v-if="entry.off === 0" class="mt-4 flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                class="inline-flex min-h-11 items-center gap-2 rounded-xl border border-violet-200/25 bg-black/15 px-4 text-sm font-semibold text-violet-100 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300"
+                @click="emit('card-click', entry.item)"
+              >
+                Aperçu
+              </button>
               <NuxtLink
-                v-if="entry.item.href && entry.off === 0"
+                v-if="entry.item.href"
                 :to="entry.item.href"
-                class="inline-flex items-center gap-2 text-sm font-semibold text-violet-100 hover:text-white transition-colors"
+                class="inline-flex min-h-11 items-center gap-2 rounded-xl px-4 text-sm font-semibold text-violet-100 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300"
               >
                 {{ entry.item.ctaLabel || 'Lire l’article' }}
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
@@ -147,14 +152,21 @@ onBeforeUnmount(() => {
               </NuxtLink>
             </div>
           </div>
-        </button>
+          <button
+            v-if="entry.off !== 0"
+            type="button"
+            class="absolute inset-0 z-20 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-violet-300"
+            :aria-label="`Afficher ${entry.item.title}`"
+            @click="active = entry.i"
+          />
+        </article>
       </div>
     </div>
 
     <div class="mt-7 flex items-center justify-center gap-3">
       <button
         type="button"
-        class="w-9 h-9 rounded-full border border-violet-300/30 bg-white/5 text-white/80 hover:bg-violet-500/20 transition"
+        class="w-11 h-11 rounded-full border border-violet-300/30 bg-white/5 text-white/80 hover:bg-violet-500/20 transition"
         aria-label="Article précédent"
         @click="prev"
       >
@@ -165,15 +177,16 @@ onBeforeUnmount(() => {
           v-for="(item, idx) in props.items"
           :key="item.id"
           type="button"
-          class="h-2.5 rounded-full transition-all duration-300"
-          :class="idx === active ? 'w-7 bg-violet-300' : 'w-2.5 bg-white/35 hover:bg-white/60'"
-          :aria-label="`Go to ${item.title}`"
+          class="relative h-11 w-11 rounded-full transition-colors after:absolute after:left-1/2 after:top-1/2 after:h-2.5 after:-translate-x-1/2 after:-translate-y-1/2 after:rounded-full after:transition-all after:duration-300"
+          :class="idx === active ? 'after:w-7 after:bg-violet-300' : 'after:w-2.5 after:bg-white/35 hover:after:bg-white/60'"
+          :aria-label="`Afficher ${item.title}`"
+          :aria-current="idx === active ? 'true' : undefined"
           @click="active = idx"
         />
       </div>
       <button
         type="button"
-        class="w-9 h-9 rounded-full border border-violet-300/30 bg-white/5 text-white/80 hover:bg-violet-500/20 transition"
+        class="w-11 h-11 rounded-full border border-violet-300/30 bg-white/5 text-white/80 hover:bg-violet-500/20 transition"
         aria-label="Article suivant"
         @click="next"
       >

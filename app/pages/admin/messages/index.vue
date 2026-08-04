@@ -130,11 +130,10 @@ onMounted(loadMessages)
 <template>
   <div class="space-y-5">
     <section class="relative overflow-hidden rounded-lg border border-gray-200 bg-white px-4 py-4 shadow-sm dark:border-white/[0.08] dark:bg-[#111118] sm:px-5">
-      <div class="pointer-events-none absolute -top-16 right-[8%] h-48 w-48 rounded-full bg-emerald-500/10 blur-3xl" />
-      <div class="pointer-events-none absolute -bottom-20 left-[6%] h-40 w-40 rounded-full bg-cyan-400/10 blur-3xl" />
+      <div class="pointer-events-none absolute -top-16 right-[8%] h-48 w-48 rounded-full bg-violet-500/10 blur-3xl" />
       <div class="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div class="min-w-0">
-          <span class="rounded-md bg-gradient-brand px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white">Messages CRM</span>
+          <span class="rounded-md bg-gradient-brand px-2 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white">Messages CRM</span>
           <h1 class="mt-2 font-display text-2xl font-semibold text-gray-950 dark:text-white sm:text-3xl">Messages CRM</h1>
           <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Inbox, qualification, tags et reponse depuis l'admin.</p>
         </div>
@@ -166,7 +165,7 @@ onMounted(loadMessages)
             >
               <div class="flex items-center justify-between gap-2">
                 <p class="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">{{ msg.name }}</p>
-                <span class="text-[10px] font-semibold px-2 py-0.5 rounded" :class="statusMeta[msg.status].classes">
+                <span class="text-xs font-semibold px-2 py-0.5 rounded" :class="statusMeta[msg.status].classes">
                   {{ statusMeta[msg.status].label }}
                 </span>
               </div>
@@ -184,7 +183,7 @@ onMounted(loadMessages)
             >
               <div class="flex items-center justify-between gap-2">
                 <p class="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">{{ msg.name }}</p>
-                <span class="text-[10px] font-semibold px-2 py-0.5 rounded" :class="statusMeta[msg.status].classes">
+                <span class="text-xs font-semibold px-2 py-0.5 rounded" :class="statusMeta[msg.status].classes">
                   {{ statusMeta[msg.status].label }}
                 </span>
               </div>
@@ -194,7 +193,7 @@ onMounted(loadMessages)
                 <span
                   v-for="tag in msg.tags"
                   :key="`${msg.id}-${tag}`"
-                  class="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 dark:bg-white/[0.08] dark:text-gray-300"
+                  class="text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 dark:bg-white/[0.08] dark:text-gray-300"
                 >
                   #{{ tag }}
                 </span>
@@ -258,12 +257,12 @@ onMounted(loadMessages)
           </div>
 
           <div>
-            <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Sujet</label>
-            <input v-model="replySubject" type="text" class="input-field" />
+            <label for="reply-subject" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Sujet</label>
+            <input id="reply-subject" v-model="replySubject" type="text" class="input-field" />
           </div>
           <div>
-            <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Reponse</label>
-            <textarea v-model="replyBody" rows="8" class="input-field resize-y" />
+            <label for="reply-body" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Réponse</label>
+            <textarea id="reply-body" v-model="replyBody" rows="8" class="input-field resize-y" />
           </div>
           <div class="admin-sticky-actions sticky bottom-0 bg-white dark:bg-[#111118] pt-2 flex justify-end">
             <button

@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "appRoot": "C:\\Users\\antoine.quarroz\\Desktop\\LabDev\\AntoineQuarrozInde",
+  "repoRoot": "C:\\Users\\antoine.quarroz\\Desktop\\LabDev\\AntoineQuarrozInde",
+  "contextRoot": "C:\\Users\\antoine.quarroz\\Desktop\\LabDev\\AntoineQuarrozInde",
+  "sessionRoot": "C:\\Users\\antoine.quarroz\\Desktop\\LabDev\\AntoineQuarrozInde\\.impeccable\\live",
+  "productPath": "C:\\Users\\antoine.quarroz\\Desktop\\LabDev\\AntoineQuarrozInde\\PRODUCT.md",
+  "designPath": "C:\\Users\\antoine.quarroz\\Desktop\\LabDev\\AntoineQuarrozInde\\DESIGN.md",
+  "resolvedFrom": "target:app"
+}

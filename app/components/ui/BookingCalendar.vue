@@ -93,7 +93,7 @@ const content = computed(() => {
       <h3 class="font-display font-semibold text-base md:text-lg text-gray-900 dark:text-white leading-tight">
         {{ content.title }}
       </h3>
-      <p class="mt-1 text-[13px] md:text-sm text-gray-500 dark:text-gray-400 leading-snug">
+      <p class="mt-1 text-sm md:text-sm text-gray-500 dark:text-gray-400 leading-snug">
         {{ content.desc }}
       </p>
     </div>
@@ -106,7 +106,7 @@ const content = computed(() => {
         <span class="text-sm font-semibold text-gray-900 dark:text-white capitalize">
           {{ monthLabel }}
         </span>
-        <span class="text-[10px] px-2.5 py-1 rounded-full bg-violet-500/10 text-violet-600 dark:text-violet-300 border border-violet-400/20 font-medium">
+        <span class="text-xs px-2.5 py-1 rounded-full bg-violet-500/10 text-violet-600 dark:text-violet-300 border border-violet-400/20 font-medium">
           {{ content.duration }}
         </span>
       </div>
@@ -115,7 +115,7 @@ const content = computed(() => {
       <div class="grid grid-cols-7 mb-1">
         <div
           v-for="d in dayHeaders" :key="d"
-          class="h-7 flex items-center justify-center text-[9px] font-semibold tracking-wide text-gray-400 dark:text-white/30"
+          class="h-7 flex items-center justify-center text-xs font-semibold tracking-wide text-gray-400 dark:text-white/30"
         >{{ d }}</div>
       </div>
 
@@ -129,7 +129,7 @@ const content = computed(() => {
           <!-- Aujourd'hui -->
           <div
             v-else-if="cell.isToday"
-            class="h-8 flex items-center justify-center rounded-lg bg-violet-600 text-white text-[13px] font-bold cursor-default"
+            class="h-8 flex items-center justify-center rounded-lg bg-violet-600 text-white text-sm font-bold cursor-default"
           >{{ cell.day }}</div>
 
           <!-- Disponible (cliquable) -->
@@ -138,7 +138,7 @@ const content = computed(() => {
             :href="CAL_LINK"
             target="_blank"
             rel="noopener noreferrer"
-            class="h-8 flex items-center justify-center rounded-lg text-[13px] font-medium
+            class="h-8 flex items-center justify-center rounded-lg text-sm font-medium
                    text-violet-700 dark:text-violet-300
                    bg-violet-100 dark:bg-violet-500/15
                    hover:bg-violet-600 hover:text-white dark:hover:bg-violet-600 dark:hover:text-white
@@ -149,20 +149,20 @@ const content = computed(() => {
           <!-- Passé -->
           <div
             v-else-if="cell.isPast"
-            class="h-8 flex items-center justify-center rounded-lg text-[13px] text-gray-300 dark:text-white/20 cursor-default"
+            class="h-8 flex items-center justify-center rounded-lg text-sm text-gray-300 dark:text-white/20 cursor-default"
           >{{ cell.day }}</div>
 
           <!-- Futur normal -->
           <div
             v-else
-            class="h-8 flex items-center justify-center rounded-lg text-[13px] text-gray-600 dark:text-white/55 cursor-default"
+            class="h-8 flex items-center justify-center rounded-lg text-sm text-gray-600 dark:text-white/55 cursor-default"
           >{{ cell.day }}</div>
 
         </template>
       </div>
 
       <!-- Légende -->
-      <div class="mt-3 flex items-center gap-3 text-[10px] text-gray-400 dark:text-white/30">
+      <div class="mt-3 flex items-center gap-3 text-xs text-gray-400 dark:text-white/30">
         <span class="flex items-center gap-1">
           <span class="w-3 h-3 rounded-sm bg-violet-600 inline-block" />
           Aujourd'hui

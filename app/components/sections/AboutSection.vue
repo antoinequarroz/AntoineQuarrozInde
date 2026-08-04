@@ -111,7 +111,7 @@ const tools = [
               class="flex items-center gap-2.5 rounded-xl border border-violet-500/10 bg-white/70 px-3 py-2 backdrop-blur dark:border-white/[0.07] dark:bg-white/[0.03]"
             >
               <span class="text-base leading-none">{{ fact.emoji }}</span>
-              <span class="text-[13px] leading-snug font-medium text-gray-700 dark:text-gray-300">{{ fact.label }}</span>
+              <span class="text-sm leading-snug font-medium text-gray-700 dark:text-gray-300">{{ fact.label }}</span>
             </div>
           </div>
         </div>
@@ -132,10 +132,10 @@ const tools = [
 
           <dl class="mt-4 max-[430px]:mt-3.5 space-y-4.5">
             <div class="grid grid-cols-1 gap-2 sm:grid-cols-[88px_1fr] sm:gap-5 items-start">
-              <dt class="pt-1 text-[10px] font-bold uppercase tracking-[0.2em] text-violet-500 dark:text-violet-400">
+              <dt class="pt-1 text-xs font-bold uppercase tracking-[0.2em] text-violet-500 dark:text-violet-400">
                 {{ t('about.label_1') }}
               </dt>
-              <dd class="text-[14px] max-[390px]:text-[13px] leading-relaxed text-gray-900 dark:text-white/90">
+              <dd class="text-sm max-[390px]:text-sm leading-relaxed text-gray-900 dark:text-white/90">
                 {{ t('about.description_1') }}
               </dd>
             </div>
@@ -143,10 +143,10 @@ const tools = [
             <div class="h-px bg-gradient-to-r from-violet-500/20 via-fuchsia-400/10 to-transparent" />
 
             <div class="grid grid-cols-1 gap-2 sm:grid-cols-[88px_1fr] sm:gap-5 items-start">
-              <dt class="pt-1 text-[10px] font-bold uppercase tracking-[0.2em] text-fuchsia-500 dark:text-fuchsia-400">
+              <dt class="pt-1 text-xs font-bold uppercase tracking-[0.2em] text-fuchsia-500 dark:text-fuchsia-400">
                 {{ t('about.label_2') }}
               </dt>
-              <dd class="text-[14px] max-[390px]:text-[13px] leading-relaxed text-gray-700 dark:text-white/70">
+              <dd class="text-sm max-[390px]:text-sm leading-relaxed text-gray-700 dark:text-white/70">
                 {{ t('about.description_2') }}
               </dd>
             </div>

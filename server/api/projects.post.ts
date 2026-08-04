@@ -5,6 +5,7 @@ export default defineEventHandler(async (event) => {
 
   const payload = {
     organization_id: org.id,
+    client_id: body.clientId ? Number(body.clientId) : null,
     title: body.title,
     slug: body.slug,
     category: body.category,

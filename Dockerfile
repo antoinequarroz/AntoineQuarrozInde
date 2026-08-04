@@ -12,6 +12,8 @@ RUN npm run build
 FROM node:22-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
+RUN apk add --no-cache typst font-liberation
 COPY --from=build /app/.output ./.output
+COPY --from=build /app/typst ./typst
 EXPOSE 3000
 CMD ["node", ".output/server/index.mjs"]
