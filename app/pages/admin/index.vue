@@ -403,11 +403,10 @@ onMounted(async () => {
   <div class="space-y-4 lg:space-y-5">
     <section class="relative overflow-hidden rounded-lg border border-gray-200 bg-white px-4 py-4 shadow-sm dark:border-white/[0.08] dark:bg-[#111118] sm:px-5">
       <div class="pointer-events-none absolute -top-20 right-[6%] h-56 w-56 rounded-full bg-violet-500/10 blur-3xl" />
-      <div class="pointer-events-none absolute -bottom-24 left-[10%] h-48 w-48 rounded-full bg-cyan-400/10 blur-3xl" />
       <div class="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div class="min-w-0">
           <div class="flex flex-wrap items-center gap-2">
-            <span class="rounded-md bg-gradient-brand px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white">
+            <span class="rounded-md bg-gradient-brand px-2 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white">
               Admin
             </span>
             <span class="text-xs text-gray-400 capitalize">{{ todayLabel }}</span>
@@ -484,7 +483,7 @@ onMounted(async () => {
             <div class="min-w-0">
               <div class="flex min-w-0 items-center gap-2">
                 <p class="truncate text-sm font-semibold text-gray-950 dark:text-white">{{ item.title }}</p>
-                <span class="hidden rounded-md px-2 py-0.5 text-[11px] font-semibold sm:inline-flex" :class="item.chip">
+                <span class="hidden rounded-md px-2 py-0.5 text-xs font-semibold sm:inline-flex" :class="item.chip">
                   {{ item.label }}
                 </span>
               </div>
@@ -548,7 +547,7 @@ onMounted(async () => {
             :to="row.to"
             class="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 transition hover:bg-gray-50 dark:hover:bg-white/[0.03] sm:px-5"
           >
-            <span class="rounded-md px-2 py-1 text-[11px] font-semibold" :class="row.tone">{{ row.type }}</span>
+            <span class="rounded-md px-2 py-1 text-xs font-semibold" :class="row.tone">{{ row.type }}</span>
             <div class="min-w-0">
               <p class="truncate text-sm font-semibold text-gray-950 dark:text-white">{{ row.title }}</p>
               <p class="mt-1 truncate text-xs text-gray-500 dark:text-gray-400">{{ row.meta }}</p>
@@ -573,7 +572,7 @@ onMounted(async () => {
 
         <div class="grid gap-0 divide-y divide-gray-100 dark:divide-white/[0.06]">
           <div v-if="productionRows.length" class="px-4 py-3 sm:px-5">
-            <p class="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-400">Taches ouvertes</p>
+            <p class="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">Taches ouvertes</p>
             <div class="space-y-2">
               <NuxtLink
                 v-for="task in productionRows"
@@ -585,7 +584,7 @@ onMounted(async () => {
                   <p class="truncate text-sm font-medium text-gray-950 dark:text-white">{{ task.title }}</p>
                   <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{{ task.meta }}</p>
                 </div>
-                <span class="shrink-0 rounded-md bg-white px-2 py-1 text-[11px] font-medium text-gray-500 ring-1 ring-gray-200 dark:bg-white/[0.04] dark:text-gray-300 dark:ring-white/[0.08]">
+                <span class="shrink-0 rounded-md bg-white px-2 py-1 text-xs font-medium text-gray-500 ring-1 ring-gray-200 dark:bg-white/[0.04] dark:text-gray-300 dark:ring-white/[0.08]">
                   {{ task.status }}
                 </span>
               </NuxtLink>
@@ -594,7 +593,7 @@ onMounted(async () => {
 
           <div class="grid gap-0 divide-y divide-gray-100 dark:divide-white/[0.06] sm:grid-cols-2 sm:divide-x sm:divide-y-0">
             <div class="px-4 py-3 sm:px-5">
-              <p class="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-400">Projets recents</p>
+              <p class="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">Projets recents</p>
               <div class="space-y-2">
                 <NuxtLink
                   v-for="project in recentProjects"
@@ -611,7 +610,7 @@ onMounted(async () => {
                   <div class="min-w-0">
                     <p class="truncate text-sm font-medium text-gray-950 dark:text-white">{{ project.title }}</p>
                     <span
-                      class="mt-0.5 inline-flex rounded px-1.5 py-0.5 text-[10px] font-semibold"
+                      class="mt-0.5 inline-flex rounded px-1.5 py-0.5 text-xs font-semibold"
                       :class="{
                         web: 'bg-violet-100 text-violet-600 dark:bg-violet-500/10 dark:text-violet-400',
                         mobile: 'bg-pink-100 text-pink-600 dark:bg-pink-500/10 dark:text-pink-400',
@@ -625,7 +624,7 @@ onMounted(async () => {
             </div>
 
             <div class="px-4 py-3 sm:px-5">
-              <p class="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-400">Articles recents</p>
+              <p class="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">Articles recents</p>
               <div class="space-y-2">
                 <NuxtLink
                   v-for="article in recentArticles"
@@ -642,7 +641,7 @@ onMounted(async () => {
                   <div class="min-w-0">
                     <p class="truncate text-sm font-medium text-gray-950 dark:text-white">{{ article.title }}</p>
                     <span
-                      class="mt-0.5 inline-flex rounded px-1.5 py-0.5 text-[10px] font-semibold"
+                      class="mt-0.5 inline-flex rounded px-1.5 py-0.5 text-xs font-semibold"
                       :class="article.published ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' : 'bg-gray-100 text-gray-500 dark:bg-white/[0.06] dark:text-gray-400'"
                     >{{ article.published ? 'publie' : 'brouillon' }}</span>
                   </div>

@@ -13,8 +13,8 @@
     "title_2": "digital experiences",
     "title_3": "that matter.",
     "subtitle": "Freelance web & mobile developer based in Switzerland. I design and build showcase websites, mobile apps and custom CMS solutions.",
-    "cta_primary": "View my work",
-    "cta_secondary": "Let's talk",
+    "cta_primary": "Discuss your project",
+    "cta_secondary": "View my work",
     "scroll": "Scroll"
   },
   "about": {
@@ -132,6 +132,18 @@
       "name": "Your name",
       "email": "Your email",
       "subject": "Subject",
+      "budget": "Estimated budget",
+      "budget_select": "Select a budget",
+      "budget_under_2k": "Under CHF 2,000",
+      "budget_2_5k": "CHF 2,000 to 5,000",
+      "budget_5_10k": "CHF 5,000 to 10,000",
+      "budget_over_10k": "Over CHF 10,000",
+      "timeline": "Target timeline",
+      "timeline_select": "Select a timeline",
+      "timeline_urgent": "Urgent (under 2 weeks)",
+      "timeline_month": "About 1 month",
+      "timeline_quarter": "2 to 3 months",
+      "timeline_flexible": "Flexible",
       "message": "Your message",
       "send": "Send message",
       "sending": "Sending...",
@@ -151,6 +163,9 @@
     "made_with": "Made with ♥ in Valais",
     "col_nav": "Navigation",
     "col_contact": "Contact"
+  },
+  "business": {
+    "status": { "draft": "Draft", "sent": "Sent", "accepted": "Accepted", "rejected": "Rejected", "paid": "Paid", "overdue": "Overdue", "cancelled": "Cancelled", "todo": "To do", "in_progress": "In progress", "done": "Done", "scheduled": "Scheduled", "completed": "Completed", "new": "New", "replied": "Replied", "archived": "Archived", "lead": "Lead", "active": "Active", "inactive": "Inactive" }
   },
   "theme": {
     "toggle_dark": "Dark mode",

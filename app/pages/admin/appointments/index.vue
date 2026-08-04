@@ -10,6 +10,8 @@ const toast = useToast()
 const isOffline = ref(false)
 let onlineStateHandler: (() => void) | null = null
 const showForm = ref(false)
+const closeForm = () => { showForm.value = false }
+const { dialogRef, handleDialogKeydown } = useAccessibleDialog(showForm, closeForm)
 const editing = ref<Appointment | null>(null)
 const selectedDate = ref<string | null>(null)
 const currentMonth = ref(new Date())
@@ -184,10 +186,9 @@ onBeforeUnmount(() => {
   <div class="space-y-5">
     <section class="relative overflow-hidden rounded-lg border border-gray-200 bg-white px-4 py-4 shadow-sm dark:border-white/[0.08] dark:bg-[#111118] sm:px-5">
       <div class="pointer-events-none absolute -top-16 right-[8%] h-48 w-48 rounded-full bg-violet-500/10 blur-3xl" />
-      <div class="pointer-events-none absolute -bottom-20 left-[6%] h-40 w-40 rounded-full bg-emerald-400/10 blur-3xl" />
       <div class="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div class="min-w-0">
-          <span class="rounded-md bg-gradient-brand px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white">Agenda</span>
+          <span class="rounded-md bg-gradient-brand px-2 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white">Agenda</span>
           <h1 class="mt-2 font-display text-2xl font-semibold text-gray-950 dark:text-white sm:text-3xl">Agenda</h1>
           <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Planifie et suis tes rendez-vous clients.</p>
           <p v-if="isOffline || store.pendingCount > 0 || store.syncing" class="mt-1 text-xs text-amber-500">
@@ -207,7 +208,7 @@ onBeforeUnmount(() => {
         <button class="px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-white/[0.12] text-xs" @click="nextMonth">→</button>
       </div>
       <div class="mt-3 grid grid-cols-7 gap-1 text-center">
-        <p v-for="day in weekdayLabels" :key="day" class="text-[11px] text-gray-400">{{ day }}</p>
+        <p v-for="day in weekdayLabels" :key="day" class="text-xs text-gray-400">{{ day }}</p>
         <button
           v-for="cell in monthMatrix"
           :key="cell.key"
@@ -239,7 +240,7 @@ onBeforeUnmount(() => {
       >
         <div class="flex items-start justify-between gap-2">
           <p class="text-sm font-semibold">{{ item.title }}</p>
-          <span class="text-[11px] uppercase text-gray-400">{{ item.status }}</span>
+          <span class="text-xs uppercase text-gray-400">{{ item.status }}</span>
         </div>
         <p class="mt-1 text-xs text-gray-500">{{ item.clientId ? clientsById.get(item.clientId)?.name || '-' : '-' }}</p>
         <p class="mt-1 text-xs text-gray-500">Début: {{ formatDateTime(item.startsAt) }}</p>
@@ -282,9 +283,10 @@ onBeforeUnmount(() => {
     </div>
 
     <Transition name="fade">
-      <div v-if="showForm" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
+      <div v-if="showForm" ref="dialogRef" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4" role="dialog" aria-modal="true" aria-labelledby="appointment-form-title" tabindex="-1" @keydown="handleDialogKeydown">
         <div class="absolute inset-0 bg-black/40" @click="showForm = false" />
         <form class="admin-modal-panel relative w-full max-w-2xl max-h-[92vh] overflow-y-auto bg-white dark:bg-[#111118] rounded-xl p-4 sm:p-5 space-y-3" @submit.prevent="submit">
+          <h2 id="appointment-form-title" class="font-semibold text-gray-900 dark:text-white">{{ editing ? 'Modifier le rendez-vous' : 'Nouveau rendez-vous' }}</h2>
           <input v-model="form.title" class="input-field" placeholder="Titre" required>
           <select v-model.number="form.clientId" class="input-field">
             <option :value="null">Aucun client</option>

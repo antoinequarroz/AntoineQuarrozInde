@@ -13,8 +13,8 @@
     "title_2": "digitale Erlebnisse",
     "title_3": "die bleiben.",
     "subtitle": "Freelance Web- & Mobile-Entwickler aus der Schweiz. Ich entwickle Websites, mobile Apps und maßgeschneiderte CMS-Lösungen.",
-    "cta_primary": "Meine Projekte",
-    "cta_secondary": "Kontakt aufnehmen",
+    "cta_primary": "Projekt besprechen",
+    "cta_secondary": "Referenzen ansehen",
     "scroll": "Scrollen"
   },
   "about": {
@@ -132,6 +132,18 @@
       "name": "Ihr Name",
       "email": "Ihre E-Mail",
       "subject": "Betreff",
+      "budget": "Budgetrahmen",
+      "budget_select": "Budget auswählen",
+      "budget_under_2k": "Unter CHF 2.000",
+      "budget_2_5k": "CHF 2.000 bis 5.000",
+      "budget_5_10k": "CHF 5.000 bis 10.000",
+      "budget_over_10k": "Über CHF 10.000",
+      "timeline": "Gewünschter Zeitrahmen",
+      "timeline_select": "Zeitrahmen auswählen",
+      "timeline_urgent": "Dringend (unter 2 Wochen)",
+      "timeline_month": "Etwa 1 Monat",
+      "timeline_quarter": "2 bis 3 Monate",
+      "timeline_flexible": "Flexibel",
       "message": "Ihre Nachricht",
       "send": "Nachricht senden",
       "sending": "Wird gesendet...",
@@ -151,6 +163,9 @@
     "made_with": "Gemacht mit ♥ im Wallis",
     "col_nav": "Navigation",
     "col_contact": "Kontakt"
+  },
+  "business": {
+    "status": { "draft": "Entwurf", "sent": "Gesendet", "accepted": "Angenommen", "rejected": "Abgelehnt", "paid": "Bezahlt", "overdue": "Überfällig", "cancelled": "Storniert", "todo": "Offen", "in_progress": "In Bearbeitung", "done": "Erledigt", "scheduled": "Geplant", "completed": "Abgeschlossen", "new": "Neu", "replied": "Beantwortet", "archived": "Archiviert", "lead": "Interessent", "active": "Aktiv", "inactive": "Inaktiv" }
   },
   "theme": {
     "toggle_dark": "Dunkelmodus",

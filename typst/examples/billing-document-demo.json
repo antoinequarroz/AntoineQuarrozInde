@@ -1,0 +1,50 @@
+{
+  "documentTitle": "Facture",
+  "number": "DEMO-2026-001",
+  "subject": "Démonstration du modèle Typst",
+  "currency": "CHF",
+  "issuedAt": "04.08.2026",
+  "dueAt": "03.09.2026",
+  "statusLabel": "Brouillon",
+  "notes": "Document de démonstration — ne pas payer.",
+  "terms": "Paiement à 30 jours.",
+  "subtotalCents": 120000,
+  "taxCents": 9720,
+  "totalCents": 129720,
+  "issuer": {
+    "name": "Antoine Quarroz — Exemple",
+    "street": "Rue Exemple",
+    "building": "1",
+    "postalCode": "1950",
+    "city": "Sion",
+    "country": "CH",
+    "email": "exemple@example.invalid",
+    "phone": "",
+    "uid": ""
+  },
+  "client": {
+    "name": "Client Démonstration SA",
+    "street": "Avenue Démonstration",
+    "building": "10",
+    "postalCode": "1000",
+    "city": "Lausanne",
+    "country": "CH"
+  },
+  "items": [
+    {
+      "label": "Conception et développement",
+      "description": "Exemple de ligne commerciale sur plusieurs lignes.",
+      "quantity": 1,
+      "unitPriceCents": 120000,
+      "taxRate": 8.1,
+      "totalCents": 129720
+    }
+  ],
+  "includeQr": true,
+  "qr": {
+    "account": "CH5204835012345671000",
+    "referenceType": "NON",
+    "reference": null,
+    "additionalInfo": "Facture DEMO-2026-001 — ne pas payer"
+  }
+}

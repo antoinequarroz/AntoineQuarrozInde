@@ -15,11 +15,10 @@ function toggle() {
 <template>
   <button
     v-if="mounted"
-    class="relative w-8 h-8 rounded-lg flex items-center justify-center
+    class="relative w-11 h-11 rounded-lg flex items-center justify-center
            bg-gray-100 dark:bg-gray-800/50 hover:bg-violet-100 dark:hover:bg-violet-500/20
            text-gray-500 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400
-           transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-violet-500/50
-           max-md:hidden"
+           transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-violet-500/50"
     :aria-label="isDark ? $t('theme.toggle_light') : $t('theme.toggle_dark')"
     @click="toggle"
   >

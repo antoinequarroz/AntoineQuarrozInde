@@ -140,11 +140,11 @@ watch(() => auth.currentOrganizationId, () => {
       <div class="relative flex items-center gap-2.5 px-4 h-14 border-b border-gray-100 dark:border-white/[0.06] flex-shrink-0 overflow-hidden">
         <div class="pointer-events-none absolute -top-10 -left-10 h-24 w-24 rounded-full bg-violet-500/10 blur-2xl" />
         <div class="w-6 h-6 rounded-lg bg-gradient-brand flex items-center justify-center flex-shrink-0 shadow-glow-sm">
-          <span class="font-display font-bold text-white text-[10px]">AQ</span>
+          <span class="font-display font-bold text-white text-xs">AQ</span>
         </div>
         <div class="flex-1 min-w-0">
           <span class="font-display font-semibold text-xs text-gray-900 dark:text-white truncate block">Antoine Quarroz</span>
-          <span class="text-[10px] text-gray-400 block">Admin</span>
+          <span class="text-xs text-gray-400 block">Admin</span>
         </div>
         <button class="lg:hidden text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 ml-1" @click="isSidebarOpen = false">
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -154,7 +154,7 @@ watch(() => auth.currentOrganizationId, () => {
       </div>
 
       <nav class="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
-        <p class="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-600">Navigation</p>
+        <p class="px-2 py-1.5 text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-600">Navigation</p>
         <NuxtLink
           v-for="item in navItems"
           :key="item.href"
@@ -220,7 +220,7 @@ watch(() => auth.currentOrganizationId, () => {
           @click="openSearch"
         >
           Rechercher
-          <span class="rounded bg-gray-100 dark:bg-white/[0.08] px-1.5 py-0.5 text-[10px]">Ctrl K</span>
+          <span class="rounded bg-gray-100 dark:bg-white/[0.08] px-1.5 py-0.5 text-xs">Ctrl K</span>
         </button>
 
         <select
@@ -245,7 +245,7 @@ watch(() => auth.currentOrganizationId, () => {
             <svg class="mx-auto h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 00-12 0v3.2a2 2 0 01-.6 1.4L4 17h5m6 0a3 3 0 11-6 0m6 0H9" />
             </svg>
-            <span v-if="unreadAlerts" class="absolute -right-1 -top-1 rounded-full bg-red-500 px-1 text-[10px] text-white">{{ unreadAlerts }}</span>
+            <span v-if="unreadAlerts" class="absolute -right-1 -top-1 rounded-full bg-red-500 px-1 text-xs text-white">{{ unreadAlerts }}</span>
           </button>
           <div v-if="showAlerts" class="absolute right-0 z-50 mt-2 w-72 rounded-xl border border-gray-200 bg-white p-2 shadow-xl dark:border-white/[0.1] dark:bg-[#171724]">
             <p class="px-2 py-1 text-xs font-semibold text-gray-500">Notifications</p>

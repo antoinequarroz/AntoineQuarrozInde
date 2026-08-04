@@ -1,5 +1,6 @@
 export interface Project {
   id: number
+  clientId: number | null
   title: string
   slug: string
   category: 'web' | 'mobile' | 'cms'
@@ -39,6 +40,11 @@ export interface Client {
   phone: string | null
   status: 'lead' | 'active' | 'inactive'
   notes: string | null
+  billingStreet: string | null
+  billingBuilding: string | null
+  billingPostalCode: string | null
+  billingCity: string | null
+  billingCountry: string
   createdAt: string
 }
 
@@ -84,6 +90,8 @@ export interface Invoice {
   dueAt: string | null
   paidAt: string | null
   notes: string | null
+  paymentReferenceType: 'NON' | 'SCOR' | 'QRR'
+  paymentReference: string | null
   subtotalCents?: number
   taxCents?: number
   totalCents?: number

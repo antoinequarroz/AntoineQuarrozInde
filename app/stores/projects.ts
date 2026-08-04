@@ -2,6 +2,7 @@ import type { Project } from '~/types'
 
 type ProjectRow = {
   id: number
+  client_id?: number | null
   title: string
   slug: string
   category: Project['category']
@@ -17,6 +18,7 @@ type ProjectRow = {
 function mapProject(row: ProjectRow): Project {
   return {
     id: row.id,
+    clientId: row.client_id ?? null,
     title: row.title,
     slug: row.slug,
     category: row.category,
@@ -41,7 +43,7 @@ export const useProjectsStore = defineStore('projects', () => {
     if (loaded.value && !force) return
     loading.value = true
     try {
-      const rows = await $fetch<ProjectRow[]>('/api/projects')
+      const rows = await $fetch<ProjectRow[]>('/api/projects', { headers: auth.authHeader() })
       projects.value = rows.map(mapProject)
       loaded.value = true
     }

@@ -86,7 +86,7 @@ const localSeoLinks = [
 
             <!-- Navigation -->
             <div>
-              <p class="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-violet-500 dark:text-violet-400">
+              <p class="mb-4 text-xs font-bold uppercase tracking-[0.2em] text-violet-500 dark:text-violet-400">
                 {{ t('footer.col_nav') }}
               </p>
               <ul class="space-y-3">
@@ -103,7 +103,7 @@ const localSeoLinks = [
 
             <!-- Stack -->
             <div>
-              <p class="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-fuchsia-500 dark:text-fuchsia-400">
+              <p class="mb-4 text-xs font-bold uppercase tracking-[0.2em] text-fuchsia-500 dark:text-fuchsia-400">
                 Stack
               </p>
               <ul class="space-y-3">
@@ -119,7 +119,7 @@ const localSeoLinks = [
 
             <!-- Local SEO -->
             <div>
-              <p class="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-violet-500 dark:text-violet-400">
+              <p class="mb-4 text-xs font-bold uppercase tracking-[0.2em] text-violet-500 dark:text-violet-400">
                 Local
               </p>
               <ul class="space-y-3">
@@ -136,7 +136,7 @@ const localSeoLinks = [
 
             <!-- Contact -->
             <div>
-              <p class="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-500 dark:text-cyan-400">
+              <p class="mb-4 text-xs font-bold uppercase tracking-[0.2em] text-cyan-500 dark:text-cyan-400">
                 {{ t('footer.col_contact') }}
               </p>
               <ul class="space-y-3">

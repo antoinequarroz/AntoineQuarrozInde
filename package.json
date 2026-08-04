@@ -7,13 +7,16 @@
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "postinstall": "nuxt prepare",
+    "typst:qr:demo": "typst compile --root . typst/examples/swiss-qr-bill-demo.typ typst/examples/swiss-qr-bill-demo.pdf",
+    "typst:billing:demo": "typst compile --root . --input data=../examples/billing-document-demo.json typst/templates/billing-document.typ typst/examples/billing-document-demo.pdf"
   },
   "dependencies": {
     "@nuxtjs/color-mode": "^3.5.2",
     "@nuxtjs/i18n": "^9.5.5",
     "@pinia-plugin-persistedstate/nuxt": "^1.2.1",
     "@pinia/nuxt": "^0.9.0",
+    "@splinetool/viewer": "1.12.98",
     "@supabase/supabase-js": "^2.106.1",
     "@vueuse/motion": "^2.2.6",
     "@vueuse/nuxt": "^12.7.0",

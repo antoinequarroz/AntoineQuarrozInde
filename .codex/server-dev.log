@@ -1,0 +1,18 @@
+|
+•  [32mNuxt [1m4.4.6[22m[39m[90m (with [39m[90mNitro [1m2.13.4[22m[39m[90m, Vite [1m7.3.3[22m[39m[90m and Vue [1m3.5.34[22m[39m[90m)[39m
+
+[32m  ➜ Local:   [39m [36m[4mhttp://127.0.0.1:[1m3100[22m/[24m[39m
+[90m  ➜ Network:  use [37m--host[90m to expose[39m
+
+[90m[[90mnuxt:tailwindcss[90m][39m [36mi[39m Using default Tailwind CSS file
+[33m  ➜ DevTools: [39m[2mpress [22m[32mShift[39m[2m + [22m[32mAlt[39m[2m + [22m[32mD[39m[2m in the browser (v3.2.4)[22m
+
+[32m√[39m Vite client built in 147ms
+[32m√[39m Vite server built in 65ms
+[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 9643ms
+[36mi[39m Vite server warmed up in 2ms
+[36mi[39m Vite client warmed up in 7ms
+[36mi[39m [32mhmr update [39m[2m/components/sections/ProjectHelixCarousel.vue, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/components/sections/ProjectHelixCarousel.vue, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css[22m
+[90m[[90mnuxt[90m][39m [36mi[39m Compiled [36mtypes/plugins.d.ts[39m in 545.02ms

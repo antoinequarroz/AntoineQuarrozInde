@@ -324,7 +324,7 @@ const hintOpacity = computed(() => {
                   <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.25"/>
                   <path d="M8 1.5C6.5 3.5 5.5 5.7 5.5 8s1 4.5 2.5 6.5M8 1.5C9.5 3.5 10.5 5.7 10.5 8s-1 4.5-2.5 6.5M1.5 8h13" stroke="currentColor" stroke-width="1.25"/>
                 </svg>
-                <span class="text-[10px] text-zinc-300/90 truncate">antoinequarroz.ch</span>
+                <span class="text-xs text-zinc-300/90 truncate">antoinequarroz.ch</span>
               </div>
             </div>
 
@@ -344,13 +344,13 @@ const hintOpacity = computed(() => {
                 <div class="flex items-center justify-between px-3 py-2 rounded-xl bg-white/88 dark:bg-white/[0.08] border border-black/[0.06] dark:border-white/[0.09] backdrop-blur flex-shrink-0 shadow-[0_4px_18px_rgba(15,23,42,0.08)]">
                   <div class="flex items-center gap-2">
                     <div class="w-6 h-6 rounded-lg bg-gradient-to-br from-violet-600 to-indigo-500 flex items-center justify-center shadow-sm flex-shrink-0">
-                      <span class="text-[9px] font-bold text-white leading-none">AQ</span>
+                      <span class="text-xs font-bold text-white leading-none">AQ</span>
                     </div>
                     <span class="text-xs font-semibold text-gray-800 dark:text-white/90 hidden sm:block">Antoine Quarroz</span>
                   </div>
                   <div class="hidden md:flex items-center gap-3.5">
-                    <span v-for="link in content.nav.slice(0,3)" :key="link" class="text-[10px] text-gray-500 dark:text-white/45">{{ link }}</span>
-                    <span class="text-[10px] px-2.5 py-1 rounded-full bg-[#171a36] text-violet-100 font-medium shadow-sm">{{ content.nav[3] }}</span>
+                    <span v-for="link in content.nav.slice(0,3)" :key="link" class="text-xs text-gray-500 dark:text-white/45">{{ link }}</span>
+                    <span class="text-xs px-2.5 py-1 rounded-full bg-[#171a36] text-violet-100 font-medium shadow-sm">{{ content.nav[3] }}</span>
                   </div>
                 </div>
 
@@ -390,7 +390,7 @@ const hintOpacity = computed(() => {
                           : 'border-white/10 bg-white/[0.04] hover:bg-white/[0.08] hover:border-violet-300/35'"
                         @click="activeProject = idx"
                       >
-                        <p class="text-[10px] uppercase tracking-[0.12em] text-violet-300/90">{{ project.type }}</p>
+                        <p class="text-xs uppercase tracking-[0.12em] text-violet-300/90">{{ project.type }}</p>
                         <p class="text-sm text-white/90 mt-1 font-semibold truncate">{{ project.title }}</p>
                       </button>
                     </div>
@@ -406,7 +406,7 @@ const hintOpacity = computed(() => {
                       <div class="p-4 md:p-5 grid md:grid-cols-[1fr_auto] gap-4 items-start">
                         <p class="text-sm text-white/82 leading-relaxed">{{ content.projects[activeProject].desc }}</p>
                         <div class="flex flex-wrap gap-1.5 md:max-w-[210px]">
-                          <span v-for="tag in content.projects[activeProject].stack" :key="tag" class="text-[10px] px-2.5 py-1 rounded-full bg-violet-400/15 text-violet-100 border border-violet-300/20">
+                          <span v-for="tag in content.projects[activeProject].stack" :key="tag" class="text-xs px-2.5 py-1 rounded-full bg-violet-400/15 text-violet-100 border border-violet-300/20">
                             {{ tag }}
                           </span>
                         </div>
@@ -415,18 +415,18 @@ const hintOpacity = computed(() => {
 
                     <div class="grid md:grid-cols-2 gap-3">
                       <div class="rounded-2xl border border-violet-300/20 bg-white/[0.06] p-3.5">
-                        <p class="text-[10px] uppercase tracking-[0.14em] text-violet-300">{{ content.sell }}</p>
+                        <p class="text-xs uppercase tracking-[0.14em] text-violet-300">{{ content.sell }}</p>
                         <p class="mt-2 text-xs text-white/74 leading-relaxed">{{ content.sellDesc }}</p>
-                        <div class="mt-2.5 space-y-1 text-[11px] text-white/68">
+                        <div class="mt-2.5 space-y-1 text-xs text-white/68">
                           <p>• Positionnement clair</p>
                           <p>• UX orientée conversion</p>
                           <p>• Base technique scalable</p>
                         </div>
                       </div>
                       <div class="rounded-2xl border border-violet-300/20 bg-gradient-to-br from-[#201147] via-[#2a1b64] to-[#243f9e] p-3.5 text-white">
-                        <p class="text-[10px] uppercase tracking-[0.14em] text-violet-200/85">{{ content.processTitle }}</p>
+                        <p class="text-xs uppercase tracking-[0.14em] text-violet-200/85">{{ content.processTitle }}</p>
                         <div class="mt-2 flex flex-wrap gap-1.5">
-                          <span v-for="step in content.process" :key="step" class="text-[10px] px-2.5 py-1 rounded-full bg-white/12 border border-white/20">
+                          <span v-for="step in content.process" :key="step" class="text-xs px-2.5 py-1 rounded-full bg-white/12 border border-white/20">
                             {{ step }}
                           </span>
                         </div>
@@ -452,8 +452,8 @@ const hintOpacity = computed(() => {
 
         <!-- Hint scroll -->
         <div class="absolute bottom-5 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-1.5 pointer-events-none select-none" :style="{ opacity: hintOpacity }">
-          <span class="text-[9px] tracking-[0.3em] uppercase text-white/30">Scroll</span>
-          <svg class="w-3 h-3 text-white/20 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+          <span class="text-xs tracking-[0.3em] uppercase text-white/30">Scroll</span>
+          <svg class="h-3 w-3 text-white/20 motion-safe:animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
           </svg>
         </div>

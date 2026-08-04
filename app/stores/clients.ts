@@ -8,6 +8,11 @@ type ClientRow = {
   phone: string | null
   status: 'lead' | 'active' | 'inactive'
   notes: string | null
+  billing_street: string | null
+  billing_building: string | null
+  billing_postal_code: string | null
+  billing_city: string | null
+  billing_country: string
   created_at: string
 }
 
@@ -20,6 +25,11 @@ function mapClient(row: ClientRow): Client {
     phone: row.phone,
     status: row.status,
     notes: row.notes,
+    billingStreet: row.billing_street,
+    billingBuilding: row.billing_building,
+    billingPostalCode: row.billing_postal_code,
+    billingCity: row.billing_city,
+    billingCountry: row.billing_country || 'CH',
     createdAt: row.created_at?.slice(0, 10) ?? '',
   }
 }

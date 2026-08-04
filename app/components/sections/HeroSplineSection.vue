@@ -35,8 +35,8 @@ const sceneUrl = "https://prod.spline.design/PyzDhpQ9E5f1E3MT/scene.splinecode";
             class="absolute inset-0 z-20 section-container pointer-events-none"
         >
             <div class="h-full grid grid-rows-[1fr_auto] py-12 max-[430px]:py-10 md:py-24">
-                <div class="flex items-center">
-                    <div class="max-w-3xl pt-12 max-[430px]:pt-10 md:pt-8 text-white">
+                <div class="flex items-start pt-24 sm:items-center sm:pt-0">
+                    <div class="max-w-3xl text-white">
                         <!-- Badge -->
                         <div
                             class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/20 bg-white/8 backdrop-blur-sm mb-7"
@@ -51,7 +51,7 @@ const sceneUrl = "https://prod.spline.design/PyzDhpQ9E5f1E3MT/scene.splinecode";
                         </div>
 
                         <h1
-                            class="font-display font-bold text-[1.95rem] max-[390px]:text-[1.78rem] sm:text-6xl lg:text-7xl xl:text-[5.2rem] leading-[0.96] tracking-tight"
+                            class="font-display font-bold text-3xl max-[390px]:text-3xl sm:text-6xl lg:text-7xl xl:text-[5.2rem] leading-[0.96] tracking-tight"
                         >
                             <span class="block">{{ t("hero.title_1") }}</span>
                             <span class="block modern-gradient">{{
@@ -61,10 +61,25 @@ const sceneUrl = "https://prod.spline.design/PyzDhpQ9E5f1E3MT/scene.splinecode";
                         </h1>
 
                         <p
-                            class="mt-3.5 text-[12.5px] max-[390px]:text-[12px] sm:text-base md:text-lg text-white/72 max-w-[34ch] leading-relaxed"
+                            class="mt-4 text-sm sm:text-base md:text-lg text-white/80 max-w-[40ch] leading-relaxed"
                         >
                             {{ t("hero.subtitle") }}
                         </p>
+
+                        <div class="pointer-events-auto mt-6 flex flex-col gap-3 min-[430px]:flex-row">
+                            <a
+                                href="/#contact"
+                                class="inline-flex min-h-12 items-center justify-center rounded-xl bg-violet-600 px-6 text-sm font-semibold text-white shadow-[0_10px_35px_rgba(124,58,237,0.32)] transition hover:bg-violet-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+                            >
+                                {{ t("hero.cta_primary") }}
+                            </a>
+                            <a
+                                href="/#portfolio"
+                                class="inline-flex min-h-12 items-center justify-center rounded-xl border border-white/25 bg-black/20 px-6 text-sm font-semibold text-white backdrop-blur-sm transition hover:border-cyan-300/50 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+                            >
+                                {{ t("hero.cta_secondary") }}
+                            </a>
+                        </div>
                     </div>
                 </div>
                 <div class="pb-3" />
@@ -83,7 +98,7 @@ const sceneUrl = "https://prod.spline.design/PyzDhpQ9E5f1E3MT/scene.splinecode";
         <div
             class="absolute bottom-8 right-5 md:right-8 z-20 flex max-[430px]:hidden flex-col items-end text-white/50 pointer-events-none"
         >
-            <span class="text-[10px] tracking-[0.2em] uppercase">{{
+            <span class="text-xs tracking-[0.2em] uppercase">{{
                 t("hero.scroll")
             }}</span>
             <div class="w-8 h-px mt-2 bg-white/30" />

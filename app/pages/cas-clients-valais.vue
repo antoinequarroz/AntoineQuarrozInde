@@ -108,15 +108,15 @@ useHead({
             </h2>
             <div class="mt-4 grid gap-3 md:grid-cols-3">
               <div class="rounded-xl border border-violet-500/10 p-3 dark:border-white/10">
-                <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">Defi</p>
+                <p class="text-xs font-semibold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">Defi</p>
                 <p class="mt-1 text-sm text-gray-700 dark:text-gray-200">{{ item.challenge }}</p>
               </div>
               <div class="rounded-xl border border-violet-500/10 p-3 dark:border-white/10">
-                <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">Solution</p>
+                <p class="text-xs font-semibold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">Solution</p>
                 <p class="mt-1 text-sm text-gray-700 dark:text-gray-200">{{ item.solution }}</p>
               </div>
               <div class="rounded-xl border border-violet-500/10 p-3 dark:border-white/10">
-                <p class="text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">Resultat</p>
+                <p class="text-xs font-semibold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">Resultat</p>
                 <p class="mt-1 text-sm text-gray-700 dark:text-gray-200">{{ item.result }}</p>
               </div>
             </div>

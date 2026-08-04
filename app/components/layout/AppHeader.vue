@@ -33,7 +33,7 @@ function closeMenu() {
       >
         <!-- Left -->
         <div class="flex items-center gap-2.5">
-          <NuxtLink to="/" class="h-8 w-8 rounded-xl bg-gradient-brand flex items-center justify-center shadow-glow-sm md:h-9 md:w-9">
+          <NuxtLink to="/" aria-label="Accueil — Antoine Quarroz" class="h-11 w-11 rounded-xl bg-gradient-brand flex items-center justify-center shadow-glow-sm">
             <span class="font-display font-bold text-white text-xs">AQ</span>
           </NuxtLink>
           <span
@@ -69,7 +69,7 @@ function closeMenu() {
             {{ t('nav.contact') }}
           </a>
           <button
-            class="md:hidden h-8 w-8 rounded-full flex items-center justify-center transition-colors"
+            class="md:hidden h-11 w-11 rounded-full flex items-center justify-center transition-colors"
             :class="isScrolled ? 'bg-gray-100 dark:bg-gray-800/60 text-gray-700 dark:text-gray-200' : 'bg-white/15 text-white'"
             :aria-label="isMenuOpen ? 'Close menu' : 'Open menu'"
             @click="isMenuOpen = !isMenuOpen"
@@ -105,7 +105,7 @@ function closeMenu() {
               </div>
             </div>
             <button
-              class="w-10 h-10 rounded-xl flex items-center justify-center transition-colors bg-white/10 text-white hover:bg-white/20"
+              class="w-11 h-11 rounded-xl flex items-center justify-center transition-colors bg-white/10 text-white hover:bg-white/20"
               aria-label="Close menu"
               @click="closeMenu"
             >

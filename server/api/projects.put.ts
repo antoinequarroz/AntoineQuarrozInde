@@ -6,6 +6,7 @@ export default defineEventHandler(async (event) => {
 
   const supabase = getSupabaseAdmin()
   const payload = {
+    client_id: body.clientId ? Number(body.clientId) : null,
     title: body.title,
     slug: body.slug,
     category: body.category,

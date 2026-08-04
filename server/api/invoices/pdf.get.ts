@@ -1,4 +1,4 @@
-import { buildBillingPdf } from '../../utils/pdfBilling'
+import { buildBillingDocument } from '../../utils/billingDocument'
 
 export default defineEventHandler(async (event) => {
   const { org } = await requireAdmin(event)
@@ -14,9 +14,14 @@ export default defineEventHandler(async (event) => {
     .single()
   if (error || !invoice) throw createError({ statusCode: 404, message: 'Invoice not found' })
 
+  const { data: organization } = await supabase
+    .from('organizations')
+    .select('*')
+    .eq('id', org.id)
+    .single()
   const { data: client } = await supabase
     .from('clients')
-    .select('name')
+    .select('*')
     .eq('organization_id', org.id)
     .eq('id', invoice.client_id)
     .single()
@@ -27,28 +32,16 @@ export default defineEventHandler(async (event) => {
     .eq('invoice_id', id)
     .order('position', { ascending: true })
 
-  const pdf = await buildBillingPdf({
-    title: 'Facture',
-    number: invoice.number,
-    clientName: client?.name || '-',
-    currency: invoice.currency,
-    issuedAt: invoice.issued_at,
-    dueAt: invoice.due_at,
-    status: invoice.status,
-    notes: invoice.notes,
-    subtotalCents: invoice.subtotal_cents ?? invoice.amount_cents,
-    taxCents: invoice.tax_cents ?? 0,
-    totalCents: invoice.total_cents ?? invoice.amount_cents,
-    items: (items || []).map(item => ({
-      label: item.label,
-      quantity: Number(item.quantity),
-      unitPriceCents: item.unit_price_cents,
-      taxRate: Number(item.tax_rate),
-      totalCents: item.total_cents,
-    })),
+  const { pdf, engine } = await buildBillingDocument({
+    kind: 'invoice',
+    document: invoice,
+    organization: organization || org,
+    client,
+    items: items || [],
   })
 
   setHeader(event, 'Content-Type', 'application/pdf')
   setHeader(event, 'Content-Disposition', `attachment; filename="facture-${invoice.number}.pdf"`)
+  setHeader(event, 'X-PDF-Engine', engine)
   return pdf
 })

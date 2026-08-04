@@ -11,7 +11,7 @@ const handleError = () => clearError({ redirect: '/' })
     </div>
 
     <div class="relative text-center max-w-md">
-      <div class="font-display font-bold text-[120px] leading-none text-violet-500/10 dark:text-violet-500/10 select-none mb-2">
+      <div class="font-display font-bold text-8xl leading-none text-violet-500/10 dark:text-violet-500/10 select-none mb-2">
         {{ props.error.statusCode }}
       </div>
 

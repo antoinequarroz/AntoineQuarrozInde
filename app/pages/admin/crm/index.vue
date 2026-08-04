@@ -129,11 +129,10 @@ onMounted(() => {
 <template>
   <div class="space-y-5">
     <section class="relative overflow-hidden rounded-lg border border-gray-200 bg-white px-4 py-4 shadow-sm dark:border-white/[0.08] dark:bg-[#111118] sm:px-5">
-      <div class="pointer-events-none absolute -top-16 right-[8%] h-48 w-48 rounded-full bg-fuchsia-500/10 blur-3xl" />
-      <div class="pointer-events-none absolute -bottom-20 left-[6%] h-40 w-40 rounded-full bg-violet-500/10 blur-3xl" />
+      <div class="pointer-events-none absolute -top-16 right-[8%] h-48 w-48 rounded-full bg-violet-500/10 blur-3xl" />
       <div class="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div class="min-w-0">
-          <span class="rounded-md bg-gradient-brand px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white">
+          <span class="rounded-md bg-gradient-brand px-2 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white">
             CRM
           </span>
           <h1 class="mt-2 font-display text-2xl font-semibold text-gray-950 dark:text-white sm:text-3xl">
@@ -249,7 +248,7 @@ onMounted(() => {
             <p class="truncate text-sm font-semibold text-gray-950 dark:text-white">{{ client.name }}</p>
             <p class="truncate text-xs text-gray-400">{{ client.company || 'Independant' }}</p>
           </div>
-          <span class="shrink-0 rounded-md px-2 py-0.5 text-[11px] font-semibold" :class="STATUS_TONE[client.status]">
+          <span class="shrink-0 rounded-md px-2 py-0.5 text-xs font-semibold" :class="STATUS_TONE[client.status]">
             {{ STATUS_LABEL[client.status] }}
           </span>
         </div>
@@ -306,7 +305,7 @@ onMounted(() => {
               <span v-else>—</span>
             </td>
             <td class="px-4 py-3">
-              <span class="rounded-md px-2 py-0.5 text-[11px] font-semibold" :class="STATUS_TONE[client.status]">{{ STATUS_LABEL[client.status] }}</span>
+              <span class="rounded-md px-2 py-0.5 text-xs font-semibold" :class="STATUS_TONE[client.status]">{{ STATUS_LABEL[client.status] }}</span>
             </td>
             <td class="hidden px-4 py-3 text-xs text-gray-500 dark:text-gray-400 md:table-cell">
               <a :href="`mailto:${client.email}`" class="hover:text-violet-600 dark:hover:text-violet-400">{{ client.email }}</a>
@@ -343,7 +342,7 @@ onMounted(() => {
             <p class="truncate text-sm font-semibold text-gray-950 dark:text-white">{{ client.name }}</p>
             <p class="truncate text-xs text-gray-400">{{ client.company || 'Independant' }}</p>
           </div>
-          <span class="shrink-0 rounded-md px-2 py-0.5 text-[11px] font-semibold" :class="scorePriority(leadScore(client)).chip">
+          <span class="shrink-0 rounded-md px-2 py-0.5 text-xs font-semibold" :class="scorePriority(leadScore(client)).chip">
             {{ scorePriority(leadScore(client)).label }}
           </span>
         </div>
@@ -412,7 +411,7 @@ onMounted(() => {
               <span v-else>—</span>
             </td>
             <td class="px-4 py-3">
-              <span class="rounded-md px-2 py-0.5 text-[11px] font-semibold" :class="scorePriority(leadScore(client)).chip">{{ scorePriority(leadScore(client)).label }}</span>
+              <span class="rounded-md px-2 py-0.5 text-xs font-semibold" :class="scorePriority(leadScore(client)).chip">{{ scorePriority(leadScore(client)).label }}</span>
             </td>
             <td class="hidden px-4 py-3 text-xs text-gray-500 dark:text-gray-400 md:table-cell">
               <a :href="`mailto:${client.email}`" class="hover:text-violet-600 dark:hover:text-violet-400">{{ client.email }}</a>

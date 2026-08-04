@@ -7,6 +7,8 @@ const store = useReviewsStore()
 const toast = useToast()
 
 const showForm = ref(false)
+const closeForm = () => { showForm.value = false }
+const { dialogRef, handleDialogKeydown } = useAccessibleDialog(showForm, closeForm, '[data-dialog-close]')
 const editingReview = ref<Review | null>(null)
 
 const form = reactive({
@@ -70,11 +72,10 @@ async function handleDelete(id: number) {
 
     <!-- Header -->
     <section class="relative overflow-hidden rounded-lg border border-gray-200 bg-white px-4 py-4 shadow-sm dark:border-white/[0.08] dark:bg-[#111118] sm:px-5">
-      <div class="pointer-events-none absolute -top-16 right-[8%] h-48 w-48 rounded-full bg-amber-500/10 blur-3xl" />
-      <div class="pointer-events-none absolute -bottom-20 left-[6%] h-40 w-40 rounded-full bg-fuchsia-400/10 blur-3xl" />
+      <div class="pointer-events-none absolute -top-16 right-[8%] h-48 w-48 rounded-full bg-violet-500/10 blur-3xl" />
       <div class="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div class="min-w-0">
-          <span class="rounded-md bg-gradient-brand px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white">Avis clients</span>
+          <span class="rounded-md bg-gradient-brand px-2 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white">Avis clients</span>
           <h1 class="mt-2 font-display text-2xl font-semibold text-gray-950 dark:text-white sm:text-3xl">Avis clients</h1>
           <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ store.reviews.length }} avis · note moy. {{ store.avgRating.toFixed(1) }}/5 · {{ store.visible.length }} visibles</p>
         </div>
@@ -92,15 +93,15 @@ async function handleDelete(id: number) {
 
     <!-- Modal -->
     <Transition name="modal">
-      <div v-if="showForm" class="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+      <div v-if="showForm" ref="dialogRef" class="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="review-form-title" tabindex="-1" @keydown="handleDialogKeydown">
         <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="showForm = false" />
         <div class="admin-modal-panel relative w-full max-w-md bg-white dark:bg-[#111118] rounded-2xl shadow-2xl border border-gray-100 dark:border-white/[0.08] my-4 overflow-y-auto">
 
           <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-white/[0.06]">
-            <h2 class="font-display font-semibold text-base text-gray-900 dark:text-white">
+            <h2 id="review-form-title" class="font-display font-semibold text-base text-gray-900 dark:text-white">
               {{ editingReview ? 'Modifier l\'avis' : 'Ajouter un avis' }}
             </h2>
-            <button class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 dark:hover:bg-white/[0.06] transition-all" @click="showForm = false">
+            <button type="button" data-dialog-close aria-label="Fermer" class="w-11 h-11 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 dark:hover:bg-white/[0.06] transition-all" @click="showForm = false">
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
               </svg>
@@ -110,40 +111,42 @@ async function handleDelete(id: number) {
           <form class="px-6 py-5 space-y-4" @submit.prevent="handleSubmit">
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Nom *</label>
-                <input v-model="form.author" type="text" class="input-field" placeholder="Marie Dupont" required>
+                <label for="review-author" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Nom *</label>
+                <input id="review-author" v-model="form.author" type="text" class="input-field" placeholder="Marie Dupont" required autocomplete="name">
               </div>
               <div>
-                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Entreprise</label>
-                <input v-model="form.company" type="text" class="input-field" placeholder="Entreprise SA">
+                <label for="review-company" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Entreprise</label>
+                <input id="review-company" v-model="form.company" type="text" class="input-field" placeholder="Entreprise SA" autocomplete="organization">
               </div>
             </div>
             <div>
-              <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Rôle / Fonction</label>
-              <input v-model="form.role" type="text" class="input-field" placeholder="Directeur, Gérant...">
+              <label for="review-role" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Rôle / Fonction</label>
+              <input id="review-role" v-model="form.role" type="text" class="input-field" placeholder="Directeur, Gérant..." autocomplete="organization-title">
             </div>
             <div>
-              <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Note</label>
-              <div class="flex gap-1.5">
+              <span id="review-rating-label" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Note</span>
+              <div class="flex gap-1.5" role="group" aria-labelledby="review-rating-label">
                 <button
                   v-for="n in 5"
                   :key="n"
                   type="button"
-                  class="text-2xl leading-none transition-transform hover:scale-110"
+                  class="flex h-11 w-11 items-center justify-center text-2xl leading-none transition-transform hover:scale-110"
                   :class="n <= form.rating ? 'text-yellow-400' : 'text-gray-200 dark:text-gray-700'"
+                  :aria-label="`${n} étoile${n > 1 ? 's' : ''}`"
+                  :aria-pressed="n === form.rating"
                   @click="form.rating = n"
                 >★</button>
               </div>
             </div>
             <div>
-              <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Témoignage *</label>
-              <textarea v-model="form.content" rows="4" class="input-field resize-none" placeholder="Le témoignage du client..." required />
+              <label for="review-content" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Témoignage *</label>
+              <textarea id="review-content" v-model="form.content" rows="4" class="input-field resize-none" placeholder="Le témoignage du client..." required />
             </div>
             <div class="flex items-center gap-3">
-              <button type="button" class="relative w-10 h-6 rounded-full transition-colors duration-200 flex-shrink-0" :class="form.visible ? 'bg-violet-500' : 'bg-gray-200 dark:bg-gray-700'" @click="form.visible = !form.visible">
+              <button type="button" role="switch" :aria-checked="form.visible" aria-label="Visible sur le site" class="relative w-10 h-6 rounded-full transition-colors duration-200 flex-shrink-0 before:absolute before:-inset-2.5 before:rounded-xl" :class="form.visible ? 'bg-violet-500' : 'bg-gray-200 dark:bg-gray-700'" @click="form.visible = !form.visible">
                 <span class="absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200" :class="form.visible ? 'translate-x-4' : 'translate-x-0'" />
               </button>
-              <label class="text-sm text-gray-600 dark:text-gray-300 cursor-pointer" @click="form.visible = !form.visible">Visible sur le site</label>
+              <span class="text-sm text-gray-600 dark:text-gray-300">Visible sur le site</span>
             </div>
             <div class="admin-sticky-actions sticky bottom-0 bg-white dark:bg-[#111118] flex gap-3 pt-2 border-t border-gray-100 dark:border-white/[0.06]">
               <button type="submit" class="flex-1 py-2.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold transition-colors">

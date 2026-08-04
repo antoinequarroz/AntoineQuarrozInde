@@ -4,10 +4,13 @@ import type { Project } from '~/types'
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 
 const store = useProjectsStore()
+const clients = useClientsStore()
 const route = useRoute()
 const toast = useToast()
 
 const showForm = ref(route.query.new === '1')
+const closeForm = () => { showForm.value = false }
+const { dialogRef, handleDialogKeydown } = useAccessibleDialog(showForm, closeForm, '[data-dialog-close]')
 const editingProject = ref<Project | null>(null)
 
 const form = reactive({
@@ -20,11 +23,12 @@ const form = reactive({
   liveUrl: '',
   codeUrl: '',
   featured: false,
+  clientId: null as number | null,
 })
 
 function openNew() {
   editingProject.value = null
-  Object.assign(form, { title: '', slug: '', category: 'web', tags: '', description: '', image: null, liveUrl: '', codeUrl: '', featured: false })
+  Object.assign(form, { title: '', slug: '', category: 'web', tags: '', description: '', image: null, liveUrl: '', codeUrl: '', featured: false, clientId: null })
   showForm.value = true
 }
 
@@ -33,13 +37,16 @@ function openEdit(project: Project) {
   Object.assign(form, {
     title: project.title, slug: project.slug, category: project.category,
     tags: project.tags.join(', '), description: project.description, image: project.image,
-    liveUrl: project.liveUrl || '', codeUrl: project.codeUrl || '', featured: project.featured,
+    liveUrl: project.liveUrl || '', codeUrl: project.codeUrl || '', featured: project.featured, clientId: project.clientId,
   })
   showForm.value = true
 }
 
 onMounted(() => {
   store.ensureLoaded()
+  clients.ensureLoaded()
+  const clientId = Number(route.query.clientId || 0)
+  if (clientId) form.clientId = clientId
 })
 
 async function handleSubmit() {
@@ -53,6 +60,7 @@ async function handleSubmit() {
     liveUrl: form.liveUrl || null,
     codeUrl: form.codeUrl || null,
     featured: form.featured,
+    clientId: form.clientId,
   }
   try {
     if (editingProject.value) {
@@ -112,15 +120,15 @@ const catColors: Record<string, string> = {
 
     <!-- Form modal -->
     <Transition name="modal">
-      <div v-if="showForm" class="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+      <div v-if="showForm" ref="dialogRef" class="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="project-form-title" tabindex="-1" @keydown="handleDialogKeydown">
         <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="showForm = false" />
         <div class="admin-modal-panel relative w-full max-w-xl bg-white dark:bg-[#111118] rounded-2xl shadow-2xl border border-gray-100 dark:border-white/[0.08] my-4 overflow-y-auto">
 
           <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-white/[0.06]">
-            <h2 class="font-display font-semibold text-base text-gray-900 dark:text-white">
+            <h2 id="project-form-title" class="font-display font-semibold text-base text-gray-900 dark:text-white">
               {{ editingProject ? 'Modifier le projet' : 'Nouveau projet' }}
             </h2>
-            <button class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 dark:hover:bg-white/[0.06] hover:text-gray-700 dark:hover:text-gray-200 transition-all" @click="showForm = false">
+            <button type="button" data-dialog-close aria-label="Fermer" class="w-11 h-11 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 dark:hover:bg-white/[0.06] hover:text-gray-700 dark:hover:text-gray-200 transition-all" @click="showForm = false">
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
               </svg>
@@ -128,14 +136,21 @@ const catColors: Record<string, string> = {
           </div>
 
           <form class="px-6 py-5 space-y-4" @submit.prevent="handleSubmit">
+            <div>
+              <label for="project-client" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Client associé</label>
+              <select id="project-client" v-model.number="form.clientId" class="input-field">
+                <option :value="null">Aucun client</option>
+                <option v-for="client in clients.clients" :key="client.id" :value="client.id">{{ client.name }}{{ client.company ? ` — ${client.company}` : '' }}</option>
+              </select>
+            </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Titre *</label>
-                <input v-model="form.title" type="text" class="input-field" placeholder="Nom du projet" required>
+                <label for="project-title" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Titre *</label>
+                <input id="project-title" v-model="form.title" type="text" class="input-field" placeholder="Nom du projet" required>
               </div>
               <div>
-                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Catégorie</label>
-                <select v-model="form.category" class="input-field">
+                <label for="project-category" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Catégorie</label>
+                <select id="project-category" v-model="form.category" class="input-field">
                   <option value="web">Web</option>
                   <option value="mobile">Mobile</option>
                   <option value="cms">CMS</option>
@@ -144,41 +159,44 @@ const catColors: Record<string, string> = {
             </div>
 
             <div>
-              <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Description *</label>
-              <textarea v-model="form.description" rows="2" class="input-field resize-none" placeholder="Description courte..." required />
+              <label for="project-description" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Description *</label>
+              <textarea id="project-description" v-model="form.description" rows="2" class="input-field resize-none" placeholder="Description courte..." required />
             </div>
 
             <div>
-              <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Image de couverture</label>
+              <p class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Image de couverture</p>
               <UiAppImageUpload v-model="form.image" />
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Technologies</label>
-                <input v-model="form.tags" type="text" class="input-field" placeholder="Vue 3, Nuxt, Tailwind">
+                <label for="project-tags" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Technologies</label>
+                <input id="project-tags" v-model="form.tags" type="text" class="input-field" placeholder="Vue 3, Nuxt, Tailwind">
               </div>
               <div>
-                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">URL Live</label>
-                <input v-model="form.liveUrl" type="url" class="input-field" placeholder="https://...">
+                <label for="project-live-url" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">URL Live</label>
+                <input id="project-live-url" v-model="form.liveUrl" type="url" class="input-field" placeholder="https://..." autocomplete="url">
               </div>
             </div>
 
             <div>
-              <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">URL GitHub</label>
-              <input v-model="form.codeUrl" type="url" class="input-field" placeholder="https://github.com/...">
+              <label for="project-code-url" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">URL GitHub</label>
+              <input id="project-code-url" v-model="form.codeUrl" type="url" class="input-field" placeholder="https://github.com/..." autocomplete="url">
             </div>
 
             <div class="flex items-center gap-3">
               <button
                 type="button"
-                class="relative w-10 h-6 rounded-full transition-colors duration-200 flex-shrink-0"
+                role="switch"
+                :aria-checked="form.featured"
+                aria-label="Mettre en avant"
+                class="relative w-10 h-6 rounded-full transition-colors duration-200 flex-shrink-0 before:absolute before:-inset-2.5 before:rounded-xl"
                 :class="form.featured ? 'bg-violet-500' : 'bg-gray-200 dark:bg-gray-700'"
                 @click="form.featured = !form.featured"
               >
                 <span class="absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200" :class="form.featured ? 'translate-x-4' : 'translate-x-0'" />
               </button>
-              <label class="text-sm text-gray-600 dark:text-gray-300 cursor-pointer" @click="form.featured = !form.featured">Mettre en avant</label>
+              <span class="text-sm text-gray-600 dark:text-gray-300">Mettre en avant</span>
             </div>
 
             <div class="admin-sticky-actions sticky bottom-0 bg-white dark:bg-[#111118] flex gap-3 pt-2 border-t border-gray-100 dark:border-white/[0.06]">

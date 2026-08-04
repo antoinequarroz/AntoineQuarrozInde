@@ -16,10 +16,13 @@ onClickOutside(rootRef, () => { isOpen.value = false })
 <template>
   <div ref="rootRef" class="relative">
     <button
-      class="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium
+      class="flex min-h-11 items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium
              bg-gray-100 dark:bg-gray-800/50 hover:bg-violet-100 dark:hover:bg-violet-500/20
              text-gray-600 dark:text-gray-300 hover:text-violet-600 dark:hover:text-violet-400
              transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-violet-500/50"
+      :aria-expanded="isOpen"
+      aria-haspopup="listbox"
+      aria-label="Changer de langue"
       @click="isOpen = !isOpen"
     >
       <span class="uppercase text-xs font-bold tracking-wider">{{ locale }}</span>
@@ -36,13 +39,15 @@ onClickOutside(rootRef, () => { isOpen.value = false })
       <div
         v-if="isOpen"
         class="absolute right-0 mt-2 w-32 card-glass shadow-glow-sm rounded-2xl overflow-hidden z-50"
+        role="listbox"
       >
         <button
           v-for="loc in available"
           :key="loc.code"
-          class="w-full flex items-center gap-2 px-4 py-2.5 text-sm font-medium
+          class="w-full min-h-11 flex items-center gap-2 px-4 py-2.5 text-sm font-medium
                  text-gray-600 dark:text-gray-300 hover:text-violet-600 dark:hover:text-violet-400
                  hover:bg-violet-50 dark:hover:bg-violet-500/10 transition-colors duration-150"
+          role="option"
           @click="select(loc.code)"
         >
           <span class="uppercase text-xs font-bold tracking-wider text-violet-500">{{ loc.code }}</span>

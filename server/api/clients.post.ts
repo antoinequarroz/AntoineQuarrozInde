@@ -11,6 +11,11 @@ export default defineEventHandler(async (event) => {
     phone: body.phone ? String(body.phone).trim() : null,
     status: body.status || 'lead',
     notes: body.notes ? String(body.notes) : null,
+    billing_street: body.billingStreet ? String(body.billingStreet).trim() : null,
+    billing_building: body.billingBuilding ? String(body.billingBuilding).trim() : null,
+    billing_postal_code: body.billingPostalCode ? String(body.billingPostalCode).trim() : null,
+    billing_city: body.billingCity ? String(body.billingCity).trim() : null,
+    billing_country: String(body.billingCountry || 'CH').trim().toUpperCase(),
   }
 
   if (!payload.name || !payload.email) {

@@ -12,6 +12,8 @@ type InvoiceRow = {
   due_at: string | null
   paid_at: string | null
   notes: string | null
+  payment_reference_type?: 'NON' | 'SCOR' | 'QRR'
+  payment_reference?: string | null
   subtotal_cents?: number
   tax_cents?: number
   total_cents?: number
@@ -40,6 +42,8 @@ function mapInvoice(row: InvoiceRow): Invoice {
     dueAt: row.due_at,
     paidAt: row.paid_at,
     notes: row.notes,
+    paymentReferenceType: row.payment_reference_type || 'NON',
+    paymentReference: row.payment_reference || null,
     subtotalCents: row.subtotal_cents ?? row.amount_cents,
     taxCents: row.tax_cents ?? 0,
     totalCents: row.total_cents ?? row.amount_cents,

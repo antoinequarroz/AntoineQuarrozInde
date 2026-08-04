@@ -1,7 +1,6 @@
 <script setup lang="ts">
 const { t } = useI18n()
 const store = useProjectsStore()
-const mounted = ref(false)
 
 type PortfolioFilter = 'all' | 'web' | 'mobile' | 'cms'
 
@@ -28,9 +27,6 @@ const filtered = computed(() => {
   })
 })
 
-onMounted(() => {
-  mounted.value = true
-})
 </script>
 
 <template>
@@ -39,8 +35,7 @@ onMounted(() => {
       <div class="section-grid" />
     </div>
     <div class="section-container relative z-10">
-      <div class="relative pt-2 md:sticky md:top-16 md:z-40 md:pb-2 md:pt-3">
-        <div class="pointer-events-none absolute inset-x-0 top-0 hidden h-full bg-gradient-to-b from-[#06060e] via-[#06060e]/92 to-transparent md:block" />
+      <div class="relative pt-2 md:pb-4 md:pt-3">
       <!-- Header — marges réduites pour coller au carousel -->
       <div
         v-motion
@@ -66,7 +61,7 @@ onMounted(() => {
         <button
           v-for="filter in filters"
           :key="filter.key"
-          class="group inline-flex items-center gap-1.5 rounded-2xl px-3.5 max-[390px]:px-3 py-1.5 text-xs md:px-5 md:py-2 md:text-sm font-semibold transition-all duration-200"
+          class="group inline-flex min-h-11 items-center gap-1.5 rounded-2xl px-3.5 max-[390px]:px-3 py-1.5 text-xs md:px-5 md:py-2 md:text-sm font-semibold transition-all duration-200"
           :class="activeFilter === filter.key
             ? 'bg-gradient-brand text-white shadow-glow-sm'
             : 'bg-white/70 text-gray-500 ring-1 ring-violet-500/10 backdrop-blur dark:bg-white/[0.04] dark:text-gray-400 dark:ring-white/10 hover:bg-violet-50 dark:hover:bg-violet-500/10 hover:text-violet-600 dark:hover:text-violet-400'"
@@ -74,7 +69,7 @@ onMounted(() => {
         >
           <span>{{ filter.label }}</span>
           <span
-            class="rounded-full px-2 py-0.5 text-[11px] transition-colors"
+            class="rounded-full px-2 py-0.5 text-xs transition-colors"
             :class="activeFilter === filter.key
               ? 'bg-white/18 text-white'
               : 'bg-violet-500/10 text-violet-600 dark:text-violet-300'"
@@ -85,8 +80,7 @@ onMounted(() => {
       </div>
       </div>
 
-      <ClientOnly>
-        <template v-if="mounted && store.loading">
+        <template v-if="store.loading">
           <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             <div
               v-for="i in 3"
@@ -103,15 +97,9 @@ onMounted(() => {
             </div>
           </div>
         </template>
-        <div v-else class="mt-0">
+        <div v-else class="mt-2 md:mt-4">
           <SectionsProjectHelixCarousel :projects="filtered" :active-category="activeFilter" />
         </div>
-        <template #fallback>
-          <div class="mt-0">
-            <div class="h-[80vh] min-h-[420px]" />
-          </div>
-        </template>
-      </ClientOnly>
     </div>
   </section>
 </template>

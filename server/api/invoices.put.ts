@@ -1,4 +1,5 @@
 import { computeTotals, normalizeBillingItems } from '../utils/billing'
+import { normalizeIban, validateQrReference } from '../utils/typstBilling'
 
 export default defineEventHandler(async (event) => {
   const { org, user } = await requireAdmin(event)
@@ -8,6 +9,10 @@ export default defineEventHandler(async (event) => {
   const supabase = getSupabaseAdmin()
   const items = normalizeBillingItems(body.items)
   const totals = computeTotals(items)
+  const referenceType = String(body.paymentReferenceType || 'NON').toUpperCase() as 'NON' | 'SCOR' | 'QRR'
+  const { data: billingOrg } = await supabase.from('organizations').select('billing_iban').eq('id', org.id).single()
+  const normalizedReference = validateQrReference(normalizeIban(String(billingOrg?.billing_iban || '')), referenceType, body.paymentReference)
+  if (!normalizedReference) throw createError({ statusCode: 400, message: 'Référence QR invalide pour le type sélectionné.' })
   const payload = {
     client_id: body.clientId ? Number(body.clientId) : null,
     quote_id: body.quoteId ? Number(body.quoteId) : null,
@@ -22,6 +27,8 @@ export default defineEventHandler(async (event) => {
     due_at: body.dueAt || null,
     paid_at: body.paidAt || null,
     notes: body.notes || null,
+    payment_reference_type: normalizedReference.type,
+    payment_reference: normalizedReference.reference,
   }
   let { data, error } = await supabase
     .from('invoices')
@@ -30,7 +37,7 @@ export default defineEventHandler(async (event) => {
     .eq('id', id)
     .select('*')
     .single()
-  if (error && (error.message.includes('subtotal_cents') || error.message.includes('tax_cents') || error.message.includes('total_cents'))) {
+  if (error && (error.message.includes('subtotal_cents') || error.message.includes('tax_cents') || error.message.includes('total_cents') || error.message.includes('payment_reference'))) {
     const legacyPayload = {
       client_id: payload.client_id,
       quote_id: payload.quote_id,
