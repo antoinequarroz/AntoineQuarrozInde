@@ -15,6 +15,7 @@ type ProjectRow = {
   created_at: string
 }
 
+
 function mapProject(row: ProjectRow): Project {
   return {
     id: row.id,
