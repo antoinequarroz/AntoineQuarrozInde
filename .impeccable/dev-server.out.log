@@ -1,0 +1,547 @@
+
+> dev
+> nuxt dev --host 127.0.0.1 --port 3100
+
+|
+•  [32mNuxt [1m4.4.6[22m[39m[90m (with [39m[90mNitro [1m2.13.4[22m[39m[90m, Vite [1m7.3.3[22m[39m[90m and Vue [1m3.5.34[22m[39m[90m)[39m
+
+[32m  ➜ Local:   [39m [36m[4mhttp://127.0.0.1:[1m3100[22m/[24m[39m
+[90m  ➜ Network:  use [37m--host[90m to expose[39m
+
+[90m[[90mnuxt:tailwindcss[90m][39m [36mi[39m Using default Tailwind CSS file
+[33m  ➜ DevTools: [39m[2mpress [22m[32mShift[39m[2m + [22m[32mAlt[39m[2m + [22m[32mD[39m[2m in the browser (v3.2.4)[22m
+
+[32m√[39m Vite client built in 129ms
+[32m√[39m Vite server built in 70ms
+[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 4643ms
+[36mi[39m Vite server warmed up in 2ms
+[36mi[39m Vite client warmed up in 6ms
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m[2m (x2)[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/login.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m[2m (x2)[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/articles/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/reviews/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/projects/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/articles/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/tasks/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/appointments/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/clients/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/quotes/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/invoices/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mpage reload [39m[2mvirtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Fmiddleware.mjs[22m
+[36mi[39m [32mpage reload [39m[2mvirtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Fmiddleware.mjs[22m[2m (x2)[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/tasks/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/clients/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/appointments/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/quotes/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/invoices/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/appointments/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/quotes/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/invoices/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/articles/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/reviews/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/projects/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/articles/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/projects/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/messages/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m[2m (x2)[22m
+[32m√[39m Vite server hmr 38 files in 1.706ms
+[36mi[39m [32mpage reload [39m[2mcomponents/layout/AppHeader.vue[22m
+[36mi[39m [32mpage reload [39m[2mcomponents/ui/LangSwitcher.vue[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mpage reload [39m[2mcomponents/ui/ThemeToggle.vue[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m[2m (x2)[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m[2m (x3)[22m
+[32m√[39m Vite server hmr 31 files in 1.193ms
+[32m√[39m Vite server hmr 1 files in 0.011ms
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m[2m (x4)[22m
+[36mi[39m [32mhmr update [39m[2m/components/ui/SplineRobot.vue, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css[22m
+[32m√[39m Vite server hmr 14 files in 1.965ms
+[36mi[39m Vite discovered new dependencies at runtime:
+  [36m@splinetool/viewer[39m [90m← ./app/components/ui/SplineRobot.vue[39m
+
+Pre-bundle them in your [36mnuxt.config.ts[39m to avoid page reloads:
+
+[90mexport default defineNuxtConfig({
+  vite: {
+    optimizeDeps: {
+      include: [
+        '@splinetool/viewer',
+      ]
+    }
+  }
+})
+
+[39mLearn more: https://vite.dev/guide/dep-pre-bundling.html
+[43m[30m WARN [39m[49m [Vue warn]: Failed to resolve component: AdminAdminIcon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. at <Admin>
+at <AsyncComponentWrapper>
+at <LayoutLoader>
+at <NuxtLayoutProvider>
+at <NuxtLayout>
+at <App>
+at <NuxtRoot>
+[43m[30m WARN [39m[49m [Vue warn]: Failed to resolve component: AdminAdminIcon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. at <Index>
+at <RouteProvider>
+at <RouterView>
+at <NuxtPage>
+at <Admin>
+at <AsyncComponentWrapper>
+at <LayoutLoader>
+at <NuxtLayoutProvider>
+at <NuxtLayout>
+at <App>
+at <NuxtRoot>
+[43m[30m WARN [39m[49m [Vue warn]: Failed to resolve component: AdminAdminEmptyState
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. at <Index>
+at <RouteProvider>
+at <RouterView>
+at <NuxtPage>
+at <Admin>
+at <AsyncComponentWrapper>
+at <LayoutLoader>
+at <NuxtLayoutProvider>
+at <NuxtLayout>
+at <App>
+at <NuxtRoot>
+[43m[30m WARN [39m[49m [Vue warn]: Component <Anonymous> is missing template or render function. at <Anonymous>
+at <Index>
+at <RouteProvider>
+at <RouterView>
+at <NuxtPage>
+at <Admin>
+at <AsyncComponentWrapper>
+at <LayoutLoader>
+at <NuxtLayoutProvider>
+at <NuxtLayout>
+at <App>
+at <NuxtRoot>
+[43m[30m WARN [39m[49m [Vue warn]: Component <Anonymous> is missing template or render function. at <Anonymous>
+at <Index>
+at <RouteProvider>
+at <RouterView>
+at <NuxtPage>
+at <Admin>
+at <AsyncComponentWrapper>
+at <LayoutLoader>
+at <NuxtLayoutProvider>
+at <NuxtLayout>
+at <App>
+at <NuxtRoot>
+[43m[30m WARN [39m[49m [Vue warn]: Component <Anonymous> is missing template or render function. at <Anonymous>
+at <Index>
+at <RouteProvider>
+at <RouterView>
+at <NuxtPage>
+at <Admin>
+at <AsyncComponentWrapper>
+at <LayoutLoader>
+at <NuxtLayoutProvider>
+at <NuxtLayout>
+at <App>
+at <NuxtRoot>
+[43m[30m WARN [39m[49m [Vue warn]: Component <Anonymous> is missing template or render function. at <Anonymous>
+at <Index>
+at <RouteProvider>
+at <RouterView>
+at <NuxtPage>
+at <Admin>
+at <AsyncComponentWrapper>
+at <LayoutLoader>
+at <NuxtLayoutProvider>
+at <NuxtLayout>
+at <App>
+at <NuxtRoot>
+[43m[30m WARN [39m[49m [Vue warn]: Component <Anonymous> is missing template or render function. at <Anonymous>
+at <Index>
+at <RouteProvider>
+at <RouterView>
+at <NuxtPage>
+at <Admin>
+at <AsyncComponentWrapper>
+at <LayoutLoader>
+at <NuxtLayoutProvider>
+at <NuxtLayout>
+at <App>
+at <NuxtRoot>
+[43m[30m WARN [39m[49m [Vue warn]: Failed to resolve component: AdminAdminIcon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. at <Admin>
+at <AsyncComponentWrapper>
+at <LayoutLoader>
+at <NuxtLayoutProvider>
+at <NuxtLayout>
+at <App>
+at <NuxtRoot>
+[43m[30m WARN [39m[49m [Vue warn]: Failed to resolve component: AdminAdminIcon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. at <Index>
+at <RouteProvider>
+at <RouterView>
+at <NuxtPage>
+at <Admin>
+at <AsyncComponentWrapper>
+at <LayoutLoader>
+at <NuxtLayoutProvider>
+at <NuxtLayout>
+at <App>
+at <NuxtRoot>
+[43m[30m WARN [39m[49m [Vue warn]: Failed to resolve component: AdminAdminEmptyState
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. at <Index>
+at <RouteProvider>
+at <RouterView>
+at <NuxtPage>
+at <Admin>
+at <AsyncComponentWrapper>
+at <LayoutLoader>
+at <NuxtLayoutProvider>
+at <NuxtLayout>
+at <App>
+at <NuxtRoot>
+[43m[30m WARN [39m[49m [Vue warn]: Component <Anonymous> is missing template or render function. at <Anonymous>
+at <Index>
+at <RouteProvider>
+at <RouterView>
+at <NuxtPage>
+at <Admin>
+at <AsyncComponentWrapper>
+at <LayoutLoader>
+at <NuxtLayoutProvider>
+at <NuxtLayout>
+at <App>
+at <NuxtRoot>
+[43m[30m WARN [39m[49m [Vue warn]: Component <Anonymous> is missing template or render function. at <Anonymous>
+at <Index>
+at <RouteProvider>
+at <RouterView>
+at <NuxtPage>
+at <Admin>
+at <AsyncComponentWrapper>
+at <LayoutLoader>
+at <NuxtLayoutProvider>
+at <NuxtLayout>
+at <App>
+at <NuxtRoot>
+[43m[30m WARN [39m[49m [Vue warn]: Component <Anonymous> is missing template or render function. at <Anonymous>
+at <Index>
+at <RouteProvider>
+at <RouterView>
+at <NuxtPage>
+at <Admin>
+at <AsyncComponentWrapper>
+at <LayoutLoader>
+at <NuxtLayoutProvider>
+at <NuxtLayout>
+at <App>
+at <NuxtRoot> (repeated 3 times)
+[43m[30m WARN [39m[49m [Vue warn]: Failed to resolve component: AdminAdminIcon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. at <Admin>
+at <AsyncComponentWrapper>
+at <LayoutLoader>
+at <NuxtLayoutProvider>
+at <NuxtLayout>
+at <App>
+at <NuxtRoot>
+[43m[30m WARN [39m[49m [Vue warn]: Failed to resolve component: AdminAdminIcon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. at <Index>
+at <RouteProvider>
+at <RouterView>
+at <NuxtPage>
+at <Admin>
+at <AsyncComponentWrapper>
+at <LayoutLoader>
+at <NuxtLayoutProvider>
+at <NuxtLayout>
+at <App>
+at <NuxtRoot>
+[43m[30m WARN [39m[49m [Vue warn]: Failed to resolve component: AdminAdminEmptyState
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. at <Index>
+at <RouteProvider>
+at <RouterView>
+at <NuxtPage>
+at <Admin>
+at <AsyncComponentWrapper>
+at <LayoutLoader>
+at <NuxtLayoutProvider>
+at <NuxtLayout>
+at <App>
+at <NuxtRoot>
+[43m[30m WARN [39m[49m [Vue warn]: Component <Anonymous> is missing template or render function. at <Anonymous>
+at <Index>
+at <RouteProvider>
+at <RouterView>
+at <NuxtPage>
+at <Admin>
+at <AsyncComponentWrapper>
+at <LayoutLoader>
+at <NuxtLayoutProvider>
+at <NuxtLayout>
+at <App>
+at <NuxtRoot>
+[43m[30m WARN [39m[49m [Vue warn]: Component <Anonymous> is missing template or render function. at <Anonymous>
+at <Index>
+at <RouteProvider>
+at <RouterView>
+at <NuxtPage>
+at <Admin>
+at <AsyncComponentWrapper>
+at <LayoutLoader>
+at <NuxtLayoutProvider>
+at <NuxtLayout>
+at <App>
+at <NuxtRoot>
+[43m[30m WARN [39m[49m [Vue warn]: Component <Anonymous> is missing template or render function. at <Anonymous>
+at <Index>
+at <RouteProvider>
+at <RouterView>
+at <NuxtPage>
+at <Admin>
+at <AsyncComponentWrapper>
+at <LayoutLoader>
+at <NuxtLayoutProvider>
+at <NuxtLayout>
+at <App>
+at <NuxtRoot>
+[43m[30m WARN [39m[49m [Vue warn]: Failed to resolve component: AdminAdminIcon
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. at <Admin>
+at <AsyncComponentWrapper>
+at <LayoutLoader>
+at <NuxtLayoutProvider>
+at <NuxtLayout>
+at <App>
+at <NuxtRoot>
+[43m[30m WARN [39m[49m [Vue warn]: Failed to resolve component: AdminAdminToolbar
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. at <Index>
+at <RouteProvider>
+at <RouterView>
+at <NuxtPage>
+at <Admin>
+at <AsyncComponentWrapper>
+at <LayoutLoader>
+at <NuxtLayoutProvider>
+at <NuxtLayout>
+at <App>
+at <NuxtRoot>
+[43m[30m WARN [39m[49m [Vue warn]: Failed to resolve component: AdminAdminCard
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. at <Index>
+at <RouteProvider>
+at <RouterView>
+at <NuxtPage>
+at <Admin>
+at <AsyncComponentWrapper>
+at <LayoutLoader>
+at <NuxtLayoutProvider>
+at <NuxtLayout>
+at <App>
+at <NuxtRoot>
+[43m[30m WARN [39m[49m [Vue warn]: Failed to resolve component: AdminAdminEmptyState
+If this is a native custom element, make sure to exclude it from component resolution via compilerOptions.isCustomElement. at <Index>
+at <RouteProvider>
+at <RouterView>
+at <NuxtPage>
+at <Admin>
+at <AsyncComponentWrapper>
+at <LayoutLoader>
+at <NuxtLayoutProvider>
+at <NuxtLayout>
+at <App>
+at <NuxtRoot>
+[43m[30m WARN [39m[49m [Vue warn]: Non-function value encountered for default slot. Prefer function slots for better performance. at <Anonymous>
+at <Index>
+at <RouteProvider>
+at <RouterView>
+at <NuxtPage>
+at <Admin>
+at <AsyncComponentWrapper>
+at <LayoutLoader>
+at <NuxtLayoutProvider>
+at <NuxtLayout>
+at <App>
+at <NuxtRoot>
+[43m[30m WARN [39m[49m [Vue warn]: Component <Anonymous> is missing template or render function. at <Anonymous>
+at <Index>
+at <RouteProvider>
+at <RouterView>
+at <NuxtPage>
+at <Admin>
+at <AsyncComponentWrapper>
+at <LayoutLoader>
+at <NuxtLayoutProvider>
+at <NuxtLayout>
+at <App>
+at <NuxtRoot>
+[43m[30m WARN [39m[49m [Vue warn]: Non-function value encountered for default slot. Prefer function slots for better performance. at <Anonymous>
+at <Index>
+at <RouteProvider>
+at <RouterView>
+at <NuxtPage>
+at <Admin>
+at <AsyncComponentWrapper>
+at <LayoutLoader>
+at <NuxtLayoutProvider>
+at <NuxtLayout>
+at <App>
+at <NuxtRoot>
+[43m[30m WARN [39m[49m [Vue warn]: Component <Anonymous> is missing template or render function. at <Anonymous>
+at <Index>
+at <RouteProvider>
+at <RouterView>
+at <NuxtPage>
+at <Admin>
+at <AsyncComponentWrapper>
+at <LayoutLoader>
+at <NuxtLayoutProvider>
+at <NuxtLayout>
+at <App>
+at <NuxtRoot>
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css[22m
+[36mi[39m [32mpage reload [39m[2merror.vue[22m
+[36mi[39m [32mhmr update [39m[2m/error.vue, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css[22m
+[36mi[39m [32mhmr update [39m[2m/components/layout/AppFooter.vue, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css[22m
+[36mi[39m [32mpage reload [39m[2mcomponents/layout/AppFooter.vue[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/components/sections/AboutSection.vue, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css[22m
+[36mi[39m [32mhmr update [39m[2m/components/sections/ContactSection.vue?direct&vue&type=style&index=0&scoped=a726b50e&lang.css, /components/sections/ContactSection.vue, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css[22m
+[36mi[39m [32mhmr update [39m[2m/components/sections/BlogSection.vue?direct&vue&type=style&index=0&scoped=2e5a2df7&lang.css, /components/sections/BlogSection.vue, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/components/sections/HeroSplineSection.vue?direct&vue&type=style&index=0&scoped=750e56a1&lang.css, /components/sections/HeroSplineSection.vue, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m[2m (x2)[22m
+[36mi[39m [32mhmr update [39m[2m/components/sections/PortfolioSection.vue, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css[22m
+[36mi[39m [32mhmr update [39m[2m/components/sections/ProjectHelixCarousel.vue, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css[22m
+[36mi[39m [32mhmr update [39m[2m/layouts/admin.vue?direct&vue&type=style&index=0&scoped=c80892e0&lang.css, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css[22m
+[36mi[39m [32mpage reload [39m[2mlayouts/admin.vue[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/cas-clients-valais.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/cas-clients-valais.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/pages/admin/index.vue, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs, /pages/admin/index.vue?macro=true[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/appointments/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/appointments/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/audit/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/audit/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/components/sections/ReviewsSection.vue, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/components/sections/ServicesSection.vue?direct&vue&type=style&index=0&scoped=18b3fd63&lang.css, /components/sections/ServicesSection.vue, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs, /pages/admin/clients/index.vue?macro=true[22m
+[36mi[39m [32mhmr update [39m[2m/pages/admin/clients/index.vue, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/clients/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs, /pages/admin/crm/index.vue?macro=true[22m
+[36mi[39m [32mhmr update [39m[2m/pages/admin/crm/index.vue, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/crm/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/invoices/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/invoices/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/messages/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/messages/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/quotes/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/quotes/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/components/ui/BookingCalendar.vue, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css[22m
+[36mi[39m [32mhmr update [39m[2m/components/ui/CardStack.vue, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/reviews/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/reviews/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/tasks/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/tasks/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/audit/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/audit/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/tasks/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /assets/css/main.css[22m
+[36mi[39m [32mhmr update [39m[2m/assets/css/main.css[22m
+[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 2089ms
+[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 1092ms
+[90m[[90mnuxt[90m][39m [36mi[39m Compiled [36mplugins.server.mjs[39m in 644ms
+[90m[[90mnuxt[90m][39m [36mi[39m Compiled [36mplugins.client.mjs[39m in 703.59ms
+[90m[[90mnuxt[90m][39m [36mi[39m Compiled [36mtypes/plugins.d.ts[39m in 1207.43ms
+[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 11989ms
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /components/sections/ProjectHelixCarousel.vue[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/index.vue, /pages/admin/crm/index.vue, /pages/admin/clients/index.vue[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/pages/admin/clients/index.vue, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/clients/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs, /pages/admin/clients/index.vue?macro=true[22m
+[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 2044ms
+[90m[[90mnuxt[90m][39m [36mi[39m Compiled [36mplugins.server.mjs[39m in 690.9ms
+[90m[[90mnuxt[90m][39m [36mi[39m Compiled [36mplugins.client.mjs[39m in 719.22ms
+[90m[[90mnuxt[90m][39m [36mi[39m Compiled [36mtypes/plugins.d.ts[39m in 731.63ms
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/index.vue[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/invoices/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/invoices/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 1410ms
+[90m[[90mnuxt[90m][39m [36mi[39m Compiled [36mplugins.server.mjs[39m in 790.62ms
+[90m[[90mnuxt[90m][39m [36mi[39m Compiled [36mplugins.client.mjs[39m in 798.97ms
+[90m[[90mnuxt[90m][39m [36mi[39m Compiled [36mtypes/plugins.d.ts[39m in 813.45ms
+[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 1117ms
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/invoices/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/invoices/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 1618ms
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/invoices/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m[2m (x2)[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/invoices/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /components/sections/ProjectHelixCarousel.vue[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/index.vue, /components/sections/PortfolioSection.vue, /pages/admin/index.vue[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/projects/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/projects/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 1480ms
+[90m[[90mnuxt[90m][39m [36mi[39m Compiled [36mplugins.server.mjs[39m in 751.88ms
+[90m[[90mnuxt[90m][39m [36mi[39m Compiled [36mplugins.client.mjs[39m in 759.56ms
+[90m[[90mnuxt[90m][39m [36mi[39m Compiled [36mtypes/plugins.d.ts[39m in 767.12ms
+[90m[[90mnitro[90m][39m [32m√[39m Nuxt Nitro server built in 955ms
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/index.vue, /components/sections/PortfolioSection.vue, /pages/admin/index.vue[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/clients/[id].vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/clients/[id].vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Fi18n.options.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Fi18n.options.mjs[22m[2m (x2)[22m
+[36mi[39m [32mhmr update [39m[2m/@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Fi18n.options.mjs[22m[2m (x3)[22m
+[36mi[39m [32mhmr update [39m[2m/@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Fi18n.options.mjs[22m[2m (x4)[22m
+[36mi[39m [32mhmr update [39m[2m/@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Fi18n.options.mjs[22m[2m (x5)[22m
+[36mi[39m [32mhmr update [39m[2m/@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Fi18n.options.mjs[22m[2m (x6)[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/projects/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/projects/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/components/sections/ContactSection.vue?direct&vue&type=style&index=0&scoped=a726b50e&lang.css, /components/sections/ContactSection.vue, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/invoices/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/invoices/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/quotes/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/quotes/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/tasks/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/tasks/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/clients/[id].vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/clients/[id].vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/invoices/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/invoices/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/quotes/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/quotes/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /assets/css/main.css[22m
+[36mi[39m [32mhmr update [39m[2m/assets/css/main.css[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/appointments/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/appointments/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/pages/admin/index.vue, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs, /pages/admin/index.vue?macro=true[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/audit/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/audit/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/invoices/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/invoices/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/pages/admin/crm/index.vue, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/crm/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs, /pages/admin/crm/index.vue?macro=true[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs, /pages/admin/clients/index.vue?macro=true[22m
+[36mi[39m [32mhmr update [39m[2m/pages/admin/clients/index.vue, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/clients/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/reviews/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/reviews/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/messages/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/messages/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/quotes/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/quotes/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/tasks/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/tasks/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/pages/admin/crm/index.vue, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css?direct, /C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/app/assets/css/main.css?direct, /@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /pages/admin/crm/index.vue?macro=true, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs[22m
+[36mi[39m [32mhmr update [39m[2m/@fs/C:/Users/antoine.quarroz/Desktop/LabDev/AntoineQuarrozInde/node_modules/tailwindcss/tailwind.css, /assets/css/main.css, /@id/virtual:nuxt:C%3A%2FUsers%2Fantoine.quarroz%2FDesktop%2FLabDev%2FAntoineQuarrozInde%2F.nuxt%2Froutes.mjs, /pages/admin/crm/index.vue?macro=true[22m
