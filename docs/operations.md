@@ -62,6 +62,24 @@ Ce test ne modifie jamais la production. Un basculement complet doit être test�
 dans une branche Supabase ou un projet temporaire avant toute restauration sur
 le projet principal.
 
+## Tests E2E
+
+Les identifiants Playwright sont conservés localement dans `.env.e2e`, ignoré
+par Git. Le compte de production dédié doit rester membre `viewer` afin que les
+tests puissent lire l'administration sans modifier les données métier.
+
+```dotenv
+E2E_BASE_URL=https://www.antoinequarroz.ch
+E2E_ADMIN_EMAIL=e2e-admin@antoinequarroz.ch
+E2E_ADMIN_PASSWORD=...
+```
+
+Lancer le parcours public et administrateur :
+
+```bash
+npm run test:e2e
+```
+
 ## Google Places
 
 Les avis réels nécessitent ces deux variables dans `.env`, puis une reconstruction
