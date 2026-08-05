@@ -26,6 +26,15 @@ export default defineEventHandler(async (event) => {
   const supabase = getSupabaseAdmin()
   const today = new Date().toISOString().slice(0, 10)
 
+  const { data: newlyOverdue, error: overdueError } = await supabase
+    .from('invoices')
+    .update({ status: 'overdue' })
+    .eq('organization_id', org.id)
+    .eq('status', 'sent')
+    .lt('due_at', today)
+    .select('id')
+  if (overdueError) throw createError({ statusCode: 500, message: overdueError.message })
+
   const [{ data: quotesRows }, { data: invoicesRows }, { data: clientsRows }, { data: sentRows }] = await Promise.all([
     supabase.from('quotes').select('id,number,title,client_id,valid_until,status').eq('organization_id', org.id).eq('status', 'sent'),
     supabase.from('invoices').select('id,number,client_id,due_at,status').eq('organization_id', org.id).in('status', ['sent', 'overdue']),
@@ -151,8 +160,8 @@ export default defineEventHandler(async (event) => {
     actorUserId: user?.id || null,
     action: 'pipeline_reminder_run',
     entityType: 'pipeline',
-    payload: { sentCount, skippedCount, failedCount, date: today, actorEmail: user?.email || null },
+    payload: { sentCount, skippedCount, failedCount, overdueMarkedCount: newlyOverdue?.length || 0, date: today, actorEmail: user?.email || null },
   })
 
-  return { sentCount, skippedCount, failedCount }
+  return { sentCount, skippedCount, failedCount, overdueMarkedCount: newlyOverdue?.length || 0 }
 })

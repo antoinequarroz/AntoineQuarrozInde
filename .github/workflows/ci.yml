@@ -27,6 +27,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci --legacy-peer-deps
+      - run: bash -n scripts/ops/*.sh
       - run: npm test
       - run: npm run typecheck
       - run: npm run build
@@ -56,4 +57,3 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
-

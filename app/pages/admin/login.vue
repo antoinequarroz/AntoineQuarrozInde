@@ -6,6 +6,11 @@ const auth = useAuthStore()
 const email = ref('')
 const password = ref('')
 const error = ref('')
+const hydrated = ref(false)
+
+onMounted(() => {
+  hydrated.value = true
+})
 
 async function handleLogin() {
   if (!email.value || !password.value) return
@@ -48,7 +53,7 @@ async function handleLogin() {
           Acces reserve a l'administrateur
         </p>
 
-        <form class="space-y-5" @submit.prevent="handleLogin">
+        <form class="space-y-5" :data-hydrated="hydrated" @submit.prevent="handleLogin">
           <div>
             <label for="admin-email" class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
               Email
@@ -62,6 +67,7 @@ async function handleLogin() {
               placeholder="admin@domaine.com"
               required
               autofocus
+              :disabled="!hydrated"
             >
           </div>
 
@@ -77,6 +83,7 @@ async function handleLogin() {
               class="input-field"
               placeholder="Mot de passe"
               required
+              :disabled="!hydrated"
             >
           </div>
 
@@ -94,7 +101,7 @@ async function handleLogin() {
           <button
             type="submit"
             class="btn-primary w-full justify-center py-3.5"
-            :disabled="auth.loading"
+            :disabled="auth.loading || !hydrated"
           >
             <svg v-if="auth.loading" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />

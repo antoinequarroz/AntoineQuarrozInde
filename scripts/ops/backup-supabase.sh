@@ -125,6 +125,12 @@ if [[ -n "$OFFSITE_REMOTE" || -n "$AGE_RECIPIENT" ]]; then
   sha256sum "$ENCRYPTED" > "$ENCRYPTED.sha256"
   rclone copyto "$ENCRYPTED" "${OFFSITE_REMOTE%/}/$(basename "$ENCRYPTED")" --immutable
   rclone copyto "$ENCRYPTED.sha256" "${OFFSITE_REMOTE%/}/$(basename "$ENCRYPTED.sha256")" --immutable
+  OFFSITE_KEEP_DAYS="$(read_env OFFSITE_KEEP_DAYS)"
+  OFFSITE_KEEP_DAYS="${OFFSITE_KEEP_DAYS:-30}"
+  rclone delete "$OFFSITE_REMOTE" \
+    --min-age "${OFFSITE_KEEP_DAYS}d" \
+    --include 'aq-supabase-*.tar.gz.age' \
+    --include 'aq-supabase-*.tar.gz.age.sha256'
   date -u +%s > "$BACKUP_ROOT/.last-offsite-backup"
   chmod 600 "$BACKUP_ROOT/.last-offsite-backup"
 fi
