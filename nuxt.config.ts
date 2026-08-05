@@ -63,15 +63,30 @@
       ],
     },
     workbox: {
-      // The lazy-loaded Spline viewer bundle is slightly above Workbox's 2 MiB default.
-      maximumFileSizeToCacheInBytes: 2.5 * 1024 * 1024,
-      globPatterns: ['**/*.{js,css,html,png,svg,ico,woff2}'],
+      // Route and Spline JavaScript is cached on first use below. Excluding it
+      // from precache avoids downloading every route and multi-megabyte 3D
+      // engine chunk during service-worker installation.
+      globPatterns: ['**/*.{css,html,png,svg,ico,woff2}'],
       navigateFallback: '/',
       navigateFallbackDenylist: [/^\/api\//, /^\/admin\//],
       cleanupOutdatedCaches: true,
       clientsClaim: true,
       skipWaiting: true,
       runtimeCaching: [
+        {
+          urlPattern: /^https:\/\/(?:www\.)?antoinequarroz\.ch\/_nuxt\/.*\.js$/i,
+          handler: 'CacheFirst',
+          options: {
+            cacheName: 'nuxt-javascript',
+            expiration: {
+              maxEntries: 80,
+              maxAgeSeconds: 60 * 60 * 24 * 30,
+            },
+            cacheableResponse: {
+              statuses: [0, 200],
+            },
+          },
+        },
         {
           urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
           handler: 'StaleWhileRevalidate',
@@ -87,6 +102,34 @@
             expiration: {
               maxEntries: 20,
               maxAgeSeconds: 60 * 60 * 24 * 365,
+            },
+          },
+        },
+        {
+          urlPattern: /^https:\/\/prod\.spline\.design\/.*\/scene\.splinecode$/i,
+          handler: 'CacheFirst',
+          options: {
+            cacheName: 'spline-scenes',
+            expiration: {
+              maxEntries: 3,
+              maxAgeSeconds: 60 * 60 * 24 * 30,
+            },
+            cacheableResponse: {
+              statuses: [0, 200],
+            },
+          },
+        },
+        {
+          urlPattern: /^https:\/\/unpkg\.com\/@splinetool\/.*/i,
+          handler: 'CacheFirst',
+          options: {
+            cacheName: 'spline-runtime',
+            expiration: {
+              maxEntries: 20,
+              maxAgeSeconds: 60 * 60 * 24 * 30,
+            },
+            cacheableResponse: {
+              statuses: [0, 200],
             },
           },
         },
@@ -127,6 +170,8 @@
         { rel: 'apple-touch-icon', sizes: '180x180', href: '/apple-touch-icon.png' },
         { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
         { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
+        { rel: 'preconnect', href: 'https://prod.spline.design', crossorigin: '' },
+        { rel: 'preconnect', href: 'https://unpkg.com', crossorigin: '' },
         {
           rel: 'stylesheet',
           href: 'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap',
