@@ -28,6 +28,22 @@ métier, l'index des médias et les fichiers du bucket `media/uploads`. Elle est
 gardée 14 jours dans `/var/backups/antoinequarroz` et copiée dans le bucket
 Supabase privé `backups`. Les archives distantes de plus de 14 jours sont aussi
 supprimées.
+
+### Copie indépendante et chiffrée
+
+Le bucket Supabase protège déjà contre la perte du VPS, mais il reste chez le
+même fournisseur que la base. Pour une vraie copie indépendante, configurer un
+remote `rclone` vers Cloudflare R2, S3 ou Backblaze B2 sur le VPS, puis ajouter :
+
+```env
+OFFSITE_RCLONE_REMOTE=aq-r2:antoinequarroz-backups/prod
+OFFSITE_AGE_RECIPIENT=age1...
+REQUIRE_OFFSITE_BACKUP=true
+```
+
+La sauvegarde est chiffrée avec `age` avant son transfert. La clé privée `age`
+doit être conservée hors du VPS (gestionnaire de mots de passe et copie froide).
+Le moniteur vérifie alors qu'une copie indépendante a moins de 36 heures.
 Chaque archive est vérifiée avant son envoi et accompagnée d'une somme SHA-256.
 
 La structure SQL est reconstruite à partir des migrations versionnées dans Git.

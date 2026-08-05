@@ -6,5 +6,9 @@ export default defineNuxtRouteMiddleware(async (to) => {
     if (!auth.isAuthenticated) {
       return navigateTo('/admin/login')
     }
+    const allowedRoles = new Set(['owner', 'admin', 'manager'])
+    if (!auth.organizations.some(organization => allowedRoles.has(organization.role))) {
+      return navigateTo('/portal')
+    }
   }
 })

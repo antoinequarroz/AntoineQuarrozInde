@@ -119,6 +119,16 @@ function openEdit(client: Client) {
   showForm.value = true
 }
 
+async function inviteToPortal(client: Client) {
+  try {
+    const result = await $fetch<{ email: string }>('/api/admin/clients/invite', { method: 'POST', body: { clientId: client.id }, headers: auth.authHeader() })
+    toast.success(`Accès portail activé pour ${result.email}`)
+  }
+  catch (error: any) {
+    toast.error(error?.data?.message || 'Impossible d’activer le portail client')
+  }
+}
+
 async function replaceQuery(patch: Record<string, any>) {
   const nextQuery = { ...route.query, ...patch }
   Object.keys(nextQuery).forEach((key) => {
@@ -436,6 +446,7 @@ onMounted(async () => {
           <div class="mt-3 flex items-center gap-3">
             <NuxtLink :to="`/admin/clients/${client.id}`" class="text-xs text-sky-600">Voir</NuxtLink>
             <button class="text-xs text-violet-600" @click="openEdit(client)">Éditer</button>
+            <button class="text-xs text-cyan-700 dark:text-cyan-300" @click="inviteToPortal(client)">Portail</button>
             <button class="text-xs text-red-500" @click="handleDelete(client.id)">Supprimer</button>
           </div>
         </AdminAdminCard>
@@ -493,6 +504,7 @@ onMounted(async () => {
               <td class="px-5 py-3 text-right space-x-2">
                 <NuxtLink :to="`/admin/clients/${client.id}`" class="text-xs text-sky-600">Voir</NuxtLink>
                 <button class="text-xs text-violet-600" @click="openEdit(client)">Éditer</button>
+                <button class="text-xs text-cyan-700 dark:text-cyan-300" @click="inviteToPortal(client)">Portail</button>
                 <button class="text-xs text-red-500" @click="handleDelete(client.id)">Supprimer</button>
               </td>
             </tr>

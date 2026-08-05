@@ -36,7 +36,7 @@ trap 'rm -rf "$WORK_DIR"' EXIT
 TABLES=(
   organizations organization_memberships clients projects tasks appointments
   quotes quote_items invoices invoice_items articles reviews contact_messages
-  marketing_events audit_logs admin_saved_views
+  marketing_events audit_logs admin_saved_views application_errors
 )
 
 for table in "${TABLES[@]}"; do
@@ -107,6 +107,27 @@ curl --fail --silent --show-error \
   -H "x-upsert: true" \
   --data-binary "@$ARCHIVE.sha256" \
   >/dev/null
+
+# Optional independent copy: encrypted locally before it leaves the VPS, then
+# sent to any rclone-compatible provider (Cloudflare R2, S3, Backblaze B2...).
+OFFSITE_REMOTE="$(read_env OFFSITE_RCLONE_REMOTE)"
+AGE_RECIPIENT="$(read_env OFFSITE_AGE_RECIPIENT)"
+if [[ -n "$OFFSITE_REMOTE" || -n "$AGE_RECIPIENT" ]]; then
+  if [[ -z "$OFFSITE_REMOTE" || -z "$AGE_RECIPIENT" ]]; then
+    echo "Both OFFSITE_RCLONE_REMOTE and OFFSITE_AGE_RECIPIENT are required" >&2
+    exit 1
+  fi
+  command -v age >/dev/null || { echo "age is required for offsite encryption" >&2; exit 1; }
+  command -v rclone >/dev/null || { echo "rclone is required for offsite backups" >&2; exit 1; }
+
+  ENCRYPTED="$WORK_DIR/$(basename "$ARCHIVE").age"
+  age --recipient "$AGE_RECIPIENT" --output "$ENCRYPTED" "$ARCHIVE"
+  sha256sum "$ENCRYPTED" > "$ENCRYPTED.sha256"
+  rclone copyto "$ENCRYPTED" "${OFFSITE_REMOTE%/}/$(basename "$ENCRYPTED")" --immutable
+  rclone copyto "$ENCRYPTED.sha256" "${OFFSITE_REMOTE%/}/$(basename "$ENCRYPTED.sha256")" --immutable
+  date -u +%s > "$BACKUP_ROOT/.last-offsite-backup"
+  chmod 600 "$BACKUP_ROOT/.last-offsite-backup"
+fi
 
 find "$BACKUP_ROOT" -maxdepth 1 -type f -name 'aq-supabase-*.tar.gz' -mtime "+$KEEP_DAYS" -delete
 find "$BACKUP_ROOT" -maxdepth 1 -type f -name 'aq-supabase-*.tar.gz.sha256' -mtime "+$KEEP_DAYS" -delete

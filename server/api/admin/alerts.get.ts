@@ -10,6 +10,7 @@ export default defineEventHandler(async (event) => {
     tasksRes,
     appointmentsRes,
     messagesRes,
+    applicationErrorsRes,
   ] = await Promise.all([
     supabase.from('invoices')
       .select('number', { count: 'exact', head: false })
@@ -35,9 +36,13 @@ export default defineEventHandler(async (event) => {
       .select('id', { count: 'exact', head: false })
       .eq('organization_id', org.id)
       .eq('status', 'new'),
+    supabase.from('application_errors')
+      .select('id', { count: 'exact', head: true })
+      .eq('organization_id', org.id)
+      .is('resolved_at', null),
   ])
 
-  const errors = [invoicesRes.error, quotesRes.error, tasksRes.error, appointmentsRes.error, messagesRes.error].filter(Boolean)
+  const errors = [invoicesRes.error, quotesRes.error, tasksRes.error, appointmentsRes.error, messagesRes.error, applicationErrorsRes.error].filter(Boolean)
   if (errors.length) {
     throw createError({ statusCode: 500, message: errors[0]!.message })
   }
@@ -48,12 +53,14 @@ export default defineEventHandler(async (event) => {
   const draftQuotes = quotesRes.count || 0
   const dueTasks = tasksRes.count || 0
   const nextAppointment = appointmentsRes.data?.[0]
+  const applicationErrors = applicationErrorsRes.count || 0
 
   if (overdueCount > 0) alerts.push({ id: 'overdue', text: `${overdueCount} facture(s) en retard`, to: '/admin/invoices' })
   if (newMessages > 0) alerts.push({ id: 'messages', text: `${newMessages} nouveau(x) message(s)`, to: '/admin/messages' })
   if (draftQuotes > 0) alerts.push({ id: 'quotes', text: `${draftQuotes} devis en brouillon`, to: '/admin/quotes' })
   if (dueTasks > 0) alerts.push({ id: 'tasks', text: `${dueTasks} tache(s) a traiter sous 3 jours`, to: '/admin/tasks' })
   if (nextAppointment) alerts.push({ id: 'appt', text: `Prochain RDV: ${nextAppointment.title}`, to: '/admin/appointments' })
+  if (applicationErrors > 0) alerts.push({ id: 'app-errors', text: `${applicationErrors} erreur(s) applicative(s) à traiter`, to: '/admin/errors' })
 
   return alerts
 })

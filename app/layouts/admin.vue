@@ -6,6 +6,7 @@ const route = useRoute()
 const navItems = [
   { label: 'Dashboard', icon: 'grid', href: '/admin' },
   { label: 'CRM', icon: 'book-open', href: '/admin/crm' },
+  { label: 'Analytics', icon: 'trending-up', href: '/admin/analytics' },
   { label: 'Clients', icon: 'users', href: '/admin/clients' },
   { label: 'Taches', icon: 'check-square', href: '/admin/tasks' },
   { label: 'Devis', icon: 'file-plus', href: '/admin/quotes' },
@@ -16,6 +17,7 @@ const navItems = [
   { label: 'Avis', icon: 'star', href: '/admin/reviews' },
   { label: 'Messages', icon: 'mail', href: '/admin/messages' },
   { label: 'Audit', icon: 'shield', href: '/admin/audit' },
+  { label: 'Erreurs', icon: 'shield', href: '/admin/errors' },
 ]
 
 const isSidebarOpen = ref(false)
@@ -23,6 +25,8 @@ const isStandalone = ref(true)
 const showSearch = ref(false)
 const searchQuery = ref('')
 const showAlerts = ref(false)
+const closeSearchDialog = () => closeSearch()
+const { dialogRef: searchDialogRef, handleDialogKeydown: handleSearchDialogKeydown } = useAccessibleDialog(showSearch, closeSearchDialog, 'input[type="search"]')
 const searchResults = ref<Array<{ key: string, label: string, sub: string, to: string }>>([])
 const alerts = ref<Array<{ id: string, text: string, to: string }>>([])
 const loadingSearch = ref(false)
@@ -146,7 +150,7 @@ watch(() => auth.currentOrganizationId, () => {
           <span class="font-display font-semibold text-xs text-gray-900 dark:text-white truncate block">Antoine Quarroz</span>
           <span class="text-xs text-gray-400 block">Admin</span>
         </div>
-        <button class="lg:hidden text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 ml-1" @click="isSidebarOpen = false">
+        <button aria-label="Fermer le menu" class="lg:hidden min-h-11 min-w-11 rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 ml-1" @click="isSidebarOpen = false">
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
@@ -159,7 +163,7 @@ watch(() => auth.currentOrganizationId, () => {
           v-for="item in navItems"
           :key="item.href"
           :to="item.href"
-          class="relative flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-medium transition-all duration-150"
+          class="relative flex min-h-11 lg:min-h-9 items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-medium transition-all duration-150"
           :class="isActive(item.href)
             ? 'bg-gradient-to-r from-violet-50 to-transparent dark:from-violet-500/10 text-violet-600 dark:text-violet-400'
             : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/[0.04] hover:text-gray-900 dark:hover:text-white'"
@@ -199,7 +203,8 @@ watch(() => auth.currentOrganizationId, () => {
     <div class="flex-1 lg:ml-56 flex flex-col min-h-screen min-w-0">
       <header class="admin-topbar sticky top-0 z-30 h-14 flex items-center gap-2 sm:gap-3 px-3 sm:px-6 bg-white/90 dark:bg-[#111118]/90 backdrop-blur-xl border-b border-gray-100 dark:border-white/[0.06]">
         <button
-          class="lg:hidden w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 dark:hover:bg-white/[0.06] transition-all"
+          aria-label="Ouvrir le menu"
+          class="lg:hidden w-11 h-11 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 dark:hover:bg-white/[0.06] transition-all"
           @click="isSidebarOpen = true"
         >
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -226,6 +231,7 @@ watch(() => auth.currentOrganizationId, () => {
         <select
           v-if="auth.organizations.length > 0"
           v-model="selectedOrganizationId"
+          aria-label="Organisation active"
           class="h-8 max-w-[44vw] sm:max-w-none px-2 rounded-lg border border-gray-200 dark:border-white/[0.1] bg-white dark:bg-[#181826] text-xs text-gray-700 dark:text-gray-200"
         >
           <option
@@ -239,7 +245,9 @@ watch(() => auth.currentOrganizationId, () => {
 
         <div class="relative">
           <button
-            class="relative h-8 w-8 rounded-lg border border-gray-200 dark:border-white/[0.1] text-gray-500 dark:text-gray-300"
+            :aria-expanded="showAlerts"
+            aria-label="Afficher les notifications"
+            class="relative h-11 w-11 sm:h-9 sm:w-9 rounded-lg border border-gray-200 dark:border-white/[0.1] text-gray-500 dark:text-gray-300"
             @click="showAlerts = !showAlerts"
           >
             <svg class="mx-auto h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -280,11 +288,16 @@ watch(() => auth.currentOrganizationId, () => {
 
   <Transition name="fade">
     <div v-if="showSearch" class="fixed inset-0 z-[80] flex items-start justify-center bg-black/40 p-3 sm:p-6" @click.self="closeSearch">
-      <div class="w-full max-w-2xl rounded-2xl border border-gray-200 bg-white p-3 shadow-2xl dark:border-white/[0.1] dark:bg-[#151522]">
+      <div ref="searchDialogRef" role="dialog" aria-modal="true" aria-labelledby="admin-search-title" tabindex="-1" class="w-full max-w-2xl rounded-2xl border border-gray-200 bg-white p-3 shadow-2xl dark:border-white/[0.1] dark:bg-[#151522]" @keydown="handleSearchDialogKeydown">
+        <div class="mb-2 flex items-center justify-between gap-3">
+          <h2 id="admin-search-title" class="text-sm font-semibold text-gray-900 dark:text-white">Recherche globale</h2>
+          <button type="button" aria-label="Fermer la recherche" class="grid h-11 w-11 place-items-center rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-white/[0.06]" @click="closeSearch">×</button>
+        </div>
+        <label for="admin-global-search" class="sr-only">Rechercher dans l’administration</label>
         <input
+          id="admin-global-search"
           v-model="searchQuery"
-          type="text"
-          autofocus
+          type="search"
           class="input-field"
           placeholder="Rechercher clients, devis, factures, tâches, projets, articles..."
         >

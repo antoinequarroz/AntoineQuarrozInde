@@ -20,8 +20,10 @@ read_env() {
 
 env_max_backup_age="$(read_env MAX_BACKUP_AGE_HOURS)"
 env_max_disk_usage="$(read_env MAX_DISK_USAGE_PERCENT)"
+require_offsite="$(read_env REQUIRE_OFFSITE_BACKUP)"
 MAX_BACKUP_AGE_HOURS="${MAX_BACKUP_AGE_HOURS:-${env_max_backup_age:-36}}"
 MAX_DISK_USAGE_PERCENT="${MAX_DISK_USAGE_PERCENT:-${env_max_disk_usage:-85}}"
+REQUIRE_OFFSITE_BACKUP="${REQUIRE_OFFSITE_BACKUP:-${require_offsite:-false}}"
 
 send_alert() {
   local subject="$1"
@@ -56,6 +58,16 @@ docker compose -f "$PROJECT_DIR/docker-compose.yml" ps --status running --servic
 disk_usage="$(df -P "$PROJECT_DIR" | awk 'NR == 2 { gsub("%", "", $5); print $5 }')"
 if [[ ! "$disk_usage" =~ ^[0-9]+$ ]] || (( disk_usage >= MAX_DISK_USAGE_PERCENT )); then
   issues+=("disk usage at ${disk_usage:-unknown}%")
+fi
+
+if [[ "$REQUIRE_OFFSITE_BACKUP" == "true" ]]; then
+  offsite_marker="$BACKUP_ROOT/.last-offsite-backup"
+  if [[ ! -f "$offsite_marker" ]]; then
+    issues+=("no independent offsite backup found")
+  else
+    offsite_age_hours=$(( ( $(date +%s) - $(cat "$offsite_marker") ) / 3600 ))
+    (( offsite_age_hours <= MAX_BACKUP_AGE_HOURS )) || issues+=("latest independent offsite backup is ${offsite_age_hours}h old")
+  fi
 fi
 
 latest_backup="$(find "$BACKUP_ROOT" -maxdepth 1 -type f -name 'aq-supabase-*.tar.gz' -printf '%T@ %p\n' 2>/dev/null | sort -nr | head -n 1 | cut -d' ' -f2-)"

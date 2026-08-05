@@ -14,6 +14,7 @@ const props = withDefaults(defineProps<Props>(), {
 const viewerReady = ref(false)
 const sceneLoaded = ref(false)
 const loadFailed = ref(false)
+const motionReduced = ref(false)
 let frameId: number | null = null
 let idleId: number | null = null
 let fallbackTimer: ReturnType<typeof setTimeout> | null = null
@@ -30,6 +31,8 @@ async function loadViewer() {
 }
 
 function scheduleViewer() {
+  motionReduced.value = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  if (motionReduced.value) return
   frameId = window.requestAnimationFrame(() => {
     const connection = (navigator as Navigator & {
       connection?: { saveData?: boolean; effectiveType?: string }
@@ -61,7 +64,7 @@ onBeforeUnmount(() => {
   <ClientOnly>
     <div :class="['spline-shell overflow-hidden bg-black', props.className, props.opacityClass]" aria-hidden="true">
       <spline-viewer
-        v-if="viewerReady"
+        v-if="viewerReady && !motionReduced"
         :url="props.sceneUrl"
         class="h-full w-full"
         loading="eager"
@@ -74,7 +77,7 @@ onBeforeUnmount(() => {
       />
 
       <div
-        v-if="!loadFailed"
+        v-if="!loadFailed && !motionReduced"
         class="pointer-events-none absolute inset-0 grid place-items-center bg-black transition-opacity duration-500"
         :class="sceneLoaded ? 'opacity-0' : 'opacity-100'"
       >
@@ -83,7 +86,7 @@ onBeforeUnmount(() => {
           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.96 7.96 0 014 12H0c0 3.042 1.135 5.824 3 7.938l2-2.647z" />
         </svg>
       </div>
-      <div v-else class="absolute inset-0 bg-black" />
+      <div v-else class="spline-static absolute inset-0 bg-black" />
     </div>
     <template #fallback>
       <div :class="['bg-black', props.className, props.opacityClass]" />
@@ -94,6 +97,13 @@ onBeforeUnmount(() => {
 <style scoped>
 .spline-shell {
   contain: layout paint style;
+}
+
+.spline-static {
+  background:
+    radial-gradient(circle at 58% 42%, rgb(124 58 237 / 18%), transparent 32%),
+    radial-gradient(circle at 68% 58%, rgb(34 211 238 / 10%), transparent 28%),
+    #000;
 }
 
 spline-viewer {

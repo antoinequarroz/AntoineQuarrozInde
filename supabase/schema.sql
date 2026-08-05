@@ -180,6 +180,20 @@ create table if not exists public.appointments (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.application_errors (
+  id uuid primary key default gen_random_uuid(),
+  organization_id uuid references public.organizations(id) on delete set null,
+  source text not null check (source in ('client', 'server')),
+  severity text not null default 'error' check (severity in ('warning', 'error', 'fatal')),
+  message text not null,
+  stack text,
+  path text,
+  fingerprint text not null,
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  resolved_at timestamptz
+);
+
 create index if not exists idx_projects_organization_id on public.projects(organization_id);
 create index if not exists idx_projects_case_study_published on public.projects(organization_id, case_study_published) where case_study_published = true;
 create index if not exists idx_articles_organization_id on public.articles(organization_id);
@@ -200,6 +214,9 @@ create index if not exists idx_quotes_organization_id on public.quotes(organizat
 create index if not exists idx_invoices_organization_id on public.invoices(organization_id);
 create index if not exists idx_appointments_organization_id on public.appointments(organization_id);
 create index if not exists idx_appointments_starts_at on public.appointments(starts_at);
+create index if not exists idx_application_errors_created_at on public.application_errors(created_at desc);
+create index if not exists idx_application_errors_org_unresolved on public.application_errors(organization_id, created_at desc) where resolved_at is null;
+create index if not exists idx_application_errors_fingerprint on public.application_errors(fingerprint, created_at desc);
 
 alter table public.projects enable row level security;
 alter table public.articles enable row level security;
@@ -214,3 +231,7 @@ alter table public.tasks enable row level security;
 alter table public.quotes enable row level security;
 alter table public.invoices enable row level security;
 alter table public.appointments enable row level security;
+alter table public.application_errors enable row level security;
+
+revoke all on table public.application_errors from anon, authenticated;
+grant all on table public.application_errors to service_role;

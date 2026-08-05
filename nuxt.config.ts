@@ -189,6 +189,7 @@
   runtimeConfig: {
     resendApiKey: process.env.RESEND_API_KEY || '',
     contactEmail: process.env.CONTACT_EMAIL || 'info@antoinequarroz.ch',
+    monitoringAlertEmail: process.env.MONITORING_ALERT_EMAIL || '',
     turnstileSecretKey: process.env.TURNSTILE_SECRET_KEY || '',
     googlePlacesApiKey: process.env.GOOGLE_PLACES_API_KEY || '',
     googlePlaceId: process.env.GOOGLE_PLACE_ID || '',
