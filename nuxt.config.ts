@@ -42,7 +42,7 @@
       name: 'Antoine Quarroz',
       short_name: 'AQuarroz',
       id: '/',
-      description: 'Developpeur web & mobile freelance en Valais.',
+      description: 'Developpeur web & mobile freelance en Valais, disponible a distance dans le monde.',
       theme_color: '#0a0b18',
       background_color: '#0a0b18',
       display: 'standalone',
@@ -155,7 +155,7 @@
         { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' },
         {
           name: 'description',
-          content: 'Antoine Quarroz, développeur web & mobile freelance basé en Valais (Suisse). Création de sites web, applications mobiles et CMS sur mesure.',
+          content: 'Antoine Quarroz, développeur web & mobile freelance basé en Valais (Suisse), disponible à distance dans le monde. Sites, applications et CMS sur mesure.',
         },
         { name: 'format-detection', content: 'telephone=no' },
         { property: 'og:type', content: 'website' },

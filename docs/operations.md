@@ -6,6 +6,9 @@
 `antoinequarroz-monitor.timer` l'appelle toutes les cinq minutes et vérifie que
 les services Docker `web` et `caddy` tournent. Une alerte est envoyée après
 trois échecs consécutifs, puis une notification de rétablissement.
+Le contrôle surveille aussi l'espace disque et l'âge de la dernière sauvegarde.
+Les seuils sont configurables avec `MAX_DISK_USAGE_PERCENT` (85 par défaut) et
+`MAX_BACKUP_AGE_HOURS` (36 heures par défaut).
 
 L'adresse destinataire est `MONITORING_ALERT_EMAIL` dans `.env`, avec
 `CONTACT_EMAIL` comme repli. L'envoi utilise `RESEND_API_KEY`.
@@ -25,6 +28,7 @@ métier, l'index des médias et les fichiers du bucket `media/uploads`. Elle est
 gardée 14 jours dans `/var/backups/antoinequarroz` et copiée dans le bucket
 Supabase privé `backups`. Les archives distantes de plus de 14 jours sont aussi
 supprimées.
+Chaque archive est vérifiée avant son envoi et accompagnée d'une somme SHA-256.
 
 La structure SQL est reconstruite à partir des migrations versionnées dans Git.
 Les utilisateurs Supabase Auth ne sont pas exportés par cette sauvegarde métier ;

@@ -1,4 +1,5 @@
 import { computeTotals, normalizeBillingItems } from '../utils/billing'
+import { normalizeInvoicePaymentState } from '../utils/invoiceState'
 import { normalizeIban, validateQrReference } from '../utils/typstBilling'
 
 export default defineEventHandler(async (event) => {
@@ -7,6 +8,13 @@ export default defineEventHandler(async (event) => {
   const supabase = getSupabaseAdmin()
   const items = normalizeBillingItems(body.items)
   const totals = computeTotals(items)
+  let paymentState
+  try {
+    paymentState = normalizeInvoicePaymentState(body.status, body.paidAt)
+  }
+  catch (error) {
+    throw createError({ statusCode: 400, message: error instanceof Error ? error.message : 'Invalid invoice state' })
+  }
   const referenceType = String(body.paymentReferenceType || 'NON').toUpperCase() as 'NON' | 'SCOR' | 'QRR'
   const { data: billingOrg } = await supabase.from('organizations').select('billing_iban').eq('id', org.id).single()
   const normalizedReference = validateQrReference(normalizeIban(String(billingOrg?.billing_iban || '')), referenceType, body.paymentReference)
@@ -21,10 +29,10 @@ export default defineEventHandler(async (event) => {
     tax_cents: totals.taxCents,
     total_cents: totals.totalCents || Number(body.amountCents || 0),
     currency: String(body.currency || 'CHF'),
-    status: body.status || 'draft',
+    status: paymentState.status,
     issued_at: body.issuedAt || null,
     due_at: body.dueAt || null,
-    paid_at: body.paidAt || null,
+    paid_at: paymentState.paidAt,
     notes: body.notes || null,
     payment_reference_type: normalizedReference.type,
     payment_reference: normalizedReference.reference,

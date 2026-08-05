@@ -2,6 +2,10 @@
 set -euo pipefail
 
 ARCHIVE="${1:?Usage: verify-backup.sh /path/to/backup.tar.gz}"
+[[ -f "$ARCHIVE" ]] || { echo "Backup archive not found: $ARCHIVE" >&2; exit 1; }
+if [[ -f "$ARCHIVE.sha256" ]]; then
+  (cd "$(dirname "$ARCHIVE")" && sha256sum --check "$(basename "$ARCHIVE.sha256")")
+fi
 WORK_DIR="$(mktemp -d)"
 trap 'rm -rf "$WORK_DIR"' EXIT
 

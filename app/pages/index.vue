@@ -4,15 +4,15 @@ const siteUrl = runtimeConfig.public.siteUrl.replace(/\/+$/, '')
 
 useSeoMeta({
   title: 'Antoine Quarroz — Développeur Web en Valais | Freelance',
-  description: 'Développeur web en Valais, Antoine Quarroz conçoit des sites web performants, des applications mobiles et des solutions CMS sur mesure pour indépendants, PME et startups.',
+  description: 'Développeur web freelance basé en Valais, Antoine Quarroz conçoit des sites, applications mobiles et CMS sur mesure pour des clients en Suisse et à distance dans le monde.',
   ogTitle: 'Antoine Quarroz — Développeur Web en Valais',
-  ogDescription: 'Sites web, applications mobiles et CMS sur mesure en Valais (Suisse).',
+  ogDescription: 'Sites web, applications mobiles et CMS sur mesure depuis le Valais, pour la Suisse et à distance dans le monde.',
   ogUrl: `${siteUrl}/`,
   robots: 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1',
   author: 'Antoine Quarroz',
   keywords: 'Antoine Quarroz, développeur web Valais, développeur web Suisse, freelance web Valais, création site internet Valais, développeur Nuxt Vue',
   twitterTitle: 'Antoine Quarroz — Développeur Web en Valais',
-  twitterDescription: 'Freelance web & mobile en Valais. Sites, apps et CMS sur mesure.',
+  twitterDescription: 'Freelance web & mobile en Valais, disponible à distance partout dans le monde.',
 })
 
 useHead({
@@ -50,7 +50,7 @@ useHead({
             name: 'Antoine Quarroz',
             url: `${siteUrl}/`,
             image: `${siteUrl}/about.jpg`,
-            areaServed: ['Valais', 'Suisse', "Val d'Herens", "Val d'Anniviers"],
+            areaServed: ['Valais', 'Suisse', 'Europe', 'Monde'],
             founder: { '@id': `${siteUrl}/#person` },
             sameAs: [],
           },

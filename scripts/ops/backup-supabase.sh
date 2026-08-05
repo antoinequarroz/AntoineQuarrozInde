@@ -74,6 +74,9 @@ EOF
 
 tar -C "$WORK_DIR" -czf "$ARCHIVE" .
 chmod 600 "$ARCHIVE"
+"$PROJECT_DIR/scripts/ops/verify-backup.sh" "$ARCHIVE"
+sha256sum "$ARCHIVE" > "$ARCHIVE.sha256"
+chmod 600 "$ARCHIVE.sha256"
 
 # Keep an off-VPS copy in a private Supabase Storage bucket.
 curl --silent --show-error \
@@ -95,7 +98,18 @@ curl --fail --silent --show-error \
   --data-binary "@$ARCHIVE" \
   >/dev/null
 
+curl --fail --silent --show-error \
+  "$SUPABASE_URL/storage/v1/object/backups/database/$(basename "$ARCHIVE.sha256")" \
+  -X POST \
+  -H "apikey: $SERVICE_KEY" \
+  -H "Authorization: Bearer $SERVICE_KEY" \
+  -H "Content-Type: text/plain" \
+  -H "x-upsert: true" \
+  --data-binary "@$ARCHIVE.sha256" \
+  >/dev/null
+
 find "$BACKUP_ROOT" -maxdepth 1 -type f -name 'aq-supabase-*.tar.gz' -mtime "+$KEEP_DAYS" -delete
+find "$BACKUP_ROOT" -maxdepth 1 -type f -name 'aq-supabase-*.tar.gz.sha256' -mtime "+$KEEP_DAYS" -delete
 
 REMOTE_CUTOFF="$(date -u -d "$KEEP_DAYS days ago" +%Y-%m-%dT%H:%M:%SZ)"
 REMOTE_INDEX="$WORK_DIR/remote-backups.json"
