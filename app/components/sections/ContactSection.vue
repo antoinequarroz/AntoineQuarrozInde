@@ -181,7 +181,7 @@ const contactInfo = computed(() => [
           :visible="{ opacity: 1, x: 0, transition: { delay: 100, duration: 600 } }"
           class="lg:col-span-3"
         >
-          <form class="card-glass p-4 max-[390px]:p-3.5 md:p-8 space-y-4 md:space-y-5" @submit.prevent="handleSubmit">
+          <form id="contact-form" class="card-glass scroll-mt-24 p-4 max-[390px]:p-3.5 md:p-8 space-y-4 md:space-y-5" @submit.prevent="handleSubmit">
             <div class="hidden" aria-hidden="true">
               <label for="contact-website">Website</label>
               <input

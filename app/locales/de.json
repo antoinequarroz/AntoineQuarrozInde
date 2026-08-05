@@ -5,7 +5,10 @@
     "services": "Leistungen",
     "portfolio": "Portfolio",
     "blog": "Blog",
-    "contact": "Kontakt"
+    "contact": "Kontakt",
+    "open_menu": "Menü öffnen",
+    "close_menu": "Menü schließen",
+    "mobile_menu": "Hauptmenü"
   },
   "hero": {
     "badge": "Verfügbar für neue Projekte",
@@ -93,6 +96,10 @@
     "cms": "CMS",
     "view": "Projekt ansehen",
     "code": "Quellcode",
+    "technologies": "Technologien",
+    "verifiable_links": "Prüfbare Links",
+    "live_available": "Live-Projekt verfügbar",
+    "source_available": "Quellcode verfügbar",
     "selection_count": "{count} Projekt(e) in dieser Auswahl. Scrollen Sie, um sie zu drehen, bevor der nächste Abschnitt erscheint.",
     "case_study": "Case Study",
     "context": "Kontext",
@@ -138,7 +145,13 @@
     "read": "Artikel lesen",
     "view_all": "Alle Artikel ansehen",
     "preview": "Artikelvorschau",
-    "open": "Vollständigen Artikel lesen"
+    "open": "Vollständigen Artikel lesen",
+    "preview_action": "Vorschau",
+    "previous": "Vorheriger Artikel",
+    "next": "Nächster Artikel",
+    "show_article": "{title} anzeigen",
+    "pause_carousel": "Rotation pausieren",
+    "resume_carousel": "Rotation fortsetzen"
   },
   "contact": {
     "badge": "Kontakt",

@@ -5,7 +5,10 @@
     "services": "Services",
     "portfolio": "Portfolio",
     "blog": "Blog",
-    "contact": "Contact"
+    "contact": "Contact",
+    "open_menu": "Open menu",
+    "close_menu": "Close menu",
+    "mobile_menu": "Main menu"
   },
   "hero": {
     "badge": "Available for new projects",
@@ -93,6 +96,10 @@
     "cms": "CMS",
     "view": "View project",
     "code": "Source code",
+    "technologies": "Technologies",
+    "verifiable_links": "Verifiable links",
+    "live_available": "Live project available",
+    "source_available": "Source code available",
     "selection_count": "{count} project(s) in this selection. Scroll to rotate them before moving to the next section.",
     "case_study": "Case study",
     "context": "Context",
@@ -138,7 +145,13 @@
     "read": "Read article",
     "view_all": "View all articles",
     "preview": "Article preview",
-    "open": "Read full article"
+    "open": "Read full article",
+    "preview_action": "Preview",
+    "previous": "Previous article",
+    "next": "Next article",
+    "show_article": "Show {title}",
+    "pause_carousel": "Pause rotation",
+    "resume_carousel": "Resume rotation"
   },
   "contact": {
     "badge": "Contact",

@@ -29,8 +29,12 @@ const emit = defineEmits<{
   (e: 'card-click', item: CardStackItem): void
 }>()
 
+const { t } = useI18n()
 const active = ref(0)
 const hovering = ref(false)
+const focusWithin = ref(false)
+const userPaused = ref(false)
+const reducedMotion = ref(false)
 
 watch(
   () => [props.items.length, props.initialIndex] as const,
@@ -74,15 +78,44 @@ function prev() {
 
 let timer: ReturnType<typeof setInterval> | null = null
 
-onMounted(() => {
-  if (!props.autoAdvance) return
+const isPaused = computed(() => userPaused.value || reducedMotion.value || hovering.value || focusWithin.value)
+
+function clearTimer() {
+  if (!timer) return
+  clearInterval(timer)
+  timer = null
+}
+
+function startTimer() {
+  clearTimer()
+  if (!props.autoAdvance || props.items.length < 2 || reducedMotion.value) return
   timer = setInterval(() => {
-    if (!hovering.value) next()
-  }, Math.max(1200, props.intervalMs))
+    if (!isPaused.value) next()
+  }, Math.max(3000, props.intervalMs))
+}
+
+function togglePlayback() {
+  userPaused.value = !userPaused.value
+}
+
+let motionQuery: MediaQueryList | null = null
+function updateMotionPreference() {
+  reducedMotion.value = Boolean(motionQuery?.matches)
+  if (reducedMotion.value) userPaused.value = true
+  startTimer()
+}
+
+onMounted(() => {
+  motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+  updateMotionPreference()
+  motionQuery.addEventListener('change', updateMotionPreference)
 })
 
+watch(() => [props.autoAdvance, props.intervalMs, props.items.length] as const, startTimer)
+
 onBeforeUnmount(() => {
-  if (timer) clearInterval(timer)
+  clearTimer()
+  motionQuery?.removeEventListener('change', updateMotionPreference)
 })
 </script>
 
@@ -91,6 +124,8 @@ onBeforeUnmount(() => {
     class="w-full"
     @mouseenter="hovering = true"
     @mouseleave="hovering = false"
+    @focusin="focusWithin = true"
+    @focusout="focusWithin = false"
   >
     <div class="relative w-full h-[430px] md:h-[470px]">
       <div class="pointer-events-none absolute inset-x-0 top-4 mx-auto h-44 w-[78%] rounded-full bg-violet-500/10 blur-3xl" />
@@ -100,7 +135,7 @@ onBeforeUnmount(() => {
         <article
           v-for="entry in visibleItems"
           :key="entry.item.id"
-          class="absolute bottom-0 w-[min(90vw,720px)] md:w-[640px] h-[340px] md:h-[360px] rounded-2xl overflow-hidden border transition-all duration-500 text-left"
+          class="absolute bottom-0 w-[min(90vw,720px)] md:w-[640px] h-[340px] md:h-[360px] rounded-2xl overflow-hidden border transition-[transform,opacity,border-color,box-shadow] duration-500 text-left"
           :class="entry.off === 0
             ? 'border-violet-300/40 shadow-[0_24px_70px_rgba(91,33,182,0.35)]'
             : 'border-white/15 shadow-[0_16px_45px_rgba(0,0,0,0.45)]'"
@@ -138,14 +173,14 @@ onBeforeUnmount(() => {
                 class="inline-flex min-h-11 items-center gap-2 rounded-xl border border-violet-200/25 bg-black/15 px-4 text-sm font-semibold text-violet-100 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300"
                 @click="emit('card-click', entry.item)"
               >
-                Aperçu
+                {{ t('blog.preview_action') }}
               </button>
               <NuxtLink
                 v-if="entry.item.href"
                 :to="entry.item.href"
                 class="inline-flex min-h-11 items-center gap-2 rounded-xl px-4 text-sm font-semibold text-violet-100 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300"
               >
-                {{ entry.item.ctaLabel || 'Lire l’article' }}
+                {{ entry.item.ctaLabel || t('blog.read') }}
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
                 </svg>
@@ -156,18 +191,18 @@ onBeforeUnmount(() => {
             v-if="entry.off !== 0"
             type="button"
             class="absolute inset-0 z-20 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-violet-300"
-            :aria-label="`Afficher ${entry.item.title}`"
+            :aria-label="t('blog.show_article', { title: entry.item.title })"
             @click="active = entry.i"
           />
         </article>
       </div>
     </div>
 
-    <div class="mt-7 flex items-center justify-center gap-3">
+    <div class="mt-7 flex flex-wrap items-center justify-center gap-3">
       <button
         type="button"
         class="w-11 h-11 rounded-full border border-violet-300/30 bg-white/5 text-white/80 hover:bg-violet-500/20 transition"
-        aria-label="Article précédent"
+        :aria-label="t('blog.previous')"
         @click="prev"
       >
         ‹
@@ -177,9 +212,9 @@ onBeforeUnmount(() => {
           v-for="(item, idx) in props.items"
           :key="item.id"
           type="button"
-          class="relative h-11 w-11 rounded-full transition-colors after:absolute after:left-1/2 after:top-1/2 after:h-2.5 after:-translate-x-1/2 after:-translate-y-1/2 after:rounded-full after:transition-all after:duration-300"
+          class="relative h-11 w-11 rounded-full transition-colors after:absolute after:left-1/2 after:top-1/2 after:h-2.5 after:-translate-x-1/2 after:-translate-y-1/2 after:rounded-full after:transition-[width,background-color] after:duration-300"
           :class="idx === active ? 'after:w-7 after:bg-violet-300' : 'after:w-2.5 after:bg-white/35 hover:after:bg-white/60'"
-          :aria-label="`Afficher ${item.title}`"
+          :aria-label="t('blog.show_article', { title: item.title })"
           :aria-current="idx === active ? 'true' : undefined"
           @click="active = idx"
         />
@@ -187,10 +222,21 @@ onBeforeUnmount(() => {
       <button
         type="button"
         class="w-11 h-11 rounded-full border border-violet-300/30 bg-white/5 text-white/80 hover:bg-violet-500/20 transition"
-        aria-label="Article suivant"
+        :aria-label="t('blog.next')"
         @click="next"
       >
         ›
+      </button>
+      <button
+        v-if="props.autoAdvance && props.items.length > 1"
+        type="button"
+        class="inline-flex min-h-11 items-center gap-2 rounded-full border border-violet-300/30 bg-white/5 px-4 text-sm font-semibold text-white/80 transition-colors duration-150 hover:bg-violet-500/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300"
+        :aria-pressed="userPaused"
+        @click="togglePlayback"
+      >
+        <svg v-if="userPaused" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3l14 9-14 9V3z" /></svg>
+        <svg v-else class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5v14m6-14v14" /></svg>
+        {{ userPaused ? t('blog.resume_carousel') : t('blog.pause_carousel') }}
       </button>
     </div>
   </div>

@@ -33,19 +33,27 @@ if ([string]::IsNullOrWhiteSpace($ProjectDir)) {
   Write-Step "Recherche automatique du dossier projet sur le VPS..."
   $findCmd = "find / -name docker-compose.yml 2>/dev/null"
   $composePaths = & ssh -i $KeyPath $remote $findCmd
+  if ($LASTEXITCODE -ne 0) {
+    throw "La recherche du projet sur le VPS a échoué."
+  }
   if (-not $composePaths) {
     throw "Aucun docker-compose.yml trouvé sur le VPS."
   }
 
   $candidate = $composePaths |
-    Where-Object { $_ -match "AntoineQuarrozInde" } |
+    Where-Object {
+      $_ -notmatch "(?i)backup" -and
+      $_ -match "(?i)/antoinequarroz-vitrine/docker-compose\.yml$"
+    } |
     Select-Object -First 1
 
   if (-not $candidate) {
     $candidate = $composePaths | Select-Object -First 1
   }
 
-  $ProjectDir = Split-Path -Path $candidate -Parent
+  # Split-Path converts Linux separators to Windows backslashes. Keep the
+  # remote path in POSIX format because it is passed directly to SSH/bash.
+  $ProjectDir = $candidate -replace "/docker-compose\.yml$", ""
   Write-Step "Dossier projet détecté: $ProjectDir"
 }
 
@@ -64,9 +72,15 @@ docker compose ps
 "@
 
 & ssh -i $KeyPath $remote $remoteScript
+if ($LASTEXITCODE -ne 0) {
+  throw "Le déploiement distant a échoué."
+}
 
 Write-Step "Logs du service web (80 dernières lignes)"
 & ssh -i $KeyPath $remote "cd '$ProjectDir' && docker compose logs --tail=80 web"
+if ($LASTEXITCODE -ne 0) {
+  throw "La lecture des logs du service web a échoué."
+}
 
 Write-Host ""
 Write-Host "Deploy terminé." -ForegroundColor Green

@@ -107,7 +107,7 @@
       title: 'Antoine Quarroz — Développeur Web en Valais',
       meta: [
         { charset: 'utf-8' },
-        { name: 'viewport', content: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover' },
+        { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
         { name: 'apple-mobile-web-app-capable', content: 'yes' },
         { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' },
         {
@@ -149,6 +149,7 @@
     adminEmail: process.env.ADMIN_EMAIL || '',
     public: {
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'https://www.antoinequarroz.dev',
+      calLink: process.env.NUXT_PUBLIC_CAL_LINK || '',
       defaultOrganizationSlug: process.env.DEFAULT_ORGANIZATION_SLUG || '',
       turnstileSiteKey: process.env.TURNSTILE_SITE_KEY || '',
       supabaseUrl: process.env.SUPABASE_URL || '',

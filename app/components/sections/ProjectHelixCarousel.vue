@@ -13,12 +13,18 @@ const rootRef = ref<HTMLElement | null>(null)
 const progressBarRef = ref<HTMLElement | null>(null)
 const activeSourceIndex = ref(0)
 const desktopReady = ref(false)
+const prefersReducedMotion = ref(false)
 
 let cards: HTMLElement[] = []
 let scrollFrame = 0
 let resizeFrame = 0
 let observer: IntersectionObserver | null = null
 let sectionIsNear = false
+let motionQuery: MediaQueryList | null = null
+
+function updateMotionPreference() {
+  prefersReducedMotion.value = Boolean(motionQuery?.matches)
+}
 let metrics = {
   top: 0,
   height: 1,
@@ -41,12 +47,12 @@ const activeCategoryIntro = computed(() => {
     text: t(`portfolio.category_intro.${category}.text`),
   }
 })
-const activeCase = computed(() => {
-  const category = activeProject.value?.category ?? 'web'
-  return {
-    context: t(`portfolio.case.${category}.context`),
-    impact: t(`portfolio.case.${category}.impact`),
-  }
+const activeProofs = computed(() => {
+  if (!activeProject.value) return []
+  return [
+    activeProject.value.liveUrl ? t('portfolio.live_available') : '',
+    activeProject.value.codeUrl ? t('portfolio.source_available') : '',
+  ].filter(Boolean)
 })
 
 function categoryLabel(category: PortfolioCategory) {
@@ -155,6 +161,9 @@ async function refreshProjects() {
 }
 
 onMounted(async () => {
+  motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+  updateMotionPreference()
+  motionQuery.addEventListener('change', updateMotionPreference)
   await nextTick()
   collectCards()
   measure()
@@ -184,6 +193,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', scheduleMeasure)
   if (scrollFrame) window.cancelAnimationFrame(scrollFrame)
   if (resizeFrame) window.cancelAnimationFrame(resizeFrame)
+  motionQuery?.removeEventListener('change', updateMotionPreference)
 })
 </script>
 
@@ -194,7 +204,7 @@ onBeforeUnmount(() => {
     </div>
 
     <div v-else>
-      <div class="md:hidden">
+      <div :class="{ 'md:hidden': !prefersReducedMotion }">
         <div class="-mx-2.5 flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-2.5 pb-4 no-scrollbar max-[390px]:-mx-2 max-[390px]:gap-2 max-[390px]:px-2">
           <article
             v-for="project in projects"
@@ -218,6 +228,7 @@ onBeforeUnmount(() => {
       </div>
 
       <div
+        v-if="!prefersReducedMotion"
         class="relative left-1/2 hidden w-screen -translate-x-1/2 md:block"
         :class="desktopReady ? 'opacity-100' : 'opacity-0'"
         :style="desktopTrackStyle"
@@ -239,18 +250,19 @@ onBeforeUnmount(() => {
               <p class="mt-5 text-xs font-bold uppercase tracking-[0.2em] text-cyan-600 dark:text-cyan-300">{{ t('portfolio.case_study') }}</p>
               <h3 class="mt-3 font-display text-2xl font-bold leading-tight text-gray-950 dark:text-white xl:text-3xl">{{ activeProject.title }}</h3>
               <p class="mt-2 line-clamp-4 text-sm leading-relaxed text-gray-600 dark:text-gray-300">{{ activeProject.description }}</p>
-              <div class="mt-3 grid grid-cols-2 gap-2">
-                <div class="rounded-2xl bg-violet-50 p-3 dark:bg-violet-500/10">
-                  <p class="text-xs font-bold uppercase tracking-[0.14em] text-violet-700 dark:text-violet-200">{{ t('portfolio.context') }}</p>
-                  <p class="mt-1 line-clamp-3 text-xs leading-relaxed text-gray-600 dark:text-gray-300">{{ activeCase.context }}</p>
+              <div v-if="activeProject.tags.length || activeProofs.length" class="mt-4 space-y-3 rounded-2xl bg-violet-50/80 p-3 dark:bg-violet-500/10">
+                <div v-if="activeProject.tags.length">
+                  <p class="text-xs font-bold uppercase tracking-[0.14em] text-violet-700 dark:text-violet-200">{{ t('portfolio.technologies') }}</p>
+                  <div class="mt-2 flex flex-wrap gap-1.5">
+                    <span v-for="tag in activeProject.tags.slice(0, 4)" :key="tag" class="rounded-full bg-white/80 px-2.5 py-1 text-xs text-violet-700 dark:bg-white/[0.06] dark:text-violet-100">{{ tag }}</span>
+                  </div>
                 </div>
-                <div class="rounded-2xl bg-cyan-50 p-3 dark:bg-cyan-400/10">
-                  <p class="text-xs font-bold uppercase tracking-[0.14em] text-cyan-700 dark:text-cyan-200">{{ t('portfolio.impact') }}</p>
-                  <p class="mt-1 line-clamp-3 text-xs leading-relaxed text-gray-600 dark:text-gray-300">{{ activeCase.impact }}</p>
+                <div v-if="activeProofs.length">
+                  <p class="text-xs font-bold uppercase tracking-[0.14em] text-cyan-700 dark:text-cyan-200">{{ t('portfolio.verifiable_links') }}</p>
+                  <ul class="mt-2 space-y-1 text-xs leading-relaxed text-gray-600 dark:text-gray-300">
+                    <li v-for="proof in activeProofs" :key="proof" class="flex items-center gap-2"><span class="h-1.5 w-1.5 rounded-full bg-cyan-500" />{{ proof }}</li>
+                  </ul>
                 </div>
-              </div>
-              <div class="mt-4 flex flex-wrap gap-1.5">
-                <span v-for="tag in activeProject.tags.slice(0, 3)" :key="tag" class="rounded-full bg-violet-50 px-2.5 py-1 text-xs text-violet-700 dark:bg-violet-500/10 dark:text-violet-200">{{ tag }}</span>
               </div>
               <div class="mt-5 flex flex-wrap gap-2">
                 <a v-if="activeProject.liveUrl" :href="activeProject.liveUrl" target="_blank" rel="noopener noreferrer" class="btn-primary rounded-full px-4 py-2 text-xs">{{ t('portfolio.view') }}</a>
@@ -273,7 +285,7 @@ onBeforeUnmount(() => {
                 :key="`nav-${project.id}`"
                 type="button"
                 class="group flex min-h-11 w-full items-center gap-3 rounded-2xl px-3 py-2 text-left transition-colors duration-200"
-                :class="index === activeSourceIndex ? 'bg-violet-500/10 text-violet-700 dark:bg-violet-400/10 dark:text-violet-100' : 'text-gray-500 hover:bg-violet-500/10 hover:text-violet-700 dark:text-gray-400 dark:hover:bg-white/[0.04] dark:hover:text-white'"
+                :class="index === activeSourceIndex ? 'bg-violet-500/10 text-violet-700 dark:bg-violet-400/10 dark:text-violet-100' : 'text-violet-800 hover:bg-violet-500/10 hover:text-violet-700 dark:text-violet-200 dark:hover:bg-white/[0.04] dark:hover:text-white'"
                 @click="goToProject(index)"
               >
                 <span class="h-2.5 w-2.5 shrink-0 rounded-full" :class="index === activeSourceIndex ? 'bg-gradient-brand' : 'bg-violet-500/25 dark:bg-white/20'" />

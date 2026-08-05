@@ -1,205 +1,71 @@
 <script setup lang="ts">
 const { locale } = useI18n()
+const config = useRuntimeConfig()
 
-// ── Remplace par ton lien cal.com réel ──────────────────────────────────
-const CAL_LINK = 'https://cal.com'
-
-// ── Date logic ──────────────────────────────────────────────────────────
-const now     = new Date()
-const year    = now.getFullYear()
-const month   = now.getMonth()
-const todayD  = now.getDate()
-
-const monthLabel = computed(() => {
-  const l = { fr: 'fr-CH', en: 'en-US', de: 'de-CH' }[locale.value] ?? 'fr-CH'
-  return new Intl.DateTimeFormat(l, { month: 'long', year: 'numeric' }).format(new Date(year, month))
-})
-
-// En-têtes de jours Lun → Dim (convention européenne)
-// Jan 1–7 2024 = Lun → Dim ✓
-const dayHeaders = computed(() => {
-  const l = { fr: 'fr-CH', en: 'en-US', de: 'de-CH' }[locale.value] ?? 'fr-CH'
-  return Array.from({ length: 7 }, (_, i) =>
-    new Intl.DateTimeFormat(l, { weekday: 'short' })
-      .format(new Date(2024, 0, i + 1))
-      .slice(0, 2)
-      .toUpperCase(),
-  )
-})
-
-// Décalage premier jour (Lun = 0 … Dim = 6)
-const firstOffset = computed(() => {
-  const d = new Date(year, month, 1).getDay()
-  return d === 0 ? 6 : d - 1
-})
-
-const daysInMonth = new Date(year, month + 1, 0).getDate()
-
-// Prochains jours ouvrés disponibles (4 max)
-const availableDays = computed(() => {
-  const set = new Set<number>()
-  for (let d = todayD + 1; d <= Math.min(todayD + 14, daysInMonth); d++) {
-    if (set.size >= 4) break
-    const dow = new Date(year, month, d).getDay()
-    if (dow !== 0 && dow !== 6) set.add(d)
-  }
-  return set
-})
-
-interface Cell { empty: boolean; day: number; isToday: boolean; isAvail: boolean; isPast: boolean }
-
-const cells = computed<Cell[]>(() => {
-  const out: Cell[] = []
-  for (let i = 0; i < firstOffset.value; i++)
-    out.push({ empty: true, day: 0, isToday: false, isAvail: false, isPast: false })
-  for (let d = 1; d <= daysInMonth; d++)
-    out.push({
-      empty:   false,
-      day:     d,
-      isToday: d === todayD,
-      isAvail: availableDays.value.has(d),
-      isPast:  d < todayD,
-    })
-  return out
+const bookingUrl = computed(() => {
+  const value = String(config.public.calLink || '').trim()
+  return /^https:\/\/(?:www\.)?cal\.com\//i.test(value) ? value : ''
 })
 
 const content = computed(() => {
   if (locale.value === 'en') return {
-    title:    'Book a 30-min call',
-    desc:     "Let's discuss your project — no commitment, just a quick intro call.",
-    cta:      'Pick a time slot',
-    duration: '30 min',
+    title: 'A 30-minute call about your project',
+    desc: 'Tell me where you are and what you want to build. You will leave with a clear next step.',
+    duration: '30 min', remote: 'Video call', noCommitment: 'No commitment', cta: 'Choose a time',
+    fallbackTitle: 'Booking opens on request',
+    fallbackDesc: 'Send me a short message and I will suggest a few suitable times.',
+    fallbackCta: 'Describe your project',
   }
   if (locale.value === 'de') return {
-    title:    '30-Min. Erstgespräch buchen',
-    desc:     'Sprechen wir kurz über Ihr Projekt — kostenlos und unverbindlich.',
-    cta:      'Termin wählen',
-    duration: '30 Min.',
+    title: '30 Minuten für Ihr Projekt',
+    desc: 'Erzählen Sie mir, wo Sie stehen und was Sie umsetzen möchten. Danach ist der nächste Schritt klar.',
+    duration: '30 Min.', remote: 'Videogespräch', noCommitment: 'Unverbindlich', cta: 'Termin auswählen',
+    fallbackTitle: 'Terminvereinbarung auf Anfrage',
+    fallbackDesc: 'Senden Sie mir eine kurze Nachricht. Ich schlage Ihnen passende Termine vor.',
+    fallbackCta: 'Projekt beschreiben',
   }
   return {
-    title:    'Réserver un appel de 30 min',
-    desc:     'Parlons de votre projet en quelques minutes — sans engagement.',
-    cta:      'Choisir un créneau',
-    duration: '30 min',
+    title: '30 minutes pour parler de votre projet',
+    desc: 'Expliquez-moi où vous en êtes et ce que vous souhaitez créer. Vous repartirez avec une prochaine étape claire.',
+    duration: '30 min', remote: 'Visio', noCommitment: 'Sans engagement', cta: 'Choisir un créneau',
+    fallbackTitle: 'Prise de rendez-vous sur demande',
+    fallbackDesc: 'Envoyez-moi un court message et je vous proposerai quelques créneaux adaptés.',
+    fallbackCta: 'Décrire mon projet',
   }
 })
 </script>
 
 <template>
-  <div class="card-glass p-4 max-[390px]:p-3.5 flex flex-col gap-4 h-full">
-
-    <!-- En-tête -->
+  <div class="card-glass flex h-full flex-col gap-5 p-4 max-[390px]:p-3.5">
     <div>
-      <h3 class="font-display font-semibold text-base md:text-lg text-gray-900 dark:text-white leading-tight">
-        {{ content.title }}
-      </h3>
-      <p class="mt-1 text-sm md:text-sm text-gray-500 dark:text-gray-400 leading-snug">
-        {{ content.desc }}
-      </p>
+      <h3 class="font-display text-base font-semibold leading-tight text-gray-900 dark:text-white md:text-lg">{{ content.title }}</h3>
+      <p class="mt-2 text-sm leading-relaxed text-gray-500 dark:text-gray-400">{{ content.desc }}</p>
     </div>
 
-    <!-- Widget calendrier -->
-    <div class="rounded-2xl border border-violet-500/15 dark:border-violet-400/20 bg-white/60 dark:bg-white/[0.04] p-3.5 max-[390px]:p-3 flex-1">
-
-      <!-- Mois + badge durée -->
-      <div class="flex items-center justify-between mb-3">
-        <span class="text-sm font-semibold text-gray-900 dark:text-white capitalize">
-          {{ monthLabel }}
-        </span>
-        <span class="text-xs px-2.5 py-1 rounded-full bg-violet-500/10 text-violet-600 dark:text-violet-300 border border-violet-400/20 font-medium">
-          {{ content.duration }}
-        </span>
+    <div class="relative flex flex-1 flex-col justify-between overflow-hidden rounded-2xl border border-violet-500/15 bg-white/60 p-4 dark:border-violet-400/20 dark:bg-white/[0.04]">
+      <div class="pointer-events-none absolute -right-12 -top-14 h-36 w-36 rounded-full bg-violet-500/15 blur-3xl" />
+      <div class="relative grid grid-cols-3 gap-2">
+        <div class="rounded-xl bg-violet-500/[0.07] px-2.5 py-3 text-center dark:bg-violet-400/10">
+          <svg class="mx-auto h-5 w-5 text-violet-600 dark:text-violet-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2m5-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          <p class="mt-2 text-xs font-semibold text-gray-700 dark:text-gray-200">{{ content.duration }}</p>
+        </div>
+        <div class="rounded-xl bg-cyan-500/[0.07] px-2.5 py-3 text-center dark:bg-cyan-400/10">
+          <svg class="mx-auto h-5 w-5 text-cyan-600 dark:text-cyan-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+          <p class="mt-2 text-xs font-semibold text-gray-700 dark:text-gray-200">{{ content.remote }}</p>
+        </div>
+        <div class="rounded-xl bg-violet-500/[0.07] px-2.5 py-3 text-center dark:bg-violet-400/10">
+          <svg class="mx-auto h-5 w-5 text-violet-600 dark:text-violet-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+          <p class="mt-2 text-xs font-semibold text-gray-700 dark:text-gray-200">{{ content.noCommitment }}</p>
+        </div>
       </div>
-
-      <!-- En-têtes jours -->
-      <div class="grid grid-cols-7 mb-1">
-        <div
-          v-for="d in dayHeaders" :key="d"
-          class="h-7 flex items-center justify-center text-xs font-semibold tracking-wide text-gray-400 dark:text-white/30"
-        >{{ d }}</div>
-      </div>
-
-      <!-- Grille des jours -->
-      <div class="grid grid-cols-7 gap-y-0.5">
-        <template v-for="(cell, i) in cells" :key="i">
-
-          <!-- Cellule vide -->
-          <div v-if="cell.empty" class="h-8" />
-
-          <!-- Aujourd'hui -->
-          <div
-            v-else-if="cell.isToday"
-            class="h-8 flex items-center justify-center rounded-lg bg-violet-600 text-white text-sm font-bold cursor-default"
-          >{{ cell.day }}</div>
-
-          <!-- Disponible (cliquable) -->
-          <a
-            v-else-if="cell.isAvail"
-            :href="CAL_LINK"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="h-8 flex items-center justify-center rounded-lg text-sm font-medium
-                   text-violet-700 dark:text-violet-300
-                   bg-violet-100 dark:bg-violet-500/15
-                   hover:bg-violet-600 hover:text-white dark:hover:bg-violet-600 dark:hover:text-white
-                   transition-colors duration-150 cursor-pointer"
-            :title="content.cta"
-          >{{ cell.day }}</a>
-
-          <!-- Passé -->
-          <div
-            v-else-if="cell.isPast"
-            class="h-8 flex items-center justify-center rounded-lg text-sm text-gray-300 dark:text-white/20 cursor-default"
-          >{{ cell.day }}</div>
-
-          <!-- Futur normal -->
-          <div
-            v-else
-            class="h-8 flex items-center justify-center rounded-lg text-sm text-gray-600 dark:text-white/55 cursor-default"
-          >{{ cell.day }}</div>
-
-        </template>
-      </div>
-
-      <!-- Légende -->
-      <div class="mt-3 flex items-center gap-3 text-xs text-gray-400 dark:text-white/30">
-        <span class="flex items-center gap-1">
-          <span class="w-3 h-3 rounded-sm bg-violet-600 inline-block" />
-          Aujourd'hui
-        </span>
-        <span class="flex items-center gap-1">
-          <span class="w-3 h-3 rounded-sm bg-violet-100 dark:bg-violet-500/15 inline-block" />
-          Disponible
-        </span>
+      <div v-if="!bookingUrl" class="relative mt-5 rounded-xl border border-violet-500/10 bg-white/60 p-3 dark:border-white/10 dark:bg-black/15">
+        <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ content.fallbackTitle }}</p>
+        <p class="mt-1 text-xs leading-relaxed text-gray-500 dark:text-gray-400">{{ content.fallbackDesc }}</p>
       </div>
     </div>
 
-    <!-- CTA principal -->
-    <a
-      :href="CAL_LINK"
-      target="_blank"
-      rel="noopener noreferrer"
-      class="btn-primary w-full justify-center py-3 text-sm rounded-xl"
-    >
-      <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-        <line x1="16" y1="2" x2="16" y2="6" />
-        <line x1="8" y1="2" x2="8" y2="6" />
-        <line x1="3" y1="10" x2="21" y2="10" />
-      </svg>
-      {{ content.cta }}
-    </a>
-
-    <!-- Email secondaire -->
-    <a
-      href="mailto:info@antoinequarroz.ch"
-      class="flex items-center justify-center gap-2 text-xs text-gray-400 dark:text-white/35 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
-    >
-      <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-      </svg>
-      info@antoinequarroz.ch
-    </a>
-
+    <a v-if="bookingUrl" :href="bookingUrl" target="_blank" rel="noopener noreferrer" class="btn-primary w-full justify-center rounded-xl py-3 text-sm">{{ content.cta }}</a>
+    <a v-else href="#contact-form" class="btn-primary w-full justify-center rounded-xl py-3 text-sm">{{ content.fallbackCta }}</a>
+    <a href="mailto:info@antoinequarroz.ch" class="flex items-center justify-center gap-2 text-xs text-gray-500 transition-colors duration-150 hover:text-violet-600 dark:text-gray-400 dark:hover:text-violet-300">info@antoinequarroz.ch</a>
   </div>
 </template>

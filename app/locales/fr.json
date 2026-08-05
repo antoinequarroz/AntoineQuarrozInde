@@ -5,7 +5,10 @@
     "services": "Services",
     "portfolio": "Portfolio",
     "blog": "Blog",
-    "contact": "Contact"
+    "contact": "Contact",
+    "open_menu": "Ouvrir le menu",
+    "close_menu": "Fermer le menu",
+    "mobile_menu": "Menu principal"
   },
   "hero": {
     "badge": "Disponible pour de nouveaux mandats",
@@ -93,6 +96,10 @@
     "cms": "CMS",
     "view": "Voir le projet",
     "code": "Code source",
+    "technologies": "Technologies",
+    "verifiable_links": "Liens vérifiables",
+    "live_available": "Projet accessible en ligne",
+    "source_available": "Code source accessible",
     "selection_count": "{count} projet(s) dans cette sélection. Faites défiler pour les faire tourner avant de passer à la suite.",
     "case_study": "Case study",
     "context": "Contexte",
@@ -138,7 +145,13 @@
     "read": "Lire l'article",
     "view_all": "Voir tous les articles",
     "preview": "Aperçu de l'article",
-    "open": "Lire l'article complet"
+    "open": "Lire l'article complet",
+    "preview_action": "Aperçu",
+    "previous": "Article précédent",
+    "next": "Article suivant",
+    "show_article": "Afficher {title}",
+    "pause_carousel": "Mettre en pause",
+    "resume_carousel": "Reprendre"
   },
   "contact": {
     "badge": "Contact",
