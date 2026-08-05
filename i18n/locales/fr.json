@@ -32,6 +32,10 @@
     "label_2": "Mission"
   },
   "blog": {
+    "preview_action": "Aperçu rapide",
+    "previous": "Article précédent",
+    "next": "Article suivant",
+    "show_article": "Afficher {title}",
     "badge": "Blog",
     "title": "Articles\nrécents.",
     "subtitle": "Des réflexions sur le web, le design et le développement.",
