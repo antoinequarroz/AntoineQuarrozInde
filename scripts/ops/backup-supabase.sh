@@ -67,7 +67,7 @@ jq -r '.[] | select(.metadata != null) | .name' "$WORK_DIR/storage/media-index.j
     -o "$WORK_DIR/storage/media/uploads/$name"
 done
 
-GIT_REVISION="$(git -C "$PROJECT_DIR" rev-parse HEAD 2>/dev/null || printf 'unknown')"
+GIT_REVISION="$(git -c safe.directory="$PROJECT_DIR" -C "$PROJECT_DIR" rev-parse HEAD 2>/dev/null || printf 'unknown')"
 cat > "$WORK_DIR/manifest.json" <<EOF
 {"created_at":"$(date -u +%Y-%m-%dT%H:%M:%SZ)","git_revision":"$GIT_REVISION","format":1,"tables":${#TABLES[@]}}
 EOF
