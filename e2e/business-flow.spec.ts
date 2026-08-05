@@ -36,10 +36,39 @@ test('sandbox covers client to paid invoice and cleans up business data', async 
   const headers = { ...baseHeaders, 'x-organization-id': sandbox!.id }
 
   const runId = `${Date.now()}-${test.info().retry}`
-  const ids: { client?: number, project?: number, quote?: number, invoice?: number } = {}
+  const ids: { client?: number, project?: number, quote?: number, invoice?: number, standaloneInvoice?: number } = {}
   const item = { label: 'Audit E2E', description: 'Donnee temporaire automatiquement supprimee', quantity: 1, unitPriceCents: 12500, taxRate: 8.1 }
 
   try {
+    const standaloneInvoiceResponse = await request.post('/api/invoices', {
+      headers,
+      data: {
+        number: `E2E-EMPTY-${runId}`,
+        currency: 'CHF',
+        status: 'draft',
+        issuedAt: new Date().toISOString().slice(0, 10),
+        paymentReferenceType: 'NON',
+        items: [{ label: 'Prestation', quantity: 1, unitPriceCents: 0, taxRate: 8.1 }],
+      },
+    })
+    expect(standaloneInvoiceResponse.ok()).toBeTruthy()
+    ids.standaloneInvoice = (await standaloneInvoiceResponse.json()).id
+
+    const incompatibleQrrResponse = await request.post('/api/invoices', {
+      headers,
+      data: {
+        number: `E2E-QRR-${runId}`,
+        currency: 'CHF',
+        status: 'draft',
+        issuedAt: new Date().toISOString().slice(0, 10),
+        paymentReferenceType: 'QRR',
+        paymentReference: '210000000003139471430009017',
+        items: [item],
+      },
+    })
+    expect(incompatibleQrrResponse.status()).toBe(400)
+    expect((await incompatibleQrrResponse.json()).message).toContain('QR-IBAN')
+
     const clientResponse = await request.post('/api/clients', {
       headers,
       data: {
@@ -132,6 +161,7 @@ test('sandbox covers client to paid invoice and cleans up business data', async 
   }
   finally {
     if (ids.invoice) await request.delete(`/api/invoices?id=${ids.invoice}`, { headers })
+    if (ids.standaloneInvoice) await request.delete(`/api/invoices?id=${ids.standaloneInvoice}`, { headers })
     if (ids.quote) await request.delete(`/api/quotes?id=${ids.quote}`, { headers })
     if (ids.project) await request.delete(`/api/projects?id=${ids.project}`, { headers })
     if (ids.client) await request.delete(`/api/clients?id=${ids.client}`, { headers })

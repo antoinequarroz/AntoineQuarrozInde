@@ -1,5 +1,6 @@
 import { buildBillingPdf } from './pdfBilling'
-import { buildTypstBillingPdf, normalizeIban, type TypstBillingData } from './typstBilling'
+import { normalizeIban } from '../../shared/utils/swissQr'
+import { buildTypstBillingPdf, type TypstBillingData } from './typstBilling'
 
 type BillingDocumentInput = {
   kind: 'quote' | 'invoice'

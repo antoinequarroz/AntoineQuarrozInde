@@ -1,6 +1,6 @@
 import { computeTotals, normalizeBillingItems } from '../utils/billing'
 import { normalizeInvoicePaymentState } from '../utils/invoiceState'
-import { normalizeIban, validateQrReference } from '../utils/typstBilling'
+import { getQrReferenceError, isSwissQrReferenceType, normalizeIban, validateQrReference } from '../../shared/utils/swissQr'
 
 export default defineEventHandler(async (event) => {
   const { org, user } = await requireAdmin(event)
@@ -17,10 +17,15 @@ export default defineEventHandler(async (event) => {
   catch (error) {
     throw createError({ statusCode: 400, message: error instanceof Error ? error.message : 'Invalid invoice state' })
   }
-  const referenceType = String(body.paymentReferenceType || 'NON').toUpperCase() as 'NON' | 'SCOR' | 'QRR'
+  const referenceType = String(body.paymentReferenceType || 'NON').toUpperCase()
+  if (!isSwissQrReferenceType(referenceType)) {
+    throw createError({ statusCode: 400, message: 'Type de référence QR invalide.' })
+  }
   const { data: billingOrg } = await supabase.from('organizations').select('billing_iban').eq('id', org.id).single()
-  const normalizedReference = validateQrReference(normalizeIban(String(billingOrg?.billing_iban || '')), referenceType, body.paymentReference)
-  if (!normalizedReference) throw createError({ statusCode: 400, message: 'Référence QR invalide pour le type sélectionné.' })
+  const billingIban = normalizeIban(String(billingOrg?.billing_iban || ''))
+  const referenceError = getQrReferenceError(billingIban, referenceType, body.paymentReference)
+  if (referenceError) throw createError({ statusCode: 400, message: referenceError })
+  const normalizedReference = validateQrReference(billingIban, referenceType, body.paymentReference)!
   const payload = {
     client_id: body.clientId ? Number(body.clientId) : null,
     quote_id: body.quoteId ? Number(body.quoteId) : null,

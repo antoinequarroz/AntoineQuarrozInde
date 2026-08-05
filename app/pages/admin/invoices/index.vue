@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Invoice } from '~/types'
+import { getQrReferenceError, isQrIban, isValidSwissIban } from '~~/shared/utils/swissQr'
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 const store = useInvoicesStore()
 const clients = useClientsStore()
@@ -54,6 +55,13 @@ async function saveBillingProfile() {
   }
 }
 const form = reactive({ number: '', clientId: null as number | null, quoteId: null as number | null, amountCents: 0, currency: 'CHF', status: 'draft' as Invoice['status'], issuedAt: '', dueAt: '', paidAt: '', notes: '', paymentReferenceType: 'NON' as Invoice['paymentReferenceType'], paymentReference: '' })
+const canUseQrr = computed(() => isQrIban(billingProfile.billingIban))
+const canUseScor = computed(() => isValidSwissIban(billingProfile.billingIban) && !canUseQrr.value)
+const qrReferenceError = computed(() => getQrReferenceError(
+  billingProfile.billingIban,
+  form.paymentReferenceType,
+  form.paymentReference,
+))
 const formItems = ref<Array<{ label: string, description: string | null, quantity: number, unitPriceCents: number, taxRate: number }>>([{ label: 'Prestation', description: null, quantity: 1, unitPriceCents: 0, taxRate: 8.1 }])
 const clientsById = computed(() => new Map(clients.clients.map(c => [c.id, c])))
 const quotesById = computed(() => new Map(quotes.quotes.map(q => [q.id, q])))
@@ -106,7 +114,23 @@ function computeFormTotals(items: Array<{ quantity: number, unitPriceCents: numb
 const draftTotals = computed(() => computeFormTotals(formItems.value))
 function addItem() { formItems.value.push({ label: '', description: null, quantity: 1, unitPriceCents: 0, taxRate: 8.1 }) }
 function removeItem(idx: number) { formItems.value.splice(idx, 1) }
-async function submit() { try { const totals = computeFormTotals(formItems.value); const payload = { ...form, amountCents: totals.totalCents, items: formItems.value, issuedAt: form.issuedAt || null, dueAt: form.dueAt || null, paidAt: form.paidAt || null, notes: form.notes || null }; if (editing.value) await store.update(editing.value.id, payload as any); else await store.add(payload as any); showForm.value = false; toast.success('Enregistre') } catch { toast.error('Erreur') } }
+async function submit() {
+  if (qrReferenceError.value) {
+    toast.error(qrReferenceError.value)
+    return
+  }
+  try {
+    const totals = computeFormTotals(formItems.value)
+    const payload = { ...form, amountCents: totals.totalCents, items: formItems.value, issuedAt: form.issuedAt || null, dueAt: form.dueAt || null, paidAt: form.paidAt || null, notes: form.notes || null }
+    if (editing.value) await store.update(editing.value.id, payload as any)
+    else await store.add(payload as any)
+    showForm.value = false
+    toast.success('Facture enregistrée')
+  }
+  catch (error: any) {
+    toast.error(error?.data?.message || 'Impossible d’enregistrer la facture')
+  }
+}
 async function del(id: number) { if (!confirm('Supprimer ?')) return; try { await store.remove(id); if (selectedId.value === id) selectedId.value = store.invoices[0]?.id ?? null; toast.success('Supprime') } catch { toast.error('Erreur') } }
 async function quickSetStatus(id: number, status: Invoice['status']) {
   try {
@@ -397,19 +421,20 @@ onMounted(async () => {
               <label class="space-y-1 text-xs text-gray-500">Type de référence
                 <select v-model="form.paymentReferenceType" class="input-field">
                   <option value="NON">Sans référence</option>
-                  <option value="SCOR">Référence créancier (SCOR)</option>
-                  <option value="QRR">Référence QR (QRR)</option>
+                  <option value="SCOR" :disabled="!canUseScor">Référence créancier (SCOR){{ canUseScor ? '' : ' — IBAN standard requis' }}</option>
+                  <option value="QRR" :disabled="!canUseQrr">Référence QR (QRR){{ canUseQrr ? '' : ' — QR-IBAN requis' }}</option>
                 </select>
               </label>
               <label v-if="form.paymentReferenceType !== 'NON'" class="space-y-1 text-xs text-gray-500">Référence
-                <input v-model="form.paymentReference" class="input-field" :placeholder="form.paymentReferenceType === 'QRR' ? '27 chiffres' : 'RF…'">
+                <input v-model="form.paymentReference" class="input-field" :aria-invalid="Boolean(qrReferenceError)" aria-describedby="invoice-reference-help" :placeholder="form.paymentReferenceType === 'QRR' ? '27 chiffres' : 'RF…'">
               </label>
             </div>
-            <p class="text-xs text-gray-500">Le QR est ajouté uniquement si le profil de facturation, l’adresse client, l’IBAN et la référence sont valides.</p>
+            <p v-if="qrReferenceError" id="invoice-reference-help" role="alert" class="text-xs font-medium text-red-600 dark:text-red-400">{{ qrReferenceError }}</p>
+            <p v-else id="invoice-reference-help" class="text-xs text-gray-500">Le QR est ajouté uniquement si le profil de facturation, l’adresse client, l’IBAN et la référence sont valides.</p>
           </fieldset>
           <div class="admin-sticky-actions sticky bottom-0 bg-white dark:bg-[#111118] pt-2 flex justify-end gap-2">
             <button type="button" class="px-3 py-2 text-sm" @click="showForm=false">Annuler</button>
-            <button class="px-4 py-2 rounded-lg bg-violet-600 text-white text-sm">Enregistrer</button>
+            <button class="px-4 py-2 rounded-lg bg-violet-600 text-white text-sm disabled:cursor-not-allowed disabled:opacity-50" :disabled="Boolean(qrReferenceError)">Enregistrer</button>
           </div>
         </form>
       </div>

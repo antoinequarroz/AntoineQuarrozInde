@@ -4,6 +4,7 @@ import { copyFile, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { resolve } from 'node:path'
 import { promisify } from 'node:util'
+import { isValidSwissIban, validateQrReference } from '../../shared/utils/swissQr'
 
 const execFileAsync = promisify(execFile)
 
@@ -49,51 +50,6 @@ export type TypstBillingData = {
     reference: string | null
     additionalInfo: string
   }
-}
-
-function mod97(value: string) {
-  let remainder = 0
-  for (const character of value) {
-    const chunk = /[A-Z]/.test(character) ? String(character.charCodeAt(0) - 55) : character
-    for (const digit of chunk) remainder = (remainder * 10 + Number(digit)) % 97
-  }
-  return remainder
-}
-
-export function normalizeIban(value: string) {
-  return value.replace(/\s+/g, '').toUpperCase()
-}
-
-export function isValidSwissIban(value: string) {
-  const iban = normalizeIban(value)
-  if (!/^(CH|LI)\d{7}[A-Z0-9]{12}$/.test(iban)) return false
-  return mod97(`${iban.slice(4)}${iban.slice(0, 4)}`) === 1
-}
-
-export function isQrIban(value: string) {
-  const iban = normalizeIban(value)
-  if (!isValidSwissIban(iban)) return false
-  const iid = Number(iban.slice(4, 9))
-  return iid >= 30000 && iid <= 31999
-}
-
-export function validateQrReference(
-  iban: string,
-  referenceType: 'NON' | 'SCOR' | 'QRR',
-  reference?: string | null,
-) {
-  const normalizedReference = String(reference || '').replace(/\s+/g, '').toUpperCase()
-  if (referenceType === 'NON') return { type: 'NON' as const, reference: null }
-  if (referenceType === 'QRR') {
-    if (!isQrIban(iban) || !/^\d{27}$/.test(normalizedReference)) return null
-    return mod97(normalizedReference) === 0
-      ? { type: 'QRR' as const, reference: normalizedReference }
-      : null
-  }
-  if (!/^RF\d{2}[A-Z0-9]{1,21}$/.test(normalizedReference)) return null
-  return mod97(`${normalizedReference.slice(4)}${normalizedReference.slice(0, 4)}`) === 1
-    ? { type: 'SCOR' as const, reference: normalizedReference }
-    : null
 }
 
 export function canGenerateTypstDocument(data: TypstBillingData) {
