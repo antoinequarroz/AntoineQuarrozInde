@@ -8,7 +8,8 @@ les services Docker `web` et `caddy` tournent. Une alerte est envoyée après
 trois échecs consécutifs, puis une notification de rétablissement.
 Le contrôle surveille aussi l'espace disque et l'âge de la dernière sauvegarde.
 Les seuils sont configurables avec `MAX_DISK_USAGE_PERCENT` (85 par défaut) et
-`MAX_BACKUP_AGE_HOURS` (36 heures par défaut).
+`MAX_BACKUP_AGE_HOURS` (36 heures par défaut). Le certificat TLS est contrôlé
+21 jours avant son expiration, seuil modifiable avec `MONITOR_TLS_WARN_DAYS`.
 
 L'adresse destinataire est `MONITORING_ALERT_EMAIL` dans `.env`, avec
 `CONTACT_EMAIL` comme repli. L'envoi utilise `RESEND_API_KEY`.
@@ -19,6 +20,7 @@ Commandes utiles sur le VPS :
 sudo systemctl status antoinequarroz-monitor.timer
 sudo systemctl start antoinequarroz-monitor.service
 sudo journalctl -u antoinequarroz-monitor.service -n 100
+sudo scripts/ops/monitor.sh /home/ubuntu/antoinequarroz-vitrine --test-alert
 ```
 
 ## Sauvegardes
@@ -38,6 +40,7 @@ remote `rclone` vers Cloudflare R2, S3 ou Backblaze B2 sur le VPS, puis ajouter 
 ```env
 OFFSITE_RCLONE_REMOTE=aq-r2:antoinequarroz-backups/prod
 OFFSITE_AGE_RECIPIENT=age1...
+OFFSITE_KEEP_DAYS=30
 REQUIRE_OFFSITE_BACKUP=true
 ```
 
@@ -45,6 +48,7 @@ La sauvegarde est chiffrée avec `age` avant son transfert. La clé privée `age
 doit être conservée hors du VPS (gestionnaire de mots de passe et copie froide).
 Le moniteur vérifie alors qu'une copie indépendante a moins de 36 heures.
 Chaque archive est vérifiée avant son envoi et accompagnée d'une somme SHA-256.
+Les copies chiffrées hors site sont conservées 30 jours par défaut.
 
 La structure SQL est reconstruite à partir des migrations versionnées dans Git.
 Les utilisateurs Supabase Auth ne sont pas exportés par cette sauvegarde métier ;
@@ -74,6 +78,16 @@ les relations clients et la présence du schéma versionné :
 sudo scripts/ops/restore-drill.sh /var/backups/antoinequarroz/aq-supabase-YYYYMMDDTHHMMSSZ.tar.gz /home/ubuntu/antoinequarroz-vitrine
 ```
 
+Pour tester toute la chaîne depuis Cloudflare R2, copier temporairement la clé
+privée `age` sur une machine de reprise, puis exécuter :
+
+```bash
+sudo scripts/ops/restore-offsite-drill.sh \
+  aq-r2:antoinequarroz-backups-prod/prod \
+  /chemin/securise/antoinequarroz_backup_age_key.txt \
+  /home/ubuntu/antoinequarroz-vitrine
+```
+
 Ce test ne modifie jamais la production. Un basculement complet doit être testé
 dans une branche Supabase ou un projet temporaire avant toute restauration sur
 le projet principal.
@@ -81,8 +95,9 @@ le projet principal.
 ## Tests E2E
 
 Les identifiants Playwright sont conservés localement dans `.env.e2e`, ignoré
-par Git. Le compte de production dédié doit rester membre `viewer` afin que les
-tests puissent lire l'administration sans modifier les données métier.
+par Git. Le compte de production dédié doit être membre `manager` uniquement
+dans l'organisation isolée `aq-e2e-sandbox`. Le test crée son parcours métier
+dans cette organisation puis supprime toutes les données temporaires.
 
 ```dotenv
 E2E_BASE_URL=https://www.antoinequarroz.ch

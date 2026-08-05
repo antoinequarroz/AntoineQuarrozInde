@@ -11,7 +11,7 @@ PROJECT_DIR="$(realpath "$PROJECT_DIR")"
 [[ -f "$PROJECT_DIR/docker-compose.yml" && -f "$PROJECT_DIR/.env" ]] || { echo "Invalid project directory" >&2; exit 1; }
 
 apt-get update -qq
-apt-get install -y -qq age curl jq rclone >/dev/null
+apt-get install -y -qq age curl jq openssl rclone >/dev/null
 
 cat > /etc/systemd/system/antoinequarroz-monitor.service <<EOF
 [Unit]
