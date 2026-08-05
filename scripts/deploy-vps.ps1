@@ -31,7 +31,9 @@ $remote = "$User@$ServerHost"
 
 if ([string]::IsNullOrWhiteSpace($ProjectDir)) {
   Write-Step "Recherche automatique du dossier projet sur le VPS..."
-  $findCmd = "find / -name docker-compose.yml 2>/dev/null"
+  # Some protected system directories make find return 1 even when it found
+  # valid compose files. Keep the useful output and ignore permission misses.
+  $findCmd = "find / -name docker-compose.yml 2>/dev/null || true"
   $composePaths = & ssh -i $KeyPath $remote $findCmd
   if ($LASTEXITCODE -ne 0) {
     throw "La recherche du projet sur le VPS a échoué."
