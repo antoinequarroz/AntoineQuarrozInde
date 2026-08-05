@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const { locale } = useI18n()
 const config = useRuntimeConfig()
+const { track } = useMarketing()
 
 const bookingUrl = computed(() => {
   const value = String(config.public.calLink || '').trim()
@@ -64,8 +65,8 @@ const content = computed(() => {
       </div>
     </div>
 
-    <a v-if="bookingUrl" :href="bookingUrl" target="_blank" rel="noopener noreferrer" class="btn-primary w-full justify-center rounded-xl py-3 text-sm">{{ content.cta }}</a>
-    <a v-else href="#contact-form" class="btn-primary w-full justify-center rounded-xl py-3 text-sm">{{ content.fallbackCta }}</a>
+    <a v-if="bookingUrl" :href="bookingUrl" target="_blank" rel="noopener noreferrer" class="btn-primary w-full justify-center rounded-xl py-3 text-sm" @click="track('booking_calendar_click')">{{ content.cta }}</a>
+    <a v-else href="#contact-form" class="btn-primary w-full justify-center rounded-xl py-3 text-sm" @click="track('booking_fallback_click')">{{ content.fallbackCta }}</a>
     <a href="mailto:info@antoinequarroz.ch" class="flex items-center justify-center gap-2 text-xs text-gray-500 transition-colors duration-150 hover:text-violet-600 dark:text-gray-400 dark:hover:text-violet-300">info@antoinequarroz.ch</a>
   </div>
 </template>

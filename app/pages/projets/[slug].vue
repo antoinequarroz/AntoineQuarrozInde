@@ -2,6 +2,7 @@
 const route = useRoute()
 const { t, locale } = useI18n()
 const localePath = useLocalePath()
+const { track } = useMarketing()
 const store = useProjectsStore()
 const runtimeConfig = useRuntimeConfig()
 const siteUrl = String(runtimeConfig.public.siteUrl).replace(/\/+$/, '')
@@ -15,6 +16,12 @@ const project = computed(() => store.projects.find(item => (
 if (!project.value) {
   throw createError({ statusCode: 404, message: t('case_study.not_found') })
 }
+
+onMounted(() => {
+  if (project.value) {
+    track('project_case_study_view', { projectId: project.value.id, slug: project.value.slug, category: project.value.category })
+  }
+})
 
 const canonicalPath = computed(() => localePath(`/projets/${project.value?.slug ?? ''}`))
 const canonicalUrl = computed(() => `${siteUrl}${canonicalPath.value}`)

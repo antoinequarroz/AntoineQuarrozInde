@@ -369,12 +369,12 @@ async function sendReminderEmails() {
   runningEmailReminders.value = true
 
   try {
-    const result = await $fetch<{ sentCount: number, skippedCount: number, failedCount: number }>('/api/admin/pipeline/reminders', {
+    const result = await $fetch<{ sentCount: number, skippedCount: number, failedCount: number, overdueMarkedCount: number }>('/api/admin/pipeline/reminders', {
       method: 'POST',
       headers: auth.authHeader(),
     })
 
-    toast.success(`Emails: ${result.sentCount} envoye(s), ${result.skippedCount} ignore(s), ${result.failedCount} echec(s)`)
+    toast.success(`Emails: ${result.sentCount} envoyé(s), ${result.skippedCount} ignoré(s), ${result.failedCount} échec(s) · ${result.overdueMarkedCount} facture(s) passée(s) en retard`)
     await loadReminderRuns()
   } catch {
     toast.error('Erreur envoi relances email')

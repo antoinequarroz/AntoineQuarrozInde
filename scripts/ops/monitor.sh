@@ -20,9 +20,11 @@ read_env() {
 
 env_max_backup_age="$(read_env MAX_BACKUP_AGE_HOURS)"
 env_max_disk_usage="$(read_env MAX_DISK_USAGE_PERCENT)"
+env_tls_warn_days="$(read_env MONITOR_TLS_WARN_DAYS)"
 require_offsite="$(read_env REQUIRE_OFFSITE_BACKUP)"
 MAX_BACKUP_AGE_HOURS="${MAX_BACKUP_AGE_HOURS:-${env_max_backup_age:-36}}"
 MAX_DISK_USAGE_PERCENT="${MAX_DISK_USAGE_PERCENT:-${env_max_disk_usage:-85}}"
+MONITOR_TLS_WARN_DAYS="${MONITOR_TLS_WARN_DAYS:-${env_tls_warn_days:-21}}"
 REQUIRE_OFFSITE_BACKUP="${REQUIRE_OFFSITE_BACKUP:-${require_offsite:-false}}"
 
 send_alert() {
@@ -43,6 +45,12 @@ send_alert() {
     --data "$payload" >/dev/null
 }
 
+if [[ "${2:-}" == "--test-alert" ]]; then
+  send_alert "[TEST] Surveillance antoinequarroz.ch" "Le canal d'alerte du VPS fonctionne correctement."
+  echo "Monitoring test alert sent."
+  exit 0
+fi
+
 failures=0
 status="unknown"
 if [[ -f "$STATE_FILE" ]]; then read -r failures status < "$STATE_FILE" || true; fi
@@ -50,6 +58,13 @@ if [[ -f "$STATE_FILE" ]]; then read -r failures status < "$STATE_FILE" || true;
 issues=()
 curl --fail --silent --show-error --max-time 12 "$HEALTH_URL" | jq -e '.status == "ok"' >/dev/null \
   || issues+=("health endpoint unavailable")
+
+tls_host="${HEALTH_URL#*://}"
+tls_host="${tls_host%%/*}"
+if [[ "$HEALTH_URL" == https://* ]] && ! timeout 15 openssl s_client -servername "$tls_host" -connect "$tls_host:443" </dev/null 2>/dev/null \
+  | openssl x509 -checkend "$((MONITOR_TLS_WARN_DAYS * 86400))" -noout >/dev/null; then
+  issues+=("TLS certificate unavailable or expiring in less than ${MONITOR_TLS_WARN_DAYS} days")
+fi
 docker compose -f "$PROJECT_DIR/docker-compose.yml" ps --status running --services | grep -qx web \
   || issues+=("web container not running")
 docker compose -f "$PROJECT_DIR/docker-compose.yml" ps --status running --services | grep -qx caddy \

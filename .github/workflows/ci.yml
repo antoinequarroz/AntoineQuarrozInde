@@ -21,12 +21,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
       - run: npm ci --legacy-peer-deps
+      - run: bash -n scripts/ops/*.sh
       - run: npm test
       - run: npm run typecheck
       - run: npm run build
@@ -40,7 +41,7 @@ jobs:
       E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
       E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with:
           node-version: 22
@@ -56,4 +57,3 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
-
