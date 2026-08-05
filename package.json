@@ -9,6 +9,8 @@
     "preview": "nuxt preview",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "test:e2e:install": "playwright install chromium",
     "typecheck": "nuxi typecheck",
     "postinstall": "nuxt prepare",
     "typst:qr:demo": "typst compile --root . typst/examples/swiss-qr-bill-demo.typ typst/examples/swiss-qr-bill-demo.pdf",
@@ -33,6 +35,7 @@
   },
   "devDependencies": {
     "@nuxtjs/tailwindcss": "^6.14.0",
+    "@playwright/test": "1.62.1",
     "@types/node": "^26.1.2",
     "@types/three": "^0.177.0",
     "@vite-pwa/nuxt": "^1.1.1",

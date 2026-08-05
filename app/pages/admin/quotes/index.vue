@@ -5,6 +5,8 @@ definePageMeta({ layout: 'admin', middleware: 'admin' })
 
 const store = useQuotesStore()
 const clients = useClientsStore()
+const invoices = useInvoicesStore()
+const auth = useAuthStore()
 const route = useRoute()
 const toast = useToast()
 const { statusLabel } = useBusinessLabels()
@@ -45,6 +47,7 @@ const selectedId = ref<number | null>(null)
 const viewMode = ref<'table' | 'kanban'>('table')
 const search = ref('')
 const statusFilter = ref<'all' | Quote['status']>('all')
+const runningAction = ref<string | null>(null)
 const selectedQuote = computed(() => store.quotes.find(q => q.id === selectedId.value) ?? null)
 const quoteStatuses: Array<Quote['status']> = ['draft', 'sent', 'accepted', 'rejected']
 const kanbanQuotes = computed(() =>
@@ -155,12 +158,23 @@ function parseNotes(source: string | null | undefined) {
   } catch {}
 }
 
-function openNew() {
+async function nextNumber() {
+  try {
+    return (await $fetch<{ number: string }>('/api/admin/billing/next-number', {
+      query: { kind: 'quote' },
+      headers: auth.authHeader(),
+    })).number
+  } catch {
+    return ''
+  }
+}
+
+async function openNew() {
   editing.value = null
   offerTemplate.value = 'custom'
   resetMeta()
   Object.assign(form, {
-    number: '',
+    number: await nextNumber(),
     clientId: null,
     title: '',
     amountCents: 0,
@@ -260,15 +274,47 @@ async function markQuoteEvent(q: Quote, event: 'sent_at' | 'viewed_at' | 'signed
   }
 }
 
-function sendQuoteMailto(q: Quote) {
-  const client = q.clientId ? clientsById.value.get(q.clientId) : null
-  if (!client?.email) {
-    toast.error('Email client manquant')
-    return
+async function sendQuoteEmail(q: Quote) {
+  runningAction.value = `send-${q.id}`
+  try {
+    await $fetch('/api/quotes/send', { method: 'POST', body: { id: q.id }, headers: auth.authHeader() })
+    await store.ensureLoaded(true)
+    toast.success(`Devis ${q.number} envoyé avec son PDF`)
+  } catch (error: any) {
+    toast.error(error?.data?.message || 'Impossible d’envoyer le devis')
+  } finally {
+    runningAction.value = null
   }
-  const subject = encodeURIComponent(`Devis ${q.number} - ${q.title}`)
-  const body = encodeURIComponent(`Bonjour ${client.name},\n\nVeuillez trouver votre devis ${q.number}.\nLien PDF: ${window.location.origin}/api/quotes/pdf?id=${q.id}\n\nCordialement,\nAntoine Quarroz`)
-  window.location.href = `mailto:${client.email}?subject=${subject}&body=${body}`
+}
+
+async function convertToInvoice(q: Quote) {
+  runningAction.value = `convert-${q.id}`
+  try {
+    const result = await $fetch<{ created: boolean, invoice: { number: string } }>('/api/quotes/convert', {
+      method: 'POST', body: { id: q.id }, headers: auth.authHeader(),
+    })
+    await Promise.all([store.ensureLoaded(true), invoices.ensureLoaded(true)])
+    toast.success(result.created ? `Facture ${result.invoice.number} créée` : `La facture ${result.invoice.number} existe déjà`)
+    await navigateTo('/admin/invoices')
+  } catch (error: any) {
+    toast.error(error?.data?.message || 'Impossible de créer la facture')
+  } finally {
+    runningAction.value = null
+  }
+}
+
+async function duplicateQuote(q: Quote) {
+  editing.value = null
+  resetMeta()
+  parseNotes(q.notes)
+  Object.assign(form, {
+    ...q,
+    number: await nextNumber(),
+    status: 'draft',
+    issuedAt: new Date().toISOString().slice(0, 10),
+    items: (q.items || []).map(item => ({ ...item, id: undefined })),
+  })
+  showForm.value = true
 }
 
 function escapeCsv(value: string | number | null | undefined) {
@@ -339,7 +385,7 @@ function downloadPdf() {
 onMounted(async () => {
   await Promise.all([store.ensureLoaded(), clients.ensureLoaded()])
   if (route.query.new === '1') {
-    openNew()
+    await openNew()
     const id = Number(route.query.clientId || 0)
     if (id) form.clientId = id
   }
@@ -482,10 +528,12 @@ onMounted(async () => {
             <p><span class="text-gray-400">Valide jusqu'au:</span> {{ selectedQuote.validUntil || '-' }}</p>
           </div>
           <div class="mt-4 grid grid-cols-2 gap-2">
-            <button class="px-2 py-1.5 rounded-lg border border-gray-200 dark:border-white/[0.12] text-xs" @click="sendQuoteMailto(selectedQuote)">Envoyer email</button>
+            <button class="px-2 py-1.5 rounded-lg border border-gray-200 dark:border-white/[0.12] text-xs disabled:opacity-50" :disabled="runningAction === `send-${selectedQuote.id}`" @click="sendQuoteEmail(selectedQuote)">{{ runningAction === `send-${selectedQuote.id}` ? 'Envoi…' : 'Envoyer avec PDF' }}</button>
             <button class="px-2 py-1.5 rounded-lg border border-gray-200 dark:border-white/[0.12] text-xs" @click="markQuoteEvent(selectedQuote, 'sent_at')">Marquer envoye</button>
             <button class="px-2 py-1.5 rounded-lg border border-gray-200 dark:border-white/[0.12] text-xs" @click="markQuoteEvent(selectedQuote, 'viewed_at')">Marquer vu</button>
             <button class="px-2 py-1.5 rounded-lg border border-emerald-300/60 text-emerald-600 text-xs" @click="markQuoteEvent(selectedQuote, 'signed_at')">Marquer signe</button>
+            <button class="px-2 py-1.5 rounded-lg border border-gray-200 text-xs dark:border-white/[0.12]" @click="duplicateQuote(selectedQuote)">Dupliquer</button>
+            <button class="col-span-2 min-h-10 rounded-lg bg-violet-600 px-3 text-xs font-semibold text-white disabled:opacity-50" :disabled="runningAction === `convert-${selectedQuote.id}`" @click="convertToInvoice(selectedQuote)">{{ runningAction === `convert-${selectedQuote.id}` ? 'Création…' : 'Créer la facture' }}</button>
           </div>
           <p class="text-xs text-gray-500 mt-4 whitespace-pre-wrap">{{ selectedQuote.notes || 'Aucune note' }}</p>
         </template>

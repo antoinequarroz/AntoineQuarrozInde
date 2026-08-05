@@ -14,6 +14,7 @@ const { dialogRef, handleDialogKeydown } = useAccessibleDialog(showForm, closeFo
 const editing = ref<Invoice | null>(null)
 const showBillingProfile = ref(false)
 const savingBillingProfile = ref(false)
+const runningAction = ref<string | null>(null)
 const billingProfile = reactive({
   billingName: '', billingStreet: '', billingBuilding: '', billingPostalCode: '', billingCity: '', billingCountry: 'CH',
   billingEmail: '', billingPhone: '', billingIban: '', billingUid: '', billingTerms: 'Paiement selon l’échéance indiquée.',
@@ -96,8 +97,11 @@ watch(() => form.quoteId, () => {
   form.amountCents = selectedQuote.value.amountCents
   form.currency = selectedQuote.value.currency
 })
-function openNew() { editing.value = null; Object.assign(form, { number: '', clientId: null, quoteId: null, amountCents: 0, currency: 'CHF', status: 'draft', issuedAt: '', dueAt: '', paidAt: '', notes: '', paymentReferenceType: 'NON', paymentReference: '' }); formItems.value = [{ label: 'Prestation', description: null, quantity: 1, unitPriceCents: 0, taxRate: 8.1 }]; showForm.value = true }
+async function nextNumber() { try { return (await $fetch<{ number: string }>('/api/admin/billing/next-number', { query: { kind: 'invoice' }, headers: auth.authHeader() })).number } catch { return '' } }
+async function openNew() { editing.value = null; Object.assign(form, { number: await nextNumber(), clientId: null, quoteId: null, amountCents: 0, currency: 'CHF', status: 'draft', issuedAt: new Date().toISOString().slice(0, 10), dueAt: '', paidAt: '', notes: '', paymentReferenceType: 'NON', paymentReference: '' }); formItems.value = [{ label: 'Prestation', description: null, quantity: 1, unitPriceCents: 0, taxRate: 8.1 }]; showForm.value = true }
 function openEdit(x: Invoice) { editing.value = x; Object.assign(form, x); formItems.value = (x.items?.length ? x.items.map(i => ({ label: i.label, description: i.description, quantity: i.quantity, unitPriceCents: i.unitPriceCents, taxRate: i.taxRate })) : [{ label: 'Prestation', description: null, quantity: 1, unitPriceCents: 0, taxRate: 8.1 }]); showForm.value = true }
+async function duplicateInvoice(i: Invoice) { editing.value = null; Object.assign(form, { ...i, number: await nextNumber(), quoteId: null, status: 'draft', issuedAt: new Date().toISOString().slice(0, 10), dueAt: '', paidAt: '', paymentReferenceType: 'NON', paymentReference: '' }); formItems.value = (i.items?.length ? i.items.map(item => ({ label: item.label, description: item.description, quantity: item.quantity, unitPriceCents: item.unitPriceCents, taxRate: item.taxRate })) : [{ label: 'Prestation', description: null, quantity: 1, unitPriceCents: 0, taxRate: 8.1 }]); showForm.value = true }
+async function sendInvoiceEmail(i: Invoice) { runningAction.value = `send-${i.id}`; try { await $fetch('/api/invoices/send', { method: 'POST', body: { id: i.id }, headers: auth.authHeader() }); await store.ensureLoaded(true); toast.success(`Facture ${i.number} envoyée avec son PDF`) } catch (error: any) { toast.error(error?.data?.message || 'Impossible d’envoyer la facture') } finally { runningAction.value = null } }
 function computeFormTotals(items: Array<{ quantity: number, unitPriceCents: number, taxRate: number }>) { const subtotalCents = items.reduce((acc, item) => acc + Math.round((Number(item.quantity) || 0) * (Number(item.unitPriceCents) || 0)), 0); const totalCents = items.reduce((acc, item) => { const line = Math.round((Number(item.quantity) || 0) * (Number(item.unitPriceCents) || 0)); return acc + Math.round(line * (1 + (Number(item.taxRate) || 0) / 100)) }, 0); return { subtotalCents, taxCents: Math.max(0, totalCents - subtotalCents), totalCents } }
 const draftTotals = computed(() => computeFormTotals(formItems.value))
 function addItem() { formItems.value.push({ label: '', description: null, quantity: 1, unitPriceCents: 0, taxRate: 8.1 }) }
@@ -194,7 +198,7 @@ function downloadPdf() {
 onMounted(async () => {
   await Promise.all([store.ensureLoaded(), clients.ensureLoaded(), quotes.ensureLoaded(), loadBillingProfile()])
   if (route.query.new === '1') {
-    openNew()
+    await openNew()
     const id = Number(route.query.clientId || 0)
     if (id) form.clientId = id
   }
@@ -327,9 +331,11 @@ onMounted(async () => {
           <p><span class="text-gray-400">Paye le:</span> {{ selectedInvoice.paidAt || '-' }}</p>
         </div>
         <div class="mt-4 grid grid-cols-2 gap-2">
+          <button class="col-span-2 min-h-10 rounded-lg bg-violet-600 px-3 text-xs font-semibold text-white disabled:opacity-50" :disabled="runningAction === `send-${selectedInvoice.id}`" @click="sendInvoiceEmail(selectedInvoice)">{{ runningAction === `send-${selectedInvoice.id}` ? 'Envoi…' : 'Envoyer avec le PDF' }}</button>
           <button class="px-2 py-1.5 rounded-lg border border-gray-200 dark:border-white/[0.12] text-xs" @click="markInvoiceEvent(selectedInvoice, 'sent_at')">Marquer envoyee</button>
           <button class="px-2 py-1.5 rounded-lg border border-gray-200 dark:border-white/[0.12] text-xs" @click="markInvoiceEvent(selectedInvoice, 'viewed_at')">Marquer vue</button>
           <button class="px-2 py-1.5 rounded-lg border border-emerald-300/60 text-emerald-600 text-xs col-span-2" @click="markInvoiceEvent(selectedInvoice, 'paid_signal_at')">Marquer payee (preuve)</button>
+          <button class="col-span-2 px-2 py-1.5 rounded-lg border border-gray-200 dark:border-white/[0.12] text-xs" @click="duplicateInvoice(selectedInvoice)">Dupliquer la facture</button>
         </div>
         <p class="text-xs text-gray-500 mt-4 whitespace-pre-wrap">{{ selectedInvoice.notes || 'Aucune note' }}</p>
       </template>

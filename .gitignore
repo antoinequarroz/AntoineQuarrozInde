@@ -25,3 +25,8 @@ logs
 
 # Generated Typst previews
 typst/examples/*.pdf
+
+# Playwright artifacts and authenticated browser state
+playwright/.auth
+playwright-report
+test-results

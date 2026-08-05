@@ -49,6 +49,19 @@ Après un déploiement du code :
 sudo scripts/ops/install-ops.sh /home/ubuntu/antoinequarroz-vitrine
 ```
 
+## Exercice de reprise
+
+Le contrôle de reprise en lecture seule vérifie l'archive, ses fichiers JSON,
+les relations clients et la présence du schéma versionné :
+
+```bash
+sudo scripts/ops/restore-drill.sh /var/backups/antoinequarroz/aq-supabase-YYYYMMDDTHHMMSSZ.tar.gz /home/ubuntu/antoinequarroz-vitrine
+```
+
+Ce test ne modifie jamais la production. Un basculement complet doit être testé
+dans une branche Supabase ou un projet temporaire avant toute restauration sur
+le projet principal.
+
 ## Google Places
 
 Les avis réels nécessitent ces deux variables dans `.env`, puis une reconstruction

@@ -3,6 +3,9 @@ import { Resend } from 'resend'
 const RATE_WINDOW_MS = 60_000
 const RATE_LIMIT_MAX = 5
 const MIN_FORM_FILL_MS = 1200
+const MAX_NAME_LENGTH = 120
+const MAX_SUBJECT_LENGTH = 180
+const MAX_MESSAGE_LENGTH = 10_000
 const ipHits = new Map<string, number[]>()
 
 function escapeHtml(input: string) {
@@ -19,6 +22,11 @@ export default defineEventHandler(async (event) => {
   const ip = getRequestIP(event, { xForwardedFor: true }) || 'unknown'
   const now = Date.now()
   const hits = (ipHits.get(ip) || []).filter((ts) => now - ts < RATE_WINDOW_MS)
+  if (ipHits.size > 500) {
+    for (const [knownIp, timestamps] of ipHits) {
+      if (!timestamps.some(timestamp => now - timestamp < RATE_WINDOW_MS)) ipHits.delete(knownIp)
+    }
+  }
   if (hits.length >= RATE_LIMIT_MAX) {
     throw createError({ statusCode: 429, message: 'Trop de requetes, reessayez plus tard.' })
   }
@@ -30,6 +38,19 @@ export default defineEventHandler(async (event) => {
 
   if (!name || !email || !message) {
     throw createError({ statusCode: 400, message: 'Champs requis manquants' })
+  }
+  const normalizedName = String(name).trim()
+  const normalizedEmail = String(email).trim().toLowerCase()
+  const normalizedSubject = String(subject || '').trim()
+  const normalizedMessage = String(message).trim()
+  if (!normalizedName || normalizedName.length > MAX_NAME_LENGTH) {
+    throw createError({ statusCode: 400, message: 'Le nom est invalide.' })
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail) || normalizedEmail.length > 254) {
+    throw createError({ statusCode: 400, message: 'L’adresse e-mail est invalide.' })
+  }
+  if (normalizedSubject.length > MAX_SUBJECT_LENGTH || !normalizedMessage || normalizedMessage.length > MAX_MESSAGE_LENGTH) {
+    throw createError({ statusCode: 400, message: 'Le message est vide ou trop long.' })
   }
   if (website && String(website).trim().length > 0) {
     throw createError({ statusCode: 400, message: 'Requete invalide' })
@@ -72,18 +93,18 @@ export default defineEventHandler(async (event) => {
   const resend = new Resend(config.resendApiKey)
   const supabase = getSupabaseAdmin()
 
-  const safeSubject = subject?.trim() ? subject.trim() : 'Nouveau message'
-  const safeName = escapeHtml(String(name))
-  const safeEmail = escapeHtml(String(email))
-  const safeMessage = escapeHtml(String(message))
+  const safeSubject = normalizedSubject || 'Nouveau message'
+  const safeName = escapeHtml(normalizedName)
+  const safeEmail = escapeHtml(normalizedEmail)
+  const safeMessage = escapeHtml(normalizedMessage)
   const safeSubjectHtml = escapeHtml(safeSubject)
 
   const { error: saveError } = await supabase.from('contact_messages').insert({
     organization_id: org?.id ?? null,
-    name: String(name),
-    email: String(email),
+    name: normalizedName,
+    email: normalizedEmail,
     subject: safeSubject,
-    message: String(message),
+    message: normalizedMessage,
     status: 'new',
   })
   if (saveError) {
@@ -92,7 +113,6 @@ export default defineEventHandler(async (event) => {
 
   let linkedClientId: number | null = null
   if (org?.id) {
-    const normalizedEmail = String(email).trim().toLowerCase()
     const { data: existingClient } = await supabase
       .from('clients')
       .select('id,name,email,status')
@@ -107,12 +127,12 @@ export default defineEventHandler(async (event) => {
         .from('clients')
         .insert({
           organization_id: org.id,
-          name: String(name),
+          name: normalizedName,
           company: null,
           email: normalizedEmail,
           phone: null,
           status: 'lead',
-          notes: `Lead cree automatiquement depuis le formulaire de contact.\nSujet: ${safeSubject}\n\n${String(message)}`,
+          notes: `Lead créé automatiquement depuis le formulaire de contact.\nSujet: ${safeSubject}\n\n${normalizedMessage}`,
         })
         .select('id,name,email,status')
         .single()
@@ -142,7 +162,7 @@ export default defineEventHandler(async (event) => {
   const { error } = await resend.emails.send({
     from: 'Portfolio <info@antoinequarroz.ch>',
     to: config.contactEmail,
-    replyTo: email,
+    replyTo: normalizedEmail,
     subject: `[Portfolio] ${safeSubject}`,
     html: `
       <div style="font-family:sans-serif;max-width:560px;margin:0 auto">
