@@ -9,6 +9,7 @@ const props = defineProps<{
 }>()
 
 const { t } = useI18n()
+const localePath = useLocalePath()
 const rootRef = ref<HTMLElement | null>(null)
 const progressBarRef = ref<HTMLElement | null>(null)
 const activeSourceIndex = ref(0)
@@ -222,6 +223,9 @@ onBeforeUnmount(() => {
             </div>
             <div class="p-3.5 max-[390px]:p-3">
               <p class="line-clamp-3 text-sm leading-relaxed text-gray-600 dark:text-gray-300">{{ project.description }}</p>
+              <NuxtLink v-if="project.caseStudyPublished" :to="localePath(`/projets/${project.slug}`)" class="mt-3 inline-flex min-h-11 items-center text-sm font-bold text-violet-700 transition-colors hover:text-violet-500 dark:text-violet-200 dark:hover:text-white">
+                {{ t('portfolio.read_case_study') }} <span class="ml-2" aria-hidden="true">→</span>
+              </NuxtLink>
             </div>
           </article>
         </div>
@@ -265,6 +269,7 @@ onBeforeUnmount(() => {
                 </div>
               </div>
               <div class="mt-5 flex flex-wrap gap-2">
+                <NuxtLink v-if="activeProject.caseStudyPublished" :to="localePath(`/projets/${activeProject.slug}`)" class="btn-primary rounded-full px-4 py-2 text-xs">{{ t('portfolio.read_case_study') }}</NuxtLink>
                 <a v-if="activeProject.liveUrl" :href="activeProject.liveUrl" target="_blank" rel="noopener noreferrer" class="btn-primary rounded-full px-4 py-2 text-xs">{{ t('portfolio.view') }}</a>
                 <a v-if="activeProject.codeUrl" :href="activeProject.codeUrl" target="_blank" rel="noopener noreferrer" class="btn-secondary rounded-full px-4 py-2 text-xs">{{ t('portfolio.code') }}</a>
               </div>

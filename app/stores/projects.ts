@@ -1,4 +1,4 @@
-import type { Project } from '~/types'
+import type { Project, ProjectResult } from '~/types'
 
 type ProjectRow = {
   id: number
@@ -12,6 +12,20 @@ type ProjectRow = {
   live_url: string | null
   code_url: string | null
   featured: boolean
+  case_study_published?: boolean | null
+  client_label?: string | null
+  project_role?: string | null
+  project_duration?: string | null
+  completed_at?: string | null
+  challenge?: string | null
+  approach?: string | null
+  solution?: string | null
+  outcome?: string | null
+  deliverables?: string[] | null
+  gallery_images?: string[] | null
+  results?: ProjectResult[] | null
+  seo_title?: string | null
+  seo_description?: string | null
   created_at: string
 }
 
@@ -29,6 +43,20 @@ function mapProject(row: ProjectRow): Project {
     liveUrl: row.live_url,
     codeUrl: row.code_url,
     featured: row.featured,
+    caseStudyPublished: Boolean(row.case_study_published),
+    clientLabel: row.client_label ?? null,
+    projectRole: row.project_role ?? null,
+    projectDuration: row.project_duration ?? null,
+    completedAt: row.completed_at ?? null,
+    challenge: row.challenge ?? null,
+    approach: row.approach ?? null,
+    solution: row.solution ?? null,
+    outcome: row.outcome ?? null,
+    deliverables: row.deliverables ?? [],
+    galleryImages: row.gallery_images ?? [],
+    results: Array.isArray(row.results) ? row.results : [],
+    seoTitle: row.seo_title ?? null,
+    seoDescription: row.seo_description ?? null,
     createdAt: row.created_at?.slice(0, 10) ?? '',
   }
 }

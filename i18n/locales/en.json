@@ -86,6 +86,7 @@
     "cms": "CMS",
     "view": "View project",
     "code": "Source code",
+    "read_case_study": "Read the case study",
     "selection_count": "{count} project(s) in this selection. Scroll to rotate them before moving to the next section.",
     "case_study": "Case study",
     "context": "Context",
@@ -123,6 +124,29 @@
       }
     },
     "coming_soon": "Projects coming soon..."
+  },
+  "case_study": {
+    "back": "Back to portfolio",
+    "not_found": "Case study not found",
+    "role": "My role",
+    "duration": "Duration",
+    "delivered": "Delivered",
+    "stack": "Stack",
+    "verified_results": "Verified results",
+    "challenge": "The challenge",
+    "approach": "The approach",
+    "solution": "The solution",
+    "outcome": "The outcome",
+    "deliverables": "Deliverables",
+    "technologies": "Technologies",
+    "gallery": "Project preview",
+    "gallery_image": "view {number}",
+    "next_project": "Your project could be next",
+    "cta_title": "Let’s build something useful and memorable.",
+    "cta_text": "Tell me about your goal. I’ll reply with a clear first assessment and the next steps.",
+    "cta_button": "Discuss my project",
+    "view_live": "View live site",
+    "view_code": "View code"
   },
   "contact": {
     "badge": "Contact",
@@ -162,7 +186,9 @@
     "rights": "All rights reserved.",
     "made_with": "Made with ♥ in Valais",
     "col_nav": "Navigation",
-    "col_contact": "Contact"
+    "col_contact": "Contact",
+    "privacy": "Privacy",
+    "terms": "Terms"
   },
   "business": {
     "status": { "draft": "Draft", "sent": "Sent", "accepted": "Accepted", "rejected": "Rejected", "paid": "Paid", "overdue": "Overdue", "cancelled": "Cancelled", "todo": "To do", "in_progress": "In progress", "done": "Done", "scheduled": "Scheduled", "completed": "Completed", "new": "New", "replied": "Replied", "archived": "Archived", "lead": "Lead", "active": "Active", "inactive": "Inactive" }

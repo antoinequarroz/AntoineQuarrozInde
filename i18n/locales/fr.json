@@ -86,6 +86,7 @@
     "cms": "CMS",
     "view": "Voir le projet",
     "code": "Code source",
+    "read_case_study": "Découvrir l’étude de cas",
     "selection_count": "{count} projet(s) dans cette sélection. Faites défiler pour les faire tourner avant de passer à la suite.",
     "case_study": "Case study",
     "context": "Contexte",
@@ -123,6 +124,29 @@
       }
     },
     "coming_soon": "Projets bientôt disponibles..."
+  },
+  "case_study": {
+    "back": "Retour au portfolio",
+    "not_found": "Étude de cas introuvable",
+    "role": "Mon rôle",
+    "duration": "Durée",
+    "delivered": "Livré en",
+    "stack": "Stack",
+    "verified_results": "Résultats vérifiés",
+    "challenge": "Le défi",
+    "approach": "L’approche",
+    "solution": "La solution",
+    "outcome": "Le résultat",
+    "deliverables": "Livrables",
+    "technologies": "Technologies",
+    "gallery": "Aperçu du projet",
+    "gallery_image": "vue {number}",
+    "next_project": "Votre projet pourrait être le prochain",
+    "cta_title": "Construisons quelque chose d’utile et mémorable.",
+    "cta_text": "Parlez-moi de votre objectif. Je vous réponds avec une première lecture claire du projet et des prochaines étapes.",
+    "cta_button": "Parler de mon projet",
+    "view_live": "Voir le site",
+    "view_code": "Voir le code"
   },
   "contact": {
     "badge": "Contact",
@@ -162,7 +186,9 @@
     "rights": "Tous droits réservés.",
     "made_with": "Fait avec ♥ en Valais",
     "col_nav": "Navigation",
-    "col_contact": "Contact"
+    "col_contact": "Contact",
+    "privacy": "Confidentialité",
+    "terms": "Conditions"
   },
   "business": {
     "status": { "draft": "Brouillon", "sent": "Envoyé", "accepted": "Accepté", "rejected": "Refusé", "paid": "Payé", "overdue": "En retard", "cancelled": "Annulé", "todo": "À faire", "in_progress": "En cours", "done": "Terminé", "scheduled": "Planifié", "completed": "Terminé", "new": "Nouveau", "replied": "Répondu", "archived": "Archivé", "lead": "Prospect", "active": "Actif", "inactive": "Inactif" }

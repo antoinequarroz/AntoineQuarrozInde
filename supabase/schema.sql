@@ -28,6 +28,20 @@ create table if not exists public.projects (
   live_url text,
   code_url text,
   featured boolean not null default false,
+  case_study_published boolean not null default false,
+  client_label text,
+  project_role text,
+  project_duration text,
+  completed_at date,
+  challenge text,
+  approach text,
+  solution text,
+  outcome text,
+  deliverables text[] not null default '{}',
+  gallery_images text[] not null default '{}',
+  results jsonb not null default '[]'::jsonb check (jsonb_typeof(results) = 'array'),
+  seo_title text,
+  seo_description text,
   created_at timestamptz not null default now()
 );
 
@@ -167,6 +181,7 @@ create table if not exists public.appointments (
 );
 
 create index if not exists idx_projects_organization_id on public.projects(organization_id);
+create index if not exists idx_projects_case_study_published on public.projects(organization_id, case_study_published) where case_study_published = true;
 create index if not exists idx_articles_organization_id on public.articles(organization_id);
 create index if not exists idx_reviews_organization_id on public.reviews(organization_id);
 create index if not exists idx_marketing_events_organization_id on public.marketing_events(organization_id);

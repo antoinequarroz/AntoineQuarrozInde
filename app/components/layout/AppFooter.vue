@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const { t } = useI18n()
+const localePath = useLocalePath()
 const year = new Date().getFullYear()
 
 const socials = [
@@ -162,7 +163,11 @@ const localSeoLinks = [
         <!-- Bottom bar -->
         <div class="relative flex flex-col items-center justify-between gap-2 text-xs text-gray-400 dark:text-white/30 sm:flex-row">
           <span>© {{ year }} Antoine Quarroz · {{ t('footer.rights') }}</span>
-          <span>{{ t('footer.made_with') }}</span>
+          <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+            <NuxtLink :to="localePath('/confidentialite')" class="transition-colors hover:text-violet-600 dark:hover:text-violet-300">{{ t('footer.privacy') }}</NuxtLink>
+            <NuxtLink :to="localePath('/conditions-utilisation')" class="transition-colors hover:text-violet-600 dark:hover:text-violet-300">{{ t('footer.terms') }}</NuxtLink>
+            <span>{{ t('footer.made_with') }}</span>
+          </div>
         </div>
       </div>
     </div>

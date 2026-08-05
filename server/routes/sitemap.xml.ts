@@ -1,9 +1,25 @@
-export default defineEventHandler((event) => {
+type SitemapEntry = {
+  path: string
+  lastmod: string
+  changefreq: 'weekly' | 'monthly'
+  priority: string
+}
+
+function escapeXml(value: string) {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&apos;')
+}
+
+export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig()
   const siteUrl = String(config.public.siteUrl || '').replace(/\/+$/, '')
   const now = new Date().toISOString()
 
-  const urls = [
+  const staticPaths = [
     '/',
     '/developpeur-web-valais',
     '/creation-site-internet-valais',
@@ -14,15 +30,53 @@ export default defineEventHandler((event) => {
     '/blog',
     '/en/blog',
     '/de/blog',
+    '/confidentialite',
+    '/conditions-utilisation',
+    '/en/confidentialite',
+    '/en/conditions-utilisation',
+    '/de/confidentialite',
+    '/de/conditions-utilisation',
   ]
+
+  const entries: SitemapEntry[] = staticPaths.map(path => ({
+    path,
+    lastmod: now,
+    changefreq: 'weekly',
+    priority: path === '/' ? '1.0' : '0.8',
+  }))
+
+  try {
+    const supabase = getSupabaseAdmin()
+    const { data: projects, error } = await supabase
+      .from('projects')
+      .select('slug, created_at, completed_at')
+      .eq('case_study_published', true)
+
+    if (error) throw error
+
+    for (const project of projects ?? []) {
+      const lastmod = project.completed_at || project.created_at || now
+      for (const prefix of ['', '/en', '/de']) {
+        entries.push({
+          path: `${prefix}/projets/${encodeURIComponent(project.slug)}`,
+          lastmod,
+          changefreq: 'monthly',
+          priority: '0.9',
+        })
+      }
+    }
+  }
+  catch (error) {
+    console.error('Unable to load dynamic sitemap entries', error)
+  }
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${urls.map(path => `  <url>
-    <loc>${siteUrl}${path}</loc>
-    <lastmod>${now}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>${path === '/' ? '1.0' : '0.8'}</priority>
+${entries.map(entry => `  <url>
+    <loc>${escapeXml(`${siteUrl}${entry.path}`)}</loc>
+    <lastmod>${escapeXml(entry.lastmod)}</lastmod>
+    <changefreq>${entry.changefreq}</changefreq>
+    <priority>${entry.priority}</priority>
   </url>`).join('\n')}
 </urlset>`
 

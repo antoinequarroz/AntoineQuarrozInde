@@ -5,18 +5,7 @@ export default defineEventHandler(async (event) => {
   if (!id) throw createError({ statusCode: 400, message: 'Missing project id' })
 
   const supabase = getSupabaseAdmin()
-  const payload = {
-    client_id: body.clientId ? Number(body.clientId) : null,
-    title: body.title,
-    slug: body.slug,
-    category: body.category,
-    tags: body.tags ?? [],
-    description: body.description,
-    image: body.image ?? null,
-    live_url: body.liveUrl ?? null,
-    code_url: body.codeUrl ?? null,
-    featured: Boolean(body.featured),
-  }
+  const { organization_id: _organizationId, ...payload } = projectPayload(body, org.id)
 
   const { data, error } = await supabase
     .from('projects')

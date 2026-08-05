@@ -70,12 +70,14 @@ useHead({
 const projectsStore = useProjectsStore()
 const articlesStore = useArticlesStore()
 const reviewsStore = useReviewsStore()
+const googleReviewsStore = useGoogleReviewsStore()
 
 await useAsyncData('index-data', () =>
   Promise.all([
     projectsStore.ensureLoaded(),
     articlesStore.ensureLoaded(),
     reviewsStore.ensureLoaded(),
+    googleReviewsStore.ensureLoaded(),
   ]),
 )
 </script>

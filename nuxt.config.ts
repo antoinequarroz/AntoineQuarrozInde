@@ -145,6 +145,8 @@
     resendApiKey: process.env.RESEND_API_KEY || '',
     contactEmail: process.env.CONTACT_EMAIL || 'info@antoinequarroz.ch',
     turnstileSecretKey: process.env.TURNSTILE_SECRET_KEY || '',
+    googlePlacesApiKey: process.env.GOOGLE_PLACES_API_KEY || '',
+    googlePlaceId: process.env.GOOGLE_PLACE_ID || '',
     supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
     adminEmail: process.env.ADMIN_EMAIL || '',
     public: {

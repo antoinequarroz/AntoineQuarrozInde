@@ -10,7 +10,26 @@ export interface Project {
   liveUrl: string | null
   codeUrl: string | null
   featured: boolean
+  caseStudyPublished: boolean
+  clientLabel: string | null
+  projectRole: string | null
+  projectDuration: string | null
+  completedAt: string | null
+  challenge: string | null
+  approach: string | null
+  solution: string | null
+  outcome: string | null
+  deliverables: string[]
+  galleryImages: string[]
+  results: ProjectResult[]
+  seoTitle: string | null
+  seoDescription: string | null
   createdAt: string
+}
+
+export interface ProjectResult {
+  value: string
+  label: string
 }
 
 export interface ContactForm {

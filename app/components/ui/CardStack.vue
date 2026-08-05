@@ -33,7 +33,6 @@ const { t } = useI18n()
 const active = ref(0)
 const hovering = ref(false)
 const focusWithin = ref(false)
-const userPaused = ref(false)
 const reducedMotion = ref(false)
 
 watch(
@@ -78,7 +77,7 @@ function prev() {
 
 let timer: ReturnType<typeof setInterval> | null = null
 
-const isPaused = computed(() => userPaused.value || reducedMotion.value || hovering.value || focusWithin.value)
+const isPaused = computed(() => reducedMotion.value || hovering.value || focusWithin.value)
 
 function clearTimer() {
   if (!timer) return
@@ -94,14 +93,9 @@ function startTimer() {
   }, Math.max(3000, props.intervalMs))
 }
 
-function togglePlayback() {
-  userPaused.value = !userPaused.value
-}
-
 let motionQuery: MediaQueryList | null = null
 function updateMotionPreference() {
   reducedMotion.value = Boolean(motionQuery?.matches)
-  if (reducedMotion.value) userPaused.value = true
   startTimer()
 }
 
@@ -173,7 +167,7 @@ onBeforeUnmount(() => {
                 class="inline-flex min-h-11 items-center gap-2 rounded-xl border border-violet-200/25 bg-black/15 px-4 text-sm font-semibold text-violet-100 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300"
                 @click="emit('card-click', entry.item)"
               >
-                {{ t('blog.preview_action') }}
+                {{ t('blog.preview') }}
               </button>
               <NuxtLink
                 v-if="entry.item.href"
@@ -226,17 +220,6 @@ onBeforeUnmount(() => {
         @click="next"
       >
         ›
-      </button>
-      <button
-        v-if="props.autoAdvance && props.items.length > 1"
-        type="button"
-        class="inline-flex min-h-11 items-center gap-2 rounded-full border border-violet-300/30 bg-white/5 px-4 text-sm font-semibold text-white/80 transition-colors duration-150 hover:bg-violet-500/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300"
-        :aria-pressed="userPaused"
-        @click="togglePlayback"
-      >
-        <svg v-if="userPaused" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3l14 9-14 9V3z" /></svg>
-        <svg v-else class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5v14m6-14v14" /></svg>
-        {{ userPaused ? t('blog.resume_carousel') : t('blog.pause_carousel') }}
       </button>
     </div>
   </div>

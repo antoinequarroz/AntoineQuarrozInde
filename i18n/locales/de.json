@@ -86,6 +86,7 @@
     "cms": "CMS",
     "view": "Projekt ansehen",
     "code": "Quellcode",
+    "read_case_study": "Case Study entdecken",
     "selection_count": "{count} Projekt(e) in dieser Auswahl. Scrollen Sie, um sie zu drehen, bevor der nächste Abschnitt erscheint.",
     "case_study": "Case Study",
     "context": "Kontext",
@@ -123,6 +124,29 @@
       }
     },
     "coming_soon": "Projekte bald verfügbar..."
+  },
+  "case_study": {
+    "back": "Zurück zum Portfolio",
+    "not_found": "Case Study nicht gefunden",
+    "role": "Meine Rolle",
+    "duration": "Dauer",
+    "delivered": "Fertiggestellt",
+    "stack": "Stack",
+    "verified_results": "Verifizierte Ergebnisse",
+    "challenge": "Die Herausforderung",
+    "approach": "Der Ansatz",
+    "solution": "Die Lösung",
+    "outcome": "Das Ergebnis",
+    "deliverables": "Leistungen",
+    "technologies": "Technologien",
+    "gallery": "Projekteinblick",
+    "gallery_image": "Ansicht {number}",
+    "next_project": "Ihr Projekt könnte das nächste sein",
+    "cta_title": "Schaffen wir etwas Nützliches und Einprägsames.",
+    "cta_text": "Erzählen Sie mir von Ihrem Ziel. Sie erhalten eine klare erste Einschätzung und die nächsten Schritte.",
+    "cta_button": "Projekt besprechen",
+    "view_live": "Website ansehen",
+    "view_code": "Code ansehen"
   },
   "contact": {
     "badge": "Kontakt",
@@ -162,7 +186,9 @@
     "rights": "Alle Rechte vorbehalten.",
     "made_with": "Gemacht mit ♥ im Wallis",
     "col_nav": "Navigation",
-    "col_contact": "Kontakt"
+    "col_contact": "Kontakt",
+    "privacy": "Datenschutz",
+    "terms": "Bedingungen"
   },
   "business": {
     "status": { "draft": "Entwurf", "sent": "Gesendet", "accepted": "Angenommen", "rejected": "Abgelehnt", "paid": "Bezahlt", "overdue": "Überfällig", "cancelled": "Storniert", "todo": "Offen", "in_progress": "In Bearbeitung", "done": "Erledigt", "scheduled": "Geplant", "completed": "Abgeschlossen", "new": "Neu", "replied": "Beantwortet", "archived": "Archiviert", "lead": "Interessent", "active": "Aktiv", "inactive": "Inaktiv" }

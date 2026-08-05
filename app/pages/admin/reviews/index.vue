@@ -4,6 +4,7 @@ import type { Review } from '~/stores/reviews'
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 
 const store = useReviewsStore()
+const googleStore = useGoogleReviewsStore()
 const toast = useToast()
 
 const showForm = ref(false)
@@ -35,7 +36,14 @@ function openEdit(review: Review) {
 
 onMounted(() => {
   store.ensureLoaded()
+  googleStore.ensureLoaded()
 })
+
+async function refreshGoogleReviews() {
+  await googleStore.ensureLoaded(true)
+  if (googleStore.configured) toast.success('Connexion Google Reviews vérifiée')
+  else toast.error('Ajoute GOOGLE_PLACES_API_KEY et GOOGLE_PLACE_ID sur le serveur')
+}
 
 async function handleSubmit() {
   try {
@@ -87,6 +95,26 @@ async function handleDelete(id: number) {
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
           </svg>
           Ajouter
+        </button>
+      </div>
+    </section>
+
+    <section class="rounded-xl border border-cyan-500/15 bg-white p-4 shadow-sm dark:border-cyan-300/10 dark:bg-[#111118] sm:p-5">
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <div class="flex flex-wrap items-center gap-2">
+            <h2 class="font-display text-base font-semibold text-gray-950 dark:text-white">Google Reviews</h2>
+            <span class="rounded-full px-2.5 py-1 text-xs font-semibold" :class="googleStore.configured ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' : 'bg-gray-100 text-gray-600 dark:bg-white/[0.06] dark:text-gray-300'">
+              {{ googleStore.configured ? 'Connecté' : 'En attente de configuration' }}
+            </span>
+          </div>
+          <p class="mt-2 max-w-3xl text-sm leading-relaxed text-gray-500 dark:text-gray-400">
+            Les avis manuels restent inchangés. Quand la connexion sera active, Google affichera en direct jusqu’à 5 avis classés par pertinence, avec leurs liens et attributions obligatoires. Ils ne sont pas copiés dans ta base.
+          </p>
+          <p v-if="googleStore.configured" class="mt-2 text-xs text-cyan-700 dark:text-cyan-300">{{ googleStore.placeName }} · {{ googleStore.rating.toFixed(1) }}/5 · {{ googleStore.userRatingCount }} avis Google</p>
+        </div>
+        <button type="button" class="min-h-11 shrink-0 rounded-lg border border-cyan-500/20 px-4 text-sm font-semibold text-cyan-700 transition-colors hover:bg-cyan-50 dark:text-cyan-300 dark:hover:bg-cyan-500/10" :disabled="googleStore.loading" @click="refreshGoogleReviews">
+          {{ googleStore.loading ? 'Vérification…' : 'Vérifier la connexion' }}
         </button>
       </div>
     </section>

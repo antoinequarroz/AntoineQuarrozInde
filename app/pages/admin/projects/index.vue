@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Project } from '~/types'
+import type { Project, ProjectResult } from '~/types'
 
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 
@@ -24,11 +24,31 @@ const form = reactive({
   codeUrl: '',
   featured: false,
   clientId: null as number | null,
+  caseStudyPublished: false,
+  clientLabel: '',
+  projectRole: '',
+  projectDuration: '',
+  completedAt: '',
+  challenge: '',
+  approach: '',
+  solution: '',
+  outcome: '',
+  deliverables: '',
+  galleryImages: [] as Array<string | null>,
+  results: [] as ProjectResult[],
+  seoTitle: '',
+  seoDescription: '',
 })
 
 function openNew() {
   editingProject.value = null
-  Object.assign(form, { title: '', slug: '', category: 'web', tags: '', description: '', image: null, liveUrl: '', codeUrl: '', featured: false, clientId: null })
+  Object.assign(form, {
+    title: '', slug: '', category: 'web', tags: '', description: '', image: null,
+    liveUrl: '', codeUrl: '', featured: false, clientId: null,
+    caseStudyPublished: false, clientLabel: '', projectRole: '', projectDuration: '',
+    completedAt: '', challenge: '', approach: '', solution: '', outcome: '',
+    deliverables: '', galleryImages: [], results: [], seoTitle: '', seoDescription: '',
+  })
   showForm.value = true
 }
 
@@ -38,6 +58,20 @@ function openEdit(project: Project) {
     title: project.title, slug: project.slug, category: project.category,
     tags: project.tags.join(', '), description: project.description, image: project.image,
     liveUrl: project.liveUrl || '', codeUrl: project.codeUrl || '', featured: project.featured, clientId: project.clientId,
+    caseStudyPublished: project.caseStudyPublished,
+    clientLabel: project.clientLabel || '',
+    projectRole: project.projectRole || '',
+    projectDuration: project.projectDuration || '',
+    completedAt: project.completedAt || '',
+    challenge: project.challenge || '',
+    approach: project.approach || '',
+    solution: project.solution || '',
+    outcome: project.outcome || '',
+    deliverables: project.deliverables.join(', '),
+    galleryImages: [...project.galleryImages],
+    results: project.results.map(result => ({ ...result })),
+    seoTitle: project.seoTitle || '',
+    seoDescription: project.seoDescription || '',
   })
   showForm.value = true
 }
@@ -50,9 +84,15 @@ onMounted(() => {
 })
 
 async function handleSubmit() {
+  const generatedSlug = form.title
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
   const data = {
     title: form.title,
-    slug: form.slug || form.title.toLowerCase().replace(/\s+/g, '-'),
+    slug: form.slug || generatedSlug,
     category: form.category,
     tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
     description: form.description,
@@ -61,6 +101,20 @@ async function handleSubmit() {
     codeUrl: form.codeUrl || null,
     featured: form.featured,
     clientId: form.clientId,
+    caseStudyPublished: form.caseStudyPublished,
+    clientLabel: form.clientLabel || null,
+    projectRole: form.projectRole || null,
+    projectDuration: form.projectDuration || null,
+    completedAt: form.completedAt || null,
+    challenge: form.challenge || null,
+    approach: form.approach || null,
+    solution: form.solution || null,
+    outcome: form.outcome || null,
+    deliverables: form.deliverables.split(',').map(item => item.trim()).filter(Boolean),
+    galleryImages: form.galleryImages.filter((image): image is string => Boolean(image)),
+    results: form.results.filter(result => result.value.trim() && result.label.trim()),
+    seoTitle: form.seoTitle || null,
+    seoDescription: form.seoDescription || null,
   }
   try {
     if (editingProject.value) {
@@ -122,7 +176,7 @@ const catColors: Record<string, string> = {
     <Transition name="modal">
       <div v-if="showForm" ref="dialogRef" class="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="project-form-title" tabindex="-1" @keydown="handleDialogKeydown">
         <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="showForm = false" />
-        <div class="admin-modal-panel relative w-full max-w-xl bg-white dark:bg-[#111118] rounded-2xl shadow-2xl border border-gray-100 dark:border-white/[0.08] my-4 overflow-y-auto">
+        <div class="admin-modal-panel relative w-full max-w-4xl bg-white dark:bg-[#111118] rounded-2xl shadow-2xl border border-gray-100 dark:border-white/[0.08] my-4 overflow-y-auto">
 
           <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-white/[0.06]">
             <h2 id="project-form-title" class="font-display font-semibold text-base text-gray-900 dark:text-white">
@@ -184,6 +238,8 @@ const catColors: Record<string, string> = {
               <input id="project-code-url" v-model="form.codeUrl" type="url" class="input-field" placeholder="https://github.com/..." autocomplete="url">
             </div>
 
+            <AdminProjectCaseStudyFields v-model="form" />
+
             <div class="flex items-center gap-3">
               <button
                 type="button"
@@ -236,9 +292,11 @@ const catColors: Record<string, string> = {
         <div class="mt-2 flex items-center gap-2 flex-wrap">
           <span class="text-xs font-semibold px-2 py-1 rounded-lg" :class="catColors[project.category]">{{ project.category }}</span>
           <span v-if="project.featured" class="text-xs font-semibold px-2 py-1 rounded-lg bg-yellow-50 text-yellow-600 dark:bg-yellow-500/10 dark:text-yellow-400">★</span>
+          <span v-if="project.caseStudyPublished" class="rounded-lg bg-cyan-50 px-2 py-1 text-xs font-semibold text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300">Étude publiée</span>
           <span v-for="tag in project.tags.slice(0, 2)" :key="`m-${project.id}-${tag}`" class="text-xs bg-gray-50 dark:bg-white/[0.04] text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded-md">{{ tag }}</span>
         </div>
         <div class="mt-3 flex items-center gap-3">
+          <NuxtLink v-if="project.caseStudyPublished" :to="`/projets/${project.slug}`" target="_blank" class="text-xs font-semibold text-cyan-700 dark:text-cyan-300">Voir l’étude</NuxtLink>
           <button class="text-xs text-violet-600" @click="openEdit(project)">Editer</button>
           <button class="text-xs text-red-500" @click="handleDelete(project.id)">Supprimer</button>
         </div>
@@ -281,6 +339,7 @@ const catColors: Record<string, string> = {
             <td class="px-5 py-3.5 hidden sm:table-cell">
               <span class="text-xs font-semibold px-2.5 py-1 rounded-lg" :class="catColors[project.category]">{{ project.category }}</span>
               <span v-if="project.featured" class="ml-1.5 text-xs font-semibold px-2 py-1 rounded-lg bg-yellow-50 text-yellow-600 dark:bg-yellow-500/10 dark:text-yellow-400">★</span>
+              <span v-if="project.caseStudyPublished" class="ml-1.5 rounded-lg bg-cyan-50 px-2 py-1 text-xs font-semibold text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300">Étude publiée</span>
             </td>
             <td class="px-5 py-3.5 hidden md:table-cell">
               <div class="flex flex-wrap gap-1">
@@ -289,8 +348,18 @@ const catColors: Record<string, string> = {
             </td>
             <td class="px-5 py-3.5 text-right">
               <div class="flex items-center justify-end gap-1.5">
+                <NuxtLink
+                  v-if="project.caseStudyPublished"
+                  :to="`/projets/${project.slug}`"
+                  target="_blank"
+                  aria-label="Voir l’étude de cas publiée"
+                  class="flex h-8 w-8 items-center justify-center rounded-lg text-cyan-600 transition-colors hover:bg-cyan-50 hover:text-cyan-700 dark:text-cyan-300 dark:hover:bg-cyan-500/10"
+                >
+                  <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14 3h7v7m0-7L10 14M5 7v12h12v-5" /></svg>
+                </NuxtLink>
                 <button
-                  class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-500/10 transition-all"
+                  aria-label="Modifier le projet"
+                  class="w-8 h-8 rounded-lg flex items-center justify-center text-violet-400 hover:text-violet-600 hover:bg-violet-50 dark:text-violet-300 dark:hover:bg-violet-500/10 transition-colors"
                   @click="openEdit(project)"
                 >
                   <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -298,7 +367,8 @@ const catColors: Record<string, string> = {
                   </svg>
                 </button>
                 <button
-                  class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all"
+                  aria-label="Supprimer le projet"
+                  class="w-8 h-8 rounded-lg flex items-center justify-center text-red-400 hover:text-red-600 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-500/10 transition-colors"
                   @click="handleDelete(project.id)"
                 >
                   <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">

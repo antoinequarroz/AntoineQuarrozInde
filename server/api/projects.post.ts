@@ -3,19 +3,7 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event)
   const supabase = getSupabaseAdmin()
 
-  const payload = {
-    organization_id: org.id,
-    client_id: body.clientId ? Number(body.clientId) : null,
-    title: body.title,
-    slug: body.slug,
-    category: body.category,
-    tags: body.tags ?? [],
-    description: body.description,
-    image: body.image ?? null,
-    live_url: body.liveUrl ?? null,
-    code_url: body.codeUrl ?? null,
-    featured: Boolean(body.featured),
-  }
+  const payload = projectPayload(body, org.id)
 
   const { data, error } = await supabase
     .from('projects')

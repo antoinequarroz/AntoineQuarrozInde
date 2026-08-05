@@ -24,10 +24,10 @@ const sceneUrl = "https://prod.spline.design/PyzDhpQ9E5f1E3MT/scene.splinecode";
 
         <!-- Gradients d'ambiance -->
         <div
-            class="absolute inset-0 z-10 bg-gradient-to-b from-black/8 via-transparent to-black/50"
+            class="pointer-events-none absolute inset-0 z-10 bg-gradient-to-b from-black/8 via-transparent to-black/50"
         />
         <div
-            class="absolute inset-0 z-10 bg-gradient-to-r from-black/55 via-transparent to-black/10"
+            class="pointer-events-none absolute inset-0 z-10 bg-gradient-to-r from-black/55 via-transparent to-black/10"
         />
 
         <!-- Contenu principal -->
