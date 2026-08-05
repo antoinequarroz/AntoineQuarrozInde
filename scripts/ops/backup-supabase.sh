@@ -1,0 +1,123 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+PROJECT_DIR="${1:-$(pwd)}"
+ENV_FILE="$PROJECT_DIR/.env"
+BACKUP_ROOT="${BACKUP_ROOT:-/var/backups/antoinequarroz}"
+KEEP_DAYS="${BACKUP_KEEP_DAYS:-14}"
+
+read_env() {
+  local key="$1"
+  local value
+  value="$(sed -n "s/^${key}=//p" "$ENV_FILE" | tail -n 1)"
+  value="${value%\"}"
+  value="${value#\"}"
+  printf '%s' "$value"
+}
+
+if [[ ! -f "$ENV_FILE" ]]; then
+  echo "Missing environment file: $ENV_FILE" >&2
+  exit 1
+fi
+
+SUPABASE_URL="$(read_env SUPABASE_URL)"
+SERVICE_KEY="$(read_env SUPABASE_SERVICE_ROLE_KEY)"
+if [[ -z "$SUPABASE_URL" || -z "$SERVICE_KEY" ]]; then
+  echo "SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is missing" >&2
+  exit 1
+fi
+
+install -d -m 700 "$BACKUP_ROOT"
+STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
+WORK_DIR="$(mktemp -d "$BACKUP_ROOT/.aq-backup-${STAMP}-XXXX")"
+ARCHIVE="$BACKUP_ROOT/aq-supabase-${STAMP}.tar.gz"
+trap 'rm -rf "$WORK_DIR"' EXIT
+
+TABLES=(
+  organizations organization_memberships clients projects tasks appointments
+  quotes quote_items invoices invoice_items articles reviews contact_messages
+  marketing_events audit_logs admin_saved_views
+)
+
+for table in "${TABLES[@]}"; do
+  curl --fail --silent --show-error \
+    "$SUPABASE_URL/rest/v1/$table?select=*&limit=100000" \
+    -H "apikey: $SERVICE_KEY" \
+    -H "Authorization: Bearer $SERVICE_KEY" \
+    -H "Accept: application/json" \
+    > "$WORK_DIR/$table.json"
+done
+
+mkdir -p "$WORK_DIR/storage/media/uploads"
+curl --fail --silent --show-error \
+  "$SUPABASE_URL/storage/v1/object/list/media" \
+  -X POST \
+  -H "apikey: $SERVICE_KEY" \
+  -H "Authorization: Bearer $SERVICE_KEY" \
+  -H "Content-Type: application/json" \
+  --data '{"prefix":"uploads","limit":10000,"offset":0,"sortBy":{"column":"name","order":"asc"}}' \
+  > "$WORK_DIR/storage/media-index.json"
+
+jq -r '.[] | select(.metadata != null) | .name' "$WORK_DIR/storage/media-index.json" | while IFS= read -r name; do
+  [[ -z "$name" ]] && continue
+  curl --fail --silent --show-error \
+    "$SUPABASE_URL/storage/v1/object/authenticated/media/uploads/$name" \
+    -H "apikey: $SERVICE_KEY" \
+    -H "Authorization: Bearer $SERVICE_KEY" \
+    -o "$WORK_DIR/storage/media/uploads/$name"
+done
+
+GIT_REVISION="$(git -C "$PROJECT_DIR" rev-parse HEAD 2>/dev/null || printf 'unknown')"
+cat > "$WORK_DIR/manifest.json" <<EOF
+{"created_at":"$(date -u +%Y-%m-%dT%H:%M:%SZ)","git_revision":"$GIT_REVISION","format":1,"tables":${#TABLES[@]}}
+EOF
+
+tar -C "$WORK_DIR" -czf "$ARCHIVE" .
+chmod 600 "$ARCHIVE"
+
+# Keep an off-VPS copy in a private Supabase Storage bucket.
+curl --silent --show-error \
+  "$SUPABASE_URL/storage/v1/bucket" \
+  -X POST \
+  -H "apikey: $SERVICE_KEY" \
+  -H "Authorization: Bearer $SERVICE_KEY" \
+  -H "Content-Type: application/json" \
+  --data '{"id":"backups","name":"backups","public":false}' \
+  >/dev/null || true
+
+curl --fail --silent --show-error \
+  "$SUPABASE_URL/storage/v1/object/backups/database/$(basename "$ARCHIVE")" \
+  -X POST \
+  -H "apikey: $SERVICE_KEY" \
+  -H "Authorization: Bearer $SERVICE_KEY" \
+  -H "Content-Type: application/gzip" \
+  -H "x-upsert: true" \
+  --data-binary "@$ARCHIVE" \
+  >/dev/null
+
+find "$BACKUP_ROOT" -maxdepth 1 -type f -name 'aq-supabase-*.tar.gz' -mtime "+$KEEP_DAYS" -delete
+
+REMOTE_CUTOFF="$(date -u -d "$KEEP_DAYS days ago" +%Y-%m-%dT%H:%M:%SZ)"
+REMOTE_INDEX="$WORK_DIR/remote-backups.json"
+curl --fail --silent --show-error \
+  "$SUPABASE_URL/storage/v1/object/list/backups" \
+  -X POST \
+  -H "apikey: $SERVICE_KEY" \
+  -H "Authorization: Bearer $SERVICE_KEY" \
+  -H "Content-Type: application/json" \
+  --data '{"prefix":"database","limit":1000,"offset":0,"sortBy":{"column":"created_at","order":"asc"}}' \
+  > "$REMOTE_INDEX"
+
+jq -r --arg cutoff "$REMOTE_CUTOFF" '.[] | select(.created_at < $cutoff) | "database/" + .name' "$REMOTE_INDEX" | while IFS= read -r old_backup; do
+  [[ -z "$old_backup" ]] && continue
+  delete_payload="$(jq -n --arg path "$old_backup" '{prefixes:[$path]}')"
+  curl --fail --silent --show-error \
+    "$SUPABASE_URL/storage/v1/object/backups" \
+    -X DELETE \
+    -H "apikey: $SERVICE_KEY" \
+    -H "Authorization: Bearer $SERVICE_KEY" \
+    -H "Content-Type: application/json" \
+    --data "$delete_payload" >/dev/null
+done
+
+echo "Backup created and copied off VPS: $ARCHIVE"

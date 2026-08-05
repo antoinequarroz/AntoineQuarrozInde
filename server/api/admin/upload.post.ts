@@ -14,6 +14,9 @@ export default defineEventHandler(async (event) => {
 
   const mime = match[1]
   const base64 = match[2]
+  if (!mime || !base64) {
+    throw createError({ statusCode: 400, message: 'Malformed image data' })
+  }
   const ext = mime.split('/')[1]?.replace('jpeg', 'jpg') || 'jpg'
   const filePath = `uploads/${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${ext}`
   const buffer = Buffer.from(base64, 'base64')

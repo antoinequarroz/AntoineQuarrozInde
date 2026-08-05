@@ -22,7 +22,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     if (rows.length > 0) {
       const validCurrent = rows.some(o => o.id === currentOrganizationId.value)
-      if (!validCurrent) currentOrganizationId.value = rows[0].id
+      if (!validCurrent) currentOrganizationId.value = rows.at(0)?.id ?? null
     } else {
       currentOrganizationId.value = null
     }

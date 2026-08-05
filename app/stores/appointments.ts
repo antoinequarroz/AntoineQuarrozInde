@@ -145,7 +145,8 @@ export const useAppointmentsStore = defineStore('appointments', () => {
   async function update(id: number, payload: Partial<Appointment>) {
     const idx = appointments.value.findIndex(q => q.id === id)
     if (idx !== -1) {
-      appointments.value[idx] = { ...appointments.value[idx], ...payload }
+      const current = appointments.value[idx]
+      if (current) appointments.value[idx] = { ...current, ...payload }
       persistCache()
     }
     if (!isOnline()) {
@@ -184,7 +185,8 @@ export const useAppointmentsStore = defineStore('appointments', () => {
     try {
       const mapping = new Map<number, number>()
       while (pendingQueue.value.length > 0) {
-        const op = pendingQueue.value[0]
+        const op = pendingQueue.value.shift()
+        if (!op) break
         if (op.type === 'add') {
           const row = await $fetch<AppointmentRow>('/api/appointments', {
             method: 'POST',
@@ -219,7 +221,6 @@ export const useAppointmentsStore = defineStore('appointments', () => {
             appointments.value = appointments.value.filter(a => a.id !== finalId)
           }
         }
-        pendingQueue.value.shift()
         persistQueue()
         persistCache()
       }

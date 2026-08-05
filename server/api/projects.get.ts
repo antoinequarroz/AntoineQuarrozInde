@@ -1,12 +1,9 @@
 export default defineEventHandler(async (event) => {
   const org = await resolveOrganizationContext(event)
   const supabase = getSupabaseAdmin()
-  const columns = org?.role
-    ? '*'
-    : 'id,organization_id,title,slug,category,tags,description,image,live_url,code_url,featured,case_study_published,client_label,project_role,project_duration,completed_at,challenge,approach,solution,outcome,deliverables,gallery_images,results,seo_title,seo_description,created_at'
   let query = supabase
     .from('projects')
-    .select(columns)
+    .select('*')
     .order('created_at', { ascending: false })
   if (org?.id) query = query.eq('organization_id', org.id)
   const { data, error } = await query

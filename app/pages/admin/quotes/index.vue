@@ -150,7 +150,7 @@ function parseNotes(source: string | null | undefined) {
   }
   form.notes = raw.replace(match[0], '').trim()
   try {
-    const parsed = JSON.parse(match[1])
+    const parsed = JSON.parse(match[1] ?? '{}')
     Object.assign(quoteMeta, parsed)
   } catch {}
 }
@@ -197,7 +197,7 @@ async function submit() {
     else await store.add(payload as any)
     showForm.value = false
     toast.success('Devis enregistre')
-    if (!selectedId.value && store.quotes.length) selectedId.value = store.quotes[0].id
+    if (!selectedId.value) selectedId.value = store.quotes.at(0)?.id ?? null
   } catch {
     toast.error('Erreur')
   }
@@ -347,7 +347,7 @@ onMounted(async () => {
   if (qStatus === 'draft' || qStatus === 'sent' || qStatus === 'accepted' || qStatus === 'rejected') statusFilter.value = qStatus
   const qSearch = String(route.query.search || '')
   if (qSearch) search.value = qSearch
-  if (store.quotes.length) selectedId.value = store.quotes[0].id
+  selectedId.value = store.quotes.at(0)?.id ?? null
 })
 </script>
 

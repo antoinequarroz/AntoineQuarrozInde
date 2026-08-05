@@ -202,7 +202,7 @@ onMounted(async () => {
   if (qStatus === 'draft' || qStatus === 'sent' || qStatus === 'paid' || qStatus === 'overdue' || qStatus === 'cancelled') statusFilter.value = qStatus
   const qSearch = String(route.query.search || '')
   if (qSearch) search.value = qSearch
-  if (store.invoices.length) selectedId.value = store.invoices[0].id
+  selectedId.value = store.invoices.at(0)?.id ?? null
 })
 </script>
 <template>

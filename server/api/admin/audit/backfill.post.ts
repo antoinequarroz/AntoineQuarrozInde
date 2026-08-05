@@ -30,7 +30,7 @@ async function insertBackfillLogs(
     .eq('organization_id', orgId)
 
   if (sourceError) throw createError({ statusCode: 500, message: sourceError.message })
-  const typedSourceRows = (sourceRows || []) as BackfillSourceRow[]
+  const typedSourceRows = (sourceRows || []) as unknown as BackfillSourceRow[]
   if (!typedSourceRows.length) return 0
 
   const { data: existingRows, error: existingError } = await supabase

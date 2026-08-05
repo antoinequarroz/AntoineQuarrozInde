@@ -74,6 +74,9 @@ export async function resolveOrganizationContext(
 
     memberships.sort((a, b) => roleWeight[b.role] - roleWeight[a.role])
     const selected = memberships[0]
+    if (!selected) {
+      throw createError({ statusCode: 403, message: 'No organization membership found' })
+    }
     const org = pickOrganization(selected.organizations)
     if (!org) throw createError({ statusCode: 500, message: 'Organization not found' })
 

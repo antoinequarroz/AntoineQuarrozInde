@@ -151,7 +151,8 @@ export const useTasksStore = defineStore('tasks', () => {
   async function update(id: number, data: Partial<Task>) {
     const idx = tasks.value.findIndex(t => t.id === id)
     if (idx !== -1) {
-      tasks.value[idx] = { ...tasks.value[idx], ...data }
+      const current = tasks.value[idx]
+      if (current) tasks.value[idx] = { ...current, ...data }
       persistCache()
     }
     if (!isOnline()) {
@@ -198,7 +199,8 @@ export const useTasksStore = defineStore('tasks', () => {
     try {
       const mapping = new Map<number, number>()
       while (pendingQueue.value.length > 0) {
-        const op = pendingQueue.value[0]
+        const op = pendingQueue.value.shift()
+        if (!op) break
         if (op.type === 'add') {
           const row = await $fetch<TaskRow>('/api/tasks', {
             method: 'POST',
@@ -233,7 +235,6 @@ export const useTasksStore = defineStore('tasks', () => {
             tasks.value = tasks.value.filter(t => t.id !== finalId)
           }
         }
-        pendingQueue.value.shift()
         persistQueue()
         persistCache()
       }

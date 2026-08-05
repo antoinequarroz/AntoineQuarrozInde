@@ -37,9 +37,8 @@ async function loadMessages() {
     if (selected.value) {
       selected.value = messages.value.find(msg => msg.id === selected.value?.id) || null
     }
-    if (!selected.value && messages.value.length) {
-      openMessage(messages.value[0])
-    }
+    const firstMessage = messages.value.at(0)
+    if (!selected.value && firstMessage) openMessage(firstMessage)
   }
   catch {
     toast.error('Erreur chargement messages')

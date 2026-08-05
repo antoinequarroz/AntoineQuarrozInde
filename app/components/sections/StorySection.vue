@@ -204,6 +204,8 @@ const content = computed(() => {
   }
 })
 
+const activeProjectContent = computed(() => content.value.projects.at(activeProject.value))
+
 // ════════════════════════════════════════════════════════════════════════
 //  SCROLL ANIMATION — dimensions définies en % viewport (pas de DOM)
 // ════════════════════════════════════════════════════════════════════════
@@ -395,18 +397,18 @@ const hintOpacity = computed(() => {
                       </button>
                     </div>
 
-                    <div class="rounded-2xl border border-violet-300/20 bg-[#111735] overflow-hidden">
+                    <div v-if="activeProjectContent" class="rounded-2xl border border-violet-300/20 bg-[#111735] overflow-hidden">
                       <div class="aspect-[16/7]">
                         <img
-                          :src="content.projects[activeProject].image"
-                          :alt="content.projects[activeProject].title"
+                          :src="activeProjectContent.image"
+                          :alt="activeProjectContent.title"
                           class="w-full h-full object-cover"
                         >
                       </div>
                       <div class="p-4 md:p-5 grid md:grid-cols-[1fr_auto] gap-4 items-start">
-                        <p class="text-sm text-white/82 leading-relaxed">{{ content.projects[activeProject].desc }}</p>
+                        <p class="text-sm text-white/82 leading-relaxed">{{ activeProjectContent.desc }}</p>
                         <div class="flex flex-wrap gap-1.5 md:max-w-[210px]">
-                          <span v-for="tag in content.projects[activeProject].stack" :key="tag" class="text-xs px-2.5 py-1 rounded-full bg-violet-400/15 text-violet-100 border border-violet-300/20">
+                          <span v-for="tag in activeProjectContent.stack" :key="tag" class="text-xs px-2.5 py-1 rounded-full bg-violet-400/15 text-violet-100 border border-violet-300/20">
                             {{ tag }}
                           </span>
                         </div>
