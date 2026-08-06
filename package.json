@@ -2,6 +2,9 @@
   "name": "AntoineQuarrozVitrine",
   "type": "module",
   "private": true,
+  "engines": {
+    "node": ">=22.19.0"
+  },
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
@@ -25,7 +28,7 @@
     "@supabase/supabase-js": "^2.106.1",
     "@vueuse/motion": "^2.2.6",
     "@vueuse/nuxt": "^12.7.0",
-    "nuxt": "^4.4.8",
+    "nuxt": "^4.5.1",
     "pdf-lib": "^1.17.1",
     "pinia": "^3.0.1",
     "resend": "^6.12.3",

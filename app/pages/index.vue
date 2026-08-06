@@ -10,12 +10,17 @@ useSeoMeta({
   ogUrl: `${siteUrl}/`,
   robots: 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1',
   author: 'Antoine Quarroz',
-  keywords: 'Antoine Quarroz, développeur web Valais, développeur web Suisse, freelance web Valais, création site internet Valais, développeur Nuxt Vue',
   twitterTitle: 'Antoine Quarroz — Développeur Web en Valais',
   twitterDescription: 'Freelance web & mobile en Valais, disponible à distance partout dans le monde.',
 })
 
 useHead({
+  meta: [
+    {
+      name: 'keywords',
+      content: 'Antoine Quarroz, développeur web Valais, développeur web Suisse, freelance web Valais, création site internet Valais, développeur Nuxt Vue',
+    },
+  ],
   link: [
     { rel: 'canonical', href: `${siteUrl}/` },
     { rel: 'alternate', hreflang: 'fr-CH', href: `${siteUrl}/` },
