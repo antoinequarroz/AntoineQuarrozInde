@@ -38,6 +38,8 @@ type InvoiceRow = {
     paid_at: string
     reference: string | null
     notes: string | null
+    provider?: 'stripe' | null
+    provider_payment_id?: string | null
     voided_at: string | null
     void_reason: string | null
     created_at: string
@@ -84,6 +86,8 @@ function mapInvoice(row: InvoiceRow): Invoice {
       paidAt: payment.paid_at,
       reference: payment.reference,
       notes: payment.notes,
+      provider: payment.provider ?? null,
+      providerPaymentId: payment.provider_payment_id ?? null,
       voidedAt: payment.voided_at,
       voidReason: payment.void_reason,
       createdAt: payment.created_at,

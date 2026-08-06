@@ -179,6 +179,8 @@ create table if not exists public.invoice_payments (
   paid_at date not null default current_date,
   reference text,
   notes text,
+  provider text check (provider is null or provider in ('stripe')),
+  provider_payment_id text,
   voided_at timestamptz,
   void_reason text,
   created_at timestamptz not null default now()
@@ -233,6 +235,7 @@ create index if not exists idx_invoices_organization_id on public.invoices(organ
 create index if not exists idx_invoices_credited_invoice_id on public.invoices(organization_id, credited_invoice_id) where credited_invoice_id is not null;
 create unique index if not exists idx_invoices_org_id_id_unique on public.invoices(organization_id, id);
 create index if not exists idx_invoice_payments_invoice_id on public.invoice_payments(organization_id, invoice_id, paid_at desc);
+create unique index if not exists idx_invoice_payments_provider_payment_unique on public.invoice_payments(organization_id, provider, provider_payment_id) where provider is not null and provider_payment_id is not null;
 
 do $$
 begin

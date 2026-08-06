@@ -132,6 +132,8 @@ export interface InvoicePayment {
   paidAt: string
   reference: string | null
   notes: string | null
+  provider: 'stripe' | null
+  providerPaymentId: string | null
   voidedAt: string | null
   voidReason: string | null
   createdAt: string
