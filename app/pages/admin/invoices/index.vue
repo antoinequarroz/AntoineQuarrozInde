@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Invoice } from '~/types'
+import { generateScorReference, getQrReferenceError, isQrIban, isValidSwissIban, normalizeIban } from '~~/shared/utils/swissQr'
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 const store = useInvoicesStore()
 const clients = useClientsStore()
@@ -14,15 +15,43 @@ const { dialogRef, handleDialogKeydown } = useAccessibleDialog(showForm, closeFo
 const editing = ref<Invoice | null>(null)
 const showBillingProfile = ref(false)
 const savingBillingProfile = ref(false)
+const savingInvoice = ref(false)
 const runningAction = ref<string | null>(null)
+const showPdfPreview = ref(false)
+const pdfPreviewUrl = ref<string | null>(null)
+const pdfPreviewTitle = ref('')
+const pdfPreviewHasQr = ref(false)
+const loadingPdf = ref(false)
+const downloadingPdf = ref(false)
+const closePdfPreview = () => { showPdfPreview.value = false }
+const { dialogRef: pdfDialogRef, handleDialogKeydown: handlePdfDialogKeydown } = useAccessibleDialog(showPdfPreview, closePdfPreview)
 const billingProfile = reactive({
   billingName: '', billingStreet: '', billingBuilding: '', billingPostalCode: '', billingCity: '', billingCountry: 'CH',
   billingEmail: '', billingPhone: '', billingIban: '', billingUid: '', billingTerms: 'Paiement selon l’échéance indiquée.',
 })
 const billingProfileComplete = computed(() => Boolean(
   billingProfile.billingName && billingProfile.billingStreet && billingProfile.billingPostalCode
-  && billingProfile.billingCity && billingProfile.billingCountry && billingProfile.billingIban,
+  && billingProfile.billingCity && billingProfile.billingCountry && isValidSwissIban(billingProfile.billingIban),
 ))
+const billingIbanError = computed(() => {
+  if (!billingProfile.billingIban.trim()) return null
+  return isValidSwissIban(billingProfile.billingIban)
+    ? null
+    : 'Saisis un IBAN suisse ou liechtensteinois valide (CH ou LI).'
+})
+const billingIbanKind = computed(() => {
+  if (!isValidSwissIban(billingProfile.billingIban)) return null
+  return isQrIban(billingProfile.billingIban) ? 'QR-IBAN' : 'IBAN standard'
+})
+const pdfPreviewDisplayUrl = computed(() => {
+  if (!pdfPreviewUrl.value) return null
+  return pdfPreviewHasQr.value ? `${pdfPreviewUrl.value}#page=2&zoom=page-width` : pdfPreviewUrl.value
+})
+
+function formatBillingIban() {
+  const iban = normalizeIban(billingProfile.billingIban)
+  billingProfile.billingIban = iban.replace(/(.{4})/g, '$1 ').trim()
+}
 
 async function loadBillingProfile() {
   try {
@@ -40,6 +69,10 @@ async function loadBillingProfile() {
 }
 
 async function saveBillingProfile() {
+  if (billingIbanError.value) {
+    toast.error(billingIbanError.value)
+    return
+  }
   savingBillingProfile.value = true
   try {
     await $fetch('/api/admin/billing-profile', { method: 'PUT', body: billingProfile, headers: auth.authHeader() })
@@ -54,6 +87,13 @@ async function saveBillingProfile() {
   }
 }
 const form = reactive({ number: '', clientId: null as number | null, quoteId: null as number | null, amountCents: 0, currency: 'CHF', status: 'draft' as Invoice['status'], issuedAt: '', dueAt: '', paidAt: '', notes: '', paymentReferenceType: 'NON' as Invoice['paymentReferenceType'], paymentReference: '' })
+const canUseQrr = computed(() => isQrIban(billingProfile.billingIban))
+const canUseScor = computed(() => isValidSwissIban(billingProfile.billingIban) && !canUseQrr.value)
+const qrReferenceError = computed(() => getQrReferenceError(
+  billingProfile.billingIban,
+  form.paymentReferenceType,
+  form.paymentReference,
+))
 const formItems = ref<Array<{ label: string, description: string | null, quantity: number, unitPriceCents: number, taxRate: number }>>([{ label: 'Prestation', description: null, quantity: 1, unitPriceCents: 0, taxRate: 8.1 }])
 const clientsById = computed(() => new Map(clients.clients.map(c => [c.id, c])))
 const quotesById = computed(() => new Map(quotes.quotes.map(q => [q.id, q])))
@@ -97,6 +137,17 @@ watch(() => form.quoteId, () => {
   form.amountCents = selectedQuote.value.amountCents
   form.currency = selectedQuote.value.currency
 })
+watch(() => form.paymentReferenceType, (referenceType) => {
+  if (referenceType === 'NON') {
+    form.paymentReference = ''
+    return
+  }
+  if (referenceType === 'SCOR' && !form.paymentReference.trim()) generateInvoiceScorReference()
+})
+function generateInvoiceScorReference() {
+  form.paymentReferenceType = 'SCOR'
+  form.paymentReference = generateScorReference(form.number || Date.now())
+}
 async function nextNumber() { try { return (await $fetch<{ number: string }>('/api/admin/billing/next-number', { query: { kind: 'invoice' }, headers: auth.authHeader() })).number } catch { return '' } }
 async function openNew() { editing.value = null; Object.assign(form, { number: await nextNumber(), clientId: null, quoteId: null, amountCents: 0, currency: 'CHF', status: 'draft', issuedAt: new Date().toISOString().slice(0, 10), dueAt: '', paidAt: '', notes: '', paymentReferenceType: 'NON', paymentReference: '' }); formItems.value = [{ label: 'Prestation', description: null, quantity: 1, unitPriceCents: 0, taxRate: 8.1 }]; showForm.value = true }
 function openEdit(x: Invoice) { editing.value = x; Object.assign(form, x); formItems.value = (x.items?.length ? x.items.map(i => ({ label: i.label, description: i.description, quantity: i.quantity, unitPriceCents: i.unitPriceCents, taxRate: i.taxRate })) : [{ label: 'Prestation', description: null, quantity: 1, unitPriceCents: 0, taxRate: 8.1 }]); showForm.value = true }
@@ -106,7 +157,30 @@ function computeFormTotals(items: Array<{ quantity: number, unitPriceCents: numb
 const draftTotals = computed(() => computeFormTotals(formItems.value))
 function addItem() { formItems.value.push({ label: '', description: null, quantity: 1, unitPriceCents: 0, taxRate: 8.1 }) }
 function removeItem(idx: number) { formItems.value.splice(idx, 1) }
-async function submit() { try { const totals = computeFormTotals(formItems.value); const payload = { ...form, amountCents: totals.totalCents, items: formItems.value, issuedAt: form.issuedAt || null, dueAt: form.dueAt || null, paidAt: form.paidAt || null, notes: form.notes || null }; if (editing.value) await store.update(editing.value.id, payload as any); else await store.add(payload as any); showForm.value = false; toast.success('Enregistre') } catch { toast.error('Erreur') } }
+async function submit() {
+  if (qrReferenceError.value) {
+    toast.error(qrReferenceError.value)
+    return
+  }
+  savingInvoice.value = true
+  try {
+    const totals = computeFormTotals(formItems.value)
+    const payload = { ...form, amountCents: totals.totalCents, items: formItems.value, issuedAt: form.issuedAt || null, dueAt: form.dueAt || null, paidAt: form.paidAt || null, notes: form.notes || null }
+    const savedInvoice = editing.value
+      ? await store.update(editing.value.id, payload as any)
+      : await store.add(payload as any)
+    selectedId.value = savedInvoice.id
+    showForm.value = false
+    toast.success('Facture enregistrée')
+    await previewPdf(savedInvoice)
+  }
+  catch (error: any) {
+    toast.error(error?.data?.message || 'Impossible d’enregistrer la facture')
+  }
+  finally {
+    savingInvoice.value = false
+  }
+}
 async function del(id: number) { if (!confirm('Supprimer ?')) return; try { await store.remove(id); if (selectedId.value === id) selectedId.value = store.invoices[0]?.id ?? null; toast.success('Supprime') } catch { toast.error('Erreur') } }
 async function quickSetStatus(id: number, status: Invoice['status']) {
   try {
@@ -191,9 +265,53 @@ function printSelected() {
   win.focus()
   win.print()
 }
-function downloadPdf() {
-  if (!selectedInvoice.value) { toast.error('Selectionne une facture'); return }
-  window.open(`/api/invoices/pdf?id=${selectedInvoice.value.id}`, '_blank')
+async function fetchInvoicePdf(invoice: Invoice) {
+  return await $fetch<Blob>('/api/invoices/pdf', {
+    query: { id: invoice.id },
+    headers: auth.authHeader(),
+    responseType: 'blob',
+  })
+}
+function releasePdfPreview() {
+  if (pdfPreviewUrl.value) URL.revokeObjectURL(pdfPreviewUrl.value)
+  pdfPreviewUrl.value = null
+}
+async function previewPdf(invoice = selectedInvoice.value) {
+  if (!invoice) { toast.error('Sélectionne une facture à prévisualiser.'); return }
+  loadingPdf.value = true
+  try {
+    const blob = await fetchInvoicePdf(invoice)
+    releasePdfPreview()
+    pdfPreviewUrl.value = URL.createObjectURL(blob)
+    pdfPreviewTitle.value = `Facture ${invoice.number}`
+    pdfPreviewHasQr.value = isValidSwissIban(billingProfile.billingIban)
+    showPdfPreview.value = true
+  }
+  catch (error: any) {
+    toast.error(error?.data?.message || 'Impossible de générer l’aperçu PDF.')
+  }
+  finally {
+    loadingPdf.value = false
+  }
+}
+async function downloadPdf(invoice = selectedInvoice.value) {
+  if (!invoice) { toast.error('Sélectionne une facture à télécharger.'); return }
+  downloadingPdf.value = true
+  try {
+    const blob = await fetchInvoicePdf(invoice)
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `facture-${invoice.number}.pdf`
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+  catch (error: any) {
+    toast.error(error?.data?.message || 'Impossible de télécharger le PDF.')
+  }
+  finally {
+    downloadingPdf.value = false
+  }
 }
 onMounted(async () => {
   await Promise.all([store.ensureLoaded(), clients.ensureLoaded(), quotes.ensureLoaded(), loadBillingProfile()])
@@ -208,6 +326,7 @@ onMounted(async () => {
   if (qSearch) search.value = qSearch
   selectedId.value = store.invoices.at(0)?.id ?? null
 })
+onBeforeUnmount(releasePdfPreview)
 </script>
 <template>
   <div class="space-y-5">
@@ -222,32 +341,41 @@ onMounted(async () => {
         <div class="admin-page-actions flex flex-wrap items-center gap-2">
           <button class="inline-flex h-10 items-center justify-center rounded-lg border border-gray-200 px-3 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-white/[0.12] dark:text-gray-200 dark:hover:bg-white/[0.04]" @click="exportCsv">Exporter CSV</button>
           <button class="inline-flex h-10 items-center justify-center rounded-lg border border-gray-200 px-3 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-white/[0.12] dark:text-gray-200 dark:hover:bg-white/[0.04]" @click="printSelected">Imprimer</button>
-          <button class="inline-flex h-10 items-center justify-center rounded-lg border border-gray-200 px-3 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-white/[0.12] dark:text-gray-200 dark:hover:bg-white/[0.04]" @click="downloadPdf">PDF</button>
-          <button class="inline-flex h-10 items-center justify-center rounded-lg border px-3 text-xs font-semibold transition" :class="billingProfileComplete ? 'border-emerald-300 text-emerald-700 dark:border-emerald-500/30 dark:text-emerald-300' : 'border-amber-300 text-amber-700 dark:border-amber-500/30 dark:text-amber-300'" @click="showBillingProfile = !showBillingProfile">Profil PDF</button>
+          <button class="inline-flex h-10 items-center justify-center rounded-lg border border-gray-200 px-3 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/[0.12] dark:text-gray-200 dark:hover:bg-white/[0.04]" :disabled="!selectedInvoice || loadingPdf" @click="previewPdf()">{{ loadingPdf ? 'Génération…' : 'Aperçu PDF' }}</button>
+          <button class="inline-flex h-10 items-center justify-center rounded-lg border px-3 text-xs font-semibold transition" :class="billingProfileComplete ? 'border-emerald-300 text-emerald-700 dark:border-emerald-500/30 dark:text-emerald-300' : 'border-amber-300 text-amber-700 dark:border-amber-500/30 dark:text-amber-300'" @click="showBillingProfile = !showBillingProfile">Coordonnées &amp; IBAN</button>
           <button class="inline-flex h-10 items-center justify-center rounded-lg bg-gradient-brand px-4 text-xs font-semibold text-white shadow-glow-sm transition hover:opacity-90" @click="openNew">Nouvelle</button>
         </div>
       </div>
     </section>
     <form v-if="showBillingProfile" class="rounded-xl border border-violet-200 bg-white p-4 shadow-sm dark:border-violet-500/20 dark:bg-[#111118]" @submit.prevent="saveBillingProfile">
       <div class="mb-4 flex items-start justify-between gap-3">
-        <div><h2 class="font-semibold text-gray-950 dark:text-white">Profil de facturation</h2><p class="mt-1 text-sm text-gray-500">Ces données alimentent les devis Typst et les QR-factures suisses.</p></div>
+        <div><h2 class="font-semibold text-gray-950 dark:text-white">Coordonnées de facturation</h2><p class="mt-1 text-sm text-gray-500">Enregistre d’abord ton IBAN, puis complète les autres informations à ton rythme. Ces données alimentent les PDF Typst et les QR-factures suisses.</p></div>
         <span class="rounded-lg px-2 py-1 text-xs" :class="billingProfileComplete ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' : 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'">{{ billingProfileComplete ? 'Complet' : 'À compléter' }}</span>
       </div>
       <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
-        <label class="space-y-1 text-xs text-gray-500">Nom légal<input v-model="billingProfile.billingName" class="input-field" required autocomplete="organization"></label>
+        <label class="space-y-1 text-xs text-gray-500">Nom légal<input v-model="billingProfile.billingName" class="input-field" autocomplete="organization"></label>
         <label class="space-y-1 text-xs text-gray-500">E-mail<input v-model="billingProfile.billingEmail" type="email" class="input-field" autocomplete="email"></label>
-        <label class="space-y-1 text-xs text-gray-500">Rue<input v-model="billingProfile.billingStreet" class="input-field" required autocomplete="street-address"></label>
+        <label class="space-y-1 text-xs text-gray-500">Rue<input v-model="billingProfile.billingStreet" class="input-field" autocomplete="street-address"></label>
         <label class="space-y-1 text-xs text-gray-500">N°<input v-model="billingProfile.billingBuilding" class="input-field"></label>
-        <label class="space-y-1 text-xs text-gray-500">NPA<input v-model="billingProfile.billingPostalCode" class="input-field" required autocomplete="postal-code"></label>
-        <label class="space-y-1 text-xs text-gray-500">Localité<input v-model="billingProfile.billingCity" class="input-field" required autocomplete="address-level2"></label>
+        <label class="space-y-1 text-xs text-gray-500">NPA<input v-model="billingProfile.billingPostalCode" class="input-field" autocomplete="postal-code"></label>
+        <label class="space-y-1 text-xs text-gray-500">Localité<input v-model="billingProfile.billingCity" class="input-field" autocomplete="address-level2"></label>
         <label class="space-y-1 text-xs text-gray-500">Pays (ISO)<input v-model="billingProfile.billingCountry" maxlength="2" class="input-field" required autocomplete="country"></label>
         <label class="space-y-1 text-xs text-gray-500">Téléphone<input v-model="billingProfile.billingPhone" class="input-field" autocomplete="tel"></label>
-        <label class="space-y-1 text-xs text-gray-500 md:col-span-2">IBAN ou QR-IBAN<input v-model="billingProfile.billingIban" class="input-field font-mono" required autocomplete="off"></label>
+        <label class="space-y-1 text-xs text-gray-500 md:col-span-2">IBAN ou QR-IBAN
+          <input v-model="billingProfile.billingIban" class="input-field font-mono uppercase tracking-wide" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="CH93 0076 2011 6238 5295 7" :aria-invalid="Boolean(billingIbanError)" aria-describedby="billing-iban-help" @blur="formatBillingIban">
+          <span id="billing-iban-help" class="block text-xs" :class="billingIbanError ? 'text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'">
+            {{ billingIbanError || (billingIbanKind ? `${billingIbanKind} reconnu. Tu peux enregistrer le profil.` : 'Les espaces sont acceptés. Un IBAN standard permet SCOR ; un QR-IBAN permet QRR.') }}
+          </span>
+        </label>
         <label class="space-y-1 text-xs text-gray-500">IDE / TVA<input v-model="billingProfile.billingUid" class="input-field"></label>
         <label class="space-y-1 text-xs text-gray-500">Conditions<input v-model="billingProfile.billingTerms" class="input-field"></label>
       </div>
-      <div class="mt-4 flex justify-end gap-2"><button type="button" class="min-h-11 px-4 text-sm" @click="showBillingProfile = false">Annuler</button><button class="min-h-11 rounded-lg bg-violet-600 px-4 text-sm font-semibold text-white disabled:opacity-60" :disabled="savingBillingProfile">{{ savingBillingProfile ? 'Enregistrement…' : 'Enregistrer le profil' }}</button></div>
+      <div class="mt-4 flex flex-wrap items-center justify-between gap-3"><p class="text-xs text-gray-500 dark:text-gray-400">Le statut « Complet » s’active lorsque l’identité, l’adresse et l’IBAN sont renseignés.</p><div class="flex gap-2"><button type="button" class="min-h-11 px-4 text-sm" @click="showBillingProfile = false">Annuler</button><button class="min-h-11 rounded-lg bg-violet-600 px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60" :disabled="savingBillingProfile || Boolean(billingIbanError)">{{ savingBillingProfile ? 'Enregistrement…' : 'Enregistrer' }}</button></div></div>
     </form>
+    <div v-if="!isValidSwissIban(billingProfile.billingIban) && !showBillingProfile" class="flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-950 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-100 sm:flex-row sm:items-center sm:justify-between" role="status">
+      <div><p class="text-sm font-semibold">IBAN non configuré</p><p class="mt-1 text-xs text-amber-800 dark:text-amber-200/80">Ajoute ton IBAN pour générer une QR-facture suisse. Tu peux déjà créer et prévisualiser un PDF classique sans IBAN.</p></div>
+      <button type="button" class="min-h-10 shrink-0 rounded-lg bg-amber-900 px-4 text-xs font-semibold text-white transition hover:bg-amber-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 dark:bg-amber-300 dark:text-amber-950 dark:hover:bg-amber-200" @click="showBillingProfile = true">Ajouter mon IBAN</button>
+    </div>
     <div class="rounded-xl border border-gray-100 dark:border-white/[0.06] bg-white dark:bg-[#111118] p-3 grid grid-cols-1 sm:grid-cols-[1fr_170px] gap-2">
       <input v-model="search" class="input-field" placeholder="Rechercher facture...">
       <select v-model="statusFilter" class="input-field">
@@ -331,6 +459,8 @@ onMounted(async () => {
           <p><span class="text-gray-400">Paye le:</span> {{ selectedInvoice.paidAt || '-' }}</p>
         </div>
         <div class="mt-4 grid grid-cols-2 gap-2">
+          <button class="min-h-10 rounded-lg border border-violet-200 px-3 text-xs font-semibold text-violet-700 disabled:cursor-not-allowed disabled:opacity-50 dark:border-violet-500/30 dark:text-violet-300" :disabled="loadingPdf" @click="previewPdf(selectedInvoice)">{{ loadingPdf ? 'Génération…' : 'Voir le PDF' }}</button>
+          <button class="min-h-10 rounded-lg border border-gray-200 px-3 text-xs font-semibold text-gray-700 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/[0.12] dark:text-gray-200" :disabled="downloadingPdf" @click="downloadPdf(selectedInvoice)">{{ downloadingPdf ? 'Téléchargement…' : 'Télécharger' }}</button>
           <button class="col-span-2 min-h-10 rounded-lg bg-violet-600 px-3 text-xs font-semibold text-white disabled:opacity-50" :disabled="runningAction === `send-${selectedInvoice.id}`" @click="sendInvoiceEmail(selectedInvoice)">{{ runningAction === `send-${selectedInvoice.id}` ? 'Envoi…' : 'Envoyer avec le PDF' }}</button>
           <button class="px-2 py-1.5 rounded-lg border border-gray-200 dark:border-white/[0.12] text-xs" @click="markInvoiceEvent(selectedInvoice, 'sent_at')">Marquer envoyee</button>
           <button class="px-2 py-1.5 rounded-lg border border-gray-200 dark:border-white/[0.12] text-xs" @click="markInvoiceEvent(selectedInvoice, 'viewed_at')">Marquer vue</button>
@@ -393,25 +523,49 @@ onMounted(async () => {
           <textarea v-model="form.notes" rows="3" class="input-field" placeholder="Notes" />
           <fieldset class="space-y-3 rounded-lg border border-gray-200 p-3 dark:border-white/[0.08]">
             <legend class="px-1 text-xs font-semibold uppercase text-gray-500">QR-facture suisse</legend>
+            <div v-if="canUseScor" class="rounded-lg bg-violet-50 px-3 py-2 text-xs text-violet-900 dark:bg-violet-500/10 dark:text-violet-100">
+              Ton IBAN standard est prêt. Choisis <strong>QR simple</strong> sans référence, ou <strong>SCOR</strong> pour créer automatiquement une référence RF. L’option QRR nécessite un QR-IBAN distinct fourni par ta banque.
+            </div>
+            <div v-else-if="canUseQrr" class="rounded-lg bg-violet-50 px-3 py-2 text-xs text-violet-900 dark:bg-violet-500/10 dark:text-violet-100">
+              Ton QR-IBAN est prêt. Choisis QRR et renseigne la référence QR à 27 chiffres liée à cette facture.
+            </div>
             <div class="grid grid-cols-1 gap-3 sm:grid-cols-[150px_1fr]">
               <label class="space-y-1 text-xs text-gray-500">Type de référence
                 <select v-model="form.paymentReferenceType" class="input-field">
-                  <option value="NON">Sans référence</option>
-                  <option value="SCOR">Référence créancier (SCOR)</option>
-                  <option value="QRR">Référence QR (QRR)</option>
+                  <option value="NON">QR simple — sans référence</option>
+                  <option value="SCOR" :disabled="!canUseScor">QR avec référence RF (SCOR){{ canUseScor ? '' : ' — IBAN standard requis' }}</option>
+                  <option value="QRR" :disabled="!canUseQrr">QR avec référence à 27 chiffres (QRR){{ canUseQrr ? '' : ' — QR-IBAN bancaire requis' }}</option>
                 </select>
               </label>
               <label v-if="form.paymentReferenceType !== 'NON'" class="space-y-1 text-xs text-gray-500">Référence
-                <input v-model="form.paymentReference" class="input-field" :placeholder="form.paymentReferenceType === 'QRR' ? '27 chiffres' : 'RF…'">
+                <input v-model="form.paymentReference" class="input-field" :aria-invalid="Boolean(qrReferenceError)" aria-describedby="invoice-reference-help" :placeholder="form.paymentReferenceType === 'QRR' ? '27 chiffres' : 'RF…'">
               </label>
             </div>
-            <p class="text-xs text-gray-500">Le QR est ajouté uniquement si le profil de facturation, l’adresse client, l’IBAN et la référence sont valides.</p>
+            <div v-if="form.paymentReferenceType === 'SCOR'" class="flex flex-wrap items-center gap-3">
+              <button type="button" class="min-h-10 rounded-lg border border-violet-200 px-3 text-xs font-semibold text-violet-700 transition hover:bg-violet-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:border-violet-500/30 dark:text-violet-300 dark:hover:bg-violet-500/10" @click="generateInvoiceScorReference">Générer une référence RF valide</button>
+              <span class="text-xs text-gray-500 dark:text-gray-400">La référence est calculée à partir du numéro {{ form.number || 'de la facture' }}.</span>
+            </div>
+            <p v-if="qrReferenceError" id="invoice-reference-help" role="alert" class="text-xs font-medium text-red-600 dark:text-red-400">{{ qrReferenceError }}</p>
+            <p v-else id="invoice-reference-help" class="text-xs text-gray-500">Le QR code sera intégré au PDF dès que tes coordonnées de facturation sont complètes. Si l’adresse du client manque, la zone « Payable par » restera à compléter sur le bulletin.</p>
           </fieldset>
           <div class="admin-sticky-actions sticky bottom-0 bg-white dark:bg-[#111118] pt-2 flex justify-end gap-2">
             <button type="button" class="px-3 py-2 text-sm" @click="showForm=false">Annuler</button>
-            <button class="px-4 py-2 rounded-lg bg-violet-600 text-white text-sm">Enregistrer</button>
+            <button class="px-4 py-2 rounded-lg bg-violet-600 text-white text-sm disabled:cursor-not-allowed disabled:opacity-50" :disabled="Boolean(qrReferenceError) || savingInvoice">{{ savingInvoice ? 'Génération du PDF…' : 'Enregistrer et prévisualiser' }}</button>
           </div>
         </form>
+      </div>
+    </Transition>
+    <Transition name="fade">
+      <div v-if="showPdfPreview" ref="pdfDialogRef" class="fixed inset-0 z-[60] flex items-center justify-center p-3 sm:p-5" role="dialog" aria-modal="true" aria-labelledby="invoice-pdf-preview-title" tabindex="-1" @keydown="handlePdfDialogKeydown">
+        <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" @click="closePdfPreview" />
+        <section class="relative flex h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-xl border border-white/10 bg-white shadow-2xl dark:bg-[#111118]">
+          <header class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 px-4 py-3 dark:border-white/[0.08]">
+            <div class="min-w-0"><h2 id="invoice-pdf-preview-title" class="truncate font-semibold text-gray-950 dark:text-white">{{ pdfPreviewTitle }}</h2><p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{{ pdfPreviewHasQr ? 'Bulletin QR affiché sur la page 2. La facture détaillée se trouve sur la page 1.' : 'Aperçu du document qui sera envoyé au client.' }}</p></div>
+            <div class="flex items-center gap-2"><button type="button" class="min-h-10 rounded-lg border border-gray-200 px-3 text-xs font-semibold text-gray-700 disabled:opacity-50 dark:border-white/[0.12] dark:text-gray-200" :disabled="downloadingPdf" @click="downloadPdf()">Télécharger</button><button type="button" class="min-h-10 rounded-lg bg-violet-600 px-4 text-xs font-semibold text-white" @click="closePdfPreview">Fermer</button></div>
+          </header>
+          <iframe v-if="pdfPreviewDisplayUrl" :src="pdfPreviewDisplayUrl" :title="`Aperçu PDF de ${pdfPreviewTitle}`" class="min-h-0 flex-1 bg-gray-100" />
+          <div v-else class="flex flex-1 items-center justify-center text-sm text-gray-500">Génération de l’aperçu…</div>
+        </section>
       </div>
     </Transition>
   </div>

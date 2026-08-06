@@ -24,7 +24,7 @@ export default defineEventHandler(async (event) => {
     action: 'client.delete',
     entityType: 'client',
     entityId: numericId,
-    clientId: numericId,
+    clientId: null,
     payload: existing || { id: numericId },
   })
   return { success: true }

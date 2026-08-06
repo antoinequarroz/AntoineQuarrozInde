@@ -1,4 +1,4 @@
-import { isValidSwissIban, normalizeIban } from '../../utils/typstBilling'
+import { isValidSwissIban, normalizeIban } from '../../../shared/utils/swissQr'
 
 export default defineEventHandler(async (event) => {
   const { org, user } = await requireAdmin(event)
