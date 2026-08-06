@@ -65,14 +65,14 @@ const monthRevenue = computed(() => {
 
   return invoices.invoices
     .filter(invoice => invoice.status === 'paid' && invoice.paidAt && invoice.paidAt >= monthStart)
-    .reduce((sum, invoice) => sum + (invoice.totalCents ?? invoice.amountCents), 0)
+    .reduce((sum, invoice) => sum + (invoice.documentType === 'credit_note' ? -1 : 1) * (invoice.totalCents ?? invoice.amountCents), 0)
 })
 
 const expectedRevenue = computed(() => {
   const next30 = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
 
   return invoices.invoices
-    .filter(invoice => ['sent', 'overdue'].includes(invoice.status) && invoice.dueAt && invoice.dueAt <= next30)
+    .filter(invoice => invoice.documentType === 'invoice' && ['sent', 'overdue'].includes(invoice.status) && invoice.dueAt && invoice.dueAt <= next30)
     .reduce((sum, invoice) => sum + (invoice.totalCents ?? invoice.amountCents), 0)
 })
 

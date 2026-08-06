@@ -47,3 +47,11 @@ export function computeTotals(items: NormalizedBillingItem[]) {
   const taxCents = Math.max(0, totalCents - subtotalCents)
   return { subtotalCents, taxCents, totalCents }
 }
+
+export function normalizeBillingCurrency(value: unknown) {
+  const currency = String(value || 'CHF').trim().toUpperCase()
+  if (currency !== 'CHF' && currency !== 'EUR') {
+    throw new Error('La devise doit être CHF ou EUR.')
+  }
+  return currency as 'CHF' | 'EUR'
+}

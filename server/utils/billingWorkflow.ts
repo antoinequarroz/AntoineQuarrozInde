@@ -1,8 +1,9 @@
-export type BillingKind = 'quote' | 'invoice'
+export type BillingKind = 'quote' | 'invoice' | 'credit_note'
 
 const PREFIX: Record<BillingKind, string> = {
   quote: 'DEV',
   invoice: 'FAC',
+  credit_note: 'AVO',
 }
 
 export function nextBillingNumber(kind: BillingKind, existingNumbers: string[], date = new Date()) {

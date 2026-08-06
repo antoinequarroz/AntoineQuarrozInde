@@ -10,7 +10,7 @@ WORK_DIR="$(mktemp -d)"
 trap 'rm -rf "$WORK_DIR"' EXIT
 
 tar -xzf "$ARCHIVE" -C "$WORK_DIR"
-for required in manifest.json organizations.json clients.json projects.json quotes.json quote_items.json invoices.json invoice_items.json; do
+for required in manifest.json organizations.json clients.json projects.json quotes.json quote_items.json invoices.json invoice_items.json invoice_payments.json; do
   [[ -s "$WORK_DIR/$required" ]] || { echo "Missing or empty backup file: $required" >&2; exit 1; }
   jq empty "$WORK_DIR/$required"
 done

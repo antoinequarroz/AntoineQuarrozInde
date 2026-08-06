@@ -53,11 +53,13 @@ export async function buildBillingDocument(input: BillingDocumentInput) {
   const { kind, document, organization, client, items } = input
   const currency = String(document.currency || 'CHF').toUpperCase()
   const iban = normalizeIban(String(organization.billing_iban || ''))
-  const includeQr = kind === 'invoice' && Boolean(iban)
+  const isCreditNote = kind === 'invoice' && document.document_type === 'credit_note'
+  const documentLabel = isCreditNote ? 'Avoir' : kind === 'invoice' ? 'Facture' : 'Devis'
+  const includeQr = kind === 'invoice' && !isCreditNote && Boolean(iban)
   const clientParty = partyFromClient(client)
   const referenceType = String(document.payment_reference_type || 'NON') as 'NON' | 'SCOR' | 'QRR'
   const typstData: TypstBillingData = {
-    documentTitle: kind === 'invoice' ? 'Facture' : 'Devis',
+    documentTitle: documentLabel,
     number: String(document.number || ''),
     subject: String(document.title || ''),
     currency: currency === 'EUR' ? 'EUR' : 'CHF',
@@ -84,7 +86,7 @@ export async function buildBillingDocument(input: BillingDocumentInput) {
       account: iban,
       referenceType,
       reference: document.payment_reference ? String(document.payment_reference) : null,
-      additionalInfo: `${kind === 'invoice' ? 'Facture' : 'Devis'} ${String(document.number || '')}`,
+      additionalInfo: `${documentLabel} ${String(document.number || '')}`,
       includeDebtor: hasCompleteStructuredAddress(clientParty),
     },
   }

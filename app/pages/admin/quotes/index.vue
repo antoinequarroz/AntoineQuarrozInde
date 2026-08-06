@@ -562,7 +562,9 @@ onMounted(async () => {
             </select>
             <button type="button" class="px-3 py-2 rounded-lg border border-gray-200 dark:border-white/[0.12] text-sm" @click="applyTemplate">Appliquer template</button>
           </div>
-          <input v-model="form.currency" class="input-field" placeholder="Devise">
+          <label class="block space-y-1 text-xs text-gray-500">Devise
+            <select v-model="form.currency" class="input-field"><option value="CHF">CHF</option><option value="EUR">EUR</option></select>
+          </label>
           <div class="space-y-2 border border-gray-200 dark:border-white/[0.08] rounded-lg p-3">
             <p class="text-xs font-semibold uppercase text-gray-400">Calendrier Projet</p>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">

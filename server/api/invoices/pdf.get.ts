@@ -41,7 +41,8 @@ export default defineEventHandler(async (event) => {
   })
 
   setHeader(event, 'Content-Type', 'application/pdf')
-  setHeader(event, 'Content-Disposition', `attachment; filename="facture-${invoice.number}.pdf"`)
+  const filePrefix = invoice.document_type === 'credit_note' ? 'avoir' : 'facture'
+  setHeader(event, 'Content-Disposition', `attachment; filename="${filePrefix}-${invoice.number}.pdf"`)
   setHeader(event, 'X-PDF-Engine', engine)
   return pdf
 })

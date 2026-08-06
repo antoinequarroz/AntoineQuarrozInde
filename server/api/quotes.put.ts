@@ -1,4 +1,4 @@
-import { computeTotals, normalizeBillingItems } from '../utils/billing'
+import { computeTotals, normalizeBillingCurrency, normalizeBillingItems } from '../utils/billing'
 
 export default defineEventHandler(async (event) => {
   const { org, user } = await requireAdmin(event)
@@ -8,6 +8,9 @@ export default defineEventHandler(async (event) => {
   const supabase = getSupabaseAdmin()
   const items = normalizeBillingItems(body.items)
   const totals = computeTotals(items)
+  let currency
+  try { currency = normalizeBillingCurrency(body.currency) }
+  catch (error) { throw createError({ statusCode: 400, message: error instanceof Error ? error.message : 'Devise invalide.' }) }
   const payload = {
     client_id: body.clientId ? Number(body.clientId) : null,
     number: String(body.number || '').trim(),
@@ -16,7 +19,7 @@ export default defineEventHandler(async (event) => {
     subtotal_cents: totals.subtotalCents,
     tax_cents: totals.taxCents,
     total_cents: totals.totalCents || Number(body.amountCents || 0),
-    currency: String(body.currency || 'CHF'),
+    currency,
     status: body.status || 'draft',
     issued_at: body.issuedAt || null,
     valid_until: body.validUntil || null,
