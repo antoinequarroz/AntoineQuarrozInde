@@ -45,11 +45,16 @@ function partyFromClient(client: Record<string, any> | null) {
   }
 }
 
+function hasCompleteStructuredAddress(party: ReturnType<typeof partyFromClient>) {
+  return Boolean(party.name && party.street && party.postalCode && party.city && /^[A-Z]{2}$/.test(party.country))
+}
+
 export async function buildBillingDocument(input: BillingDocumentInput) {
   const { kind, document, organization, client, items } = input
   const currency = String(document.currency || 'CHF').toUpperCase()
   const iban = normalizeIban(String(organization.billing_iban || ''))
   const includeQr = kind === 'invoice' && Boolean(iban)
+  const clientParty = partyFromClient(client)
   const referenceType = String(document.payment_reference_type || 'NON') as 'NON' | 'SCOR' | 'QRR'
   const typstData: TypstBillingData = {
     documentTitle: kind === 'invoice' ? 'Facture' : 'Devis',
@@ -65,7 +70,7 @@ export async function buildBillingDocument(input: BillingDocumentInput) {
     taxCents: Number(document.tax_cents ?? 0),
     totalCents: Number(document.total_cents ?? document.amount_cents ?? 0),
     issuer: partyFromOrganization(organization),
-    client: partyFromClient(client),
+    client: clientParty,
     items: items.map(item => ({
       label: String(item.label || ''),
       description: String(item.description || ''),
@@ -80,7 +85,15 @@ export async function buildBillingDocument(input: BillingDocumentInput) {
       referenceType,
       reference: document.payment_reference ? String(document.payment_reference) : null,
       additionalInfo: `${kind === 'invoice' ? 'Facture' : 'Devis'} ${String(document.number || '')}`,
+      includeDebtor: hasCompleteStructuredAddress(clientParty),
     },
+  }
+
+  if (includeQr && !hasCompleteStructuredAddress(typstData.issuer)) {
+    throw createError({
+      statusCode: 422,
+      message: 'Complète ton nom légal, ta rue, ton NPA et ta localité dans « Coordonnées & IBAN » pour générer le QR code suisse.',
+    })
   }
 
   try {
@@ -88,6 +101,13 @@ export async function buildBillingDocument(input: BillingDocumentInput) {
     return { pdf: Buffer.from(pdf), engine: 'typst' as const }
   }
   catch (error) {
+    if (includeQr) {
+      console.error('[billing-pdf] Swiss QR generation failed', error)
+      throw createError({
+        statusCode: 500,
+        message: 'Le QR code suisse n’a pas pu être généré. Vérifie les coordonnées de facturation puis réessaie.',
+      })
+    }
     console.warn('[billing-pdf] Typst unavailable or data incomplete, using pdf-lib fallback', error)
     const pdf = await buildBillingPdf({
       title: typstData.documentTitle,

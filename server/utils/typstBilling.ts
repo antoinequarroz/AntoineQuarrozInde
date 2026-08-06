@@ -49,6 +49,7 @@ export type TypstBillingData = {
     referenceType: 'NON' | 'SCOR' | 'QRR'
     reference: string | null
     additionalInfo: string
+    includeDebtor: boolean
   }
 }
 
@@ -56,9 +57,10 @@ export function canGenerateTypstDocument(data: TypstBillingData) {
   const completeParty = (party: BillingParty) => Boolean(
     party.name && party.street && party.postalCode && party.city && /^[A-Z]{2}$/.test(party.country),
   )
-  if (!completeParty(data.issuer) || !completeParty(data.client)) return false
+  if (!data.issuer.name) return false
   if (!['CHF', 'EUR'].includes(data.currency) || !data.items.length) return false
   if (!data.includeQr) return true
+  if (!completeParty(data.issuer)) return false
   if (!isValidSwissIban(data.qr.account)) return false
   return validateQrReference(data.qr.account, data.qr.referenceType, data.qr.reference) !== null
 }

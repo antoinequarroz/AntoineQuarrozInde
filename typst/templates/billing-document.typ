@@ -155,6 +155,7 @@
 
 #if data.at("includeQr") {
   pagebreak()
+  let include-debtor = data.at("qr").at("includeDebtor", default: false)
   swiss-qr-bill(
     standalone: true,
     language: "fr",
@@ -167,12 +168,12 @@
     creditor-country: data.at("issuer").at("country"),
     amount: data.at("totalCents") / 100,
     currency: data.at("currency"),
-    debtor-name: data.at("client").at("name"),
-    debtor-street: data.at("client").at("street"),
-    debtor-building: data.at("client").at("building"),
-    debtor-postal-code: data.at("client").at("postalCode"),
-    debtor-city: data.at("client").at("city"),
-    debtor-country: data.at("client").at("country"),
+    debtor-name: if include-debtor { data.at("client").at("name") } else { "" },
+    debtor-street: if include-debtor { data.at("client").at("street") } else { "" },
+    debtor-building: if include-debtor { data.at("client").at("building") } else { "" },
+    debtor-postal-code: if include-debtor { data.at("client").at("postalCode") } else { "" },
+    debtor-city: if include-debtor { data.at("client").at("city") } else { "" },
+    debtor-country: if include-debtor { data.at("client").at("country") } else { "CH" },
     reference-type: data.at("qr").at("referenceType"),
     reference: data.at("qr").at("reference"),
     additional-info: data.at("qr").at("additionalInfo"),

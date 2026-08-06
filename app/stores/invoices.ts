@@ -79,12 +79,16 @@ export const useInvoicesStore = defineStore('invoices', () => {
   }
   async function add(payload: Omit<Invoice, 'id' | 'createdAt'>) {
     const row = await $fetch<InvoiceRow>('/api/invoices', { method: 'POST', body: payload, headers: auth.authHeader() })
-    invoices.value.unshift(mapInvoice(row))
+    const invoice = mapInvoice(row)
+    invoices.value.unshift(invoice)
+    return invoice
   }
   async function update(id: number, payload: Partial<Invoice>) {
     const row = await $fetch<InvoiceRow>('/api/invoices', { method: 'PUT', body: { ...payload, id }, headers: auth.authHeader() })
+    const invoice = mapInvoice(row)
     const idx = invoices.value.findIndex(q => q.id === id)
-    if (idx !== -1) invoices.value[idx] = mapInvoice(row)
+    if (idx !== -1) invoices.value[idx] = invoice
+    return invoice
   }
   async function remove(id: number) {
     await $fetch('/api/invoices', { method: 'DELETE', query: { id }, headers: auth.authHeader() })

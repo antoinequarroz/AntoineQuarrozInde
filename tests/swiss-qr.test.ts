@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getQrReferenceError, isQrIban, isValidSwissIban, normalizeIban, validateQrReference } from '../shared/utils/swissQr'
+import { generateScorReference, getQrReferenceError, isQrIban, isValidSwissIban, normalizeIban, validateQrReference } from '../shared/utils/swissQr'
 
 describe('QR-facture suisse', () => {
   it('normalise et valide un IBAN suisse', () => {
@@ -29,6 +29,14 @@ describe('QR-facture suisse', () => {
       reference: 'RF18539007547034',
     })
     expect(getQrReferenceError('', 'SCOR', 'RF18539007547034')).toContain('IBAN suisse valide')
+  })
+
+  it('génère une référence SCOR valide depuis le numéro de facture', () => {
+    const iban = 'CH93 0076 2011 6238 5295 7'
+    const reference = generateScorReference('FAC-2026-0042')
+
+    expect(reference).toMatch(/^RF\d{2}FAC20260042$/)
+    expect(validateQrReference(iban, 'SCOR', reference)).toEqual({ type: 'SCOR', reference })
   })
 
   it('autorise un paiement sans référence', () => {

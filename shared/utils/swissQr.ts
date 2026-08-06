@@ -27,6 +27,12 @@ export function normalizeIban(value: string) {
   return value.replace(/\s+/g, '').toUpperCase()
 }
 
+export function generateScorReference(seed: string | number) {
+  const creditorReference = String(seed).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(-21) || 'FACTURE'
+  const checksum = String(98 - mod97(`${creditorReference}RF00`)).padStart(2, '0')
+  return `RF${checksum}${creditorReference}`
+}
+
 export function isValidSwissIban(value: string) {
   const iban = normalizeIban(value)
   if (!/^(CH|LI)\d{7}[A-Z0-9]{12}$/.test(iban)) return false

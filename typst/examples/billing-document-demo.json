@@ -45,6 +45,7 @@
     "account": "CH5204835012345671000",
     "referenceType": "NON",
     "reference": null,
-    "additionalInfo": "Facture DEMO-2026-001 — ne pas payer"
+    "additionalInfo": "Facture DEMO-2026-001 — ne pas payer",
+    "includeDebtor": true
   }
 }
