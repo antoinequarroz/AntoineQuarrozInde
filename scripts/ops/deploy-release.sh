@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+readonly container_name="antoinequarroz-web"
+readonly image_name="antoinequarroz-web"
+readonly candidate_tag="candidate"
+readonly previous_tag="previous"
+readonly max_health_attempts=45
+
+wait_for_health() {
+  local attempt status
+
+  for ((attempt = 1; attempt <= max_health_attempts; attempt += 1)); do
+    status="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}missing{{end}}' "$container_name" 2>/dev/null || true)"
+
+    case "$status" in
+      healthy)
+        return 0
+        ;;
+      unhealthy)
+        echo "The web container became unhealthy." >&2
+        return 1
+        ;;
+    esac
+
+    sleep 2
+  done
+
+  echo "The web container did not become healthy in time." >&2
+  return 1
+}
+
+previous_image="$(docker inspect --format '{{.Image}}' "$container_name" 2>/dev/null || true)"
+if [[ -n "$previous_image" ]]; then
+  docker image tag "$previous_image" "$image_name:$previous_tag"
+fi
+
+rollback() {
+  local exit_code=$?
+  trap - ERR
+
+  echo "Deployment failed; starting automatic rollback." >&2
+  if [[ -z "$previous_image" ]]; then
+    echo "No previous image is available for rollback." >&2
+    exit "$exit_code"
+  fi
+
+  export APP_IMAGE_TAG="$previous_tag"
+  if docker compose up -d --no-build web && wait_for_health; then
+    echo "Rollback completed: the previous image is healthy." >&2
+  else
+    echo "Rollback failed: manual intervention is required." >&2
+  fi
+
+  exit "$exit_code"
+}
+
+export APP_VERSION="$(git rev-parse HEAD)"
+export APP_BUILD_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+export APP_IMAGE_TAG="$candidate_tag"
+
+trap rollback ERR
+docker compose build web
+docker compose up -d --no-build --remove-orphans
+wait_for_health
+trap - ERR
+
+docker compose ps
+echo "DEPLOYED_VERSION=$APP_VERSION"
+echo "DEPLOYED_AT=$APP_BUILD_TIME"

@@ -11,7 +11,11 @@ RUN npm run build
 
 FROM node:22.19-alpine AS runner
 WORKDIR /app
+ARG APP_VERSION=development
+ARG APP_BUILD_TIME=unknown
 ENV NODE_ENV=production
+ENV APP_VERSION=$APP_VERSION
+ENV APP_BUILD_TIME=$APP_BUILD_TIME
 RUN apk add --no-cache typst font-liberation
 COPY --from=build /app/.output ./.output
 COPY --from=build /app/typst ./typst
