@@ -197,6 +197,8 @@
     adminEmail: process.env.ADMIN_EMAIL || '',
     public: {
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'https://www.antoinequarroz.dev',
+      plausibleDomain: process.env.NUXT_PUBLIC_PLAUSIBLE_DOMAIN || 'antoinequarroz.ch',
+      plausibleEndpoint: process.env.NUXT_PUBLIC_PLAUSIBLE_ENDPOINT || 'https://plausible.io/api/event',
       calLink: process.env.NUXT_PUBLIC_CAL_LINK || '',
       defaultOrganizationSlug: process.env.DEFAULT_ORGANIZATION_SLUG || '',
       turnstileSiteKey: process.env.TURNSTILE_SITE_KEY || '',
