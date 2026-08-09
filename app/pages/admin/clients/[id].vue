@@ -136,6 +136,11 @@ onMounted(async () => {
         <NuxtLink to="/admin/clients" class="text-xs text-gray-400 hover:text-gray-600">← Retour clients</NuxtLink>
         <h1 class="font-display font-semibold text-2xl text-gray-900 dark:text-white mt-1">{{ client.name }}</h1>
         <p class="text-sm text-gray-400 admin-text-wrap">{{ client.company || 'Indépendant' }} · {{ client.email }}</p>
+        <div class="mt-2 flex flex-wrap items-center gap-2 text-xs">
+          <span class="rounded-full bg-cyan-50 px-2.5 py-1 font-semibold text-cyan-800 dark:bg-cyan-500/10 dark:text-cyan-200">{{ client.acquisitionSource || 'Source non attribuée' }}</span>
+          <span v-if="client.acquisitionMedium" class="text-gray-500 dark:text-gray-400">{{ client.acquisitionMedium }}</span>
+          <span v-if="client.acquisitionCampaign" class="text-gray-400">· {{ client.acquisitionCampaign }}</span>
+        </div>
       </div>
       <div class="grid grid-cols-1 sm:flex items-stretch sm:items-center gap-2 w-full sm:w-auto">
         <NuxtLink :to="`/admin/quotes?new=1&clientId=${client.id}`" class="px-3 py-2 rounded-lg bg-violet-600 text-white text-xs font-semibold text-center">Nouveau devis</NuxtLink>
@@ -161,7 +166,7 @@ onMounted(async () => {
             </ol>
           </div>
           <div class="grid gap-2 sm:grid-cols-2 xl:w-[430px]">
-            <div class="rounded-lg bg-violet-50 p-3 dark:bg-violet-500/10"><p class="text-xs text-violet-600 dark:text-violet-300">Prochaine action</p><NuxtLink v-if="nextAction" :to="nextAction.to" class="mt-1 block text-sm font-semibold text-gray-950 hover:text-violet-700 dark:text-white dark:hover:text-violet-300">{{ nextAction.label }} →</NuxtLink></div>
+            <div class="rounded-lg bg-violet-50 p-3 dark:bg-violet-500/10"><p class="text-xs text-violet-600 dark:text-violet-300">Prochaine action</p><NuxtLink v-if="nextAction" :to="nextAction.to" class="mt-1 block text-sm font-semibold text-violet-950 hover:text-violet-700 dark:text-violet-100 dark:hover:text-violet-300">{{ nextAction.label }} →</NuxtLink></div>
             <div class="rounded-lg bg-gray-50 p-3 dark:bg-white/[0.04]"><p class="text-xs text-gray-400">Prochaine échéance</p><p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">{{ nextDeadline ? nextDeadline.date : 'Aucune' }}</p><p v-if="nextDeadline" class="truncate text-xs text-gray-500">{{ nextDeadline.label }}</p></div>
           </div>
         </div>

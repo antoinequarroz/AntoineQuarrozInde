@@ -64,6 +64,9 @@ export interface Client {
   billingPostalCode: string | null
   billingCity: string | null
   billingCountry: string
+  acquisitionSource: string | null
+  acquisitionMedium: string | null
+  acquisitionCampaign: string | null
   createdAt: string
 }
 

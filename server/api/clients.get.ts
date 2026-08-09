@@ -28,7 +28,7 @@ export default defineEventHandler(async (event) => {
 
   if (q) {
     const escaped = q.replaceAll('%', '\\%').replaceAll('_', '\\_')
-    builder = builder.or(`name.ilike.%${escaped}%,company.ilike.%${escaped}%,email.ilike.%${escaped}%,phone.ilike.%${escaped}%`)
+    builder = builder.or(`name.ilike.%${escaped}%,company.ilike.%${escaped}%,email.ilike.%${escaped}%,phone.ilike.%${escaped}%,acquisition_source.ilike.%${escaped}%,acquisition_campaign.ilike.%${escaped}%`)
   }
 
   const sortable = new Set(['created_at', 'name', 'email', 'status'])
@@ -58,6 +58,9 @@ export default defineEventHandler(async (event) => {
         billingPostalCode: row.billing_postal_code,
         billingCity: row.billing_city,
         billingCountry: row.billing_country || 'CH',
+        acquisitionSource: row.acquisition_source,
+        acquisitionMedium: row.acquisition_medium,
+        acquisitionCampaign: row.acquisition_campaign,
         createdAt: row.created_at?.slice(0, 10) ?? '',
       })),
       total: count ?? 0,

@@ -62,6 +62,9 @@ const form = reactive({
   billingPostalCode: '',
   billingCity: '',
   billingCountry: 'CH',
+  acquisitionSource: '',
+  acquisitionMedium: '',
+  acquisitionCampaign: '',
 })
 
 const queryState = computed(() => {
@@ -90,9 +93,10 @@ const pageData = ref<{ items: Client[], total: number, page: number, pageSize: n
   pageSize: 20,
 })
 const loading = ref(false)
+const savingClient = ref(false)
 
 function resetForm() {
-  Object.assign(form, { name: '', company: '', email: '', phone: '', status: 'active', notes: '', billingStreet: '', billingBuilding: '', billingPostalCode: '', billingCity: '', billingCountry: 'CH' })
+  Object.assign(form, { name: '', company: '', email: '', phone: '', status: 'active', notes: '', billingStreet: '', billingBuilding: '', billingPostalCode: '', billingCity: '', billingCountry: 'CH', acquisitionSource: '', acquisitionMedium: '', acquisitionCampaign: '' })
 }
 
 function openNew() {
@@ -115,6 +119,9 @@ function openEdit(client: Client) {
     billingPostalCode: client.billingPostalCode || '',
     billingCity: client.billingCity || '',
     billingCountry: client.billingCountry || 'CH',
+    acquisitionSource: client.acquisitionSource || '',
+    acquisitionMedium: client.acquisitionMedium || '',
+    acquisitionCampaign: client.acquisitionCampaign || '',
   })
   showForm.value = true
 }
@@ -232,6 +239,8 @@ async function loadClients() {
 }
 
 async function handleSubmit() {
+  if (savingClient.value) return
+  savingClient.value = true
   const payload = {
     name: form.name,
     company: form.company || null,
@@ -239,6 +248,14 @@ async function handleSubmit() {
     phone: form.phone || null,
     status: form.status,
     notes: form.notes || null,
+    billingStreet: form.billingStreet || null,
+    billingBuilding: form.billingBuilding || null,
+    billingPostalCode: form.billingPostalCode || null,
+    billingCity: form.billingCity || null,
+    billingCountry: form.billingCountry || 'CH',
+    acquisitionSource: form.acquisitionSource || null,
+    acquisitionMedium: form.acquisitionMedium || null,
+    acquisitionCampaign: form.acquisitionCampaign || null,
   }
 
   try {
@@ -253,6 +270,8 @@ async function handleSubmit() {
     await loadClients()
   } catch {
     toast.error('Erreur de sauvegarde')
+  } finally {
+    savingClient.value = false
   }
 }
 
@@ -437,12 +456,12 @@ onMounted(async () => {
                 <p class="text-xs text-gray-400">{{ client.company || 'Indépendant' }}</p>
               </div>
             </div>
-            <span class="text-xs px-2 py-1 rounded-md" :class="client.status === 'active' ? 'bg-green-50 text-green-700 dark:bg-green-500/10 dark:text-green-300' : 'bg-gray-100 text-gray-500 dark:bg-white/[0.06] dark:text-gray-400'">
-              {{ client.status }}
-            </span>
+            <span v-if="client.status === 'active'" class="rounded-md bg-green-50 px-2 py-1 text-xs text-green-700 dark:bg-green-500/10 dark:text-green-300">{{ client.status }}</span>
+            <span v-else class="rounded-md bg-gray-100 px-2 py-1 text-xs text-gray-500 dark:bg-white/[0.06] dark:text-gray-400">{{ client.status }}</span>
           </div>
           <p class="mt-2 text-xs text-gray-500">{{ client.email }}</p>
           <p class="text-xs text-gray-400">{{ client.phone || '-' }}</p>
+          <p class="mt-2 text-xs font-medium text-cyan-700 dark:text-cyan-300">{{ client.acquisitionSource || 'Source non attribuée' }}</p>
           <div class="mt-3 flex items-center gap-3">
             <NuxtLink :to="`/admin/clients/${client.id}`" class="text-xs text-sky-600">Voir</NuxtLink>
             <button class="text-xs text-violet-600" @click="openEdit(client)">Éditer</button>
@@ -488,6 +507,7 @@ onMounted(async () => {
                   <div>
                     <p class="text-sm font-medium text-gray-800 dark:text-gray-200">{{ client.name }}</p>
                     <p class="text-xs text-gray-400">{{ client.company || 'Indépendant' }}</p>
+                    <p class="mt-0.5 text-xs font-medium text-cyan-700 dark:text-cyan-300">{{ client.acquisitionSource || 'Non attribuée' }}</p>
                   </div>
                 </div>
               </td>
@@ -496,9 +516,8 @@ onMounted(async () => {
                 <p class="text-xs text-gray-400">{{ client.phone || '-' }}</p>
               </td>
               <td class="px-5 py-3">
-                <span class="text-xs px-2 py-1 rounded-md" :class="client.status === 'active' ? 'bg-green-50 text-green-700 dark:bg-green-500/10 dark:text-green-300' : 'bg-gray-100 text-gray-500 dark:bg-white/[0.06] dark:text-gray-400'">
-                  {{ client.status }}
-                </span>
+                <span v-if="client.status === 'active'" class="rounded-md bg-green-50 px-2 py-1 text-xs text-green-700 dark:bg-green-500/10 dark:text-green-300">{{ client.status }}</span>
+                <span v-else class="rounded-md bg-gray-100 px-2 py-1 text-xs text-gray-500 dark:bg-white/[0.06] dark:text-gray-400">{{ client.status }}</span>
               </td>
               <td class="px-5 py-3 text-xs text-gray-400">{{ client.createdAt }}</td>
               <td class="px-5 py-3 text-right space-x-2">
@@ -557,7 +576,7 @@ onMounted(async () => {
     <Transition name="fade">
       <div v-if="showForm" ref="dialogRef" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4" role="dialog" aria-modal="true" aria-labelledby="client-form-title" tabindex="-1" @keydown="handleDialogKeydown">
         <div class="absolute inset-0 bg-black/40" @click="showForm = false" />
-        <form class="admin-modal-panel relative w-full max-w-2xl max-h-[92vh] overflow-y-auto bg-white dark:bg-[#111118] rounded-xl p-4 sm:p-5 space-y-3" @submit.prevent="handleSubmit">
+        <form class="admin-modal-panel relative w-full max-w-2xl max-h-[92vh] overflow-y-auto bg-white dark:bg-[#111118] rounded-xl p-4 sm:p-5 space-y-3" :aria-busy="savingClient" @submit.prevent="handleSubmit">
           <h2 id="client-form-title" class="font-semibold text-gray-900 dark:text-white">{{ editing ? 'Modifier client' : 'Nouveau client' }}</h2>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <input v-model="form.name" class="input-field" placeholder="Nom" required>
@@ -571,6 +590,29 @@ onMounted(async () => {
             <option value="active">Actif</option>
             <option value="inactive">Inactif</option>
           </select>
+          <fieldset class="space-y-3 rounded-lg border border-gray-200 p-3 dark:border-white/[0.08]">
+            <legend class="px-1 text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">Acquisition</legend>
+            <p class="text-xs leading-relaxed text-gray-500 dark:text-gray-400">Indique comment ce contact t’a découvert. Ces informations alimentent directement Analytics.</p>
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <label class="space-y-1 text-xs text-gray-500 dark:text-gray-400">Source
+                <input v-model="form.acquisitionSource" class="input-field" list="acquisition-source-options" placeholder="Ex. Instagram, recommandation">
+              </label>
+              <label class="space-y-1 text-xs text-gray-500 dark:text-gray-400">Canal
+                <input v-model="form.acquisitionMedium" class="input-field" placeholder="Ex. social, bouche à oreille">
+              </label>
+            </div>
+            <label class="block space-y-1 text-xs text-gray-500 dark:text-gray-400">Campagne
+              <input v-model="form.acquisitionCampaign" class="input-field" placeholder="Ex. Portfolio été 2026">
+            </label>
+            <datalist id="acquisition-source-options">
+              <option value="Direct" />
+              <option value="Google" />
+              <option value="Instagram" />
+              <option value="LinkedIn" />
+              <option value="Recommandation" />
+              <option value="Réseau professionnel" />
+            </datalist>
+          </fieldset>
           <textarea v-model="form.notes" rows="3" class="input-field" placeholder="Notes" />
           <fieldset class="space-y-3 rounded-lg border border-gray-200 p-3 dark:border-white/[0.08]">
             <legend class="px-1 text-xs font-semibold uppercase text-gray-500">Adresse de facturation</legend>
@@ -586,7 +628,7 @@ onMounted(async () => {
           </fieldset>
           <div class="sticky bottom-0 bg-white dark:bg-[#111118] pt-2 flex justify-end gap-2">
             <button type="button" class="px-3 py-2 text-sm" @click="showForm = false">Annuler</button>
-            <button type="submit" class="px-4 py-2 rounded-lg bg-violet-600 text-white text-sm">Enregistrer</button>
+            <button type="submit" class="rounded-lg bg-violet-600 px-4 py-2 text-sm text-white disabled:cursor-wait disabled:opacity-60" :disabled="savingClient">{{ savingClient ? 'Enregistrement…' : 'Enregistrer' }}</button>
           </div>
         </form>
       </div>

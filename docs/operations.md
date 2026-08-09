@@ -94,6 +94,28 @@ Après un déploiement du code :
 sudo scripts/ops/install-ops.sh /home/ubuntu/antoinequarroz-vitrine
 ```
 
+## Relances commerciales automatiques
+
+Le timer `antoinequarroz-pipeline-reminders.timer` vérifie les échéances chaque
+jour ouvrable à 08:15, heure de Zurich. Les e-mails ne partent qu’aux jalons
+prévus : J−3 et jour J pour un devis, J−2 et jour J pour une facture, puis
+J+3, J+7, J+14, J+21 et J+28 en cas de retard. Chaque jalon dispose d’une clé
+anti-doublon conservée dans le journal d’audit.
+
+Créer un secret aléatoire dans le `.env` du VPS :
+
+```dotenv
+PIPELINE_AUTOMATION_SECRET=une-valeur-aleatoire-longue
+```
+
+Contrôler le timer ou lancer une vérification manuelle :
+
+```bash
+sudo systemctl status antoinequarroz-pipeline-reminders.timer
+sudo systemctl start antoinequarroz-pipeline-reminders.service
+sudo journalctl -u antoinequarroz-pipeline-reminders.service -n 100
+```
+
 ## Exercice de reprise
 
 Le contrôle de reprise en lecture seule vérifie l'archive, ses fichiers JSON,
