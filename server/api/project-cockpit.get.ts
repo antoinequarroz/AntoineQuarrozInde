@@ -1,5 +1,5 @@
 export default defineEventHandler(async (event) => {
-  const { org } = await requireAdmin(event)
+  const org = await resolveOrganizationContext(event, { requireAuth: true, minRole: 'viewer' })
   const projectId = Number(getQuery(event).projectId)
   if (!Number.isInteger(projectId) || projectId <= 0) throw createError({ statusCode: 400, message: 'Projet invalide.' })
   const supabase = getSupabaseAdmin()
