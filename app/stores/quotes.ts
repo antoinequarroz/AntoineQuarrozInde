@@ -4,6 +4,7 @@ type QuoteRow = {
   id: number
   number: string
   client_id: number | null
+  project_id?: number | null
   title: string
   amount_cents: number
   currency: string
@@ -31,6 +32,7 @@ function mapQuote(row: QuoteRow): Quote {
     id: row.id,
     number: row.number,
     clientId: row.client_id,
+    projectId: row.project_id ?? null,
     title: row.title,
     amountCents: row.amount_cents,
     currency: row.currency,

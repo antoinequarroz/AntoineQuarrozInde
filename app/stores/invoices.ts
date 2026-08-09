@@ -5,6 +5,7 @@ type InvoiceRow = {
   number: string
   client_id: number | null
   quote_id: number | null
+  project_id?: number | null
   amount_cents: number
   currency: string
   status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled'
@@ -53,6 +54,7 @@ function mapInvoice(row: InvoiceRow): Invoice {
     number: row.number,
     clientId: row.client_id,
     quoteId: row.quote_id,
+    projectId: row.project_id ?? null,
     amountCents: row.amount_cents,
     currency: row.currency,
     status: row.status,

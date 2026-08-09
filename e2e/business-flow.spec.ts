@@ -108,6 +108,7 @@ test('sandbox covers client to paid invoice and cleans up business data', async 
       headers,
       data: {
         clientId: ids.client,
+        projectId: ids.project,
         number: quoteNumber,
         title: `Devis E2E ${runId}`,
         currency: 'CHF',
@@ -129,6 +130,7 @@ test('sandbox covers client to paid invoice and cleans up business data', async 
     const conversion = await conversionResponse.json()
     ids.invoice = conversion.invoice.id
     expect(conversion.invoice.quote_id).toBe(ids.quote)
+    expect(conversion.invoice.project_id).toBe(ids.project)
 
     const pdfResponse = await request.get(`/api/invoices/pdf?id=${ids.invoice}`, { headers })
     expect(pdfResponse.ok()).toBeTruthy()
@@ -159,6 +161,13 @@ test('sandbox covers client to paid invoice and cleans up business data', async 
     expect(paidInvoice.status).toBe('paid')
     expect(paidInvoice.paid_at).toMatch(/^\d{4}-\d{2}-\d{2}$/)
     expect(paidInvoice.payments).toHaveLength(1)
+
+    const cockpitResponse = await request.get(`/api/project-cockpit?projectId=${ids.project}`, { headers })
+    expect(cockpitResponse.ok()).toBeTruthy()
+    const cockpit = await cockpitResponse.json()
+    expect(cockpit.totals.finance.quotedCents).toBe(13513)
+    expect(cockpit.totals.finance.invoicedCents).toBe(13513)
+    expect(cockpit.totals.finance.collectedCents).toBe(13513)
   }
   finally {
     if (ids.invoice) await request.delete(`/api/invoices?id=${ids.invoice}`, { headers })

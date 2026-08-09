@@ -5,6 +5,7 @@ definePageMeta({ layout: 'admin', middleware: 'admin' })
 const store = useInvoicesStore()
 const clients = useClientsStore()
 const quotes = useQuotesStore()
+const projects = useProjectsStore()
 const auth = useAuthStore()
 const { statusLabel } = useBusinessLabels()
 const route = useRoute()
@@ -90,7 +91,7 @@ async function saveBillingProfile() {
     savingBillingProfile.value = false
   }
 }
-const form = reactive({ number: '', clientId: null as number | null, quoteId: null as number | null, amountCents: 0, currency: 'CHF', status: 'draft' as Invoice['status'], issuedAt: '', dueAt: '', paidAt: '', notes: '', documentType: 'invoice' as Invoice['documentType'], creditedInvoiceId: null as number | null, paymentReferenceType: 'NON' as Invoice['paymentReferenceType'], paymentReference: '' })
+const form = reactive({ number: '', clientId: null as number | null, quoteId: null as number | null, projectId: null as number | null, amountCents: 0, currency: 'CHF', status: 'draft' as Invoice['status'], issuedAt: '', dueAt: '', paidAt: '', notes: '', documentType: 'invoice' as Invoice['documentType'], creditedInvoiceId: null as number | null, paymentReferenceType: 'NON' as Invoice['paymentReferenceType'], paymentReference: '' })
 const paymentForm = reactive({ invoiceId: 0, amountCents: 0, method: 'bank_transfer' as NonNullable<Invoice['payments']>[number]['method'], paidAt: new Date().toISOString().slice(0, 10), reference: '', notes: '' })
 const canUseQrr = computed(() => isQrIban(billingProfile.billingIban))
 const canUseScor = computed(() => isValidSwissIban(billingProfile.billingIban) && !canUseQrr.value)
@@ -102,6 +103,9 @@ const qrReferenceError = computed(() => getQrReferenceError(
 const formItems = ref<Array<{ label: string, description: string | null, quantity: number, unitPriceCents: number, taxRate: number }>>([{ label: 'Prestation', description: null, quantity: 1, unitPriceCents: 0, taxRate: 8.1 }])
 const clientsById = computed(() => new Map(clients.clients.map(c => [c.id, c])))
 const quotesById = computed(() => new Map(quotes.quotes.map(q => [q.id, q])))
+const availableProjects = computed(() => form.clientId
+  ? projects.projects.filter(project => !project.clientId || project.clientId === form.clientId)
+  : projects.projects)
 const filteredQuotes = computed(() => {
   if (!form.clientId) return quotes.quotes
   return quotes.quotes.filter(q => q.clientId === form.clientId)
@@ -139,6 +143,7 @@ watch(() => form.clientId, () => {
 watch(() => form.quoteId, () => {
   if (!selectedQuote.value) return
   form.clientId = selectedQuote.value.clientId
+  form.projectId = selectedQuote.value.projectId
   form.amountCents = selectedQuote.value.amountCents
   form.currency = selectedQuote.value.currency
 })
@@ -154,7 +159,7 @@ function generateInvoiceScorReference() {
   form.paymentReference = generateScorReference(form.number || Date.now())
 }
 async function nextNumber(kind: 'invoice' | 'credit_note' = 'invoice') { try { return (await $fetch<{ number: string }>('/api/admin/billing/next-number', { query: { kind }, headers: auth.authHeader() })).number } catch { return '' } }
-async function openNew() { editing.value = null; Object.assign(form, { number: await nextNumber(), clientId: null, quoteId: null, amountCents: 0, currency: 'CHF', status: 'draft', issuedAt: new Date().toISOString().slice(0, 10), dueAt: '', paidAt: '', notes: '', documentType: 'invoice', creditedInvoiceId: null, paymentReferenceType: 'NON', paymentReference: '' }); formItems.value = [{ label: 'Prestation', description: null, quantity: 1, unitPriceCents: 0, taxRate: 8.1 }]; showForm.value = true }
+async function openNew() { editing.value = null; Object.assign(form, { number: await nextNumber(), clientId: null, quoteId: null, projectId: null, amountCents: 0, currency: 'CHF', status: 'draft', issuedAt: new Date().toISOString().slice(0, 10), dueAt: '', paidAt: '', notes: '', documentType: 'invoice', creditedInvoiceId: null, paymentReferenceType: 'NON', paymentReference: '' }); formItems.value = [{ label: 'Prestation', description: null, quantity: 1, unitPriceCents: 0, taxRate: 8.1 }]; showForm.value = true }
 function openEdit(x: Invoice) { if (x.lockedAt || x.status !== 'draft') { toast.error('Ce document est verrouillé. Duplique-le ou crée un avoir pour le corriger.'); return }; editing.value = x; Object.assign(form, x); formItems.value = (x.items?.length ? x.items.map(i => ({ label: i.label, description: i.description, quantity: i.quantity, unitPriceCents: i.unitPriceCents, taxRate: i.taxRate })) : [{ label: 'Prestation', description: null, quantity: 1, unitPriceCents: 0, taxRate: 8.1 }]); showForm.value = true }
 async function duplicateInvoice(i: Invoice) { editing.value = null; Object.assign(form, { ...i, number: await nextNumber(), quoteId: null, status: 'draft', issuedAt: new Date().toISOString().slice(0, 10), dueAt: '', paidAt: '', documentType: 'invoice', creditedInvoiceId: null, paymentReferenceType: 'NON', paymentReference: '' }); formItems.value = (i.items?.length ? i.items.map(item => ({ label: item.label, description: item.description, quantity: item.quantity, unitPriceCents: item.unitPriceCents, taxRate: item.taxRate })) : [{ label: 'Prestation', description: null, quantity: 1, unitPriceCents: 0, taxRate: 8.1 }]); showForm.value = true }
 async function createCreditNote(i: Invoice) { editing.value = null; Object.assign(form, { ...i, number: await nextNumber('credit_note'), quoteId: null, status: 'draft', issuedAt: new Date().toISOString().slice(0, 10), dueAt: '', paidAt: '', notes: `Avoir relatif à la facture ${i.number}`, documentType: 'credit_note', creditedInvoiceId: i.id, paymentReferenceType: 'NON', paymentReference: '' }); formItems.value = (i.items?.length ? i.items.map(item => ({ label: item.label, description: item.description, quantity: item.quantity, unitPriceCents: item.unitPriceCents, taxRate: item.taxRate })) : [{ label: 'Correction', description: null, quantity: 1, unitPriceCents: i.totalCents ?? i.amountCents, taxRate: 0 }]); showForm.value = true }
@@ -347,11 +352,17 @@ async function downloadPdf(invoice = selectedInvoice.value) {
   }
 }
 onMounted(async () => {
-  await Promise.all([store.ensureLoaded(), clients.ensureLoaded(), quotes.ensureLoaded(), loadBillingProfile()])
+  await Promise.all([store.ensureLoaded(), clients.ensureLoaded(), quotes.ensureLoaded(), projects.ensureLoaded(), loadBillingProfile()])
   if (route.query.new === '1') {
     await openNew()
     const id = Number(route.query.clientId || 0)
     if (id) form.clientId = id
+    const projectId = Number(route.query.projectId || 0)
+    if (projectId) {
+      form.projectId = projectId
+      const project = projects.projects.find(item => item.id === projectId)
+      if (project?.clientId) form.clientId = project.clientId
+    }
   }
   const qStatus = String(route.query.status || '')
   if (qStatus === 'draft' || qStatus === 'sent' || qStatus === 'paid' || qStatus === 'overdue' || qStatus === 'cancelled') statusFilter.value = qStatus
@@ -534,6 +545,12 @@ onBeforeUnmount(releasePdfPreview)
               <option v-for="q in filteredQuotes" :key="q.id" :value="q.id">{{ q.number }} - {{ q.title }}</option>
             </select>
           </div>
+          <label class="block space-y-1 text-xs text-gray-500 dark:text-gray-400">Projet
+            <select v-model.number="form.projectId" class="input-field">
+              <option :value="null">Aucun projet</option>
+              <option v-for="project in availableProjects" :key="project.id" :value="project.id">{{ project.title }}</option>
+            </select>
+          </label>
           <label class="block space-y-1 text-xs text-gray-500">Devise
             <select v-model="form.currency" class="input-field"><option value="CHF">CHF</option><option value="EUR">EUR</option></select>
           </label>
