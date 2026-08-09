@@ -177,6 +177,9 @@ onMounted(load)
             <label class="text-xs font-medium text-gray-600 dark:text-gray-300">État
               <select v-model="projectForm.status" class="input-field mt-1"><option v-for="(label, value) in projectStatuses" :key="value" :value="value">{{ label }}</option></select>
             </label>
+            <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Date de début
+              <input v-model="projectForm.startsAt" type="date" class="input-field mt-1">
+            </label>
             <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Date cible
               <input v-model="projectForm.targetAt" type="date" class="input-field mt-1">
             </label>
@@ -196,7 +199,10 @@ onMounted(load)
       <section aria-labelledby="finance-heading" class="rounded-xl border border-gray-200 bg-white p-5 dark:border-white/[0.08] dark:bg-[#111118] sm:p-6">
         <div class="flex flex-wrap items-start justify-between gap-3">
           <div><h2 id="finance-heading" class="font-display text-lg font-semibold text-gray-950 dark:text-white">Rentabilité du projet</h2><p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Budget, temps valorisé et encaissements réellement liés à ce projet.</p></div>
-          <NuxtLink :to="`/admin/invoices?projectId=${projectId}&new=1`" class="inline-flex min-h-10 items-center rounded-lg border border-violet-200 px-3 text-xs font-semibold text-violet-700 dark:border-violet-500/30 dark:text-violet-300">Créer une facture liée</NuxtLink>
+          <div class="flex flex-wrap gap-2">
+            <NuxtLink :to="`/admin/quotes?projectId=${projectId}&new=1`" class="inline-flex min-h-10 items-center rounded-lg border border-gray-200 px-3 text-xs font-semibold text-gray-700 dark:border-white/[0.12] dark:text-gray-200">Créer un devis lié</NuxtLink>
+            <NuxtLink :to="`/admin/invoices?projectId=${projectId}&new=1`" class="inline-flex min-h-10 items-center rounded-lg border border-violet-200 px-3 text-xs font-semibold text-violet-700 dark:border-violet-500/30 dark:text-violet-300">Créer une facture liée</NuxtLink>
+          </div>
         </div>
         <div class="mt-5 grid grid-cols-2 gap-x-5 gap-y-4 lg:grid-cols-4">
           <div><p class="text-xs text-gray-500 dark:text-gray-400">Budget prévu</p><p class="mt-1 font-display text-xl font-semibold text-gray-950 dark:text-white">{{ money(finance.budgetCents) }}</p></div>
@@ -211,11 +217,13 @@ onMounted(load)
         </div>
       </section>
 
-      <section class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <article class="rounded-xl border border-gray-200 bg-white p-4 dark:border-white/[0.08] dark:bg-[#111118]"><p class="text-xs text-gray-500 dark:text-gray-400">Jalons terminés</p><p class="mt-2 font-display text-2xl font-semibold">{{ completedMilestones }}/{{ data.milestones.length }}</p><p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ milestoneProgress }} % du parcours</p></article>
-        <article class="rounded-xl border border-gray-200 bg-white p-4 dark:border-white/[0.08] dark:bg-[#111118]"><p class="text-xs text-gray-500 dark:text-gray-400">Tâches ouvertes</p><p class="mt-2 font-display text-2xl font-semibold">{{ openTasks.length }}</p><p class="mt-1 text-xs text-gray-500 dark:text-gray-400">À traiter pour ce projet</p></article>
-        <article class="rounded-xl border border-gray-200 bg-white p-4 dark:border-white/[0.08] dark:bg-[#111118]"><p class="text-xs text-gray-500 dark:text-gray-400">Temps enregistré</p><p class="mt-2 font-display text-2xl font-semibold">{{ timeLabel }}</p><p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Base du coût interne</p></article>
-        <article class="rounded-xl border border-gray-200 bg-white p-4 dark:border-white/[0.08] dark:bg-[#111118]"><p class="text-xs text-gray-500 dark:text-gray-400">Livrables partagés</p><p class="mt-2 font-display text-2xl font-semibold">{{ data.deliverables.filter((item: any) => item.client_visible).length }}</p><p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Visibles dans le portail</p></article>
+      <section aria-label="Synthèse opérationnelle" class="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.08] dark:bg-[#111118]">
+        <dl class="grid grid-cols-2 lg:grid-cols-4">
+          <div class="border-b border-r border-gray-100 p-4 dark:border-white/[0.06] lg:border-b-0"><dt class="text-xs text-gray-500 dark:text-gray-400">Jalons terminés</dt><dd class="mt-2 font-display text-xl font-semibold">{{ completedMilestones }}/{{ data.milestones.length }} <span class="font-sans text-xs font-normal text-gray-500 dark:text-gray-400">· {{ milestoneProgress }} %</span></dd></div>
+          <div class="border-b border-gray-100 p-4 dark:border-white/[0.06] lg:border-b-0 lg:border-r"><dt class="text-xs text-gray-500 dark:text-gray-400">Tâches ouvertes</dt><dd class="mt-2 font-display text-xl font-semibold">{{ openTasks.length }} <span class="font-sans text-xs font-normal text-gray-500 dark:text-gray-400">à traiter</span></dd></div>
+          <div class="border-r border-gray-100 p-4 dark:border-white/[0.06]"><dt class="text-xs text-gray-500 dark:text-gray-400">Temps enregistré</dt><dd class="mt-2 font-display text-xl font-semibold">{{ timeLabel }}</dd></div>
+          <div class="p-4"><dt class="text-xs text-gray-500 dark:text-gray-400">Livrables partagés</dt><dd class="mt-2 font-display text-xl font-semibold">{{ data.deliverables.filter((item: any) => item.client_visible).length }} <span class="font-sans text-xs font-normal text-gray-500 dark:text-gray-400">côté client</span></dd></div>
+        </dl>
       </section>
 
       <section class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
