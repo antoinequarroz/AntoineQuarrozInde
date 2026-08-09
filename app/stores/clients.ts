@@ -13,6 +13,9 @@ type ClientRow = {
   billing_postal_code: string | null
   billing_city: string | null
   billing_country: string
+  acquisition_source: string | null
+  acquisition_medium: string | null
+  acquisition_campaign: string | null
   created_at: string
 }
 
@@ -30,6 +33,9 @@ function mapClient(row: ClientRow): Client {
     billingPostalCode: row.billing_postal_code,
     billingCity: row.billing_city,
     billingCountry: row.billing_country || 'CH',
+    acquisitionSource: row.acquisition_source,
+    acquisitionMedium: row.acquisition_medium,
+    acquisitionCampaign: row.acquisition_campaign,
     createdAt: row.created_at?.slice(0, 10) ?? '',
   }
 }

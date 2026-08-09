@@ -18,6 +18,13 @@ const messages = ref<ContactMessage[]>([])
 const runningAutomation = ref(false)
 const runningEmailReminders = ref(false)
 const reminderRuns = ref<Array<{ id: number, action: string, payload: Record<string, any>, created_at: string }>>([])
+const reminderPreview = ref<{
+  automationEnabled: boolean
+  generatedAt: string
+  candidates: Array<{ reminderKey: string, targetType: 'quote' | 'invoice', targetId: number, clientId: number, clientName: string, number: string, dueDate: string, milestone: string, urgency: 'upcoming' | 'due' | 'overdue' }>
+  skipped: { alreadySent: number, missingContact: number, outsideMilestone: number }
+} | null>(null)
+const reminderPreviewStatus = ref<'loading' | 'ready' | 'error'>('loading')
 
 const todayIso = computed(() => new Date().toISOString().slice(0, 10))
 const nowIso = computed(() => new Date().toISOString())
@@ -295,6 +302,18 @@ async function loadReminderRuns() {
   }
 }
 
+async function loadReminderPreview() {
+  reminderPreviewStatus.value = 'loading'
+  try {
+    reminderPreview.value = await $fetch('/api/admin/pipeline/reminders', { headers: auth.authHeader() })
+    reminderPreviewStatus.value = 'ready'
+  }
+  catch {
+    reminderPreview.value = null
+    reminderPreviewStatus.value = 'error'
+  }
+}
+
 async function loadMessages() {
   try {
     messages.value = await $fetch('/api/messages', {
@@ -375,7 +394,7 @@ async function sendReminderEmails() {
     })
 
     toast.success(`Emails: ${result.sentCount} envoyé(s), ${result.skippedCount} ignoré(s), ${result.failedCount} échec(s) · ${result.overdueMarkedCount} facture(s) passée(s) en retard`)
-    await loadReminderRuns()
+    await Promise.all([loadReminderRuns(), loadReminderPreview()])
   } catch {
     toast.error('Erreur envoi relances email')
   } finally {
@@ -394,8 +413,14 @@ onMounted(async () => {
     invoices.ensureLoaded(),
     appointments.ensureLoaded(),
     loadReminderRuns(),
+    loadReminderPreview(),
     loadMessages(),
   ])
+})
+
+watch(() => auth.currentOrganizationId, async (organizationId, previousOrganizationId) => {
+  if (!organizationId || organizationId === previousOrganizationId) return
+  await Promise.all([loadReminderRuns(), loadReminderPreview()])
 })
 </script>
 
@@ -474,8 +499,7 @@ onMounted(async () => {
             v-for="item in priorities"
             :key="item.id"
             :to="item.to"
-            class="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-l-4 px-4 py-3 transition hover:bg-gray-50 dark:hover:bg-white/[0.03] sm:px-5"
-            :class="item.tone"
+            class="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 transition hover:bg-gray-50 dark:hover:bg-white/[0.03] sm:px-5"
           >
             <span class="inline-flex h-9 w-9 items-center justify-center rounded-lg" :class="item.chip">
               <AdminAdminIcon :icon="item.icon" class="h-4 w-4" />
@@ -640,10 +664,8 @@ onMounted(async () => {
                   </div>
                   <div class="min-w-0">
                     <p class="truncate text-sm font-medium text-gray-950 dark:text-white">{{ article.title }}</p>
-                    <span
-                      class="mt-0.5 inline-flex rounded px-1.5 py-0.5 text-xs font-semibold"
-                      :class="article.published ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' : 'bg-gray-100 text-gray-500 dark:bg-white/[0.06] dark:text-gray-400'"
-                    >{{ article.published ? 'publie' : 'brouillon' }}</span>
+                    <span v-if="article.published" class="mt-0.5 inline-flex rounded bg-emerald-100 px-1.5 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">publie</span>
+                    <span v-else class="mt-0.5 inline-flex rounded bg-gray-100 px-1.5 py-0.5 text-xs font-semibold text-gray-500 dark:bg-white/[0.06] dark:text-gray-400">brouillon</span>
                   </div>
                 </NuxtLink>
                 <p v-if="!recentArticles.length" class="text-xs text-gray-400">Aucun article.</p>
@@ -658,7 +680,13 @@ onMounted(async () => {
       <div class="flex flex-col gap-3 border-b border-gray-100 px-4 py-3 dark:border-white/[0.06] sm:flex-row sm:items-center sm:justify-between sm:px-5">
         <div class="min-w-0">
           <h2 class="text-sm font-semibold text-gray-950 dark:text-white">Automatisation</h2>
-          <p class="mt-0.5 text-xs text-gray-400">Relances devis/factures et historique des envois.</p>
+          <div class="mt-1 flex flex-wrap items-center gap-2">
+            <p class="text-xs text-gray-500 dark:text-gray-400">Relances devis/factures selon des jalons anti-spam.</p>
+            <span v-if="reminderPreviewStatus === 'ready' && reminderPreview" class="rounded-full px-2 py-0.5 text-xs font-semibold" :class="reminderPreview.automationEnabled ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' : 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'">
+              {{ reminderPreview.automationEnabled ? 'Automatique actif' : 'Mode manuel' }}
+            </span>
+            <span v-else-if="reminderPreviewStatus === 'error'" class="rounded-full bg-rose-50 px-2 py-0.5 text-xs font-semibold text-rose-700 dark:bg-rose-500/10 dark:text-rose-300">Indisponible</span>
+          </div>
         </div>
         <div class="grid grid-cols-1 gap-2 sm:flex">
           <button
@@ -667,20 +695,38 @@ onMounted(async () => {
             @click="runPipelineAutomation"
           >
             <AdminAdminIcon icon="zap" class="h-4 w-4" />
-            {{ runningAutomation ? 'Generation...' : 'Creer les taches' }}
+            {{ runningAutomation ? 'Génération…' : 'Créer les tâches' }}
           </button>
           <button
             class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-gray-950 px-3 text-xs font-semibold text-white transition hover:bg-gray-800 disabled:opacity-60 dark:bg-white dark:text-gray-950"
-            :disabled="runningEmailReminders"
+            :disabled="runningEmailReminders || reminderPreviewStatus !== 'ready' || !reminderPreview?.candidates.length"
             @click="sendReminderEmails"
           >
             <AdminAdminIcon icon="mail" class="h-4 w-4" />
-            {{ runningEmailReminders ? 'Envoi...' : 'Envoyer emails' }}
+            {{ runningEmailReminders ? 'Envoi…' : `Envoyer ${reminderPreview?.candidates.length || 0} rappel(s)` }}
           </button>
         </div>
       </div>
 
-      <div class="px-4 py-3 sm:px-5">
+      <div class="grid gap-4 px-4 py-4 sm:px-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(280px,0.8fr)]">
+        <div>
+          <div class="mb-3 flex items-center justify-between gap-3">
+            <div><h3 class="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500 dark:text-gray-400">Prochaines relances</h3><p class="mt-1 text-xs text-gray-400">Avant échéance, jour J, puis suivi hebdomadaire contrôlé jusqu’à J+28.</p></div>
+            <strong class="font-display text-xl text-gray-950 dark:text-white">{{ reminderPreviewStatus === 'ready' ? (reminderPreview?.candidates.length || 0) : '—' }}</strong>
+          </div>
+          <div v-if="reminderPreviewStatus === 'loading'" role="status" class="grid min-h-28 place-items-center rounded-lg border border-gray-100 text-center dark:border-white/[0.08]"><div><span class="mx-auto block h-6 w-6 animate-spin rounded-full border-2 border-violet-200 border-t-violet-600" /><p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Analyse des échéances…</p></div></div>
+          <div v-else-if="reminderPreviewStatus === 'error'" role="alert" class="rounded-lg border border-rose-200 bg-rose-50 p-4 dark:border-rose-500/20 dark:bg-rose-500/10"><p class="text-sm font-semibold text-rose-900 dark:text-rose-100">Analyse indisponible</p><p class="mt-1 text-xs text-rose-700 dark:text-rose-200">Les relances ne sont pas présentées tant que les données ne sont pas chargées.</p><button class="mt-3 rounded-lg bg-rose-700 px-3 py-2 text-xs font-semibold text-white" @click="loadReminderPreview">Réessayer</button></div>
+          <div v-else-if="reminderPreview?.candidates.length" class="divide-y divide-gray-100 rounded-lg border border-gray-100 dark:divide-white/[0.06] dark:border-white/[0.08]">
+            <div v-for="candidate in reminderPreview.candidates.slice(0, 6)" :key="candidate.reminderKey" class="flex items-center gap-3 px-3 py-2.5">
+              <span class="h-2.5 w-2.5 shrink-0 rounded-full" :class="candidate.urgency === 'overdue' ? 'bg-rose-500' : candidate.urgency === 'due' ? 'bg-amber-500' : 'bg-cyan-500'" />
+              <div class="min-w-0 flex-1"><p class="truncate text-xs font-semibold text-gray-800 dark:text-gray-100">{{ candidate.clientName }} · {{ candidate.number }}</p><p class="mt-0.5 truncate text-xs text-gray-500 dark:text-gray-400">{{ candidate.targetType === 'quote' ? 'Devis' : 'Facture' }} · {{ candidate.milestone }} · {{ candidate.dueDate }}</p></div>
+            </div>
+          </div>
+          <div v-else class="rounded-lg border border-dashed border-gray-200 px-4 py-6 text-center dark:border-white/[0.1]"><p class="text-sm font-medium text-gray-800 dark:text-gray-100">Aucune relance à envoyer</p><p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Le moteur surveille les prochaines échéances.</p></div>
+          <p v-if="reminderPreviewStatus === 'ready' && reminderPreview" class="mt-2 text-xs text-gray-400">{{ reminderPreview.skipped.alreadySent }} déjà envoyée(s) · {{ reminderPreview.skipped.missingContact }} sans adresse · {{ reminderPreview.skipped.outsideMilestone }} hors jalon</p>
+        </div>
+        <div>
+          <h3 class="mb-3 text-xs font-semibold uppercase tracking-[0.12em] text-gray-500 dark:text-gray-400">Historique récent</h3>
         <div v-if="reminderRuns.length" class="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
           <div
             v-for="run in reminderRuns.slice(0, 6)"
@@ -698,7 +744,8 @@ onMounted(async () => {
             <p class="mt-1 truncate text-xs text-gray-400">{{ new Date(run.created_at).toLocaleString('fr-CH') }}</p>
           </div>
         </div>
-        <p v-else class="text-xs text-gray-400">Aucun run disponible.</p>
+          <p v-else class="rounded-lg border border-dashed border-gray-200 px-4 py-6 text-center text-xs text-gray-500 dark:border-white/[0.1] dark:text-gray-400">Aucun run disponible.</p>
+        </div>
       </div>
     </section>
   </div>

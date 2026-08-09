@@ -59,9 +59,31 @@ Persistent=true
 WantedBy=timers.target
 EOF
 
+cat > /etc/systemd/system/antoinequarroz-pipeline-reminders.service <<EOF
+[Unit]
+Description=Send milestone-based commercial reminders
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=$PROJECT_DIR/scripts/ops/pipeline-reminders.sh $PROJECT_DIR
+EOF
+
+cat > /etc/systemd/system/antoinequarroz-pipeline-reminders.timer <<'EOF'
+[Unit]
+Description=Check commercial reminder milestones every weekday
+
+[Timer]
+OnCalendar=Mon..Fri *-*-* 08:15:00 Europe/Zurich
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+
 chmod 750 "$PROJECT_DIR/scripts/ops/"*.sh
 systemctl daemon-reload
-systemctl enable --now antoinequarroz-monitor.timer antoinequarroz-backup.timer
+systemctl enable --now antoinequarroz-monitor.timer antoinequarroz-backup.timer antoinequarroz-pipeline-reminders.timer
 systemctl start antoinequarroz-monitor.service
 systemctl start antoinequarroz-backup.service
 systemctl --no-pager list-timers 'antoinequarroz-*'

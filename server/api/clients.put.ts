@@ -1,3 +1,5 @@
+import { normalizeClientAttribution } from '../utils/clientAttribution'
+
 export default defineEventHandler(async (event) => {
   const { org, user } = await requireAdmin(event)
   const body = await readBody(event)
@@ -17,6 +19,7 @@ export default defineEventHandler(async (event) => {
     billing_postal_code: body.billingPostalCode ? String(body.billingPostalCode).trim() : null,
     billing_city: body.billingCity ? String(body.billingCity).trim() : null,
     billing_country: String(body.billingCountry || 'CH').trim().toUpperCase(),
+    ...normalizeClientAttribution(body),
   }
 
   if (!payload.name || !payload.email) {
