@@ -1,3 +1,5 @@
+import { canDeleteInvoice } from '../utils/invoiceLock'
+
 export default defineEventHandler(async (event) => {
   const { org, user } = await requireAdmin(event)
   const { id } = getQuery(event)
@@ -11,7 +13,7 @@ export default defineEventHandler(async (event) => {
     .eq('id', numericId)
     .single()
   if (!existing) throw createError({ statusCode: 404, message: 'Facture introuvable.' })
-  if (existing.status !== 'draft') {
+  if (!canDeleteInvoice(existing.status, org.slug)) {
     throw createError({ statusCode: 409, message: 'Un document émis ne peut plus être supprimé. Annule-le ou crée un avoir.' })
   }
   const { error } = await supabase.from('invoices').delete().eq('organization_id', org.id).eq('id', numericId)

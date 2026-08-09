@@ -138,26 +138,27 @@ test('sandbox covers client to paid invoice and cleans up business data', async 
     expect(pdf.subarray(0, 4).toString()).toBe('%PDF')
     expect(pdf.byteLength).toBeGreaterThan(1_000)
 
-    const paidResponse = await request.put('/api/invoices', {
+    const paidResponse = await request.post('/api/invoices/payments', {
       headers,
       data: {
-        ...conversion.invoice,
-        id: ids.invoice,
-        clientId: ids.client,
-        quoteId: ids.quote,
-        issuedAt: conversion.invoice.issued_at,
-        dueAt: conversion.invoice.due_at,
-        status: 'paid',
-        paidAt: null,
-        paymentReferenceType: 'NON',
-        paymentReference: null,
-        items: [item],
+        invoiceId: ids.invoice,
+        amountCents: conversion.invoice.total_cents,
+        method: 'bank_transfer',
+        paidAt: new Date().toISOString().slice(0, 10),
+        reference: `E2E-${runId}`,
       },
     })
     expect(paidResponse.ok()).toBeTruthy()
-    const paidInvoice = await paidResponse.json()
+    const paymentResult = await paidResponse.json()
+    expect(paymentResult.status).toBe('paid')
+    expect(paymentResult.paidAmountCents).toBe(conversion.invoice.total_cents)
+
+    const invoicesResponse = await request.get('/api/invoices', { headers })
+    expect(invoicesResponse.ok()).toBeTruthy()
+    const paidInvoice = (await invoicesResponse.json()).find((invoice: { id: number }) => invoice.id === ids.invoice)
     expect(paidInvoice.status).toBe('paid')
     expect(paidInvoice.paid_at).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+    expect(paidInvoice.payments).toHaveLength(1)
   }
   finally {
     if (ids.invoice) await request.delete(`/api/invoices?id=${ids.invoice}`, { headers })

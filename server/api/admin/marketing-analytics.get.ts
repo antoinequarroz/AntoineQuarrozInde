@@ -1,17 +1,20 @@
+import { aggregateAcquisitionAttribution } from '../../utils/acquisitionAttribution'
+
 export default defineEventHandler(async (event) => {
   const { org } = await requireAdmin(event)
   const supabase = getSupabaseAdmin()
   const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
-  const { data, error } = await supabase
-    .from('marketing_events')
-    .select('event,variant,path,created_at')
-    .eq('organization_id', org.id)
-    .gte('created_at', since)
-    .order('created_at', { ascending: false })
-    .limit(10_000)
-  if (error) throw createError({ statusCode: 500, message: error.message })
+  const [eventResult, clientResult, quoteResult, invoiceResult, paymentResult] = await Promise.all([
+    supabase.from('marketing_events').select('event,variant,path,created_at').eq('organization_id', org.id).gte('created_at', since).order('created_at', { ascending: false }).limit(10_000),
+    supabase.from('clients').select('id,status,acquisition_source').eq('organization_id', org.id),
+    supabase.from('quotes').select('client_id,status,total_cents').eq('organization_id', org.id),
+    supabase.from('invoices').select('id,client_id,document_type,status,total_cents').eq('organization_id', org.id),
+    supabase.from('invoice_payments').select('invoice_id,amount_cents,voided_at').eq('organization_id', org.id),
+  ])
+  const queryError = [eventResult, clientResult, quoteResult, invoiceResult, paymentResult].find(result => result.error)?.error
+  if (queryError) throw createError({ statusCode: 500, message: queryError.message })
 
-  const events = data || []
+  const events = eventResult.data || []
   const count = (name: string, variant?: string) => events.filter(row => row.event === name && (!variant || row.variant === variant)).length
   const views = count('hero_view')
   const primaryClicks = count('hero_cta_primary_click')
@@ -28,9 +31,16 @@ export default defineEventHandler(async (event) => {
     const clicks = count('hero_cta_primary_click', variant)
     return { variant, views: variantViews, clicks, conversionRate: variantViews ? Math.round(clicks / variantViews * 1_000) / 10 : 0 }
   })
+  const commercial = aggregateAcquisitionAttribution(
+    clientResult.data || [],
+    quoteResult.data || [],
+    invoiceResult.data || [],
+    paymentResult.data || [],
+  )
 
   return {
     periodDays: 30,
+    commercialPeriod: 'all',
     totals: { events: events.length, views, primaryClicks, bookingClicks, projectViews, projectClicks, contactSuccess },
     rates: {
       heroToCta: views ? Math.round(primaryClicks / views * 1_000) / 10 : 0,
@@ -38,5 +48,6 @@ export default defineEventHandler(async (event) => {
     },
     byEvent,
     variants,
+    ...commercial,
   }
 })
