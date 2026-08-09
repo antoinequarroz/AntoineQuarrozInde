@@ -24,6 +24,11 @@ export interface Project {
   results: ProjectResult[]
   seoTitle: string | null
   seoDescription: string | null
+  workflowStatus?: 'planning' | 'active' | 'review' | 'delivered' | 'paused'
+  startsAt?: string | null
+  targetAt?: string | null
+  budgetCents?: number
+  internalHourlyCostCents?: number
   createdAt: string
 }
 
@@ -86,6 +91,7 @@ export interface Quote {
   id: number
   number: string
   clientId: number | null
+  projectId: number | null
   title: string
   amountCents: number
   currency: string
@@ -105,6 +111,7 @@ export interface Invoice {
   number: string
   clientId: number | null
   quoteId: number | null
+  projectId: number | null
   amountCents: number
   currency: string
   status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled'

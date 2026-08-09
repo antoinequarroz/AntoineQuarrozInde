@@ -13,6 +13,7 @@ export default defineEventHandler(async (event) => {
   catch (error) { throw createError({ statusCode: 400, message: error instanceof Error ? error.message : 'Devise invalide.' }) }
   const payload = {
     client_id: body.clientId ? Number(body.clientId) : null,
+    project_id: body.projectId ? Number(body.projectId) : null,
     number: String(body.number || '').trim(),
     title: String(body.title || '').trim(),
     amount_cents: totals.totalCents || Number(body.amountCents || 0),
@@ -35,6 +36,7 @@ export default defineEventHandler(async (event) => {
   if (error && (error.message.includes('subtotal_cents') || error.message.includes('tax_cents') || error.message.includes('total_cents'))) {
     const legacyPayload = {
       client_id: payload.client_id,
+      project_id: payload.project_id,
       number: payload.number,
       title: payload.title,
       amount_cents: payload.amount_cents,

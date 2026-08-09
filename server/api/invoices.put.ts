@@ -78,6 +78,7 @@ export default defineEventHandler(async (event) => {
     : {
         client_id: Object.hasOwn(body, 'clientId') ? (body.clientId ? Number(body.clientId) : null) : existing.client_id,
         quote_id: Object.hasOwn(body, 'quoteId') ? (body.quoteId ? Number(body.quoteId) : null) : existing.quote_id,
+        project_id: Object.hasOwn(body, 'projectId') ? (body.projectId ? Number(body.projectId) : null) : existing.project_id,
         number: Object.hasOwn(body, 'number') ? String(body.number || '').trim() : existing.number,
         amount_cents: totals.totalCents,
         subtotal_cents: totals.subtotalCents,

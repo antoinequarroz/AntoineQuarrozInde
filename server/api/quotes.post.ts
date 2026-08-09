@@ -12,6 +12,7 @@ export default defineEventHandler(async (event) => {
   const payload = {
     organization_id: org.id,
     client_id: body.clientId ? Number(body.clientId) : null,
+    project_id: body.projectId ? Number(body.projectId) : null,
     number: String(body.number || '').trim(),
     title: String(body.title || '').trim(),
     amount_cents: totals.totalCents || Number(body.amountCents || 0),
@@ -30,6 +31,7 @@ export default defineEventHandler(async (event) => {
     const legacyPayload = {
       organization_id: payload.organization_id,
       client_id: payload.client_id,
+      project_id: payload.project_id,
       number: payload.number,
       title: payload.title,
       amount_cents: payload.amount_cents,

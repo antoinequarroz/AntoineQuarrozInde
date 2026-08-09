@@ -26,6 +26,11 @@ type ProjectRow = {
   results?: ProjectResult[] | null
   seo_title?: string | null
   seo_description?: string | null
+  workflow_status?: Project['workflowStatus']
+  starts_at?: string | null
+  target_at?: string | null
+  budget_cents?: number
+  internal_hourly_cost_cents?: number
   created_at: string
 }
 
@@ -57,6 +62,11 @@ function mapProject(row: ProjectRow): Project {
     results: Array.isArray(row.results) ? row.results : [],
     seoTitle: row.seo_title ?? null,
     seoDescription: row.seo_description ?? null,
+    workflowStatus: row.workflow_status ?? 'planning',
+    startsAt: row.starts_at ?? null,
+    targetAt: row.target_at ?? null,
+    budgetCents: row.budget_cents ?? 0,
+    internalHourlyCostCents: row.internal_hourly_cost_cents ?? 0,
     createdAt: row.created_at?.slice(0, 10) ?? '',
   }
 }

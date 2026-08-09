@@ -6,6 +6,7 @@ definePageMeta({ layout: 'admin', middleware: 'admin' })
 const store = useQuotesStore()
 const clients = useClientsStore()
 const invoices = useInvoicesStore()
+const projects = useProjectsStore()
 const auth = useAuthStore()
 const route = useRoute()
 const toast = useToast()
@@ -32,6 +33,7 @@ const quoteMeta = reactive({
 const form = reactive({
   number: '',
   clientId: null as number | null,
+  projectId: null as number | null,
   title: '',
   amountCents: 0,
   currency: 'CHF',
@@ -43,6 +45,9 @@ const form = reactive({
 })
 
 const clientsById = computed(() => new Map(clients.clients.map(c => [c.id, c])))
+const availableProjects = computed(() => form.clientId
+  ? projects.projects.filter(project => !project.clientId || project.clientId === form.clientId)
+  : projects.projects)
 const selectedId = ref<number | null>(null)
 const viewMode = ref<'table' | 'kanban'>('table')
 const search = ref('')
@@ -176,6 +181,7 @@ async function openNew() {
   Object.assign(form, {
     number: await nextNumber(),
     clientId: null,
+    projectId: null,
     title: '',
     amountCents: 0,
     currency: 'CHF',
@@ -383,11 +389,17 @@ function downloadPdf() {
 }
 
 onMounted(async () => {
-  await Promise.all([store.ensureLoaded(), clients.ensureLoaded()])
+  await Promise.all([store.ensureLoaded(), clients.ensureLoaded(), projects.ensureLoaded()])
   if (route.query.new === '1') {
     await openNew()
     const id = Number(route.query.clientId || 0)
     if (id) form.clientId = id
+    const projectId = Number(route.query.projectId || 0)
+    if (projectId) {
+      form.projectId = projectId
+      const project = projects.projects.find(item => item.id === projectId)
+      if (project?.clientId) form.clientId = project.clientId
+    }
   }
   const qStatus = String(route.query.status || '')
   if (qStatus === 'draft' || qStatus === 'sent' || qStatus === 'accepted' || qStatus === 'rejected') statusFilter.value = qStatus
@@ -547,10 +559,20 @@ onMounted(async () => {
         <form class="admin-modal-panel relative w-full max-w-4xl max-h-[92vh] overflow-y-auto overflow-x-hidden bg-white dark:bg-[#111118] rounded-xl p-4 sm:p-5 space-y-3" @submit.prevent="submit">
           <h2 id="quote-form-title" class="font-semibold text-gray-900 dark:text-white">{{ editing ? 'Modifier le devis' : 'Nouveau devis' }}</h2>
           <input v-model="form.number" class="input-field" placeholder="Numero" required>
-          <select v-model.number="form.clientId" class="input-field">
-            <option :value="null">Aucun client</option>
-            <option v-for="c in clients.clients" :key="c.id" :value="c.id">{{ c.name }}</option>
-          </select>
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <label class="space-y-1 text-xs text-gray-500 dark:text-gray-400">Client
+              <select v-model.number="form.clientId" class="input-field">
+                <option :value="null">Aucun client</option>
+                <option v-for="c in clients.clients" :key="c.id" :value="c.id">{{ c.name }}</option>
+              </select>
+            </label>
+            <label class="space-y-1 text-xs text-gray-500 dark:text-gray-400">Projet
+              <select v-model.number="form.projectId" class="input-field">
+                <option :value="null">Aucun projet</option>
+                <option v-for="project in availableProjects" :key="project.id" :value="project.id">{{ project.title }}</option>
+              </select>
+            </label>
+          </div>
           <input v-model="form.title" class="input-field" placeholder="Titre" required>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <select v-model="offerTemplate" class="input-field">

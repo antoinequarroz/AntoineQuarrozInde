@@ -27,6 +27,7 @@ export default defineEventHandler(async (event) => {
   const { data: invoice, error: invoiceError } = await supabase.from('invoices').insert({
     organization_id: org.id,
     client_id: quote.client_id,
+    project_id: quote.project_id,
     quote_id: quote.id,
     number,
     amount_cents: quote.amount_cents,
@@ -64,7 +65,7 @@ export default defineEventHandler(async (event) => {
     entityType: 'invoice',
     entityId: invoice.id,
     clientId: quote.client_id,
-    payload: { quoteId: quote.id, quoteNumber: quote.number, invoiceNumber: invoice.number },
+    payload: { quoteId: quote.id, projectId: quote.project_id, quoteNumber: quote.number, invoiceNumber: invoice.number },
   })
   return { created: true, invoice }
 })
