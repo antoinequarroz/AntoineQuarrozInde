@@ -52,6 +52,10 @@ export default defineCachedEventHandler(async (event) => {
       }),
     ])
     const metrics = summary.results?.[0]?.metrics || []
+    const trendByDate = new Map((trend.results || []).map(row => [
+      row.dimensions?.[0] || '',
+      { visitors: row.metrics?.[0] || 0, pageviews: row.metrics?.[1] || 0 },
+    ]))
     return {
       configured: true,
       siteId,
@@ -69,11 +73,11 @@ export default defineCachedEventHandler(async (event) => {
         visitors: row.metrics?.[0] || 0,
         visits: row.metrics?.[1] || 0,
       })),
-      trend: (trend.results || []).map(row => ({
-        date: row.dimensions?.[0] || '',
-        visitors: row.metrics?.[0] || 0,
-        pageviews: row.metrics?.[1] || 0,
-      })),
+      trend: Array.from({ length: 30 }, (_, index) => {
+        const date = plausibleCalendarDate(index - 29)
+        const point = trendByDate.get(date)
+        return { date, visitors: point?.visitors || 0, pageviews: point?.pageviews || 0 }
+      }),
     }
   }
   catch (error: any) {
