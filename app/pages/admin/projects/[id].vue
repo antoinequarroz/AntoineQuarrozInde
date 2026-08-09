@@ -1,5 +1,5 @@
 <script setup lang="ts">
-definePageMeta({ layout: 'admin', middleware: 'admin' })
+definePageMeta({ layout: 'admin', middleware: 'project-viewer' })
 
 type CockpitTab = 'milestone' | 'time' | 'note' | 'deliverable'
 
@@ -21,6 +21,10 @@ const form = reactive({
 })
 const projectForm = reactive({
   status: 'planning', startsAt: '', targetAt: '', budgetChf: 0, internalHourlyCostChf: 0,
+})
+const canManage = computed(() => {
+  const role = auth.organizations.find(organization => organization.id === auth.currentOrganizationId)?.role
+  return role === 'owner' || role === 'admin' || role === 'manager'
 })
 
 const tabs = [
@@ -169,11 +173,11 @@ onMounted(load)
               <span class="rounded-lg bg-gray-100 px-2.5 py-1.5 text-gray-600 dark:bg-white/[0.06] dark:text-gray-300">{{ data.project.category }}</span>
               <span v-if="overdueMilestones" class="rounded-lg bg-red-50 px-2.5 py-1.5 text-red-700 dark:bg-red-500/10 dark:text-red-300">{{ overdueMilestones }} jalon(s) en retard</span>
             </div>
-            <button type="button" class="mt-4 inline-flex min-h-10 items-center rounded-lg border border-violet-200 px-3 text-xs font-semibold text-violet-700 dark:border-violet-500/30 dark:text-violet-300 lg:hidden" :aria-expanded="showMobileSettings" @click="showMobileSettings = !showMobileSettings">
+            <button v-if="canManage" type="button" class="mt-4 inline-flex min-h-10 items-center rounded-lg border border-violet-200 px-3 text-xs font-semibold text-violet-700 dark:border-violet-500/30 dark:text-violet-300 lg:hidden" :aria-expanded="showMobileSettings" @click="showMobileSettings = !showMobileSettings">
               {{ showMobileSettings ? 'Masquer les réglages' : 'Configurer budget et dates' }}
             </button>
           </div>
-          <form class="w-full gap-3 rounded-xl border border-gray-200 bg-gray-50/70 p-4 dark:border-white/[0.08] dark:bg-white/[0.025] lg:max-w-xl lg:grid lg:grid-cols-2" :class="showMobileSettings ? 'grid' : 'hidden'" :aria-busy="savingProject" @submit.prevent="saveProject">
+          <form v-if="canManage" class="w-full gap-3 rounded-xl border border-gray-200 bg-gray-50/70 p-4 dark:border-white/[0.08] dark:bg-white/[0.025] lg:max-w-xl lg:grid lg:grid-cols-2" :class="showMobileSettings ? 'grid' : 'hidden'" :aria-busy="savingProject" @submit.prevent="saveProject">
             <label class="text-xs font-medium text-gray-600 dark:text-gray-300">État
               <select v-model="projectForm.status" class="input-field mt-1"><option v-for="(label, value) in projectStatuses" :key="value" :value="value">{{ label }}</option></select>
             </label>
@@ -199,7 +203,7 @@ onMounted(load)
       <section aria-labelledby="finance-heading" class="rounded-xl border border-gray-200 bg-white p-5 dark:border-white/[0.08] dark:bg-[#111118] sm:p-6">
         <div class="flex flex-wrap items-start justify-between gap-3">
           <div><h2 id="finance-heading" class="font-display text-lg font-semibold text-gray-950 dark:text-white">Rentabilité du projet</h2><p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Budget, temps valorisé et encaissements réellement liés à ce projet.</p></div>
-          <div class="flex flex-wrap gap-2">
+          <div v-if="canManage" class="flex flex-wrap gap-2">
             <NuxtLink :to="`/admin/quotes?projectId=${projectId}&new=1`" class="inline-flex min-h-10 items-center rounded-lg border border-gray-200 px-3 text-xs font-semibold text-gray-700 dark:border-white/[0.12] dark:text-gray-200">Créer un devis lié</NuxtLink>
             <NuxtLink :to="`/admin/invoices?projectId=${projectId}&new=1`" class="inline-flex min-h-10 items-center rounded-lg border border-violet-200 px-3 text-xs font-semibold text-violet-700 dark:border-violet-500/30 dark:text-violet-300">Créer une facture liée</NuxtLink>
           </div>
@@ -226,7 +230,7 @@ onMounted(load)
         </dl>
       </section>
 
-      <section class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+      <section class="grid gap-5" :class="canManage ? 'xl:grid-cols-[minmax(0,1fr)_360px]' : ''">
         <div class="min-w-0 rounded-xl border border-gray-200 bg-white dark:border-white/[0.08] dark:bg-[#111118]">
           <nav class="flex gap-1 overflow-x-auto border-b border-gray-100 p-2 dark:border-white/[0.06]" aria-label="Sections du projet">
             <template v-for="item in tabs" :key="item.key">
@@ -236,17 +240,17 @@ onMounted(load)
           </nav>
           <div class="space-y-2 p-4 sm:p-5">
             <article v-for="item in activeItems" :key="item.id" class="rounded-lg border border-gray-100 p-3 dark:border-white/[0.06]">
-              <div v-if="tab === 'milestone'" class="flex flex-wrap items-center justify-between gap-3"><div><p class="font-medium">{{ item.title }}</p><p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ dateLabel(item.due_at) }}</p></div><select :value="item.status" class="min-h-10 rounded-lg border border-gray-200 bg-transparent px-2 text-xs dark:border-white/[0.1]" @change="updateItem('milestone', item, ($event.target as HTMLSelectElement).value)"><option v-for="(label, value) in milestoneStatuses" :key="value" :value="value">{{ label }}</option></select></div>
+              <div v-if="tab === 'milestone'" class="flex flex-wrap items-center justify-between gap-3"><div><p class="font-medium">{{ item.title }}</p><p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ dateLabel(item.due_at) }}</p></div><select v-if="canManage" :value="item.status" class="min-h-10 rounded-lg border border-gray-200 bg-transparent px-2 text-xs dark:border-white/[0.1]" @change="updateItem('milestone', item, ($event.target as HTMLSelectElement).value)"><option v-for="(label, value) in milestoneStatuses" :key="value" :value="value">{{ label }}</option></select><span v-else class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ milestoneStatuses[item.status] }}</span></div>
               <div v-else-if="tab === 'time'" class="flex items-center justify-between gap-3"><div><p class="font-medium">{{ item.description }}</p><p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ dateLabel(item.worked_at) }}</p></div><strong>{{ Math.floor(item.minutes / 60) }} h {{ item.minutes % 60 }} min</strong></div>
               <template v-else-if="tab === 'note'"><div class="flex justify-between gap-3"><div><p class="font-medium">{{ item.title }}</p><p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ item.kind === 'meeting' ? 'Réunion' : 'Note' }} · {{ new Date(item.occurred_at).toLocaleDateString('fr-CH') }}<span v-if="item.client_visible"> · Visible client</span></p></div></div><p class="mt-3 whitespace-pre-wrap text-sm leading-6 text-gray-600 dark:text-gray-300">{{ item.content }}</p></template>
-              <div v-else class="flex flex-wrap items-center justify-between gap-3"><div><a v-if="item.url" :href="item.url" target="_blank" rel="noopener noreferrer" class="font-medium text-violet-600 dark:text-violet-300">{{ item.title }} ↗</a><p v-else class="font-medium">{{ item.title }}</p><p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ item.client_visible ? 'Visible dans le portail client' : 'Interne' }}</p></div><select :value="item.status" class="min-h-10 rounded-lg border border-gray-200 bg-transparent px-2 text-xs dark:border-white/[0.1]" @change="updateItem('deliverable', item, ($event.target as HTMLSelectElement).value)"><option v-for="(label, value) in deliverableStatuses" :key="value" :value="value">{{ label }}</option></select></div>
-              <button class="mt-2 min-h-10 text-xs font-medium text-red-600 dark:text-red-300" @click="removeItem(tab, item.id)">Supprimer</button>
+              <div v-else class="flex flex-wrap items-center justify-between gap-3"><div><a v-if="item.url" :href="item.url" target="_blank" rel="noopener noreferrer" class="font-medium text-violet-600 dark:text-violet-300">{{ item.title }} ↗</a><p v-else class="font-medium">{{ item.title }}</p><p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ item.client_visible ? 'Visible dans le portail client' : 'Interne' }}</p></div><select v-if="canManage" :value="item.status" class="min-h-10 rounded-lg border border-gray-200 bg-transparent px-2 text-xs dark:border-white/[0.1]" @change="updateItem('deliverable', item, ($event.target as HTMLSelectElement).value)"><option v-for="(label, value) in deliverableStatuses" :key="value" :value="value">{{ label }}</option></select><span v-else class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ deliverableStatuses[item.status] }}</span></div>
+              <button v-if="canManage" class="mt-2 min-h-10 text-xs font-medium text-red-600 dark:text-red-300" @click="removeItem(tab, item.id)">Supprimer</button>
             </article>
             <div v-if="!activeItems.length" class="py-10 text-center"><p class="text-sm font-medium text-gray-700 dark:text-gray-200">Rien ici pour le moment</p><p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Utilise le formulaire pour ajouter le premier élément.</p></div>
           </div>
         </div>
 
-        <aside class="self-start rounded-xl border border-gray-200 bg-white p-5 dark:border-white/[0.08] dark:bg-[#111118] xl:sticky xl:top-20">
+        <aside v-if="canManage" class="self-start rounded-xl border border-gray-200 bg-white p-5 dark:border-white/[0.08] dark:bg-[#111118] xl:sticky xl:top-20">
           <h2 class="font-display text-lg font-semibold">Ajouter — {{ tabs.find(item => item.key === tab)?.label }}</h2>
           <form class="mt-4 space-y-4" :aria-busy="savingItem" @submit.prevent="addItem">
             <div v-if="tab !== 'time'"><label for="cockpit-title" class="text-xs font-medium text-gray-600 dark:text-gray-300">Titre</label><input id="cockpit-title" v-model="form.title" required class="input-field mt-1"></div>
