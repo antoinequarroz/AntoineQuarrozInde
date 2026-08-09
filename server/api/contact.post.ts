@@ -34,7 +34,7 @@ export default defineEventHandler(async (event) => {
   ipHits.set(ip, hits)
 
   const body = await readBody(event)
-  const { name, email, subject, message, website, startedAt, turnstileToken } = body
+  const { name, email, subject, message, website, startedAt, turnstileToken, attribution } = body
 
   if (!name || !email || !message) {
     throw createError({ statusCode: 400, message: 'Champs requis manquants' })
@@ -62,6 +62,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const config = useRuntimeConfig()
+  const cleanAttribution = leadAttributionPayload(attribution)
 
   if (config.turnstileSecretKey) {
     if (!turnstileToken || typeof turnstileToken !== 'string') {
@@ -106,6 +107,7 @@ export default defineEventHandler(async (event) => {
     subject: safeSubject,
     message: normalizedMessage,
     status: 'new',
+    ...cleanAttribution,
   })
   if (saveError) {
     console.warn('[contact] unable to persist contact_messages:', saveError.message)
@@ -133,6 +135,9 @@ export default defineEventHandler(async (event) => {
           phone: null,
           status: 'lead',
           notes: `Lead créé automatiquement depuis le formulaire de contact.\nSujet: ${safeSubject}\n\n${normalizedMessage}`,
+          acquisition_source: cleanAttribution.utm_source || cleanAttribution.referrer_host || 'direct',
+          acquisition_medium: cleanAttribution.utm_medium,
+          acquisition_campaign: cleanAttribution.utm_campaign,
         })
         .select('id,name,email,status')
         .single()

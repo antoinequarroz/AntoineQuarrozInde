@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const { t } = useI18n()
 const { track } = useMarketing()
+const { trackPlausible } = usePlausibleEvent()
 const runtimeConfig = useRuntimeConfig()
 const turnstileSiteKey = runtimeConfig.public.turnstileSiteKey as string
 const isClient = import.meta.client
@@ -26,6 +27,7 @@ const turnstileWidgetId = ref<string | null>(null)
 
 type FormStatus = 'idle' | 'sending' | 'success' | 'error'
 const status = ref<FormStatus>('idle')
+const attribution = ref(captureLeadAttribution())
 
 useHead({
   script: shouldUseTurnstile
@@ -85,10 +87,15 @@ async function handleSubmit() {
         website: form.website,
         startedAt: form.startedAt,
         turnstileToken: turnstileToken.value,
+        attribution: attribution.value,
       },
     })
     status.value = 'success'
     track('contact_form_submit_success')
+    trackPlausible('Contact Sent', {
+      source: attribution.value.utmSource || attribution.value.referrerHost || 'direct',
+      medium: attribution.value.utmMedium || 'none',
+    })
     form.name = ''
     form.email = ''
     form.subject = ''
