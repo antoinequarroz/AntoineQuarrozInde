@@ -109,12 +109,33 @@ export interface Invoice {
   dueAt: string | null
   paidAt: string | null
   notes: string | null
+  documentType: 'invoice' | 'credit_note'
+  creditedInvoiceId: number | null
+  lockedAt: string | null
   paymentReferenceType: 'NON' | 'SCOR' | 'QRR'
   paymentReference: string | null
   subtotalCents?: number
   taxCents?: number
   totalCents?: number
   items?: InvoiceItem[]
+  payments?: InvoicePayment[]
+  paidAmountCents: number
+  createdAt: string
+}
+
+export interface InvoicePayment {
+  id: number
+  invoiceId: number
+  amountCents: number
+  currency: string
+  method: 'bank_transfer' | 'swiss_qr' | 'twint' | 'cash' | 'other'
+  paidAt: string
+  reference: string | null
+  notes: string | null
+  provider: 'stripe' | null
+  providerPaymentId: string | null
+  voidedAt: string | null
+  voidReason: string | null
   createdAt: string
 }
 

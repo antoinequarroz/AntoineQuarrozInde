@@ -35,7 +35,7 @@ trap 'rm -rf "$WORK_DIR"' EXIT
 
 TABLES=(
   organizations organization_memberships clients projects tasks appointments
-  quotes quote_items invoices invoice_items articles reviews contact_messages
+  quotes quote_items invoices invoice_items invoice_payments articles reviews contact_messages
   marketing_events audit_logs admin_saved_views application_errors
 )
 

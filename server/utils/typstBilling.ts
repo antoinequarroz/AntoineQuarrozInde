@@ -21,7 +21,7 @@ export type BillingParty = {
 }
 
 export type TypstBillingData = {
-  documentTitle: 'Devis' | 'Facture'
+  documentTitle: 'Devis' | 'Facture' | 'Avoir'
   number: string
   subject: string
   currency: 'CHF' | 'EUR'

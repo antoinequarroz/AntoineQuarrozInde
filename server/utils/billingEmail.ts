@@ -38,8 +38,10 @@ export async function sendBillingEmail(input: {
     client,
     items: items || [],
   })
-  const label = input.kind === 'quote' ? 'devis' : 'facture'
-  const capitalized = input.kind === 'quote' ? 'Devis' : 'Facture'
+  const isCreditNote = input.kind === 'invoice' && document.document_type === 'credit_note'
+  const label = input.kind === 'quote' ? 'devis' : isCreditNote ? 'avoir' : 'facture'
+  const capitalized = input.kind === 'quote' ? 'Devis' : isCreditNote ? 'Avoir' : 'Facture'
+  const documentArticle = input.kind === 'quote' ? 'le devis' : isCreditNote ? `l'avoir` : 'la facture'
   const subjectSuffix = input.kind === 'quote' && document.title ? ` – ${document.title}` : ''
   const resend = new Resend(config.resendApiKey)
   const { data, error: sendError } = await resend.emails.send({
@@ -49,7 +51,7 @@ export async function sendBillingEmail(input: {
     html: `
       <div style="font-family:Inter,Arial,sans-serif;max-width:600px;margin:0 auto;color:#111827;line-height:1.6">
         <p>Bonjour ${escapeEmailHtml(input.recipientName)},</p>
-        <p>Vous trouverez en pièce jointe ${input.kind === 'quote' ? 'le devis' : 'la facture'} <strong>${escapeEmailHtml(document.number)}</strong>.</p>
+        <p>Vous trouverez en pièce jointe ${documentArticle} <strong>${escapeEmailHtml(document.number)}</strong>.</p>
         <p>${input.kind === 'quote' ? 'Je reste volontiers disponible pour toute question ou adaptation.' : 'Merci pour votre confiance.'}</p>
         <p>Cordialement,<br><strong>Antoine Quarroz</strong></p>
       </div>`,

@@ -1,8 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { computeTotals, normalizeBillingItems } from '../server/utils/billing'
+import { computeTotals, normalizeBillingCurrency, normalizeBillingItems } from '../server/utils/billing'
 import { canGenerateTypstDocument, type TypstBillingData } from '../server/utils/typstBilling'
 
 describe('facturation V2', () => {
+  it('accepte uniquement les devises prises en charge', () => {
+    expect(normalizeBillingCurrency('chf')).toBe('CHF')
+    expect(normalizeBillingCurrency('EUR')).toBe('EUR')
+    expect(() => normalizeBillingCurrency('CHF500')).toThrow(/CHF ou EUR/)
+  })
+
   it('normalise les lignes et calcule les montants CHF avec TVA', () => {
     const items = normalizeBillingItems([
       { label: 'Conception', quantity: 2, unitPriceCents: 12_500, taxRate: 8.1 },

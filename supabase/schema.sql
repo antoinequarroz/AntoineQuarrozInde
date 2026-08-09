@@ -96,18 +96,6 @@ create table if not exists public.contact_messages (
   created_at timestamptz not null default now()
 );
 
-create table if not exists public.audit_logs (
-  id bigint generated always as identity primary key,
-  organization_id uuid references public.organizations(id) on delete set null,
-  actor_user_id uuid references auth.users(id) on delete set null,
-  action text not null,
-  entity_type text,
-  entity_id text,
-  client_id bigint references public.clients(id) on delete set null,
-  payload jsonb not null default '{}'::jsonb,
-  created_at timestamptz not null default now()
-);
-
 create table if not exists public.clients (
   id bigint generated always as identity primary key,
   organization_id uuid not null references public.organizations(id) on delete cascade,
@@ -117,6 +105,18 @@ create table if not exists public.clients (
   phone text,
   status text not null default 'lead' check (status in ('lead', 'active', 'inactive')),
   notes text,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.audit_logs (
+  id bigint generated always as identity primary key,
+  organization_id uuid references public.organizations(id) on delete set null,
+  actor_user_id uuid references auth.users(id) on delete set null,
+  action text not null,
+  entity_type text,
+  entity_id text,
+  client_id bigint references public.clients(id) on delete set null,
+  payload jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now()
 );
 
@@ -162,8 +162,28 @@ create table if not exists public.invoices (
   due_at date,
   paid_at date,
   notes text,
+  document_type text not null default 'invoice' check (document_type in ('invoice', 'credit_note')),
+  credited_invoice_id bigint references public.invoices(id) on delete restrict,
+  locked_at timestamptz,
   created_at timestamptz not null default now(),
   unique (organization_id, number)
+);
+
+create table if not exists public.invoice_payments (
+  id bigint generated always as identity primary key,
+  organization_id uuid not null references public.organizations(id) on delete cascade,
+  invoice_id bigint not null references public.invoices(id) on delete cascade,
+  amount_cents integer not null check (amount_cents > 0),
+  currency text not null default 'CHF',
+  method text not null default 'bank_transfer' check (method in ('bank_transfer', 'swiss_qr', 'twint', 'cash', 'other')),
+  paid_at date not null default current_date,
+  reference text,
+  notes text,
+  provider text check (provider is null or provider in ('stripe')),
+  provider_payment_id text,
+  voided_at timestamptz,
+  void_reason text,
+  created_at timestamptz not null default now()
 );
 
 create table if not exists public.appointments (
@@ -212,6 +232,20 @@ create index if not exists idx_audit_logs_organization_id on public.audit_logs(o
 create index if not exists idx_audit_logs_client_id on public.audit_logs(client_id);
 create index if not exists idx_quotes_organization_id on public.quotes(organization_id);
 create index if not exists idx_invoices_organization_id on public.invoices(organization_id);
+create index if not exists idx_invoices_credited_invoice_id on public.invoices(organization_id, credited_invoice_id) where credited_invoice_id is not null;
+create unique index if not exists idx_invoices_org_id_id_unique on public.invoices(organization_id, id);
+create index if not exists idx_invoice_payments_invoice_id on public.invoice_payments(organization_id, invoice_id, paid_at desc);
+create unique index if not exists idx_invoice_payments_provider_payment_unique on public.invoice_payments(organization_id, provider, provider_payment_id) where provider is not null and provider_payment_id is not null;
+
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'invoices_credited_org_fk') then
+    alter table public.invoices add constraint invoices_credited_org_fk foreign key (organization_id, credited_invoice_id) references public.invoices(organization_id, id) on delete restrict;
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'invoice_payments_org_invoice_fk') then
+    alter table public.invoice_payments add constraint invoice_payments_org_invoice_fk foreign key (organization_id, invoice_id) references public.invoices(organization_id, id) on delete cascade;
+  end if;
+end $$;
 create index if not exists idx_appointments_organization_id on public.appointments(organization_id);
 create index if not exists idx_appointments_starts_at on public.appointments(starts_at);
 create index if not exists idx_application_errors_created_at on public.application_errors(created_at desc);
@@ -230,8 +264,11 @@ alter table public.clients enable row level security;
 alter table public.tasks enable row level security;
 alter table public.quotes enable row level security;
 alter table public.invoices enable row level security;
+alter table public.invoice_payments enable row level security;
 alter table public.appointments enable row level security;
 alter table public.application_errors enable row level security;
 
 revoke all on table public.application_errors from anon, authenticated;
 grant all on table public.application_errors to service_role;
+revoke all on table public.invoice_payments from anon, authenticated;
+grant all on table public.invoice_payments to service_role;

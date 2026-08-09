@@ -1,6 +1,11 @@
 services:
   web:
-    build: .
+    image: antoinequarroz-web:${APP_IMAGE_TAG:-local}
+    build:
+      context: .
+      args:
+        APP_VERSION: ${APP_VERSION:-development}
+        APP_BUILD_TIME: ${APP_BUILD_TIME:-unknown}
     container_name: antoinequarroz-web
     restart: unless-stopped
     env_file:

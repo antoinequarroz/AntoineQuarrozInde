@@ -10,6 +10,10 @@ export default defineEventHandler(async (event) => {
     .eq('organization_id', org.id)
     .eq('id', numericId)
     .single()
+  if (!existing) throw createError({ statusCode: 404, message: 'Facture introuvable.' })
+  if (existing.status !== 'draft') {
+    throw createError({ statusCode: 409, message: 'Un document émis ne peut plus être supprimé. Annule-le ou crée un avoir.' })
+  }
   const { error } = await supabase.from('invoices').delete().eq('organization_id', org.id).eq('id', numericId)
   if (error) throw createError({ statusCode: 500, message: error.message })
   await logAudit({

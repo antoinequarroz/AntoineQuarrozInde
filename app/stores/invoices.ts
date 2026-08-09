@@ -1,4 +1,4 @@
-import type { Invoice } from '~/types'
+import type { Invoice, InvoicePayment } from '~/types'
 
 type InvoiceRow = {
   id: number
@@ -12,6 +12,9 @@ type InvoiceRow = {
   due_at: string | null
   paid_at: string | null
   notes: string | null
+  document_type?: 'invoice' | 'credit_note'
+  credited_invoice_id?: number | null
+  locked_at?: string | null
   payment_reference_type?: 'NON' | 'SCOR' | 'QRR'
   payment_reference?: string | null
   subtotal_cents?: number
@@ -25,6 +28,21 @@ type InvoiceRow = {
     unit_price_cents: number
     tax_rate: number
     total_cents: number
+  }>
+  payments?: Array<{
+    id: number
+    invoice_id: number
+    amount_cents: number
+    currency: string
+    method: InvoicePayment['method']
+    paid_at: string
+    reference: string | null
+    notes: string | null
+    provider?: 'stripe' | null
+    provider_payment_id?: string | null
+    voided_at: string | null
+    void_reason: string | null
+    created_at: string
   }>
   created_at: string
 }
@@ -42,6 +60,9 @@ function mapInvoice(row: InvoiceRow): Invoice {
     dueAt: row.due_at,
     paidAt: row.paid_at,
     notes: row.notes,
+    documentType: row.document_type || 'invoice',
+    creditedInvoiceId: row.credited_invoice_id || null,
+    lockedAt: row.locked_at || null,
     paymentReferenceType: row.payment_reference_type || 'NON',
     paymentReference: row.payment_reference || null,
     subtotalCents: row.subtotal_cents ?? row.amount_cents,
@@ -56,6 +77,22 @@ function mapInvoice(row: InvoiceRow): Invoice {
       taxRate: Number(item.tax_rate),
       totalCents: item.total_cents,
     })),
+    payments: (row.payments || []).map(payment => ({
+      id: payment.id,
+      invoiceId: payment.invoice_id,
+      amountCents: payment.amount_cents,
+      currency: payment.currency,
+      method: payment.method,
+      paidAt: payment.paid_at,
+      reference: payment.reference,
+      notes: payment.notes,
+      provider: payment.provider ?? null,
+      providerPaymentId: payment.provider_payment_id ?? null,
+      voidedAt: payment.voided_at,
+      voidReason: payment.void_reason,
+      createdAt: payment.created_at,
+    })),
+    paidAmountCents: (row.payments || []).reduce((sum, payment) => sum + (payment.voided_at ? 0 : payment.amount_cents), 0),
     createdAt: row.created_at?.slice(0, 10) ?? '',
   }
 }

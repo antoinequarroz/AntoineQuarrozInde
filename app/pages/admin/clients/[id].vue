@@ -26,8 +26,8 @@ const clientAppointments = computed(() => appointmentsStore.appointments.filter(
 const clientProjects = computed(() => projectsStore.projects.filter(project => project.clientId === clientId.value))
 
 const totalQuotes = computed(() => clientQuotes.value.reduce((sum, q) => sum + q.amountCents, 0))
-const totalInvoices = computed(() => clientInvoices.value.reduce((sum, i) => sum + i.amountCents, 0))
-const overdueInvoices = computed(() => clientInvoices.value.filter(i => i.status === 'overdue'))
+const totalInvoices = computed(() => clientInvoices.value.reduce((sum, i) => sum + (i.documentType === 'credit_note' ? -1 : 1) * i.amountCents, 0))
+const overdueInvoices = computed(() => clientInvoices.value.filter(i => i.documentType === 'invoice' && i.status === 'overdue'))
 const nextAppointment = computed(() => {
   const now = new Date().toISOString()
   return clientAppointments.value
@@ -35,8 +35,8 @@ const nextAppointment = computed(() => {
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt))[0] || null
 })
 const acceptedQuote = computed(() => clientQuotes.value.find(quote => quote.status === 'accepted') || null)
-const openInvoice = computed(() => clientInvoices.value.find(invoice => invoice.status === 'overdue')
-  || clientInvoices.value.find(invoice => invoice.status === 'sent' || invoice.status === 'draft')
+const openInvoice = computed(() => clientInvoices.value.find(invoice => invoice.documentType === 'invoice' && invoice.status === 'overdue')
+  || clientInvoices.value.find(invoice => invoice.documentType === 'invoice' && (invoice.status === 'sent' || invoice.status === 'draft'))
   || null)
 const allInvoicesPaid = computed(() => clientInvoices.value.length > 0 && clientInvoices.value.every(invoice => invoice.status === 'paid'))
 const pipelineIndex = computed(() => {
@@ -70,7 +70,7 @@ const nextAction = computed(() => {
 const nextDeadline = computed(() => {
   const values = [
     ...clientTasks.value.filter(task => task.status !== 'done' && task.dueDate).map(task => ({ date: task.dueDate!, label: task.title })),
-    ...clientInvoices.value.filter(invoice => invoice.status !== 'paid' && invoice.status !== 'cancelled' && invoice.dueAt).map(invoice => ({ date: invoice.dueAt!, label: `Facture ${invoice.number}` })),
+    ...clientInvoices.value.filter(invoice => invoice.documentType === 'invoice' && invoice.status !== 'paid' && invoice.status !== 'cancelled' && invoice.dueAt).map(invoice => ({ date: invoice.dueAt!, label: `Facture ${invoice.number}` })),
     ...(nextAppointment.value ? [{ date: nextAppointment.value.startsAt.slice(0, 10), label: nextAppointment.value.title }] : []),
   ].sort((a, b) => a.date.localeCompare(b.date))
   return values[0] || null

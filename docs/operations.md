@@ -1,5 +1,30 @@
 # Exploitation et reprise après incident
 
+## Déploiement et retour arrière
+
+`scripts/deploy-vps.ps1` met à jour le dépôt puis délègue la mise en ligne à
+`scripts/ops/deploy-release.sh`. Avant de remplacer le conteneur, l'image active
+est conservée sous le tag `antoinequarroz-web:previous`. La nouvelle image est
+construite sous le tag `candidate` avec le hash Git et l'heure de construction.
+
+Le script attend ensuite que le contrôle Docker soit `healthy`. Si la
+construction, le démarrage ou le contrôle échoue, l'image `previous` est remise
+en service automatiquement. Le dépôt peut rester sur le nouveau commit : c'est
+l'image immuable précédente qui assure le retour arrière.
+
+La version réellement exécutée est consultable sans cache :
+
+```bash
+curl https://www.antoinequarroz.ch/api/version
+```
+
+Le résultat contient `version`, `builtAt` et `environment`. Après un incident,
+vérifier aussi les journaux du conteneur :
+
+```bash
+docker compose logs --tail=100 web
+```
+
 ## Surveillance
 
 `/api/health` contrôle le serveur Nuxt et l'accès à Supabase. Le timer

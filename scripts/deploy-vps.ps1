@@ -69,8 +69,7 @@ test -f .env
 git fetch --prune origin
 git checkout "$Branch"
 git pull --ff-only origin "$Branch"
-docker compose up -d --build --remove-orphans
-docker compose ps
+bash scripts/ops/deploy-release.sh
 "@
 
 & ssh -i $KeyPath $remote $remoteScript
