@@ -11,6 +11,7 @@ const data = ref<any>(null)
 const loadStatus = ref<'loading' | 'ready' | 'error'>('loading')
 const savingProject = ref(false)
 const savingItem = ref(false)
+const showMobileSettings = ref(false)
 const tab = ref<CockpitTab>('milestone')
 const today = new Date().toISOString().slice(0, 10)
 
@@ -103,6 +104,7 @@ async function saveProject() {
       headers: auth.authHeader(),
     })
     await load()
+    showMobileSettings.value = false
     toast.success('Pilotage du projet mis à jour')
   }
   catch (error: any) { toast.error(error?.data?.message || 'Mise à jour impossible') }
@@ -167,8 +169,11 @@ onMounted(load)
               <span class="rounded-lg bg-gray-100 px-2.5 py-1.5 text-gray-600 dark:bg-white/[0.06] dark:text-gray-300">{{ data.project.category }}</span>
               <span v-if="overdueMilestones" class="rounded-lg bg-red-50 px-2.5 py-1.5 text-red-700 dark:bg-red-500/10 dark:text-red-300">{{ overdueMilestones }} jalon(s) en retard</span>
             </div>
+            <button type="button" class="mt-4 inline-flex min-h-10 items-center rounded-lg border border-violet-200 px-3 text-xs font-semibold text-violet-700 dark:border-violet-500/30 dark:text-violet-300 lg:hidden" :aria-expanded="showMobileSettings" @click="showMobileSettings = !showMobileSettings">
+              {{ showMobileSettings ? 'Masquer les réglages' : 'Configurer budget et dates' }}
+            </button>
           </div>
-          <form class="grid w-full gap-3 rounded-xl border border-gray-200 bg-gray-50/70 p-4 dark:border-white/[0.08] dark:bg-white/[0.025] lg:max-w-xl lg:grid-cols-2" :aria-busy="savingProject" @submit.prevent="saveProject">
+          <form class="w-full gap-3 rounded-xl border border-gray-200 bg-gray-50/70 p-4 dark:border-white/[0.08] dark:bg-white/[0.025] lg:max-w-xl lg:grid lg:grid-cols-2" :class="showMobileSettings ? 'grid' : 'hidden'" :aria-busy="savingProject" @submit.prevent="saveProject">
             <label class="text-xs font-medium text-gray-600 dark:text-gray-300">État
               <select v-model="projectForm.status" class="input-field mt-1"><option v-for="(label, value) in projectStatuses" :key="value" :value="value">{{ label }}</option></select>
             </label>
