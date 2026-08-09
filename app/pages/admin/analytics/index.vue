@@ -3,6 +3,7 @@ definePageMeta({ layout: 'admin', middleware: 'admin' })
 
 type TrendPoint = { date: string, visitors: number, pageviews: number }
 type SourcePoint = { source: string, visitors: number, visits: number }
+type AttributionPoint = { source: string, leads: number, activeClients: number, acceptedQuotes: number, acceptedQuoteCents: number, collectedRevenueCents: number, leadToQuoteRate: number }
 
 const auth = useAuthStore()
 const data = ref<any>(null)
@@ -62,6 +63,24 @@ const internalMetrics = computed(() => data.value ? [
   { label: 'Demandes reçues', value: data.value.totals.contactSuccess },
   { label: 'Conversion', value: `${data.value.rates.heroToContact} %` },
 ] : [])
+
+const commercialMetrics = computed(() => data.value?.commercialTotals ? [
+  { label: 'Contacts CRM', value: data.value.commercialTotals.leads },
+  { label: 'Clients actifs', value: data.value.commercialTotals.activeClients },
+  { label: 'Devis acceptés', value: data.value.commercialTotals.acceptedQuotes },
+  { label: 'Montant accepté', value: formatMoney(data.value.commercialTotals.acceptedQuoteCents) },
+  { label: 'Chiffre d’affaires encaissé', value: formatMoney(data.value.commercialTotals.collectedRevenueCents) },
+] : [])
+
+const attributionRows = computed(() => {
+  const rows = (data.value?.attribution || []) as AttributionPoint[]
+  const maxRevenue = Math.max(1, ...rows.map(row => row.collectedRevenueCents))
+  return rows.map((row, index) => ({
+    ...row,
+    color: sourceColors[index % sourceColors.length],
+    revenueWidth: row.collectedRevenueCents ? Math.max(3, row.collectedRevenueCents / maxRevenue * 100) : 0,
+  }))
+})
 
 const hasTrendData = computed(() => Boolean(plausible.value?.trend?.length >= 2 && (plausible.value?.totals?.visitors || plausible.value?.totals?.pageviews)))
 const hasExperimentData = computed(() => Boolean(data.value?.variants?.some((variant: any) => variant.views > 0)))
@@ -135,6 +154,10 @@ function formatDuration(seconds: number) {
   if (!seconds) return '0 s'
   if (seconds < 60) return `${Math.round(seconds)} s`
   return `${Math.floor(seconds / 60)} min ${Math.round(seconds % 60)} s`
+}
+
+function formatMoney(cents: number) {
+  return new Intl.NumberFormat('fr-CH', { style: 'currency', currency: 'CHF', maximumFractionDigits: 0 }).format(Number(cents || 0) / 100)
 }
 
 onMounted(loadAnalytics)
@@ -237,6 +260,53 @@ onMounted(loadAnalytics)
         <div class="border-b border-gray-100 px-5 py-4 dark:border-white/[0.06]"><h2 class="font-display text-lg font-semibold">Actions sur le site</h2><p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Événements internes utiles pour comprendre le parcours.</p></div>
         <div class="grid divide-y divide-gray-100 sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-6 dark:divide-white/[0.06]">
           <div v-for="metric in internalMetrics" :key="metric.label" class="px-4 py-4"><p class="text-xs text-gray-500 dark:text-gray-400">{{ metric.label }}</p><p class="mt-1 font-display text-xl font-semibold">{{ metric.value }}</p></div>
+        </div>
+      </section>
+
+      <section class="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.08] dark:bg-[#111118]" aria-labelledby="attribution-title">
+        <div class="flex flex-wrap items-start justify-between gap-3 border-b border-gray-100 px-5 py-4 dark:border-white/[0.06]">
+          <div>
+            <h2 id="attribution-title" class="font-display text-lg font-semibold">Acquisition → chiffre d’affaires</h2>
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Cumul du CRM, des devis acceptés et des paiements réellement enregistrés.</p>
+          </div>
+          <span class="rounded-full bg-cyan-50 px-3 py-1 text-xs font-semibold text-cyan-800 dark:bg-cyan-500/10 dark:text-cyan-200">Depuis le début</span>
+        </div>
+
+        <div v-if="commercialMetrics.length" class="grid grid-cols-2 divide-x divide-y divide-gray-100 lg:grid-cols-5 lg:divide-y-0 dark:divide-white/[0.06]">
+          <div v-for="(metric, index) in commercialMetrics" :key="metric.label" class="px-4 py-3 lg:px-5 lg:py-4" :class="index === commercialMetrics.length - 1 ? 'col-span-2 lg:col-span-1' : ''">
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ metric.label }}</p>
+            <p class="mt-1 font-display text-xl font-semibold text-gray-950 dark:text-white">{{ metric.value }}</p>
+          </div>
+        </div>
+
+        <div v-if="attributionRows.length" class="p-5">
+          <div class="space-y-5" role="img" :aria-label="`Comparaison du chiffre d’affaires encaissé pour ${attributionRows.length} sources d’acquisition`">
+            <div v-for="row in attributionRows" :key="row.source" class="grid gap-2 sm:grid-cols-[minmax(120px,0.55fr)_minmax(220px,1.8fr)_auto] sm:items-center sm:gap-4">
+              <div class="flex min-w-0 items-center gap-2">
+                <i class="h-2.5 w-2.5 shrink-0 rounded-full" :style="{ backgroundColor: row.color }" />
+                <span class="truncate text-sm font-semibold text-gray-800 dark:text-gray-100">{{ row.source }}</span>
+              </div>
+              <div class="h-3 overflow-hidden rounded-full bg-gray-100 dark:bg-white/[0.07]">
+                <div class="h-full rounded-full transition-[width] duration-700 ease-out" :style="{ width: `${row.revenueWidth}%`, backgroundColor: row.color }" />
+              </div>
+              <strong class="text-sm tabular-nums sm:min-w-28 sm:text-right">{{ formatMoney(row.collectedRevenueCents) }}</strong>
+            </div>
+          </div>
+
+          <div class="mt-6 overflow-x-auto">
+            <table class="w-full min-w-[680px] text-left text-sm">
+              <caption class="sr-only">Résultats commerciaux par source d’acquisition</caption>
+              <thead class="border-b border-gray-200 text-xs text-gray-500 dark:border-white/[0.1] dark:text-gray-400"><tr><th class="pb-3 font-medium">Source</th><th class="pb-3 text-right font-medium">Contacts</th><th class="pb-3 text-right font-medium">Clients actifs</th><th class="pb-3 text-right font-medium">Devis acceptés</th><th class="pb-3 text-right font-medium">Conversion</th><th class="pb-3 text-right font-medium">Montant accepté</th><th class="pb-3 text-right font-medium">Encaissé</th></tr></thead>
+              <tbody>
+                <tr v-for="row in attributionRows" :key="`table-${row.source}`" class="border-b border-gray-100 last:border-0 dark:border-white/[0.06]">
+                  <th scope="row" class="py-3 font-semibold text-gray-800 dark:text-gray-100">{{ row.source }}</th><td class="py-3 text-right tabular-nums">{{ row.leads }}</td><td class="py-3 text-right tabular-nums">{{ row.activeClients }}</td><td class="py-3 text-right tabular-nums">{{ row.acceptedQuotes }}</td><td class="py-3 text-right tabular-nums">{{ row.leadToQuoteRate }} %</td><td class="py-3 text-right tabular-nums">{{ formatMoney(row.acceptedQuoteCents) }}</td><td class="py-3 text-right font-semibold tabular-nums">{{ formatMoney(row.collectedRevenueCents) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div v-else class="m-5 grid min-h-40 place-items-center rounded-lg border border-dashed border-gray-200 p-6 text-center dark:border-white/[0.1]">
+          <div><p class="font-medium">Aucune attribution commerciale</p><p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Les sources apparaîtront dès qu’un contact sera enregistré dans le CRM.</p></div>
         </div>
       </section>
 
