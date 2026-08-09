@@ -29,7 +29,7 @@ export default defineCachedEventHandler(async (event) => {
   const dateRange = [plausibleCalendarDate(-29), plausibleCalendarDate()]
 
   try {
-    const [summary, sources] = await Promise.all([
+    const [summary, sources, trend] = await Promise.all([
       queryPlausible(apiKey, {
         site_id: siteId,
         metrics: ['visitors', 'visits', 'pageviews', 'bounce_rate', 'visit_duration', 'events'],
@@ -42,6 +42,13 @@ export default defineCachedEventHandler(async (event) => {
         dimensions: ['visit:source'],
         order_by: [['visitors', 'desc']],
         pagination: { limit: 8, offset: 0 },
+      }),
+      queryPlausible(apiKey, {
+        site_id: siteId,
+        metrics: ['visitors', 'pageviews'],
+        date_range: dateRange,
+        dimensions: ['time:day'],
+        order_by: [['time:day', 'asc']],
       }),
     ])
     const metrics = summary.results?.[0]?.metrics || []
@@ -61,6 +68,11 @@ export default defineCachedEventHandler(async (event) => {
         source: row.dimensions?.[0] || 'Direct / inconnu',
         visitors: row.metrics?.[0] || 0,
         visits: row.metrics?.[1] || 0,
+      })),
+      trend: (trend.results || []).map(row => ({
+        date: row.dimensions?.[0] || '',
+        visitors: row.metrics?.[0] || 0,
+        pageviews: row.metrics?.[1] || 0,
       })),
     }
   }
