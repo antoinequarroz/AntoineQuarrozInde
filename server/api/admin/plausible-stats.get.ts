@@ -60,5 +60,6 @@ export default defineCachedEventHandler(async (event) => {
 }, {
   maxAge: 600,
   name: 'admin-plausible-stats',
+  varies: ['authorization', 'x-organization-id'],
   getKey: event => String(getHeader(event, 'x-organization-id') || 'default'),
 })
