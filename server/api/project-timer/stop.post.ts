@@ -1,0 +1,17 @@
+export default defineEventHandler(async (event) => {
+  const { user, org } = await requireAdmin(event)
+  const id = Number((await readBody<Record<string, unknown>>(event)).id)
+  if (!Number.isInteger(id) || id <= 0) throw createError({ statusCode: 400, message: 'Minuteur invalide.' })
+  const supabase = getSupabaseAdmin()
+  const { data: timer, error } = await supabase.from('project_time_entries').select('id,project_id,started_at').eq('organization_id', org.id).eq('created_by_user_id', user.id).eq('entry_source', 'timer').eq('id', id).is('stopped_at', null).maybeSingle()
+  if (error) throw createError({ statusCode: 500, message: error.message })
+  if (!timer?.started_at) throw createError({ statusCode: 404, message: 'Aucun minuteur actif trouvé.' })
+  const stoppedAt = new Date()
+  const elapsedMinutes = Math.max(1, Math.ceil((stoppedAt.getTime() - new Date(timer.started_at).getTime()) / 60_000))
+  if (elapsedMinutes > 10_080) throw createError({ statusCode: 409, message: 'Ce minuteur dépasse 7 jours. Corrigez cette entrée manuellement.' })
+  const { data, error: updateError } = await supabase.from('project_time_entries').update({ stopped_at: stoppedAt.toISOString(), minutes: elapsedMinutes }).eq('organization_id', org.id).eq('id', timer.id).is('stopped_at', null).select('*').maybeSingle()
+  if (updateError) throw createError({ statusCode: 500, message: updateError.message })
+  if (!data) throw createError({ statusCode: 409, message: 'Le minuteur a déjà été arrêté.' })
+  await logAudit({ organizationId: org.id, actorUserId: user.id, action: 'project.timer_stopped', entityType: 'project', entityId: timer.project_id, payload: { time_entry_id: timer.id, minutes: elapsedMinutes } })
+  return data
+})

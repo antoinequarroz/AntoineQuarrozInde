@@ -11,6 +11,11 @@ const data = ref<any>(null)
 const loadStatus = ref<'loading' | 'ready' | 'error'>('loading')
 const savingProject = ref(false)
 const savingItem = ref(false)
+const timerAction = ref<'starting' | 'stopping' | null>(null)
+const timerStatus = ref<'loading' | 'ready' | 'error'>('loading')
+const runningTimer = ref<any>(null)
+const timerNow = ref(Date.now())
+let timerTicker: ReturnType<typeof setInterval> | undefined
 const showMobileSettings = ref(false)
 const tab = ref<CockpitTab>('milestone')
 const today = new Date().toISOString().slice(0, 10)
@@ -22,6 +27,7 @@ const form = reactive({
 const projectForm = reactive({
   status: 'planning', startsAt: '', targetAt: '', budgetChf: 0, internalHourlyCostChf: 0,
 })
+const timerForm = reactive({ description: '', taskId: '' as number | '' })
 const canManage = computed(() => {
   const role = auth.organizations.find(organization => organization.id === auth.currentOrganizationId)?.role
   return role === 'owner' || role === 'admin' || role === 'manager'
@@ -62,6 +68,14 @@ const timeLabel = computed(() => {
   const minutes = Number(data.value?.totals?.minutes || 0)
   return `${Math.floor(minutes / 60)} h ${minutes % 60} min`
 })
+const runningOnThisProject = computed(() => runningTimer.value?.project_id === projectId)
+const elapsedTimerLabel = computed(() => {
+  if (!runningTimer.value?.started_at) return '0:00:00'
+  const seconds = Math.max(0, Math.floor((timerNow.value - new Date(runningTimer.value.started_at).getTime()) / 1000))
+  const hours = Math.floor(seconds / 3600)
+  const minutes = Math.floor((seconds % 3600) / 60)
+  return `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`
+})
 
 function money(value: unknown) {
   return new Intl.NumberFormat('fr-CH', { style: 'currency', currency: 'CHF', maximumFractionDigits: 0 }).format(Number(value || 0) / 100)
@@ -92,6 +106,46 @@ async function load() {
     loadStatus.value = 'error'
     toast.error(error?.data?.message || 'Impossible de charger le projet')
   }
+}
+async function loadTimer() {
+  if (!canManage.value) { timerStatus.value = 'ready'; return }
+  timerStatus.value = 'loading'
+  try {
+    runningTimer.value = await $fetch('/api/project-timer', { headers: auth.authHeader() })
+    timerStatus.value = 'ready'
+  }
+  catch {
+    runningTimer.value = null
+    timerStatus.value = 'error'
+  }
+}
+async function startTimer() {
+  if (timerAction.value || !timerForm.description.trim()) return
+  timerAction.value = 'starting'
+  try {
+    await $fetch('/api/project-timer/start', {
+      method: 'POST',
+      body: { projectId, description: timerForm.description, taskId: timerForm.taskId || null },
+      headers: auth.authHeader(),
+    })
+    timerForm.description = ''
+    timerForm.taskId = ''
+    await loadTimer()
+    toast.success('Minuteur démarré')
+  }
+  catch (error: any) { toast.error(error?.data?.message || 'Impossible de démarrer le minuteur') }
+  finally { timerAction.value = null }
+}
+async function stopTimer() {
+  if (timerAction.value || !runningTimer.value?.id) return
+  timerAction.value = 'stopping'
+  try {
+    await $fetch('/api/project-timer/stop', { method: 'POST', body: { id: runningTimer.value.id }, headers: auth.authHeader() })
+    await Promise.all([loadTimer(), load()])
+    toast.success('Temps enregistré dans le projet')
+  }
+  catch (error: any) { toast.error(error?.data?.message || 'Impossible d’arrêter le minuteur') }
+  finally { timerAction.value = null }
 }
 async function saveProject() {
   if (savingProject.value) return
@@ -146,7 +200,11 @@ async function removeItem(kind: CockpitTab, id: number) {
   catch { toast.error('Suppression impossible') }
 }
 
-onMounted(load)
+onMounted(async () => {
+  timerTicker = setInterval(() => { timerNow.value = Date.now() }, 1000)
+  await Promise.all([load(), loadTimer()])
+})
+onBeforeUnmount(() => { if (timerTicker) clearInterval(timerTicker) })
 </script>
 
 <template>
@@ -238,10 +296,36 @@ onMounted(load)
               <button v-else class="min-h-11 whitespace-nowrap rounded-lg px-3 text-sm font-semibold text-gray-600 transition-colors hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-white/[0.05]" @click="tab = item.key">{{ item.label }}</button>
             </template>
           </nav>
+          <div v-if="tab === 'time' && canManage" class="border-b border-gray-100 p-4 dark:border-white/[0.06] sm:p-5">
+            <div v-if="timerStatus === 'loading'" role="status" class="rounded-lg bg-gray-50 p-4 text-sm text-gray-500 dark:bg-white/[0.035] dark:text-gray-400">Chargement du minuteur…</div>
+            <div v-else-if="timerStatus === 'error'" role="alert" class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-200">
+              <p>Le minuteur n’est pas disponible.</p><button type="button" class="mt-2 min-h-10 font-semibold underline" @click="loadTimer">Réessayer</button>
+            </div>
+            <div v-else-if="runningOnThisProject" class="rounded-xl border border-violet-200 bg-violet-50/70 p-4 dark:border-violet-500/25 dark:bg-violet-500/[0.08]">
+              <div class="flex flex-wrap items-center justify-between gap-4">
+                <div><p class="text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">Minuteur en cours</p><p class="mt-1 font-medium">{{ runningTimer.description }}</p><p class="mt-2 font-mono text-3xl font-semibold tabular-nums text-gray-950 dark:text-white">{{ elapsedTimerLabel }}</p></div>
+                <button type="button" class="min-h-11 rounded-lg bg-red-600 px-5 text-sm font-semibold text-white disabled:cursor-wait disabled:opacity-60" :disabled="timerAction === 'stopping'" @click="stopTimer">{{ timerAction === 'stopping' ? 'Arrêt…' : 'Arrêter et enregistrer' }}</button>
+              </div>
+            </div>
+            <div v-else-if="runningTimer" class="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-100">
+              <p class="font-semibold">Un minuteur tourne déjà sur « {{ runningTimer.project_title }} ».</p>
+              <p class="mt-1">{{ runningTimer.description }} · {{ elapsedTimerLabel }}</p>
+              <NuxtLink :to="`/admin/projects/${runningTimer.project_id}`" class="mt-2 inline-flex min-h-10 items-center font-semibold underline">Ouvrir ce projet</NuxtLink>
+            </div>
+            <form v-else class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_220px_auto] sm:items-end" :aria-busy="timerAction === 'starting'" @submit.prevent="startTimer">
+              <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Travail à suivre
+                <input v-model="timerForm.description" required maxlength="500" class="input-field mt-1" placeholder="Ex. intégration de la page contact">
+              </label>
+              <label class="text-xs font-medium text-gray-600 dark:text-gray-300">Tâche liée (facultatif)
+                <select v-model="timerForm.taskId" class="input-field mt-1"><option value="">Aucune tâche</option><option v-for="task in openTasks" :key="task.id" :value="task.id">{{ task.title }}</option></select>
+              </label>
+              <button class="min-h-11 rounded-lg bg-violet-600 px-4 text-sm font-semibold text-white disabled:cursor-wait disabled:opacity-60" :disabled="timerAction === 'starting'">{{ timerAction === 'starting' ? 'Démarrage…' : 'Démarrer' }}</button>
+            </form>
+          </div>
           <div class="space-y-2 p-4 sm:p-5">
             <article v-for="item in activeItems" :key="item.id" class="rounded-lg border border-gray-100 p-3 dark:border-white/[0.06]">
               <div v-if="tab === 'milestone'" class="flex flex-wrap items-center justify-between gap-3"><div><p class="font-medium">{{ item.title }}</p><p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ dateLabel(item.due_at) }}</p></div><select v-if="canManage" :value="item.status" class="min-h-10 rounded-lg border border-gray-200 bg-transparent px-2 text-xs dark:border-white/[0.1]" @change="updateItem('milestone', item, ($event.target as HTMLSelectElement).value)"><option v-for="(label, value) in milestoneStatuses" :key="value" :value="value">{{ label }}</option></select><span v-else class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ milestoneStatuses[item.status] }}</span></div>
-              <div v-else-if="tab === 'time'" class="flex items-center justify-between gap-3"><div><p class="font-medium">{{ item.description }}</p><p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ dateLabel(item.worked_at) }}</p></div><strong>{{ Math.floor(item.minutes / 60) }} h {{ item.minutes % 60 }} min</strong></div>
+              <div v-else-if="tab === 'time'" class="flex items-center justify-between gap-3"><div><p class="font-medium">{{ item.description }}</p><p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ dateLabel(item.worked_at) }}<span v-if="item.entry_source === 'timer'"> · Minuteur</span></p></div><strong>{{ Math.floor(item.minutes / 60) }} h {{ item.minutes % 60 }} min</strong></div>
               <template v-else-if="tab === 'note'"><div class="flex justify-between gap-3"><div><p class="font-medium">{{ item.title }}</p><p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ item.kind === 'meeting' ? 'Réunion' : 'Note' }} · {{ new Date(item.occurred_at).toLocaleDateString('fr-CH') }}<span v-if="item.client_visible"> · Visible client</span></p></div></div><p class="mt-3 whitespace-pre-wrap text-sm leading-6 text-gray-600 dark:text-gray-300">{{ item.content }}</p></template>
               <div v-else class="flex flex-wrap items-center justify-between gap-3"><div><a v-if="item.url" :href="item.url" target="_blank" rel="noopener noreferrer" class="font-medium text-violet-600 dark:text-violet-300">{{ item.title }} ↗</a><p v-else class="font-medium">{{ item.title }}</p><p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ item.client_visible ? 'Visible dans le portail client' : 'Interne' }}</p></div><select v-if="canManage" :value="item.status" class="min-h-10 rounded-lg border border-gray-200 bg-transparent px-2 text-xs dark:border-white/[0.1]" @change="updateItem('deliverable', item, ($event.target as HTMLSelectElement).value)"><option v-for="(label, value) in deliverableStatuses" :key="value" :value="value">{{ label }}</option></select><span v-else class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ deliverableStatuses[item.status] }}</span></div>
               <button v-if="canManage" class="mt-2 min-h-10 text-xs font-medium text-red-600 dark:text-red-300" @click="removeItem(tab, item.id)">Supprimer</button>

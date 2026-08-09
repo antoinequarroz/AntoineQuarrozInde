@@ -46,7 +46,7 @@ export default defineEventHandler(async (event) => {
   return {
     project: project.data,
     milestones: milestones.data || [],
-    timeEntries: timeEntries.data || [],
+    timeEntries: (timeEntries.data || []).filter(entry => entry.entry_source !== 'timer' || entry.stopped_at),
     notes: notes.data || [],
     deliverables: deliverables.data || [],
     tasks: tasks.data || [],

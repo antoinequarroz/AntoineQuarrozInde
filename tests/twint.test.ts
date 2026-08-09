@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getTwintBalance, getTwintEligibility } from '../server/utils/twint'
+import { getTwintBalance, getTwintEligibility, isTwintConfigured, TWINT_MAX_AMOUNT_CENTS } from '../server/utils/twint'
 
 const invoice = {
   status: 'sent',
@@ -27,5 +27,19 @@ describe('TWINT invoice eligibility', () => {
       eligible: false,
       reason: 'Le paiement TWINT n’est pas encore activé.',
     })
+  })
+
+  it('enforces the official CHF 5,000 single-payment ceiling', () => {
+    expect(getTwintEligibility({ ...invoice, totalCents: TWINT_MAX_AMOUNT_CENTS, paidAmountCents: 0 }).eligible).toBe(true)
+    expect(getTwintEligibility({ ...invoice, totalCents: TWINT_MAX_AMOUNT_CENTS + 1, paidAmountCents: 0 })).toEqual({
+      eligible: false,
+      reason: 'TWINT accepte au maximum 5’000 CHF par paiement.',
+    })
+  })
+
+  it('requires both the Stripe API and webhook secrets', () => {
+    expect(isTwintConfigured({ stripeSecretKey: 'sk_test', stripeWebhookSecret: 'whsec_test' })).toBe(true)
+    expect(isTwintConfigured({ stripeSecretKey: 'sk_test' })).toBe(false)
+    expect(isTwintConfigured({ stripeWebhookSecret: 'whsec_test' })).toBe(false)
   })
 })
