@@ -204,12 +204,12 @@ onMounted(loadAnalytics)
               </g>
               <text v-for="tick in trendChart.ticks" :key="tick.x" :x="tick.x" :y="trendChart.height - 12" text-anchor="middle" class="fill-gray-400 text-xs">{{ tick.label }}</text>
             </svg>
-            <table class="sr-only">
-              <caption>Audience quotidienne sur les 30 derniers jours</caption>
-              <thead><tr><th>Date</th><th>Visiteurs</th><th>Pages vues</th></tr></thead>
-              <tbody><tr v-for="point in trendChart.rows" :key="`accessible-${point.date}`"><td>{{ formatDate(point.date) }}</td><td>{{ point.visitors }}</td><td>{{ point.pageviews }}</td></tr></tbody>
-            </table>
           </div>
+          <table v-if="hasTrendData" class="sr-only">
+            <caption>Audience quotidienne sur les 30 derniers jours</caption>
+            <thead><tr><th>Date</th><th>Visiteurs</th><th>Pages vues</th></tr></thead>
+            <tbody><tr v-for="point in trendChart.rows" :key="`accessible-${point.date}`"><td>{{ formatDate(point.date) }}</td><td>{{ point.visitors }}</td><td>{{ point.pageviews }}</td></tr></tbody>
+          </table>
           <div v-else class="mt-5 grid min-h-48 place-items-center rounded-lg border border-dashed border-gray-200 p-6 text-center dark:border-white/[0.1]"><div><p class="font-medium">Historique en cours de constitution</p><p class="mt-1 text-sm text-gray-500 dark:text-gray-400">La courbe apparaîtra dès les premières visites mesurées.</p></div></div>
         </article>
 
