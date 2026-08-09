@@ -296,6 +296,7 @@ const catColors: Record<string, string> = {
           <span v-for="tag in project.tags.slice(0, 2)" :key="`m-${project.id}-${tag}`" class="text-xs bg-gray-50 dark:bg-white/[0.04] text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded-md">{{ tag }}</span>
         </div>
         <div class="mt-3 flex items-center gap-3">
+          <NuxtLink :to="`/admin/projects/${project.id}`" class="text-xs font-semibold text-violet-600">Piloter</NuxtLink>
           <NuxtLink v-if="project.caseStudyPublished" :to="`/projets/${project.slug}`" target="_blank" class="text-xs font-semibold text-cyan-700 dark:text-cyan-300">Voir l’étude</NuxtLink>
           <button class="text-xs text-violet-600" @click="openEdit(project)">Editer</button>
           <button class="text-xs text-red-500" @click="handleDelete(project.id)">Supprimer</button>
@@ -348,6 +349,7 @@ const catColors: Record<string, string> = {
             </td>
             <td class="px-5 py-3.5 text-right">
               <div class="flex items-center justify-end gap-1.5">
+                <NuxtLink :to="`/admin/projects/${project.id}`" aria-label="Ouvrir le cockpit du projet" class="flex h-8 items-center rounded-lg px-2 text-xs font-semibold text-violet-600 hover:bg-violet-50 dark:text-violet-300 dark:hover:bg-violet-500/10">Piloter</NuxtLink>
                 <NuxtLink
                   v-if="project.caseStudyPublished"
                   :to="`/projets/${project.slug}`"
