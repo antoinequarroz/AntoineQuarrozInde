@@ -22,6 +22,7 @@ Antoine doit comprendre rapidement sa trésorerie, traiter ce qui demande une v�
 ## Décisions résolues
 
 - **Export CSV filtré (AQ-050)** : l'export comptable reprend durablement le même périmètre que le registre visible — recherche, statut et période — afin que l'extraction corresponde à la vue opérationnelle en cours.
+- **Rapprochement bancaire assisté (AQ-051)** : le cockpit prolonge son flux d'encaissement avec l'import ponctuel d'un CSV bancaire local et présente des propositions de correspondance avant toute mutation. Chaque rapprochement exige une confirmation humaine explicite, un contrôle anti-doublon empêche de traiter plusieurs fois le même mouvement et aucune écriture n'est créée ou modifiée automatiquement. Le parcours reste pleinement utilisable sur mobile comme sur desktop.
 
 ## Contraintes
 
@@ -32,4 +33,4 @@ Antoine doit comprendre rapidement sa trésorerie, traiter ce qui demande une v�
 
 ## Décisions non résolues
 
-Aucune dans le périmètre AQ-050. Toute future action d'encaissement directe ou rapprochement bancaire demande une validation produit séparée.
+Toute future action d'encaissement directe reste hors périmètre et demande une validation produit séparée.

@@ -8,7 +8,7 @@ const DirectionContract = () => h(Comment, null, `
 THESIS: Un journal d’encaissement qui commence par les exceptions, pas un dashboard de graphiques décoratifs.
 OWN-WORLD: Surfaces administratives calmes, violet pour l’action, cyan pour l’information et couleurs comptables réservées aux statuts.
 STORY: Antoine comprend sa trésorerie, traite les anomalies, puis retrouve chaque mouvement dans un registre chronologique.
-FIRST VIEWPORT: Titre et action Factures, bande synthèse compacte, puis file des éléments à surveiller avant le journal exportable.
+FIRST VIEWPORT: Titre et actions Factures/Rapprochement, bande synthèse compacte, puis file des éléments à surveiller avant le journal exportable.
 FORM: Journal comptable opérationnel, structure 7 de la liste ordonnée; seed 7c57deef.
 FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md
 `)
@@ -62,6 +62,7 @@ const loading = ref(true)
 const loadError = ref('')
 const query = ref('')
 const entryFilter = ref<'all' | 'attention' | 'payments' | 'twint'>('all')
+const showReconciliation = ref(false)
 
 const methodLabels: Record<string, string> = {
   bank_transfer: 'Virement',
@@ -125,8 +126,8 @@ function exportAccountingJournal() {
   toast.success(`${filteredEntries.value.length} mouvement${filteredEntries.value.length > 1 ? 's' : ''} exporté${filteredEntries.value.length > 1 ? 's' : ''}`)
 }
 
-async function loadPayments() {
-  loading.value = true
+async function loadPayments(background = false) {
+  if (!background) loading.value = true
   loadError.value = ''
   try {
     data.value = await $fetch<PaymentOperations>('/api/admin/payment-operations', { headers: auth.authHeader() })
@@ -135,7 +136,7 @@ async function loadPayments() {
     data.value = null
     loadError.value = 'Le journal des encaissements ne peut pas être chargé. Réessaie dans quelques instants.'
   }
-  finally { loading.value = false }
+  finally { if (!background) loading.value = false }
 }
 
 onMounted(loadPayments)
@@ -151,8 +152,11 @@ onMounted(loadPayments)
           <p class="mt-2 text-sm leading-6 text-gray-600 dark:text-gray-300">Suis les paiements confirmés, les soldes ouverts et les sessions TWINT depuis un registre unique.</p>
         </div>
         <div class="flex flex-wrap gap-2">
-          <button type="button" :disabled="loading" class="inline-flex min-h-11 items-center justify-center rounded-lg border border-gray-200 px-3 text-sm font-semibold text-gray-700 transition hover:border-violet-300 hover:text-violet-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 disabled:cursor-wait disabled:opacity-60 dark:border-white/10 dark:text-gray-200 dark:hover:border-violet-400/50 dark:hover:text-violet-200" @click="loadPayments">
+          <button type="button" :disabled="loading" class="inline-flex min-h-11 items-center justify-center rounded-lg border border-gray-200 px-3 text-sm font-semibold text-gray-700 transition hover:border-violet-300 hover:text-violet-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 disabled:cursor-wait disabled:opacity-60 dark:border-white/10 dark:text-gray-200 dark:hover:border-violet-400/50 dark:hover:text-violet-200" @click="loadPayments()">
             {{ loading ? 'Actualisation…' : 'Actualiser' }}
+          </button>
+          <button type="button" class="inline-flex min-h-11 items-center justify-center rounded-lg border border-violet-200 px-4 text-sm font-semibold text-violet-700 transition hover:border-violet-400 hover:bg-violet-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:border-violet-400/30 dark:text-violet-200 dark:hover:bg-violet-400/10" :aria-expanded="showReconciliation" aria-controls="bank-reconciliation-panel" @click="showReconciliation = !showReconciliation">
+            {{ showReconciliation ? 'Masquer le rapprochement' : 'Rapprocher un relevé' }}
           </button>
           <NuxtLink to="/admin/invoices" class="inline-flex min-h-11 items-center justify-center rounded-lg bg-violet-600 px-4 text-sm font-semibold text-white transition hover:bg-violet-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#111118]">Ouvrir les factures</NuxtLink>
         </div>
@@ -170,7 +174,7 @@ onMounted(loadPayments)
     <div v-else-if="loadError" role="alert" class="rounded-xl border border-red-200 bg-red-50 p-5 text-red-900 dark:border-red-400/20 dark:bg-red-400/10 dark:text-red-100">
       <p class="font-semibold">Les données de paiement sont indisponibles</p>
       <p class="mt-1 text-sm">{{ loadError }}</p>
-      <button type="button" class="mt-4 min-h-11 rounded-lg bg-red-700 px-4 text-sm font-semibold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#211016]" @click="loadPayments">Réessayer</button>
+      <button type="button" class="mt-4 min-h-11 rounded-lg bg-red-700 px-4 text-sm font-semibold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#211016]" @click="loadPayments()">Réessayer</button>
     </div>
 
     <template v-else-if="data">
@@ -181,6 +185,10 @@ onMounted(loadPayments)
           <p class="mt-1 text-xs leading-5" :class="metric.tone === 'amber' ? 'text-amber-800 dark:text-amber-200' : metric.tone === 'cyan' ? 'text-cyan-800 dark:text-cyan-200' : 'text-violet-700 dark:text-violet-300'">{{ metric.detail }}</p>
         </article>
       </section>
+
+      <div v-if="showReconciliation" id="bank-reconciliation-panel">
+        <AdminBankReconciliationPanel @close="showReconciliation = false" @reconciled="loadPayments(true)" />
+      </div>
 
       <section aria-labelledby="payment-attention-title" class="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.08] dark:bg-[#111118]">
         <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-4 py-3 dark:border-white/[0.06] sm:px-5">
