@@ -81,9 +81,48 @@ Persistent=true
 WantedBy=timers.target
 EOF
 
+cat > /etc/systemd/system/antoinequarroz-restore-drill.service <<EOF
+[Unit]
+Description=Verify latest encrypted offsite backup
+After=network-online.target
+[Service]
+Type=oneshot
+ExecStart=$PROJECT_DIR/scripts/ops/scheduled-restore-drill.sh $PROJECT_DIR
+EOF
+
+cat > /etc/systemd/system/antoinequarroz-restore-drill.timer <<'EOF'
+[Unit]
+Description=Monthly offsite restore drill
+[Timer]
+OnCalendar=Sun *-*-01..07 04:15:00 Europe/Zurich
+RandomizedDelaySec=30min
+Persistent=true
+[Install]
+WantedBy=timers.target
+EOF
+
+cat > /etc/systemd/system/antoinequarroz-recurring-invoices.service <<EOF
+[Unit]
+Description=Generate due recurring invoice drafts
+After=network-online.target
+[Service]
+Type=oneshot
+ExecStart=$PROJECT_DIR/scripts/ops/recurring-invoices.sh $PROJECT_DIR
+EOF
+
+cat > /etc/systemd/system/antoinequarroz-recurring-invoices.timer <<'EOF'
+[Unit]
+Description=Check recurring invoice schedules daily
+[Timer]
+OnCalendar=*-*-* 06:30:00 Europe/Zurich
+Persistent=true
+[Install]
+WantedBy=timers.target
+EOF
+
 chmod 750 "$PROJECT_DIR/scripts/ops/"*.sh
 systemctl daemon-reload
-systemctl enable --now antoinequarroz-monitor.timer antoinequarroz-backup.timer antoinequarroz-pipeline-reminders.timer
+systemctl enable --now antoinequarroz-monitor.timer antoinequarroz-backup.timer antoinequarroz-pipeline-reminders.timer antoinequarroz-restore-drill.timer antoinequarroz-recurring-invoices.timer
 systemctl start antoinequarroz-monitor.service
 systemctl start antoinequarroz-backup.service
 systemctl --no-pager list-timers 'antoinequarroz-*'

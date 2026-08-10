@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import AdminAdminIcon from '~/components/admin/AdminIcon.vue'
+
 const auth = useAuthStore()
 const router = useRouter()
 const route = useRoute()
@@ -12,6 +14,7 @@ const navItems = [
   { label: 'Devis', icon: 'file-plus', href: '/admin/quotes' },
   { label: 'Factures', icon: 'receipt', href: '/admin/invoices' },
   { label: 'Paiements', icon: 'credit-card', href: '/admin/payments' },
+  { label: 'Comptabilité', icon: 'trending-up', href: '/admin/accounting' },
   { label: 'Agenda', icon: 'calendar', href: '/admin/appointments' },
   { label: 'Projets', icon: 'folder', href: '/admin/projects' },
   { label: 'Articles', icon: 'file-text', href: '/admin/articles' },

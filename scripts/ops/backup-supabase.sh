@@ -36,7 +36,9 @@ trap 'rm -rf "$WORK_DIR"' EXIT
 TABLES=(
   organizations organization_memberships clients projects tasks appointments
   quotes quote_items invoices invoice_items invoice_payments articles reviews contact_messages
-  marketing_events audit_logs admin_saved_views application_errors
+  marketing_events audit_logs admin_saved_views application_errors payment_checkout_sessions
+  project_milestones project_time_entries project_notes project_deliverables
+  recurring_invoice_profiles recurring_invoice_runs
 )
 
 for table in "${TABLES[@]}"; do
@@ -46,6 +48,22 @@ for table in "${TABLES[@]}"; do
     -H "Authorization: Bearer $SERVICE_KEY" \
     -H "Accept: application/json" \
     > "$WORK_DIR/$table.json"
+done
+
+# Supabase Auth inventory for disaster recovery planning. Password hashes,
+# sessions and tokens are intentionally never exported.
+printf '[]' > "$WORK_DIR/auth-users.json"
+page=1
+while true; do
+  auth_page="$WORK_DIR/auth-page-$page.json"
+  curl --fail --silent --show-error "$SUPABASE_URL/auth/v1/admin/users?page=$page&per_page=1000" \
+    -H "apikey: $SERVICE_KEY" -H "Authorization: Bearer $SERVICE_KEY" > "$auth_page"
+  count="$(jq '.users | length' "$auth_page")"
+  jq -s '.[0] + (.[1].users | map({id,email,created_at,updated_at,last_sign_in_at,app_metadata}))' "$WORK_DIR/auth-users.json" "$auth_page" > "$WORK_DIR/auth-users.next.json"
+  mv "$WORK_DIR/auth-users.next.json" "$WORK_DIR/auth-users.json"
+  rm -f "$auth_page"
+  (( count == 1000 )) || break
+  page=$((page + 1))
 done
 
 mkdir -p "$WORK_DIR/storage/media/uploads"
@@ -69,7 +87,7 @@ done
 
 GIT_REVISION="$(git -c safe.directory="$PROJECT_DIR" -C "$PROJECT_DIR" rev-parse HEAD 2>/dev/null || printf 'unknown')"
 cat > "$WORK_DIR/manifest.json" <<EOF
-{"created_at":"$(date -u +%Y-%m-%dT%H:%M:%SZ)","git_revision":"$GIT_REVISION","format":1,"tables":${#TABLES[@]}}
+{"created_at":"$(date -u +%Y-%m-%dT%H:%M:%SZ)","git_revision":"$GIT_REVISION","format":2,"tables":${#TABLES[@]},"auth_inventory":true}
 EOF
 
 tar -C "$WORK_DIR" -czf "$ARCHIVE" .

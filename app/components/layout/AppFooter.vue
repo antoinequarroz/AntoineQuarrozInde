@@ -88,7 +88,7 @@ const localSeoLinks = [
 
             <!-- Navigation -->
             <div>
-              <p class="mb-4 text-xs font-bold uppercase tracking-[0.2em] text-violet-500 dark:text-violet-400">
+              <p class="mb-4 text-xs font-bold uppercase tracking-[0.2em] text-violet-700 dark:text-violet-300">
                 {{ t('footer.col_nav') }}
               </p>
               <ul class="space-y-3">
@@ -121,7 +121,7 @@ const localSeoLinks = [
 
             <!-- Local SEO -->
             <div v-if="locale === 'fr'" class="hidden sm:block">
-              <p class="mb-4 text-xs font-bold uppercase tracking-[0.2em] text-violet-500 dark:text-violet-400">
+              <p class="mb-4 text-xs font-bold uppercase tracking-[0.2em] text-violet-700 dark:text-violet-300">
                 Local
               </p>
               <ul class="space-y-3">
@@ -138,7 +138,7 @@ const localSeoLinks = [
 
             <!-- Contact -->
             <div>
-              <p class="mb-4 text-xs font-bold uppercase tracking-[0.2em] text-cyan-500 dark:text-cyan-400">
+              <p class="mb-4 text-xs font-bold uppercase tracking-[0.2em] text-cyan-700 dark:text-cyan-300">
                 {{ t('footer.col_contact') }}
               </p>
               <ul class="space-y-3">

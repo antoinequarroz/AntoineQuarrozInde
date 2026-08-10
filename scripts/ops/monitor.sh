@@ -22,10 +22,12 @@ env_max_backup_age="$(read_env MAX_BACKUP_AGE_HOURS)"
 env_max_disk_usage="$(read_env MAX_DISK_USAGE_PERCENT)"
 env_tls_warn_days="$(read_env MONITOR_TLS_WARN_DAYS)"
 require_offsite="$(read_env REQUIRE_OFFSITE_BACKUP)"
+require_restore_drill="$(read_env REQUIRE_RESTORE_DRILL)"
 MAX_BACKUP_AGE_HOURS="${MAX_BACKUP_AGE_HOURS:-${env_max_backup_age:-36}}"
 MAX_DISK_USAGE_PERCENT="${MAX_DISK_USAGE_PERCENT:-${env_max_disk_usage:-85}}"
 MONITOR_TLS_WARN_DAYS="${MONITOR_TLS_WARN_DAYS:-${env_tls_warn_days:-21}}"
 REQUIRE_OFFSITE_BACKUP="${REQUIRE_OFFSITE_BACKUP:-${require_offsite:-false}}"
+REQUIRE_RESTORE_DRILL="${REQUIRE_RESTORE_DRILL:-${require_restore_drill:-false}}"
 
 send_alert() {
   local subject="$1"
@@ -49,6 +51,15 @@ if [[ "${2:-}" == "--test-alert" ]]; then
   send_alert "[TEST] Surveillance antoinequarroz.ch" "Le canal d'alerte du VPS fonctionne correctement."
   echo "Monitoring test alert sent."
   exit 0
+fi
+
+if [[ "$REQUIRE_RESTORE_DRILL" == "true" ]]; then
+  drill_marker="$BACKUP_ROOT/.last-restore-drill"
+  if [[ ! -f "$drill_marker" ]]; then issues+=("no successful restore drill found")
+  else
+    drill_age_days=$(( ( $(date +%s) - $(cat "$drill_marker") ) / 86400 ))
+    (( drill_age_days <= 40 )) || issues+=("latest restore drill is ${drill_age_days}d old")
+  fi
 fi
 
 failures=0

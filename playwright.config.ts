@@ -35,9 +35,9 @@ export default defineConfig({
   webServer: externalBaseUrl
     ? undefined
     : {
-        command: 'npm run dev -- --port 3100 --host 127.0.0.1',
-        url: 'http://127.0.0.1:3100/api/health',
+        command: 'npx nuxt dev --port=3100 --host=127.0.0.1',
+        url: 'http://127.0.0.1:3100/',
         reuseExistingServer: !process.env.CI,
-        timeout: 120_000,
+        timeout: 240_000,
       },
 })

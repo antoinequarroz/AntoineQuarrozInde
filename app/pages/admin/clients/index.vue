@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import type { Client } from '~/types'
+import AdminAdminCard from '~/components/admin/AdminCard.vue'
+import AdminAdminEmptyState from '~/components/admin/AdminEmptyState.vue'
+import AdminAdminToolbar from '~/components/admin/AdminToolbar.vue'
 
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 

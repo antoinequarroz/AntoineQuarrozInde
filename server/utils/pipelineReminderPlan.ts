@@ -2,7 +2,7 @@ export type ReminderTarget = 'quote' | 'invoice'
 
 export type ReminderPlanClient = { id: number, name?: string | null, email?: string | null }
 export type ReminderPlanQuote = { id: number, number: string, title?: string | null, client_id?: number | null, valid_until?: string | null, status: string }
-export type ReminderPlanInvoice = { id: number, number: string, client_id?: number | null, due_at?: string | null, status: string }
+export type ReminderPlanInvoice = { id: number, number: string, client_id?: number | null, due_at?: string | null, status: string, reminders_paused?: boolean, balance_cents?: number, currency?: string }
 
 export type PipelineReminderCandidate = {
   reminderKey: string
@@ -16,6 +16,8 @@ export type PipelineReminderCandidate = {
   dueDate: string
   milestone: string
   urgency: 'upcoming' | 'due' | 'overdue'
+  balanceCents?: number
+  currency?: string
 }
 
 function calendarDayDifference(fromIso: string, toIso: string) {
@@ -34,7 +36,7 @@ function invoiceMilestone(daysUntilDue: number) {
   if (daysUntilDue === 2) return { milestone: 'avant-echeance-2j', urgency: 'upcoming' as const }
   if (daysUntilDue === 0) return { milestone: 'echeance', urgency: 'due' as const }
   const overdueDays = Math.abs(daysUntilDue)
-  if (daysUntilDue < 0 && [3, 7, 14, 21, 28].includes(overdueDays)) {
+  if (daysUntilDue < 0 && [3, 10, 20].includes(overdueDays)) {
     return { milestone: `retard-${overdueDays}j`, urgency: 'overdue' as const }
   }
   return null
@@ -50,7 +52,7 @@ export function buildPipelineReminderPlan(input: {
   const clientsById = new Map(input.clients.map(client => [Number(client.id), client]))
   const sentKeys = new Set(input.sentReminderKeys || [])
   const candidates: PipelineReminderCandidate[] = []
-  const skipped = { alreadySent: 0, missingContact: 0, outsideMilestone: 0 }
+  const skipped = { alreadySent: 0, missingContact: 0, outsideMilestone: 0, paused: 0 }
 
   const addCandidate = (target: ReminderTarget, row: ReminderPlanQuote | ReminderPlanInvoice, dueDate: string, milestone: { milestone: string, urgency: PipelineReminderCandidate['urgency'] }) => {
     const clientId = Number(row.client_id || 0)
@@ -76,6 +78,8 @@ export function buildPipelineReminderPlan(input: {
       dueDate,
       milestone: milestone.milestone,
       urgency: milestone.urgency,
+      balanceCents: target === 'invoice' ? Number((row as ReminderPlanInvoice).balance_cents || 0) : undefined,
+      currency: target === 'invoice' ? String((row as ReminderPlanInvoice).currency || 'CHF') : undefined,
     })
   }
 
@@ -91,6 +95,8 @@ export function buildPipelineReminderPlan(input: {
 
   for (const invoice of input.invoices) {
     if (!['sent', 'overdue'].includes(invoice.status) || !invoice.due_at) continue
+    if (invoice.reminders_paused) { skipped.paused += 1; continue }
+    if (Number(invoice.balance_cents || 0) <= 0) continue
     const milestone = invoiceMilestone(calendarDayDifference(input.today, invoice.due_at))
     if (!milestone) {
       skipped.outsideMilestone += 1

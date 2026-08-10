@@ -32,32 +32,37 @@ function reminderEmail(candidate: PipelineReminderCandidate) {
   }
 
   const overdue = candidate.urgency === 'overdue'
+  const balance = new Intl.NumberFormat('fr-CH', { style: 'currency', currency: candidate.currency || 'CHF' }).format(Number(candidate.balanceCents || 0) / 100)
   return {
     subject: overdue ? `Facture ${candidate.number} en attente de règlement` : `Rappel facture ${candidate.number}`,
-    html: `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#111827;line-height:1.6"><p>Bonjour ${name},</p><p>${overdue ? 'Sauf erreur de ma part, la facture' : 'Petit rappel concernant la facture'} <strong>${number}</strong>, avec échéance au <strong>${dueDate}</strong>${overdue ? ', reste en attente de règlement.' : '.'}</p><p>N’hésitez pas à me contacter si vous souhaitez un récapitulatif ou si un point doit être clarifié.</p><p style="margin-top:24px">Antoine Quarroz<br>info@antoinequarroz.ch</p></div>`,
+    html: `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#111827;line-height:1.6"><p>Bonjour ${name},</p><p>${overdue ? 'Sauf erreur de ma part, la facture' : 'Petit rappel concernant la facture'} <strong>${number}</strong>, avec échéance au <strong>${dueDate}</strong>${overdue ? ', reste en attente de règlement.' : '.'}</p><p>Solde restant : <strong>${escapeHtml(balance)}</strong>.</p><p>Vous pouvez consulter la facture et ses moyens de paiement depuis votre espace client : <a href="https://www.antoinequarroz.ch/portal#factures">ouvrir mes factures</a>.</p><p>N’hésitez pas à me contacter si un point doit être clarifié.</p><p style="margin-top:24px">Antoine Quarroz<br>info@antoinequarroz.ch</p></div>`,
   }
 }
 
 async function loadReminderPlan(organizationId: string) {
   const supabase = getSupabaseAdmin()
-  const [quotesResult, invoicesResult, clientsResult, sentResult] = await Promise.all([
+  const [quotesResult, invoicesResult, clientsResult, sentResult, paymentsResult] = await Promise.all([
     supabase.from('quotes').select('id,number,title,client_id,valid_until,status').eq('organization_id', organizationId).eq('status', 'sent'),
-    supabase.from('invoices').select('id,number,client_id,due_at,status').eq('organization_id', organizationId).in('status', ['sent', 'overdue']),
+    supabase.from('invoices').select('id,number,client_id,due_at,status,total_cents,amount_cents,currency,reminders_paused').eq('organization_id', organizationId).in('status', ['sent', 'overdue']),
     supabase.from('clients').select('id,name,email').eq('organization_id', organizationId),
     supabase.from('audit_logs').select('payload').eq('organization_id', organizationId).eq('action', 'pipeline_reminder_email').limit(10_000),
+    supabase.from('invoice_payments').select('invoice_id,amount_cents,voided_at').eq('organization_id', organizationId),
   ])
-  const error = [quotesResult.error, invoicesResult.error, clientsResult.error, sentResult.error].find(Boolean)
+  const error = [quotesResult.error, invoicesResult.error, clientsResult.error, sentResult.error, paymentsResult.error].find(Boolean)
   if (error) throw createError({ statusCode: 500, message: error.message })
 
   const sentReminderKeys = (sentResult.data || [])
     .map(row => String((row.payload as Record<string, unknown> | null)?.reminderKey || ''))
     .filter(Boolean)
 
+  const paid = new Map<number, number>()
+  for (const payment of paymentsResult.data || []) if (!payment.voided_at) paid.set(payment.invoice_id, (paid.get(payment.invoice_id) || 0) + Number(payment.amount_cents))
+  const invoices = (invoicesResult.data || []).map(invoice => ({ ...invoice, balance_cents: Math.max(0, Number(invoice.total_cents ?? invoice.amount_cents ?? 0) - (paid.get(invoice.id) || 0)) }))
   return buildPipelineReminderPlan({
     today: todayInZurich(),
     clients: clientsResult.data || [],
     quotes: quotesResult.data || [],
-    invoices: invoicesResult.data || [],
+    invoices,
     sentReminderKeys,
   })
 }
@@ -77,6 +82,8 @@ export async function previewPipelineReminders(organizationId: string) {
       dueDate: candidate.dueDate,
       milestone: candidate.milestone,
       urgency: candidate.urgency,
+      balanceCents: candidate.balanceCents,
+      currency: candidate.currency,
     })),
     skipped: plan.skipped,
   }
@@ -138,7 +145,7 @@ export async function runPipelineReminders(input: {
     })
   }
 
-  const skippedCount = plan.skipped.alreadySent + plan.skipped.missingContact + plan.skipped.outsideMilestone
+  const skippedCount = plan.skipped.alreadySent + plan.skipped.missingContact + plan.skipped.outsideMilestone + plan.skipped.paused
   const result = {
     sentCount,
     failedCount,
