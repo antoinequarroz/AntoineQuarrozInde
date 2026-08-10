@@ -12,9 +12,19 @@ async function submit() {
   saving.value = true
   const client = useSupabaseClient()
   const { error } = await client.auth.updateUser({ password: password.value })
-  saving.value = false
-  if (error) { message.value = 'Le lien est invalide ou expiré. Demandez une nouvelle invitation.'; return }
-  await navigateTo('/portal')
+  if (error) { saving.value = false; message.value = 'Le lien est invalide ou expiré. Demandez une nouvelle invitation.'; return }
+  const { data: sessionData } = await client.auth.getSession()
+  try {
+    await $fetch('/api/portal/activate', {
+      method: 'POST',
+      headers: sessionData.session?.access_token ? { Authorization: `Bearer ${sessionData.session.access_token}` } : undefined,
+    })
+    await navigateTo('/portal')
+  }
+  catch {
+    saving.value = false
+    message.value = 'Le mot de passe est enregistré, mais l’espace n’a pas pu être activé. Contactez Antoine.'
+  }
 }
 </script>
 

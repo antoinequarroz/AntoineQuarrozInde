@@ -64,5 +64,32 @@ export default defineEventHandler(async (event) => {
     clientId: invoice.client_id,
     payload: { payment_id: inserted.id, amount_cents: payment.amountCents, method: payment.method },
   })
+  if (invoice.client_id) {
+    const { data: client } = await supabase.from('clients').select('id,name,email').eq('organization_id', org.id).eq('id', invoice.client_id).maybeSingle()
+    if (client?.email) {
+      try {
+        const siteUrl = String(useRuntimeConfig().public.siteUrl || '').replace(/\/+$/, '')
+        const amountLabel = new Intl.NumberFormat('fr-CH', { style: 'currency', currency: invoice.currency }).format(payment.amountCents / 100)
+        const receipt = await sendTransactionalEmail({
+          to: client.email,
+          subject: `Paiement enregistré — facture ${invoice.number}`,
+          html: portalEmailLayout({
+            preview: `Votre paiement de ${amountLabel} a été enregistré.`,
+            title: 'Paiement enregistré',
+            body: `<p>Bonjour ${escapeEmailHtml(client.name)},</p><p>Votre paiement de <strong>${escapeEmailHtml(amountLabel)}</strong> pour la facture <strong>${escapeEmailHtml(invoice.number)}</strong> a été enregistré.</p>`,
+            actionLabel: 'Consulter mes paiements',
+            actionUrl: `${siteUrl}/portal#factures`,
+          }),
+          idempotencyKey: `payment-client-${inserted.id}`,
+          tags: [{ name: 'category', value: 'payment_receipt' }],
+        })
+        await logAudit({ organizationId: org.id, actorUserId: user?.id, action: 'invoice.payment_receipt_sent', entityType: 'invoice', entityId: invoiceId, clientId: client.id, payload: { payment_id: inserted.id, email_id: receipt.emailId } })
+      }
+      catch (notificationError) {
+        console.error('[notification] payment receipt failed', notificationError)
+        await logAudit({ organizationId: org.id, actorUserId: user?.id, action: 'invoice.payment_receipt_failed', entityType: 'invoice', entityId: invoiceId, clientId: client.id, payload: { payment_id: inserted.id } })
+      }
+    }
+  }
   return { payment: inserted, paidAmountCents, status }
 })

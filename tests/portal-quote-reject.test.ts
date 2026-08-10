@@ -27,6 +27,8 @@ describe('portal quote rejection', () => {
     vi.stubGlobal('readBody', () => Promise.resolve(body))
     vi.stubGlobal('createError', httpError)
     vi.stubGlobal('logAudit', audit)
+    vi.stubGlobal('notifyOperationalEvent', vi.fn().mockResolvedValue({ sent: true }))
+    vi.stubGlobal('escapeEmailHtml', (value: unknown) => String(value || ''))
     vi.stubGlobal('getSupabaseAdmin', () => ({
       from: () => {
         let updating = false

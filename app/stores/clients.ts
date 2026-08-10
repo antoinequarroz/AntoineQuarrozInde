@@ -16,6 +16,10 @@ type ClientRow = {
   acquisition_source: string | null
   acquisition_medium: string | null
   acquisition_campaign: string | null
+  portal_user_id?: string | null
+  portal_invited_at?: string | null
+  portal_activated_at?: string | null
+  portal_access_disabled_at?: string | null
   created_at: string
 }
 
@@ -36,6 +40,10 @@ function mapClient(row: ClientRow): Client {
     acquisitionSource: row.acquisition_source,
     acquisitionMedium: row.acquisition_medium,
     acquisitionCampaign: row.acquisition_campaign,
+    portalUserId: row.portal_user_id || null,
+    portalInvitedAt: row.portal_invited_at || null,
+    portalActivatedAt: row.portal_activated_at || null,
+    portalAccessDisabledAt: row.portal_access_disabled_at || null,
     createdAt: row.created_at?.slice(0, 10) ?? '',
   }
 }
