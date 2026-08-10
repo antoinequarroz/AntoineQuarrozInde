@@ -19,6 +19,10 @@ Antoine doit comprendre rapidement sa trésorerie, traiter ce qui demande une v�
 
 **Journal d'encaissement exceptions-first** — seed `7c57deef`, structure 7. La hiérarchie durable est **synthèse → alertes → registre** : une bande compacte donne la situation, « À surveiller » expose immédiatement les écarts actionnables, puis le journal permet recherche et filtrage. Le moment mémorable est le passage direct de la vue d'ensemble à la file d'exceptions, sans détour par des graphiques décoratifs.
 
+## Décisions résolues
+
+- **Export CSV filtré (AQ-050)** : l'export comptable reprend durablement le même périmètre que le registre visible — recherche, statut et période — afin que l'extraction corresponde à la vue opérationnelle en cours.
+
 ## Contraintes
 
 - Prolonger les surfaces admin calmes existantes : violet pour l'action, cyan pour l'information et couleurs comptables réservées aux statuts.
@@ -28,4 +32,4 @@ Antoine doit comprendre rapidement sa trésorerie, traiter ce qui demande une v�
 
 ## Décisions non résolues
 
-Aucune dans le périmètre AQ-049. Toute future action d'encaissement directe, export ou rapprochement bancaire demande une validation produit séparée.
+Aucune dans le périmètre AQ-050. Toute future action d'encaissement directe ou rapprochement bancaire demande une validation produit séparée.

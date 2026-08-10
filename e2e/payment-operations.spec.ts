@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { readFile } from 'node:fs/promises'
 
 const email = process.env.E2E_ADMIN_EMAIL
 const password = process.env.E2E_ADMIN_PASSWORD
@@ -24,7 +25,7 @@ const paymentOperations = {
   ],
 }
 
-test('admin can operate the payment cockpit on desktop and mobile', async ({ page }, testInfo) => {
+test('admin can operate and export the payment cockpit on desktop and mobile', async ({ page }, testInfo) => {
   test.setTimeout(60_000)
   test.skip(!email || !password, 'E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD are required')
   await page.route('**/api/admin/payment-operations**', async route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(paymentOperations) }))
@@ -44,16 +45,27 @@ test('admin can operate the payment cockpit on desktop and mobile', async ({ pag
   await expect(page.getByRole('link', { name: 'Contrôler' }).first()).toHaveAttribute('href', '/admin/invoices?invoiceId=12')
   await expect(page.getByRole('table', { name: /journal chronologique/i })).toBeVisible()
 
+  const downloadPromise = page.waitForEvent('download')
+  await page.getByRole('button', { name: /Exporter 3 mouvements au format CSV/ }).click()
+  const download = await downloadPromise
+  expect(download.suggestedFilename()).toMatch(/^journal-encaissements-\d{4}-\d{2}-\d{2}\.csv$/)
+  const downloadPath = await download.path()
+  expect(downloadPath).toBeTruthy()
+  const exportedCsv = await readFile(downloadPath!, 'utf8')
+  expect(exportedCsv).toContain('"Encaissement";"Confirmé";"FAC-2026-0011"')
+  expect(exportedCsv).toContain('"Session de paiement";"Expiré";"FAC-2026-0014"')
+
   if (process.env.VISUAL_CAPTURE) {
-    await page.screenshot({ path: testInfo.outputPath('aq049-desktop.png'), fullPage: true })
+    await page.screenshot({ path: testInfo.outputPath('aq050-desktop.png'), fullPage: true })
     await page.setViewportSize({ width: 390, height: 844 })
     await page.waitForTimeout(400)
-    await page.screenshot({ path: testInfo.outputPath('aq049-mobile-viewport.png') })
-    await page.screenshot({ path: testInfo.outputPath('aq049-mobile.png'), fullPage: true })
+    await page.screenshot({ path: testInfo.outputPath('aq050-mobile-viewport.png') })
+    await page.screenshot({ path: testInfo.outputPath('aq050-mobile.png'), fullPage: true })
   }
 
   await page.getByLabel('Rechercher dans le journal').fill('introuvable')
   await expect(page.getByText('Aucun mouvement pour ce filtre')).toBeVisible()
+  await expect(page.getByRole('button', { name: /Exporter 0 mouvement au format CSV/ })).toBeDisabled()
   await page.getByRole('button', { name: 'Réinitialiser les filtres' }).click()
 
   await page.unroute('**/api/admin/payment-operations**')
