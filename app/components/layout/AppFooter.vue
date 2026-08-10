@@ -1,7 +1,8 @@
 <script setup lang="ts">
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const localePath = useLocalePath()
 const year = new Date().getFullYear()
+const contactCountry = computed(() => locale.value === 'de' ? 'Schweiz' : locale.value === 'en' ? 'Switzerland' : 'Suisse')
 
 const socials = [
   { name: 'GitHub', href: 'https://github.com/antoinequarroz', icon: 'github' },
@@ -9,11 +10,11 @@ const socials = [
 ]
 
 const navLinks = computed(() => [
-  { key: 'about', href: '/#about' },
-  { key: 'services', href: '/#services' },
-  { key: 'portfolio', href: '/#portfolio' },
-  { key: 'blog', href: '/#blog' },
-  { key: 'contact', href: '/#contact' },
+  { key: 'about', href: `${localePath('/')}#about` },
+  { key: 'services', href: `${localePath('/')}#services` },
+  { key: 'portfolio', href: `${localePath('/')}#portfolio` },
+  { key: 'blog', href: `${localePath('/')}#blog` },
+  { key: 'contact', href: `${localePath('/')}#contact` },
 ])
 
 const stack = ['Vue 3 / Nuxt', 'TypeScript', 'Flutter', 'Tailwind CSS', 'Supabase']
@@ -48,7 +49,7 @@ const localSeoLinks = [
 
           <!-- ─── Brand + tagline + socials ─── -->
           <div>
-            <NuxtLink to="/" class="flex w-fit items-center gap-2.5">
+            <NuxtLink :to="localePath('/')" class="flex w-fit items-center gap-2.5">
               <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-fuchsia-500 shadow-glow-sm">
                 <span class="font-display text-sm font-bold text-white">AQ</span>
               </div>
@@ -103,7 +104,7 @@ const localSeoLinks = [
             </div>
 
             <!-- Stack -->
-            <div>
+            <div class="hidden sm:block">
               <p class="mb-4 text-xs font-bold uppercase tracking-[0.2em] text-fuchsia-500 dark:text-fuchsia-400">
                 Stack
               </p>
@@ -119,7 +120,7 @@ const localSeoLinks = [
             </div>
 
             <!-- Local SEO -->
-            <div>
+            <div v-if="locale === 'fr'" class="hidden sm:block">
               <p class="mb-4 text-xs font-bold uppercase tracking-[0.2em] text-violet-500 dark:text-violet-400">
                 Local
               </p>
@@ -144,13 +145,22 @@ const localSeoLinks = [
                 <li>
                   <a
                     href="mailto:info@antoinequarroz.ch"
-                    class="text-sm text-gray-600 transition-colors hover:text-violet-600 dark:text-white/60 dark:hover:text-violet-400"
+                    class="inline-flex min-h-11 items-center text-sm text-gray-600 transition-colors hover:text-violet-600 focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:text-white/60 dark:hover:text-violet-400"
                   >
                     info@antoinequarroz.ch
                   </a>
                 </li>
                 <li class="text-sm text-gray-600 dark:text-white/60">
-                  Valais, Suisse
+                  Rue de l’Evouette 5<br>
+                  1969 Saint-Martin VS, {{ contactCountry }}
+                </li>
+                <li>
+                  <a
+                    href="tel:+41791576450"
+                    class="inline-flex min-h-11 items-center text-sm text-gray-600 transition-colors hover:text-violet-600 focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:text-white/60 dark:hover:text-violet-400"
+                  >
+                    +41 79 157 64 50
+                  </a>
                 </li>
               </ul>
             </div>
@@ -161,11 +171,12 @@ const localSeoLinks = [
         <div class="relative my-8 h-px bg-gradient-to-r from-violet-500/20 via-fuchsia-400/10 to-transparent" />
 
         <!-- Bottom bar -->
-        <div class="relative flex flex-col items-center justify-between gap-2 text-xs text-gray-400 dark:text-white/30 sm:flex-row">
+        <div class="relative flex flex-col items-center justify-between gap-2 text-xs text-gray-600 dark:text-gray-300 sm:flex-row">
           <span>© {{ year }} Antoine Quarroz · {{ t('footer.rights') }}</span>
           <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
-            <NuxtLink :to="localePath('/confidentialite')" class="transition-colors hover:text-violet-600 dark:hover:text-violet-300">{{ t('footer.privacy') }}</NuxtLink>
-            <NuxtLink :to="localePath('/conditions-utilisation')" class="transition-colors hover:text-violet-600 dark:hover:text-violet-300">{{ t('footer.terms') }}</NuxtLink>
+            <NuxtLink :to="localePath('/mentions-legales')" class="inline-flex min-h-11 items-center transition-colors hover:text-violet-600 focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:hover:text-violet-300">{{ t('footer.legal') }}</NuxtLink>
+            <NuxtLink :to="localePath('/confidentialite')" class="inline-flex min-h-11 items-center transition-colors hover:text-violet-600 focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:hover:text-violet-300">{{ t('footer.privacy') }}</NuxtLink>
+            <NuxtLink :to="localePath('/conditions-utilisation')" class="inline-flex min-h-11 items-center transition-colors hover:text-violet-600 focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:hover:text-violet-300">{{ t('footer.terms') }}</NuxtLink>
             <span>{{ t('footer.made_with') }}</span>
           </div>
         </div>

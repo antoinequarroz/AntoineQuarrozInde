@@ -1,6 +1,6 @@
 type SitemapEntry = {
   path: string
-  lastmod: string
+  lastmod?: string
   changefreq: 'weekly' | 'monthly'
   priority: string
 }
@@ -18,6 +18,7 @@ export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig()
   const siteUrl = String(config.public.siteUrl || '').replace(/\/+$/, '')
   const now = new Date().toISOString()
+  const legalLastmod = '2026-08-10T00:00:00.000Z'
 
   const staticPaths = [
     '/',
@@ -32,15 +33,18 @@ export default defineEventHandler(async (event) => {
     '/de/blog',
     '/confidentialite',
     '/conditions-utilisation',
+    '/mentions-legales',
     '/en/confidentialite',
     '/en/conditions-utilisation',
+    '/en/mentions-legales',
     '/de/confidentialite',
     '/de/conditions-utilisation',
+    '/de/mentions-legales',
   ]
 
   const entries: SitemapEntry[] = staticPaths.map(path => ({
     path,
-    lastmod: now,
+    lastmod: /\/(confidentialite|conditions-utilisation|mentions-legales)$/.test(path) ? legalLastmod : undefined,
     changefreq: 'weekly',
     priority: path === '/' ? '1.0' : '0.8',
   }))
@@ -74,8 +78,7 @@ export default defineEventHandler(async (event) => {
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${entries.map(entry => `  <url>
     <loc>${escapeXml(`${siteUrl}${entry.path}`)}</loc>
-    <lastmod>${escapeXml(entry.lastmod)}</lastmod>
-    <changefreq>${entry.changefreq}</changefreq>
+${entry.lastmod ? `    <lastmod>${escapeXml(entry.lastmod)}</lastmod>\n` : ''}    <changefreq>${entry.changefreq}</changefreq>
     <priority>${entry.priority}</priority>
   </url>`).join('\n')}
 </urlset>`
