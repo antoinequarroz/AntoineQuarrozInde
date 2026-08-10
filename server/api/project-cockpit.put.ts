@@ -23,5 +23,11 @@ export default defineEventHandler(async (event) => {
   if (!Number.isInteger(id) || id <= 0) throw createError({ statusCode: 400, message: 'Élément invalide.' })
   const { data, error } = await supabase.from(cockpitTables[kind]).update(cockpitPayload(kind, body)).eq('organization_id', org.id).eq('project_id', projectId).eq('id', id).select('*').single()
   if (error) throw createError({ statusCode: 500, message: error.message })
+  if (kind === 'milestone' && data.status === 'done') {
+    await notifyClientProjectUpdate({ organizationId: org.id, projectId, eventType: 'milestone', eventId: data.id, title: data.title, message: 'Une étape de votre projet vient d’être terminée.' })
+  }
+  if (kind === 'deliverable' && data.client_visible && ['delivered', 'approved'].includes(data.status)) {
+    await notifyClientProjectUpdate({ organizationId: org.id, projectId, eventType: 'deliverable', eventId: data.id, title: data.title, message: 'Un livrable est maintenant disponible dans votre espace client.' })
+  }
   return data
 })

@@ -52,7 +52,7 @@ export default defineEventHandler(async (event) => {
 
   const { data: invoice, error: invoiceError } = await supabase
     .from('invoices')
-    .select('id,total_cents,amount_cents,due_at,status,currency,client_id')
+    .select('id,number,total_cents,amount_cents,due_at,status,currency,client_id')
     .eq('organization_id', organizationId)
     .eq('id', invoiceId)
     .maybeSingle()
@@ -117,6 +117,42 @@ export default defineEventHandler(async (event) => {
       clientId,
       payload: { payment_id: paymentId, stripe_session_id: session.id, amount_cents: amountCents },
     })
+    const { data: client } = await supabase.from('clients').select('id,name,email').eq('organization_id', organizationId).eq('id', clientId).maybeSingle()
+    const amountLabel = new Intl.NumberFormat('fr-CH', { style: 'currency', currency: 'CHF' }).format(amountCents / 100)
+    await notifyOperationalEvent({
+      organizationId,
+      subject: `Paiement TWINT reçu — ${invoice.number}`,
+      title: 'Un paiement TWINT est confirmé',
+      body: `<p><strong>${escapeEmailHtml(client?.name || 'Un client')}</strong> a payé <strong>${escapeEmailHtml(amountLabel)}</strong> pour la facture <strong>${escapeEmailHtml(invoice.number)}</strong>.</p>`,
+      action: 'invoice.twint_payment_confirmed',
+      entityType: 'invoice',
+      entityId: invoiceId,
+      clientId,
+      idempotencyKey: `twint-admin-${providerPaymentId}`,
+    })
+    if (client?.email) {
+      try {
+        const siteUrl = String(config.public.siteUrl || '').replace(/\/+$/, '')
+        const receipt = await sendTransactionalEmail({
+          to: client.email,
+          subject: `Paiement reçu — facture ${invoice.number}`,
+          html: portalEmailLayout({
+            preview: `Votre paiement de ${amountLabel} a été reçu.`,
+            title: 'Paiement bien reçu',
+            body: `<p>Bonjour ${escapeEmailHtml(client.name)},</p><p>Votre paiement TWINT de <strong>${escapeEmailHtml(amountLabel)}</strong> pour la facture <strong>${escapeEmailHtml(invoice.number)}</strong> est confirmé.</p>`,
+            actionLabel: 'Consulter mes paiements',
+            actionUrl: `${siteUrl}/portal#factures`,
+          }),
+          idempotencyKey: `twint-client-${providerPaymentId}`,
+          tags: [{ name: 'category', value: 'payment_receipt' }],
+        })
+        await logAudit({ organizationId, action: 'invoice.twint_receipt_sent', entityType: 'invoice', entityId: invoiceId, clientId, payload: { email_id: receipt.emailId, payment_id: paymentId } })
+      }
+      catch (notificationError) {
+        console.error('[notification] TWINT receipt failed', notificationError)
+        await logAudit({ organizationId, action: 'invoice.twint_receipt_failed', entityType: 'invoice', entityId: invoiceId, clientId, payload: { payment_id: paymentId } })
+      }
+    }
   }
   return { received: true, duplicate }
 })
