@@ -32,6 +32,12 @@ describe('portal and project workflow boundaries', () => {
     expect(webhook).toContain('checkoutSession.organization_id !== organizationId')
   })
 
+  it('maps the operator Stripe secrets to Nuxt runtime configuration', () => {
+    const compose = source('../docker-compose.yml')
+    expect(compose).toContain('NUXT_STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}')
+    expect(compose).toContain('NUXT_STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}')
+  })
+
   it('does not expose CRM notes or deletable running timers', () => {
     const overview = source('../server/api/portal/overview.get.ts')
     const cockpit = source('../server/api/project-cockpit.get.ts')
