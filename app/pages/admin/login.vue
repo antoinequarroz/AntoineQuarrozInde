@@ -41,7 +41,7 @@ async function handleLogin() {
             </div>
             <div>
               <div class="font-display font-bold text-xl text-gray-900 dark:text-white">Admin</div>
-              <div class="text-sm text-gray-400">Antoine Quarroz</div>
+              <div class="text-sm text-gray-600 dark:text-gray-300">Antoine Quarroz</div>
             </div>
           </div>
         </div>
@@ -115,7 +115,7 @@ async function handleLogin() {
           </button>
         </form>
 
-        <NuxtLink to="/" class="block text-center text-sm text-gray-400 hover:text-violet-500 mt-6 transition-colors">
+        <NuxtLink to="/" class="mt-6 block text-center text-sm text-gray-600 transition-colors hover:text-violet-700 dark:text-gray-300 dark:hover:text-violet-300">
           ← Retour au site
         </NuxtLink>
       </div>

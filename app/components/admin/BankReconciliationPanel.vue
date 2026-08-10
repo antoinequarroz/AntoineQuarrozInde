@@ -7,6 +7,7 @@ import {
   type ReconciliationInvoice,
   type ReconciliationMatch,
 } from '~~/shared/utils/bankReconciliation'
+import { parseCamt053 } from '~~/shared/utils/camt053'
 
 type ReconciliationRow = {
   transaction: BankTransaction
@@ -25,6 +26,7 @@ const candidates = ref<ReconciliationInvoice[]>([])
 const candidateStatus = ref<'loading' | 'ready' | 'error'>('loading')
 const candidateError = ref('')
 const fileName = ref('')
+const fileFormat = ref<'CSV' | 'CAMT.053'>('CSV')
 const parseResult = ref<BankCsvResult | null>(null)
 const parseError = ref('')
 const rows = ref<ReconciliationRow[]>([])
@@ -81,8 +83,9 @@ async function handleFile(event: Event) {
   if (!file) return
   resetImport()
   fileName.value = file.name
-  if (!file.name.toLowerCase().endsWith('.csv')) {
-    parseError.value = 'Choisis un fichier CSV.'
+  const isXml = file.name.toLowerCase().endsWith('.xml')
+  if (!file.name.toLowerCase().endsWith('.csv') && !isXml) {
+    parseError.value = 'Choisis un fichier CSV ou CAMT.053 XML.'
     return
   }
   if (file.size > 2 * 1024 * 1024) {
@@ -90,7 +93,8 @@ async function handleFile(event: Event) {
     return
   }
   try {
-    const result = parseBankCsv(await file.text())
+    fileFormat.value = isXml ? 'CAMT.053' : 'CSV'
+    const result = isXml ? parseCamt053(await file.text()) : parseBankCsv(await file.text())
     parseResult.value = result
     rows.value = result.transactions.map((transaction) => {
       const match = matchBankTransaction(transaction, candidates.value)
@@ -174,11 +178,11 @@ onMounted(loadCandidates)
     </div>
     <div v-else class="space-y-5 px-4 py-5 sm:px-5">
       <div v-if="!fileName" class="rounded-lg border border-dashed border-gray-300 bg-gray-50 px-4 py-7 text-center dark:border-white/15 dark:bg-white/[0.03]">
-        <p class="font-semibold text-gray-900 dark:text-white">Choisir un relevé CSV</p>
-        <p class="mx-auto mt-1 max-w-xl text-sm leading-6 text-gray-500 dark:text-gray-400">Colonnes reconnues : date, montant ou crédit, devise, référence, libellé et identifiant de transaction. Maximum 2 Mo.</p>
+        <p class="font-semibold text-gray-900 dark:text-white">Choisir un relevé bancaire</p>
+        <p class="mx-auto mt-1 max-w-xl text-sm leading-6 text-gray-500 dark:text-gray-400">CSV ou CAMT.053 XML. Le fichier reste local dans ce navigateur, 2 Mo maximum.</p>
         <label class="mt-4 inline-flex min-h-11 cursor-pointer items-center justify-center rounded-lg bg-violet-600 px-4 text-sm font-semibold text-white transition hover:bg-violet-700 focus-within:ring-2 focus-within:ring-violet-500 focus-within:ring-offset-2 dark:focus-within:ring-offset-[#111118]">
-          Importer le CSV
-          <input ref="fileInput" type="file" accept=".csv,text/csv" class="sr-only" @change="handleFile">
+          Importer le relevé
+          <input ref="fileInput" type="file" accept=".csv,.xml,text/csv,application/xml,text/xml" class="sr-only" aria-label="Importer un relevé bancaire" @change="handleFile">
         </label>
         <p v-if="!candidates.length" class="mt-4 text-sm text-amber-800 dark:text-amber-200">Aucune facture ouverte n’est actuellement rapprochable.</p>
       </div>
@@ -186,7 +190,7 @@ onMounted(loadCandidates)
       <template v-else>
         <div class="flex flex-col gap-3 rounded-lg bg-gray-50 px-4 py-3 dark:bg-white/[0.04] sm:flex-row sm:items-center sm:justify-between">
           <div class="min-w-0">
-            <p class="truncate font-semibold text-gray-900 dark:text-white">{{ fileName }}</p>
+            <p class="truncate font-semibold text-gray-900 dark:text-white">{{ fileName }} <span class="ml-2 text-xs font-medium text-violet-700 dark:text-violet-300">{{ fileFormat }}</span></p>
             <p v-if="parseResult" class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ parseResult.transactions.length }} entrée(s) reconnue(s) · {{ parseResult.rejected.length }} ligne(s) ignorée(s) · {{ completedCount }} rapprochée(s)</p>
           </div>
           <button type="button" class="min-h-11 shrink-0 rounded-lg border border-gray-200 px-3 text-sm font-semibold text-gray-700 hover:border-violet-300 hover:text-violet-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:border-white/10 dark:text-gray-200" @click="resetImport">Changer de fichier</button>

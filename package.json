@@ -15,6 +15,7 @@
     "test:e2e": "playwright test",
     "test:e2e:install": "playwright install chromium",
     "typecheck": "nuxi typecheck",
+    "quality:budgets": "node scripts/check-bundle-budget.mjs",
     "postinstall": "nuxt prepare",
     "typst:qr:demo": "typst compile --root . typst/examples/swiss-qr-bill-demo.typ typst/examples/swiss-qr-bill-demo.pdf",
     "typst:billing:demo": "typst compile --root . --input data=../examples/billing-document-demo.json typst/templates/billing-document.typ typst/examples/billing-document-demo.pdf"
@@ -39,6 +40,7 @@
     "vue-router": "^5.0.7"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.12.1",
     "@nuxtjs/tailwindcss": "^6.14.0",
     "@playwright/test": "1.62.1",
     "@types/node": "^26.1.2",

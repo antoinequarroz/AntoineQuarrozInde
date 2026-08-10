@@ -9,6 +9,7 @@ import {
   type ReconciliationInvoice,
 } from '../shared/utils/bankReconciliation'
 import { buildReconciliationCandidates } from '../server/utils/paymentReconciliation'
+import { parseCamt053 } from '../shared/utils/camt053'
 
 const invoices: ReconciliationInvoice[] = [
   { id: 11, number: 'FAC-2026-0011', clientName: 'Atelier numérique', balanceCents: 14_050, currency: 'CHF', paymentReference: 'RF18 5390 0754 7034' },
@@ -20,6 +21,31 @@ function transaction(patch: Partial<BankTransaction> = {}): BankTransaction {
 }
 
 describe('bank reconciliation CSV', () => {
+  it('parses booked CAMT.053 credits and rejects debits', () => {
+    const result = parseCamt053(`<?xml version="1.0"?><Document><BkToCstmrStmt><Stmt><Ntry><Amt Ccy="CHF">140.50</Amt><CdtDbtInd>CRDT</CdtDbtInd><Sts>BOOK</Sts><BookgDt><Dt>2026-08-10</Dt></BookgDt><AcctSvcrRef>TX-CAMT-1</AcctSvcrRef><AddtlNtryInf>FAC-2026-0011</AddtlNtryInf></Ntry><Ntry><Amt Ccy="CHF">5.00</Amt><CdtDbtInd>DBIT</CdtDbtInd><BookgDt><Dt>2026-08-10</Dt></BookgDt><AcctSvcrRef>FEE-1</AcctSvcrRef></Ntry></Stmt></BkToCstmrStmt></Document>`)
+    expect(result.transactions).toEqual([expect.objectContaining({ amountCents: 14_050, currency: 'CHF', transactionId: 'TX-CAMT-1' })])
+    expect(result.rejected).toEqual([{ rowNumber: 2, reason: 'Sortie d’argent ignorée' }])
+  })
+  it('splits batched CAMT entries into individual payment transactions', () => {
+    const xml = `<Document><BkToCstmrStmt><Stmt><Ntry><CdtDbtInd>CRDT</CdtDbtInd><Sts>BOOK</Sts><BookgDt><Dt>2026-08-10</Dt></BookgDt><NtryDtls><TxDtls><Amt Ccy="CHF">12.50</Amt><Refs><TxId>T1</TxId></Refs><RmtInf><Ustrd>FAC-1</Ustrd></RmtInf></TxDtls><TxDtls><Amt Ccy="CHF">20.00</Amt><Refs><TxId>T2</TxId></Refs><RmtInf><Ustrd>FAC-2</Ustrd></RmtInf></TxDtls></NtryDtls></Ntry></Stmt></BkToCstmrStmt></Document>`
+    const result = parseCamt053(xml)
+    expect(result.transactions.map(row => [row.transactionId, row.amountCents])).toEqual([['T1', 1250], ['T2', 2000]])
+  })
+  it('rejects batch details that only share a parent identifier', () => {
+    const xml = `<Document><BkToCstmrStmt><Stmt><Ntry><CdtDbtInd>CRDT</CdtDbtInd><Sts>BOOK</Sts><BookgDt><Dt>2026-08-10</Dt></BookgDt><AcctSvcrRef>BATCH-1</AcctSvcrRef><NtryDtls><TxDtls><Amt Ccy="CHF">12.50</Amt></TxDtls><TxDtls><Amt Ccy="CHF">20.00</Amt></TxDtls></NtryDtls></Ntry></Stmt></BkToCstmrStmt></Document>`
+    const result = parseCamt053(xml)
+    expect(result.transactions).toEqual([])
+    expect(result.rejected).toEqual([
+      { rowNumber: 1, reason: 'Identifiant bancaire individuel absent' },
+      { rowNumber: 2, reason: 'Identifiant bancaire individuel absent' },
+    ])
+  })
+  it('rejects CAMT batch placeholders that are not individual bank identifiers', () => {
+    const xml = `<Document><BkToCstmrStmt><Stmt><Ntry><CdtDbtInd>CRDT</CdtDbtInd><Sts>BOOK</Sts><BookgDt><Dt>2026-08-10</Dt></BookgDt><NtryDtls><TxDtls><Amt Ccy="CHF">12.50</Amt><Refs><EndToEndId>NOTPROVIDED</EndToEndId></Refs><RmtInf><Ustrd>FAC-1</Ustrd></RmtInf></TxDtls></NtryDtls></Ntry></Stmt></BkToCstmrStmt></Document>`
+    const result = parseCamt053(xml)
+    expect(result.transactions).toEqual([])
+    expect(result.rejected[0]).toEqual({ rowNumber: 1, reason: 'Identifiant bancaire individuel absent' })
+  })
   it('parses Swiss decimal formats, quoted delimiters and rejects outgoing rows', () => {
     const result = parseBankCsv([
       'Date;Crédit;Débit;Devise;Référence;Libellé;Transaction ID',

@@ -134,6 +134,7 @@ export interface Invoice {
   items?: InvoiceItem[]
   payments?: InvoicePayment[]
   paidAmountCents: number
+  remindersPaused?: boolean
   createdAt: string
 }
 

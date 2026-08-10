@@ -60,7 +60,7 @@ test('admin can operate, reconcile and export the payment cockpit on desktop and
 
   await page.getByRole('button', { name: 'Rapprocher un relevé' }).click()
   await expect(page.getByRole('heading', { name: 'Rapprocher un relevé bancaire' })).toBeVisible()
-  await page.getByLabel('Importer le CSV').setInputFiles({
+  await page.getByLabel('Importer un relevé bancaire').setInputFiles({
     name: 'releve-aout.csv',
     mimeType: 'text/csv',
     buffer: Buffer.from([
