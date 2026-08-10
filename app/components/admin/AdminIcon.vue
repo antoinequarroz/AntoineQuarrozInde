@@ -56,6 +56,11 @@ const props = defineProps<{
     <line x1="8" y1="8" x2="16" y2="8" />
     <line x1="8" y1="12" x2="16" y2="12" />
   </svg>
+  <svg v-else-if="props.icon === 'credit-card'" :class="props.class || 'w-4 h-4'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+    <rect x="2" y="5" width="20" height="14" rx="2" />
+    <line x1="2" y1="10" x2="22" y2="10" />
+    <line x1="6" y1="15" x2="10" y2="15" />
+  </svg>
   <svg v-else-if="props.icon === 'calendar'" :class="props.class || 'w-4 h-4'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
     <rect x="3" y="4" width="18" height="18" rx="2" />
     <line x1="16" y1="2" x2="16" y2="6" />

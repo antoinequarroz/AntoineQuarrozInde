@@ -11,6 +11,7 @@ const navItems = [
   { label: 'Taches', icon: 'check-square', href: '/admin/tasks' },
   { label: 'Devis', icon: 'file-plus', href: '/admin/quotes' },
   { label: 'Factures', icon: 'receipt', href: '/admin/invoices' },
+  { label: 'Paiements', icon: 'credit-card', href: '/admin/payments' },
   { label: 'Agenda', icon: 'calendar', href: '/admin/appointments' },
   { label: 'Projets', icon: 'folder', href: '/admin/projects' },
   { label: 'Articles', icon: 'file-text', href: '/admin/articles' },
