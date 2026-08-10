@@ -1,4 +1,5 @@
 import { getTwintBalance, getTwintEligibility, isTwintConfigured } from '../../utils/twint'
+import { buildTwintCheckoutParams } from '../../utils/twintCheckout'
 
 export default defineEventHandler(async (event) => {
   const { org, user, client } = await requirePortalClient(event)
@@ -49,28 +50,14 @@ export default defineEventHandler(async (event) => {
   const stripe = getStripeClient()
   const siteUrl = String(config.public.siteUrl || '').replace(/\/+$/, '')
   const amountCents = getTwintBalance({ status: invoice.status, currency: invoice.currency, documentType: invoice.document_type, totalCents, paidAmountCents })
-  const session = await stripe.checkout.sessions.create({
-    mode: 'payment',
-    payment_method_types: ['twint'],
-    customer_email: client.email || user.email,
-    client_reference_id: String(invoice.id),
-    line_items: [{
-      quantity: 1,
-      price_data: {
-        currency: 'chf',
-        unit_amount: amountCents,
-        product_data: { name: `Facture ${invoice.number}` },
-      },
-    }],
-    metadata: {
-      organization_id: org.id,
-      invoice_id: String(invoice.id),
-      client_id: String(client.id),
-      invoice_number: invoice.number,
-    },
-    success_url: `${siteUrl}/portal?payment=success&session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${siteUrl}/portal?payment=cancelled`,
-  })
+  const session = await stripe.checkout.sessions.create(buildTwintCheckoutParams({
+    amountCents,
+    siteUrl,
+    organizationId: org.id,
+    invoice,
+    client,
+    userEmail: user.email,
+  }))
   if (!session.url) throw createError({ statusCode: 502, message: 'Stripe n’a pas retourné de page de paiement.' })
   const expiresAt = new Date(session.expires_at * 1000).toISOString()
 
