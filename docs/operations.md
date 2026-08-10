@@ -25,6 +25,43 @@ vérifier aussi les journaux du conteneur :
 docker compose logs --tail=100 web
 ```
 
+### Livraison automatisée depuis GitHub
+
+Une pull request ne déploie jamais : elle exécute uniquement les contrôles de
+qualité et d'accessibilité. Après fusion dans `main`, le workflow suit cet ordre
+strict :
+
+1. tests, TypeScript, build et budgets ;
+2. déploiement du SHA exact sur le VPS avec `scripts/ops/deploy-from-ci.sh` ;
+3. attente de ce même SHA sur `/api/version` et d'un `/api/health` vert ;
+4. E2E de production avec les identifiants du compte sandbox.
+
+Les exécutions planifiées et manuelles vérifient la production courante sans
+redéployer. Les migrations Supabase ne sont volontairement pas automatiques :
+elles doivent être revues et appliquées avant la livraison du code qui en dépend.
+
+L'environnement GitHub `Production` contient uniquement les secrets suivants :
+
+- `VPS_SSH_PRIVATE_KEY` : clé Ed25519 dédiée à GitHub Actions ;
+- `VPS_KNOWN_HOSTS` : ligne de clé d'hôte vérifiée, jamais produite à l'aveugle dans la CI ;
+- `VPS_HOST` : adresse du VPS ;
+- `VPS_USER` : utilisateur de déploiement non-root ;
+- `VPS_PROJECT_DIR` : chemin absolu du dépôt sur le VPS.
+
+La clé personnelle utilisée par `scripts/deploy-vps.ps1` reste distincte. La clé
+CI est installée dans `authorized_keys` avec `restrict` et une commande forcée
+copiée depuis `scripts/ops/ci-ssh-gate.sh`. Installer aussi
+`scripts/ops/deploy-from-ci.sh` hors du checkout comme
+`/home/ubuntu/.local/bin/antoinequarroz-ci-deploy`. Cette clé ne peut ouvrir aucun
+shell, faire de redirection de port ou exécuter un script fourni par le runner :
+elle ne lance que cette commande de livraison fixe. Pour révoquer l'automatisation,
+supprimer la clé publique GitHub Actions du fichier
+`~/.ssh/authorized_keys`, puis supprimer ou désactiver les cinq secrets de
+l'environnement `Production`. Le déploiement manuel reste disponible pendant
+le rollback. Un échec de build, de santé ou de version empêche les E2E et le
+script VPS remet automatiquement l'image `previous` en service lorsque le
+conteneur candidat a été lancé.
+
 ## Surveillance
 
 `/api/health` contrôle le serveur Nuxt et l'accès à Supabase. Le timer

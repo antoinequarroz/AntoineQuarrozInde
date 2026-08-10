@@ -14,7 +14,9 @@ permissions:
 
 concurrency:
   group: quality-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Never interrupt a production delivery halfway through. Pull requests can
+  # still discard obsolete runs when a newer commit is pushed.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   quality:
@@ -51,8 +53,60 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npx playwright test e2e/accessibility.spec.ts --project=chromium
 
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: Production
+      url: https://www.antoinequarroz.ch
+    env:
+      EXPECTED_SHA: ${{ github.sha }}
+      VPS_HOST: ${{ secrets.VPS_HOST }}
+      VPS_USER: ${{ secrets.VPS_USER }}
+      VPS_PROJECT_DIR: ${{ secrets.VPS_PROJECT_DIR }}
+      VPS_SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+      VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Verify deployment secrets
+        run: |
+          test -n "$VPS_HOST"
+          test -n "$VPS_USER"
+          test -n "$VPS_PROJECT_DIR"
+          test -n "$VPS_SSH_PRIVATE_KEY"
+          test -n "$VPS_KNOWN_HOSTS"
+          [[ "$VPS_HOST" =~ ^[A-Za-z0-9.-]+$ ]]
+          [[ "$VPS_USER" =~ ^[a-z_][a-z0-9_-]*$ ]]
+          [[ "$VPS_PROJECT_DIR" =~ ^/[A-Za-z0-9._/-]+$ ]]
+      - name: Configure dedicated SSH identity
+        run: |
+          install -d -m 700 "$HOME/.ssh"
+          install -m 600 /dev/null "$RUNNER_TEMP/vps_deploy_key"
+          printf '%s\n' "$VPS_SSH_PRIVATE_KEY" > "$RUNNER_TEMP/vps_deploy_key"
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/known_hosts"
+      - name: Deploy the exact main commit
+        run: |
+          ssh \
+            -i "$RUNNER_TEMP/vps_deploy_key" \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
+            "$VPS_USER@$VPS_HOST" \
+            "bash -s -- '$EXPECTED_SHA' '$VPS_PROJECT_DIR'"
+      - name: Verify the public release
+        run: bash scripts/ops/verify-production-release.sh "$EXPECTED_SHA" https://www.antoinequarroz.ch
+
   e2e:
-    if: github.event_name != 'pull_request'
+    if: >-
+      always() &&
+      needs.quality.result == 'success' &&
+      github.event_name != 'pull_request' &&
+      (github.event_name != 'push' || needs.deploy.result == 'success')
+    needs: [quality, deploy]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
