@@ -13,6 +13,10 @@ services:
     environment:
       NITRO_HOST: 0.0.0.0
       NITRO_PORT: 3000
+      # Nuxt only applies runtimeConfig overrides from NUXT_* variables.
+      # Keep the operator-facing STRIPE_* names in .env and map them here.
+      NUXT_STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      NUXT_STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
       interval: 30s
