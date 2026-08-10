@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Comment, h } from 'vue'
+import { buildAccountingCsv } from '~~/shared/utils/accountingCsv'
 
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 
@@ -7,7 +8,7 @@ const DirectionContract = () => h(Comment, null, `
 THESIS: Un journal d’encaissement qui commence par les exceptions, pas un dashboard de graphiques décoratifs.
 OWN-WORLD: Surfaces administratives calmes, violet pour l’action, cyan pour l’information et couleurs comptables réservées aux statuts.
 STORY: Antoine comprend sa trésorerie, traite les anomalies, puis retrouve chaque mouvement dans un registre chronologique.
-FIRST VIEWPORT: Titre et action Factures, bande synthèse compacte, puis file des éléments à surveiller avant le journal.
+FIRST VIEWPORT: Titre et action Factures, bande synthèse compacte, puis file des éléments à surveiller avant le journal exportable.
 FORM: Journal comptable opérationnel, structure 7 de la liste ordonnée; seed 7c57deef.
 FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md
 `)
@@ -55,6 +56,7 @@ type PaymentOperations = {
 }
 
 const auth = useAuthStore()
+const toast = useToast()
 const data = ref<PaymentOperations | null>(null)
 const loading = ref(true)
 const loadError = ref('')
@@ -109,6 +111,18 @@ function statusClass(status: PaymentEntry['status']) {
   if (status === 'open') return 'bg-cyan-50 text-cyan-800 dark:bg-cyan-400/10 dark:text-cyan-200'
   if (status === 'expired' || status === 'cancelled') return 'bg-amber-50 text-amber-900 dark:bg-amber-400/10 dark:text-amber-200'
   return 'bg-gray-100 text-gray-700 dark:bg-white/[0.08] dark:text-gray-300'
+}
+
+function exportAccountingJournal() {
+  if (!filteredEntries.value.length) return
+  const csv = buildAccountingCsv(filteredEntries.value)
+  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `journal-encaissements-${new Date().toISOString().slice(0, 10)}.csv`
+  link.click()
+  URL.revokeObjectURL(url)
+  toast.success(`${filteredEntries.value.length} mouvement${filteredEntries.value.length > 1 ? 's' : ''} exporté${filteredEntries.value.length > 1 ? 's' : ''}`)
 }
 
 async function loadPayments() {
@@ -181,7 +195,7 @@ onMounted(loadPayments)
             <div class="min-w-0">
               <div class="flex flex-wrap items-center gap-2">
                 <p class="font-semibold text-gray-900 dark:text-white">{{ alert.title }}</p>
-                <span class="rounded-full px-2 py-0.5 text-[11px] font-semibold" :class="alert.tone === 'critical' ? 'bg-red-50 text-red-800 dark:bg-red-400/10 dark:text-red-200' : 'bg-amber-50 text-amber-900 dark:bg-amber-400/10 dark:text-amber-200'">{{ alert.tone === 'critical' ? 'Prioritaire' : 'À vérifier' }}</span>
+                <span class="rounded-full px-2 py-0.5 text-xs font-semibold" :class="alert.tone === 'critical' ? 'bg-red-50 text-red-800 dark:bg-red-400/10 dark:text-red-200' : 'bg-amber-50 text-amber-900 dark:bg-amber-400/10 dark:text-amber-200'">{{ alert.tone === 'critical' ? 'Prioritaire' : 'À vérifier' }}</span>
               </div>
               <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ alert.detail }}</p>
             </div>
@@ -204,7 +218,7 @@ onMounted(loadPayments)
               <h2 id="payment-ledger-title" class="font-display text-lg font-semibold">Journal des mouvements</h2>
               <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Paiements confirmés, écritures annulées et tentatives TWINT.</p>
             </div>
-            <div class="flex flex-col gap-2 sm:flex-row">
+            <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
               <label class="sr-only" for="payment-search">Rechercher dans le journal</label>
               <input id="payment-search" v-model="query" type="search" class="min-h-11 rounded-lg border border-gray-200 bg-gray-50 px-3 text-base text-gray-900 placeholder:text-gray-500 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/30 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:placeholder:text-gray-400 sm:text-sm" placeholder="Facture, client, référence…">
               <label class="sr-only" for="payment-filter">Filtrer les mouvements</label>
@@ -214,6 +228,10 @@ onMounted(loadPayments)
                 <option value="payments">Encaissements</option>
                 <option value="twint">TWINT</option>
               </select>
+              <button type="button" :disabled="filteredEntries.length === 0" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-sm font-semibold text-gray-700 transition hover:border-violet-300 hover:text-violet-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-gray-200 dark:hover:border-violet-400/50 dark:hover:text-violet-200" :aria-label="`Exporter ${filteredEntries.length} mouvement${filteredEntries.length > 1 ? 's' : ''} au format CSV`" @click="exportAccountingJournal">
+                <svg aria-hidden="true" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0 4-4m-4 4-4-4M5 19h14" /></svg>
+                Exporter CSV
+              </button>
             </div>
           </div>
         </div>
