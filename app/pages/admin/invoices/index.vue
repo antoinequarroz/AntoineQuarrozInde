@@ -368,7 +368,10 @@ onMounted(async () => {
   if (qStatus === 'draft' || qStatus === 'sent' || qStatus === 'paid' || qStatus === 'overdue' || qStatus === 'cancelled') statusFilter.value = qStatus
   const qSearch = String(route.query.search || '')
   if (qSearch) search.value = qSearch
-  selectedId.value = store.invoices.at(0)?.id ?? null
+  const qInvoiceId = Number(route.query.invoiceId || 0)
+  selectedId.value = store.invoices.some(invoice => invoice.id === qInvoiceId)
+    ? qInvoiceId
+    : store.invoices.at(0)?.id ?? null
 })
 onBeforeUnmount(releasePdfPreview)
 </script>
