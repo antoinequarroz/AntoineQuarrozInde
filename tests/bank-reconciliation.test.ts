@@ -88,7 +88,7 @@ describe('bank reconciliation CSV', () => {
   })
 
   it('keeps the migration append-only and organization-unique', async () => {
-    const migration = await import('node:fs/promises').then(fs => fs.readFile(new URL('../supabase/migrations/20260810174500_add_bank_import_fingerprint.sql', import.meta.url), 'utf8'))
+    const migration = await import('node:fs/promises').then(fs => fs.readFile(new URL('../supabase/migrations/20260810221013_add_bank_import_fingerprint.sql', import.meta.url), 'utf8'))
     expect(migration).toContain('add column if not exists bank_import_fingerprint')
     expect(migration).toContain('on public.invoice_payments(organization_id, bank_import_fingerprint)')
     expect(migration).toContain('where bank_import_fingerprint is not null')

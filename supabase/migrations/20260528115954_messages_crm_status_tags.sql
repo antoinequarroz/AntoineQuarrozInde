@@ -1,0 +1,2 @@
+-- Historical production migration marker.
+-- Its resulting schema is already represented by supabase/schema.sql.

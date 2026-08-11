@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
-const migration = readFileSync(new URL('../supabase/migrations/20260809235626_portal_timer_twint_v2.sql', import.meta.url), 'utf8')
-const indexes = readFileSync(new URL('../supabase/migrations/20260810002000_portal_timer_twint_v2_fk_indexes.sql', import.meta.url), 'utf8')
+const migration = readFileSync(new URL('../supabase/migrations/20260809222015_portal_timer_twint_v2.sql', import.meta.url), 'utf8')
+const indexes = readFileSync(new URL('../supabase/migrations/20260809222056_portal_timer_twint_v2_fk_indexes.sql', import.meta.url), 'utf8')
 
 describe('portal, timer and TWINT V2 migration', () => {
   it('records auditable quote acceptance evidence', () => {
