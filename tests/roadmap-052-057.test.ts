@@ -43,7 +43,7 @@ describe('AQ-052 to AQ-057 guardrails', () => {
   })
 
   it('keeps new tables server-only with RLS and the restore drill read-only', async () => {
-    const migration = await readFile(new URL('../supabase/migrations/20260810222000_add_recurring_invoices.sql', import.meta.url), 'utf8')
+    const migration = await readFile(new URL('../supabase/migrations/20260810221033_add_recurring_invoices.sql', import.meta.url), 'utf8')
     expect(migration.match(/enable row level security/g)).toHaveLength(2)
     expect(migration).toContain('revoke all on public.recurring_invoice_profiles, public.recurring_invoice_runs from anon, authenticated')
     expect(migration).toContain('foreign key (organization_id, profile_id)')
