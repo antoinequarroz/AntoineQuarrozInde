@@ -40,6 +40,18 @@ Les exécutions planifiées et manuelles vérifient la production courante sans
 redéployer. Les migrations Supabase ne sont volontairement pas automatiques :
 elles doivent être revues et appliquées avant la livraison du code qui en dépend.
 
+Avant toute livraison, le job `database` construit une pile Supabase locale
+éphémère, injecte `supabase/schema.sql` comme socle de test, rejoue toutes les
+migrations puis exécute les assertions pgTAP de `supabase/tests/database/`.
+Ce préflight n'utilise aucun secret, aucun projet lié et aucune donnée réelle.
+Le lancer localement avec Docker actif :
+
+```bash
+npm run test:db
+```
+
+Un échec bloque le job `deploy`; il n'applique jamais la migration en production.
+
 L'environnement GitHub `Production` contient uniquement les secrets suivants :
 
 - `VPS_SSH_PRIVATE_KEY` : clé Ed25519 dédiée à GitHub Actions ;

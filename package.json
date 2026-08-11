@@ -11,6 +11,7 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "test": "vitest run",
+    "test:db": "bash scripts/ops/test-supabase-migrations.sh",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:install": "playwright install chromium",
@@ -46,6 +47,7 @@
     "@types/node": "^26.1.2",
     "@types/three": "^0.177.0",
     "@vite-pwa/nuxt": "^1.1.1",
+    "supabase": "2.113.0",
     "typescript": "^5.8.3",
     "vitest": "^4.1.10",
     "vue-tsc": "3.1.2"
