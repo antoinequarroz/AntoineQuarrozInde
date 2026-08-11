@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import type { ContactMessage } from '~/types'
+import AdminAdminIcon from '~/components/admin/AdminIcon.vue'
+import AdminAdminEmptyState from '~/components/admin/AdminEmptyState.vue'
 
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 
@@ -21,8 +23,8 @@ const reminderRuns = ref<Array<{ id: number, action: string, payload: Record<str
 const reminderPreview = ref<{
   automationEnabled: boolean
   generatedAt: string
-  candidates: Array<{ reminderKey: string, targetType: 'quote' | 'invoice', targetId: number, clientId: number, clientName: string, number: string, dueDate: string, milestone: string, urgency: 'upcoming' | 'due' | 'overdue' }>
-  skipped: { alreadySent: number, missingContact: number, outsideMilestone: number }
+  candidates: Array<{ reminderKey: string, targetType: 'quote' | 'invoice', targetId: number, clientId: number, clientName: string, number: string, dueDate: string, milestone: string, urgency: 'upcoming' | 'due' | 'overdue', balanceCents?: number, currency?: string }>
+  skipped: { alreadySent: number, missingContact: number, outsideMilestone: number, paused: number }
 } | null>(null)
 const reminderPreviewStatus = ref<'loading' | 'ready' | 'error'>('loading')
 
@@ -270,6 +272,10 @@ const recentArticles = computed(() => articles.articles.slice(0, 3))
 
 function money(cents: number) {
   return `${(cents / 100).toFixed(0)} CHF`
+}
+
+function reminderMoney(cents = 0, currency = 'CHF') {
+  return new Intl.NumberFormat('fr-CH', { style: 'currency', currency }).format(cents / 100)
 }
 
 function daysFromNow(isoDate: string) {
@@ -711,7 +717,7 @@ watch(() => auth.currentOrganizationId, async (organizationId, previousOrganizat
       <div class="grid gap-4 px-4 py-4 sm:px-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(280px,0.8fr)]">
         <div>
           <div class="mb-3 flex items-center justify-between gap-3">
-            <div><h3 class="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500 dark:text-gray-400">Prochaines relances</h3><p class="mt-1 text-xs text-gray-400">Avant échéance, jour J, puis suivi hebdomadaire contrôlé jusqu’à J+28.</p></div>
+            <div><h3 class="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500 dark:text-gray-400">Prochaines relances</h3><p class="mt-1 text-xs text-gray-400">Avant échéance, jour J, puis relances mesurées à J+3, J+10 et J+20.</p></div>
             <strong class="font-display text-xl text-gray-950 dark:text-white">{{ reminderPreviewStatus === 'ready' ? (reminderPreview?.candidates.length || 0) : '—' }}</strong>
           </div>
           <div v-if="reminderPreviewStatus === 'loading'" role="status" class="grid min-h-28 place-items-center rounded-lg border border-gray-100 text-center dark:border-white/[0.08]"><div><span class="mx-auto block h-6 w-6 animate-spin rounded-full border-2 border-violet-200 border-t-violet-600" /><p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Analyse des échéances…</p></div></div>
@@ -719,11 +725,11 @@ watch(() => auth.currentOrganizationId, async (organizationId, previousOrganizat
           <div v-else-if="reminderPreview?.candidates.length" class="divide-y divide-gray-100 rounded-lg border border-gray-100 dark:divide-white/[0.06] dark:border-white/[0.08]">
             <div v-for="candidate in reminderPreview.candidates.slice(0, 6)" :key="candidate.reminderKey" class="flex items-center gap-3 px-3 py-2.5">
               <span class="h-2.5 w-2.5 shrink-0 rounded-full" :class="candidate.urgency === 'overdue' ? 'bg-rose-500' : candidate.urgency === 'due' ? 'bg-amber-500' : 'bg-cyan-500'" />
-              <div class="min-w-0 flex-1"><p class="truncate text-xs font-semibold text-gray-800 dark:text-gray-100">{{ candidate.clientName }} · {{ candidate.number }}</p><p class="mt-0.5 truncate text-xs text-gray-500 dark:text-gray-400">{{ candidate.targetType === 'quote' ? 'Devis' : 'Facture' }} · {{ candidate.milestone }} · {{ candidate.dueDate }}</p></div>
+              <div class="min-w-0 flex-1"><p class="truncate text-xs font-semibold text-gray-800 dark:text-gray-100">{{ candidate.clientName }} · {{ candidate.number }}</p><p class="mt-0.5 truncate text-xs text-gray-500 dark:text-gray-400">{{ candidate.targetType === 'quote' ? 'Devis' : 'Facture' }} · {{ candidate.milestone }} · {{ candidate.dueDate }}<template v-if="candidate.targetType === 'invoice'"> · solde {{ reminderMoney(candidate.balanceCents, candidate.currency) }}</template></p></div>
             </div>
           </div>
           <div v-else class="rounded-lg border border-dashed border-gray-200 px-4 py-6 text-center dark:border-white/[0.1]"><p class="text-sm font-medium text-gray-800 dark:text-gray-100">Aucune relance à envoyer</p><p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Le moteur surveille les prochaines échéances.</p></div>
-          <p v-if="reminderPreviewStatus === 'ready' && reminderPreview" class="mt-2 text-xs text-gray-400">{{ reminderPreview.skipped.alreadySent }} déjà envoyée(s) · {{ reminderPreview.skipped.missingContact }} sans adresse · {{ reminderPreview.skipped.outsideMilestone }} hors jalon</p>
+          <p v-if="reminderPreviewStatus === 'ready' && reminderPreview" class="mt-2 text-xs text-gray-400">{{ reminderPreview.skipped.alreadySent }} déjà envoyée(s) · {{ reminderPreview.skipped.missingContact }} sans adresse · {{ reminderPreview.skipped.paused }} suspendue(s) · {{ reminderPreview.skipped.outsideMilestone }} hors jalon</p>
         </div>
         <div>
           <h3 class="mb-3 text-xs font-semibold uppercase tracking-[0.12em] text-gray-500 dark:text-gray-400">Historique récent</h3>

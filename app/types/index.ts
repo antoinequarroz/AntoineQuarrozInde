@@ -72,6 +72,10 @@ export interface Client {
   acquisitionSource: string | null
   acquisitionMedium: string | null
   acquisitionCampaign: string | null
+  portalUserId?: string | null
+  portalInvitedAt?: string | null
+  portalActivatedAt?: string | null
+  portalAccessDisabledAt?: string | null
   createdAt: string
 }
 
@@ -130,6 +134,7 @@ export interface Invoice {
   items?: InvoiceItem[]
   payments?: InvoicePayment[]
   paidAmountCents: number
+  remindersPaused?: boolean
   createdAt: string
 }
 

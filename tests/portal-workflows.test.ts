@@ -5,7 +5,7 @@ const source = (path: string) => readFileSync(new URL(path, import.meta.url), 'u
 
 describe('portal and project workflow boundaries', () => {
   it('isolates portal actions through the authenticated client helper', () => {
-    for (const file of ['../server/api/portal/quotes/accept.post.ts', '../server/api/portal/quote-pdf.get.ts', '../server/api/portal/twint-checkout.post.ts', '../server/api/portal/twint-status.get.ts']) {
+    for (const file of ['../server/api/portal/quotes/accept.post.ts', '../server/api/portal/quotes/reject.post.ts', '../server/api/portal/quote-pdf.get.ts', '../server/api/portal/twint-checkout.post.ts', '../server/api/portal/twint-status.get.ts']) {
       expect(source(file)).toContain('requirePortalClient(event)')
     }
   })
@@ -15,6 +15,13 @@ describe('portal and project workflow boundaries', () => {
     expect(accept).toContain("body.confirmed !== true")
     expect(accept).toContain(".eq('status', 'sent')")
     expect(accept).toContain('accepted_by_user_id: user.id')
+  })
+
+  it('rejects only sent quotes through an explicit atomic transition', () => {
+    const reject = source('../server/api/portal/quotes/reject.post.ts')
+    expect(reject).toContain("body.confirmed !== true")
+    expect(reject).toContain(".eq('status', 'sent')")
+    expect(reject).toContain("action: 'quote.portal_rejected'")
   })
 
   it('scopes running timers to the authenticated manager', () => {

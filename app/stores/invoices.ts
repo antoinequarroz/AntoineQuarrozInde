@@ -46,6 +46,7 @@ type InvoiceRow = {
     created_at: string
   }>
   created_at: string
+  reminders_paused?: boolean
 }
 
 function mapInvoice(row: InvoiceRow): Invoice {
@@ -95,6 +96,7 @@ function mapInvoice(row: InvoiceRow): Invoice {
       createdAt: payment.created_at,
     })),
     paidAmountCents: (row.payments || []).reduce((sum, payment) => sum + (payment.voided_at ? 0 : payment.amount_cents), 0),
+    remindersPaused: Boolean(row.reminders_paused),
     createdAt: row.created_at?.slice(0, 10) ?? '',
   }
 }

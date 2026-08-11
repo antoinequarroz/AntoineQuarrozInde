@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import type { Client } from '~/types'
+import AdminAdminCard from '~/components/admin/AdminCard.vue'
+import AdminAdminEmptyState from '~/components/admin/AdminEmptyState.vue'
+import AdminAdminToolbar from '~/components/admin/AdminToolbar.vue'
 
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 
@@ -94,9 +97,69 @@ const pageData = ref<{ items: Client[], total: number, page: number, pageSize: n
 })
 const loading = ref(false)
 const savingClient = ref(false)
+const inviteAfterCreate = ref(false)
+const showPortalAccess = ref(false)
+const portalClient = ref<Client | null>(null)
+const portalAction = ref<'invite' | 'resend' | 'reset' | 'disable' | 'enable' | null>(null)
+const closePortalAccess = () => { showPortalAccess.value = false }
+const { dialogRef: portalDialogRef, handleDialogKeydown: handlePortalDialogKeydown } = useAccessibleDialog(showPortalAccess, closePortalAccess)
+
+type PortalAccessStatus = 'not_invited' | 'invited' | 'active' | 'disabled'
+
+function portalAccessStatus(client: Client): PortalAccessStatus {
+  if (client.portalAccessDisabledAt) return 'disabled'
+  if (client.portalActivatedAt) return 'active'
+  if (client.portalUserId || client.portalInvitedAt) return 'invited'
+  return 'not_invited'
+}
+
+const portalAccessLabels: Record<PortalAccessStatus, string> = {
+  not_invited: 'Non invité',
+  invited: 'Invitation envoyée',
+  active: 'Accès actif',
+  disabled: 'Accès suspendu',
+}
+
+function portalAccessTone(client: Client) {
+  const status = portalAccessStatus(client)
+  if (status === 'active') return 'bg-emerald-50 text-emerald-800 dark:bg-emerald-400/10 dark:text-emerald-200'
+  if (status === 'invited') return 'bg-violet-50 text-violet-800 dark:bg-violet-400/10 dark:text-violet-200'
+  if (status === 'disabled') return 'bg-red-50 text-red-800 dark:bg-red-400/10 dark:text-red-200'
+  return 'bg-gray-100 text-gray-600 dark:bg-white/[0.07] dark:text-gray-300'
+}
+
+function openPortalAccess(client: Client) {
+  portalClient.value = client
+  showPortalAccess.value = true
+}
+
+async function runPortalAction(client: Client, action: 'invite' | 'resend' | 'reset' | 'disable' | 'enable') {
+  if (portalAction.value) return false
+  portalAction.value = action
+  try {
+    await $fetch('/api/admin/clients/access', { method: 'POST', body: { clientId: client.id, action }, headers: auth.authHeader() })
+    await loadClients()
+    portalClient.value = pageData.value.items.find(item => item.id === client.id) || client
+    const messages = {
+      invite: `Invitation envoyée à ${client.email}`,
+      resend: `Nouvel e-mail d’accès envoyé à ${client.email}`,
+      reset: `Réinitialisation envoyée à ${client.email}`,
+      disable: 'Accès portail suspendu',
+      enable: 'Accès portail réactivé',
+    }
+    toast.success(messages[action])
+    return true
+  }
+  catch (error: any) {
+    toast.error(error?.data?.message || 'La gestion de l’accès portail a échoué')
+    return false
+  }
+  finally { portalAction.value = null }
+}
 
 function resetForm() {
   Object.assign(form, { name: '', company: '', email: '', phone: '', status: 'active', notes: '', billingStreet: '', billingBuilding: '', billingPostalCode: '', billingCity: '', billingCountry: 'CH', acquisitionSource: '', acquisitionMedium: '', acquisitionCampaign: '' })
+  inviteAfterCreate.value = false
 }
 
 function openNew() {
@@ -124,16 +187,6 @@ function openEdit(client: Client) {
     acquisitionCampaign: client.acquisitionCampaign || '',
   })
   showForm.value = true
-}
-
-async function inviteToPortal(client: Client) {
-  try {
-    const result = await $fetch<{ email: string }>('/api/admin/clients/invite', { method: 'POST', body: { clientId: client.id }, headers: auth.authHeader() })
-    toast.success(`Accès portail activé pour ${result.email}`)
-  }
-  catch (error: any) {
-    toast.error(error?.data?.message || 'Impossible d’activer le portail client')
-  }
 }
 
 async function replaceQuery(patch: Record<string, any>) {
@@ -263,8 +316,9 @@ async function handleSubmit() {
       await store.update(editing.value.id, payload)
       toast.success('Client mis à jour')
     } else {
-      await store.add(payload as any)
+      const created = await store.add(payload as any)
       toast.success('Client créé')
+      if (inviteAfterCreate.value) await runPortalAction(created, 'invite')
     }
     showForm.value = false
     await loadClients()
@@ -363,14 +417,14 @@ async function moveClientToStatus(status: Client['status']) {
 watch(() => route.fullPath, async () => {
   selectedIds.value = []
   await loadClients()
-}, { immediate: true })
+})
 
 watch(() => auth.currentOrganizationId, async () => {
   await Promise.all([loadViews(), loadClients()])
 })
 
 onMounted(async () => {
-  await loadViews()
+  await Promise.all([loadViews(), loadClients()])
 })
 </script>
 
@@ -461,11 +515,12 @@ onMounted(async () => {
           </div>
           <p class="mt-2 text-xs text-gray-500">{{ client.email }}</p>
           <p class="text-xs text-gray-400">{{ client.phone || '-' }}</p>
+          <span class="mt-2 inline-flex rounded-md px-2 py-1 text-xs font-semibold" :class="portalAccessTone(client)">{{ portalAccessLabels[portalAccessStatus(client)] }}</span>
           <p class="mt-2 text-xs font-medium text-cyan-700 dark:text-cyan-300">{{ client.acquisitionSource || 'Source non attribuée' }}</p>
           <div class="mt-3 flex items-center gap-3">
             <NuxtLink :to="`/admin/clients/${client.id}`" class="text-xs text-sky-600">Voir</NuxtLink>
             <button class="text-xs text-violet-600" @click="openEdit(client)">Éditer</button>
-            <button class="text-xs text-cyan-700 dark:text-cyan-300" @click="inviteToPortal(client)">Portail</button>
+            <button class="text-xs font-semibold text-cyan-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 dark:text-cyan-300" @click="openPortalAccess(client)">Gérer l’accès</button>
             <button class="text-xs text-red-500" @click="handleDelete(client.id)">Supprimer</button>
           </div>
         </AdminAdminCard>
@@ -514,6 +569,7 @@ onMounted(async () => {
               <td class="px-5 py-3">
                 <p class="text-xs text-gray-500">{{ client.email }}</p>
                 <p class="text-xs text-gray-400">{{ client.phone || '-' }}</p>
+                <span class="mt-1.5 inline-flex rounded-md px-2 py-1 text-xs font-semibold" :class="portalAccessTone(client)">{{ portalAccessLabels[portalAccessStatus(client)] }}</span>
               </td>
               <td class="px-5 py-3">
                 <span v-if="client.status === 'active'" class="rounded-md bg-green-50 px-2 py-1 text-xs text-green-700 dark:bg-green-500/10 dark:text-green-300">{{ client.status }}</span>
@@ -523,7 +579,7 @@ onMounted(async () => {
               <td class="px-5 py-3 text-right space-x-2">
                 <NuxtLink :to="`/admin/clients/${client.id}`" class="text-xs text-sky-600">Voir</NuxtLink>
                 <button class="text-xs text-violet-600" @click="openEdit(client)">Éditer</button>
-                <button class="text-xs text-cyan-700 dark:text-cyan-300" @click="inviteToPortal(client)">Portail</button>
+                <button class="text-xs font-semibold text-cyan-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 dark:text-cyan-300" @click="openPortalAccess(client)">Accès</button>
                 <button class="text-xs text-red-500" @click="handleDelete(client.id)">Supprimer</button>
               </td>
             </tr>
@@ -558,6 +614,7 @@ onMounted(async () => {
             <div class="mt-2 flex items-center gap-2">
               <NuxtLink :to="`/admin/clients/${client.id}`" class="text-xs text-sky-600">Voir</NuxtLink>
               <button class="text-xs text-violet-600" @click="openEdit(client)">Éditer</button>
+              <button class="text-xs font-semibold text-cyan-700 dark:text-cyan-300" @click="openPortalAccess(client)">Accès portail</button>
             </div>
           </article>
           <p v-if="!column.items.length" class="text-xs text-gray-400 py-6 text-center">Aucun client</p>
@@ -590,6 +647,10 @@ onMounted(async () => {
             <option value="active">Actif</option>
             <option value="inactive">Inactif</option>
           </select>
+          <label v-if="!editing" class="flex items-start gap-3 rounded-lg border border-violet-200/70 bg-violet-50/60 p-3 text-sm dark:border-violet-500/20 dark:bg-violet-500/[0.08]">
+            <input v-model="inviteAfterCreate" type="checkbox" class="mt-0.5 h-4 w-4 rounded border-gray-300 text-violet-600 focus:ring-violet-500">
+            <span><strong class="block text-gray-900 dark:text-white">Inviter ce client après sa création</strong><span class="mt-0.5 block text-xs leading-5 text-gray-600 dark:text-gray-300">Il recevra un lien personnel pour choisir son mot de passe et ouvrir son espace sécurisé.</span></span>
+          </label>
           <fieldset class="space-y-3 rounded-lg border border-gray-200 p-3 dark:border-white/[0.08]">
             <legend class="px-1 text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">Acquisition</legend>
             <p class="text-xs leading-relaxed text-gray-500 dark:text-gray-400">Indique comment ce contact t’a découvert. Ces informations alimentent directement Analytics.</p>
@@ -631,6 +692,49 @@ onMounted(async () => {
             <button type="submit" class="rounded-lg bg-violet-600 px-4 py-2 text-sm text-white disabled:cursor-wait disabled:opacity-60" :disabled="savingClient">{{ savingClient ? 'Enregistrement…' : 'Enregistrer' }}</button>
           </div>
         </form>
+      </div>
+    </Transition>
+
+    <Transition name="fade">
+      <div v-if="showPortalAccess && portalClient" ref="portalDialogRef" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4" role="dialog" aria-modal="true" aria-labelledby="portal-access-title" tabindex="-1" @keydown="handlePortalDialogKeydown">
+        <div class="absolute inset-0 bg-black/45" @click="closePortalAccess" />
+        <section class="admin-modal-panel relative w-full max-w-lg rounded-xl bg-white p-5 shadow-xl dark:bg-[#111118]" :aria-busy="Boolean(portalAction)">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <h2 id="portal-access-title" class="font-display text-xl font-semibold text-gray-950 dark:text-white">Accès client de {{ portalClient.name }}</h2>
+              <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">{{ portalClient.email }}</p>
+            </div>
+            <button type="button" class="min-h-10 rounded-lg px-3 text-sm text-gray-600 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:text-gray-300 dark:hover:bg-white/[0.07]" @click="closePortalAccess">Fermer</button>
+          </div>
+
+          <div class="mt-5 flex items-center justify-between gap-4 rounded-lg border border-gray-200 px-4 py-3 dark:border-white/[0.08]">
+            <div><p class="text-sm font-semibold">État du portail</p><p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Les actions sont journalisées dans l’audit.</p></div>
+            <span class="shrink-0 rounded-md px-2.5 py-1 text-xs font-semibold" :class="portalAccessTone(portalClient)">{{ portalAccessLabels[portalAccessStatus(portalClient)] }}</span>
+          </div>
+
+          <div class="mt-5 space-y-3">
+            <div v-if="portalAccessStatus(portalClient) === 'not_invited'" class="flex flex-col gap-3 rounded-lg bg-gray-50 p-4 dark:bg-white/[0.04] sm:flex-row sm:items-center sm:justify-between">
+              <div><p class="text-sm font-semibold">Envoyer la première invitation</p><p class="mt-1 text-xs leading-5 text-gray-600 dark:text-gray-400">Le lien temporaire permet au client de choisir son mot de passe.</p></div>
+              <button type="button" :disabled="Boolean(portalAction)" class="min-h-11 shrink-0 rounded-lg bg-violet-600 px-4 text-sm font-semibold text-white hover:bg-violet-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-60 dark:focus-visible:ring-offset-[#111118]" @click="runPortalAction(portalClient, 'invite')">{{ portalAction === 'invite' ? 'Envoi…' : 'Envoyer l’invitation' }}</button>
+            </div>
+
+            <template v-else-if="portalAccessStatus(portalClient) !== 'disabled'">
+              <div class="flex flex-col gap-3 rounded-lg bg-gray-50 p-4 dark:bg-white/[0.04] sm:flex-row sm:items-center sm:justify-between">
+                <div><p class="text-sm font-semibold">{{ portalAccessStatus(portalClient) === 'invited' ? 'Renvoyer le lien d’accès' : 'Réinitialiser le mot de passe' }}</p><p class="mt-1 text-xs leading-5 text-gray-600 dark:text-gray-400">Un nouveau lien personnel sera envoyé à l’adresse du client.</p></div>
+                <button type="button" :disabled="Boolean(portalAction)" class="min-h-11 shrink-0 rounded-lg border border-violet-200 px-4 text-sm font-semibold text-violet-700 hover:bg-violet-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 disabled:cursor-wait disabled:opacity-60 dark:border-violet-400/25 dark:text-violet-200 dark:hover:bg-violet-400/10" @click="runPortalAction(portalClient, portalAccessStatus(portalClient) === 'invited' ? 'resend' : 'reset')">{{ portalAction ? 'Envoi…' : portalAccessStatus(portalClient) === 'invited' ? 'Renvoyer' : 'Réinitialiser' }}</button>
+              </div>
+              <div class="flex flex-col gap-3 rounded-lg border border-red-200/80 p-4 dark:border-red-400/20 sm:flex-row sm:items-center sm:justify-between">
+                <div><p class="text-sm font-semibold text-red-900 dark:text-red-100">Suspendre l’accès</p><p class="mt-1 text-xs leading-5 text-red-700 dark:text-red-300">Le compte est conservé, mais ce client ne pourra plus consulter cette organisation.</p></div>
+                <button type="button" :disabled="Boolean(portalAction)" class="min-h-11 shrink-0 rounded-lg px-4 text-sm font-semibold text-red-700 hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 disabled:cursor-wait disabled:opacity-60 dark:text-red-200 dark:hover:bg-red-400/10" @click="runPortalAction(portalClient, 'disable')">{{ portalAction === 'disable' ? 'Suspension…' : 'Suspendre' }}</button>
+              </div>
+            </template>
+
+            <div v-else class="flex flex-col gap-3 rounded-lg border border-emerald-200/80 bg-emerald-50/60 p-4 dark:border-emerald-400/20 dark:bg-emerald-400/[0.07] sm:flex-row sm:items-center sm:justify-between">
+              <div><p class="text-sm font-semibold text-emerald-900 dark:text-emerald-100">Réactiver cet accès</p><p class="mt-1 text-xs leading-5 text-emerald-800 dark:text-emerald-300">Le client retrouvera immédiatement ses projets et documents existants.</p></div>
+              <button type="button" :disabled="Boolean(portalAction)" class="min-h-11 shrink-0 rounded-lg bg-emerald-700 px-4 text-sm font-semibold text-white hover:bg-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-60 dark:focus-visible:ring-offset-[#111118]" @click="runPortalAction(portalClient, 'enable')">{{ portalAction === 'enable' ? 'Réactivation…' : 'Réactiver' }}</button>
+            </div>
+          </div>
+        </section>
       </div>
     </Transition>
   </div>

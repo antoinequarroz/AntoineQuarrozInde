@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import AdminAdminIcon from './AdminIcon.vue'
+
 defineProps<{
   label: string
   value: string | number

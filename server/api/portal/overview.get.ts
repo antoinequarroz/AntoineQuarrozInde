@@ -21,7 +21,7 @@ export default defineEventHandler(async (event) => {
   const projectContentError = milestones.error || deliverables.error || projectNotes.error
   if (projectContentError) throw createError({ statusCode: 500, message: projectContentError.message })
   const payments = invoiceIds.length
-    ? await supabase.from('invoice_payments').select('invoice_id,amount_cents,voided_at').eq('organization_id', org.id).in('invoice_id', invoiceIds)
+    ? await supabase.from('invoice_payments').select('id,invoice_id,amount_cents,currency,method,paid_at,reference,voided_at').eq('organization_id', org.id).in('invoice_id', invoiceIds).order('paid_at', { ascending: false })
     : { data: [], error: null }
   if (payments.error) throw createError({ statusCode: 500, message: payments.error.message })
 
@@ -32,6 +32,7 @@ export default defineEventHandler(async (event) => {
   const portalInvoices = (invoices.data || []).map(invoice => ({
     ...invoice,
     paid_amount_cents: paidByInvoice.get(invoice.id) || 0,
+    payments: (payments.data || []).filter(payment => payment.invoice_id === invoice.id && !payment.voided_at),
   }))
 
   return {

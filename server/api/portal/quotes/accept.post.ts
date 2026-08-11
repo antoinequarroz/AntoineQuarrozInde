@@ -42,5 +42,16 @@ export default defineEventHandler(async (event) => {
     clientId: client.id,
     payload: { number: quote.number, accepted_at: acceptedAt },
   })
+  await notifyOperationalEvent({
+    organizationId: org.id,
+    subject: `Devis ${quote.number} accepté par ${client.name}`,
+    title: 'Un devis vient d’être accepté',
+    body: `<p><strong>${escapeEmailHtml(client.name)}</strong> a accepté le devis <strong>${escapeEmailHtml(quote.number)}</strong>${quote.title ? ` — ${escapeEmailHtml(quote.title)}` : ''}.</p>`,
+    action: 'quote.portal_accepted',
+    entityType: 'quote',
+    entityId: quote.id,
+    clientId: client.id,
+    idempotencyKey: `quote-accepted-${quote.id}-${acceptedAt}`,
+  })
   return { accepted: true, acceptedAt }
 })
