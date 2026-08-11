@@ -1,7 +1,6 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
 type CheckoutState = {
-  client?: Record<string, unknown> | null
   invoice?: Record<string, unknown> | null
   payments?: Array<{ amount_cents: number, voided_at: string | null }>
   filters: Array<{ table: string, operator: string, column: string, value: unknown }>
@@ -28,8 +27,17 @@ function createCheckoutSupabase(state: CheckoutState) {
           state.filters.push({ table, operator: 'neq', column, value })
           return query
         },
+        lte(column: string, value: unknown) {
+          state.filters.push({ table, operator: 'lte', column, value })
+          return query
+        },
+        gt(column: string, value: unknown) {
+          state.filters.push({ table, operator: 'gt', column, value })
+          return query
+        },
+        update() { return query },
+        insert() { return query },
         maybeSingle() {
-          if (table === 'clients') return Promise.resolve({ data: state.client ?? null, error: null })
           if (table === 'invoices') return Promise.resolve({ data: state.invoice ?? null, error: null })
           return Promise.resolve({ data: null, error: null })
         },
@@ -60,7 +68,6 @@ describe('TWINT Checkout session', () => {
   beforeEach(() => {
     body = { invoiceId: 42 }
     state = {
-      client: { id: 7, name: 'Client Test', email: 'client@example.ch' },
       invoice: {
         id: 42,
         number: 'FAC-2026-0042',
@@ -74,14 +81,23 @@ describe('TWINT Checkout session', () => {
       payments: [{ amount_cents: 2_500, voided_at: null }],
       filters: [],
     }
-    createSession = vi.fn().mockResolvedValue({ id: 'cs_test_twint', url: 'https://checkout.stripe.test/cs_test_twint' })
+    createSession = vi.fn().mockResolvedValue({
+      id: 'cs_test_twint',
+      url: 'https://checkout.stripe.test/cs_test_twint',
+      expires_at: 1_786_035_600,
+    })
     audit = vi.fn().mockResolvedValue(undefined)
 
-    vi.stubGlobal('resolveOrganizationContext', () => Promise.resolve({ id: 'org-test' }))
+    vi.stubGlobal('requirePortalClient', () => Promise.resolve({
+      org: { id: 'org-test' },
+      user: { id: 'user-test', email: 'client@example.ch' },
+      client: { id: 7, name: 'Client Test', email: 'client@example.ch' },
+    }))
     vi.stubGlobal('readBody', () => Promise.resolve(body))
     vi.stubGlobal('createError', httpError)
     vi.stubGlobal('useRuntimeConfig', () => ({
       stripeSecretKey: 'sk_test_example',
+      stripeWebhookSecret: 'whsec_test_example',
       public: { siteUrl: 'https://www.antoinequarroz.ch/' },
     }))
     vi.stubGlobal('getSupabaseAdmin', () => createCheckoutSupabase(state))
@@ -92,7 +108,11 @@ describe('TWINT Checkout session', () => {
   const event = () => ({ context: { user: { id: 'user-test', email: 'client@example.ch' } } })
 
   it('charges only the outstanding CHF balance through TWINT', async () => {
-    await expect(handler(event())).resolves.toEqual({ url: 'https://checkout.stripe.test/cs_test_twint' })
+    await expect(handler(event())).resolves.toEqual({
+      url: 'https://checkout.stripe.test/cs_test_twint',
+      sessionId: 'cs_test_twint',
+      reused: false,
+    })
 
     expect(createSession).toHaveBeenCalledWith(expect.objectContaining({
       mode: 'payment',
@@ -123,8 +143,6 @@ describe('TWINT Checkout session', () => {
     await handler(event())
 
     expect(state.filters).toEqual(expect.arrayContaining([
-      { table: 'clients', operator: 'eq', column: 'organization_id', value: 'org-test' },
-      { table: 'clients', operator: 'ilike', column: 'email', value: 'client@example.ch' },
       { table: 'invoices', operator: 'eq', column: 'organization_id', value: 'org-test' },
       { table: 'invoices', operator: 'eq', column: 'client_id', value: 7 },
       { table: 'invoices', operator: 'eq', column: 'id', value: 42 },
@@ -146,7 +164,7 @@ describe('TWINT Checkout session', () => {
   })
 
   it('fails safely when Stripe does not return a Checkout URL', async () => {
-    createSession.mockResolvedValue({ id: 'cs_test_twint', url: null })
+    createSession.mockResolvedValue({ id: 'cs_test_twint', url: null, expires_at: 1_786_035_600 })
 
     await expect(handler(event())).rejects.toMatchObject({ statusCode: 502 })
     expect(audit).not.toHaveBeenCalled()

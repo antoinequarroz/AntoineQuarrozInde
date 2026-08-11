@@ -7,6 +7,7 @@ type WebhookEvent = {
 }
 
 type DatabaseState = {
+  checkoutSession?: Record<string, unknown> | null
   existingPayment?: { id: number } | null
   invoice?: Record<string, unknown> | null
   payments?: Array<{ amount_cents: number, voided_at: string | null }>
@@ -19,18 +20,9 @@ function httpError(input: { statusCode: number, message: string }) {
 }
 
 function createSupabaseStub(state: DatabaseState) {
-  const calls = new Map<string, number>()
-
   return {
     from(table: string) {
-      const call = (calls.get(table) || 0) + 1
-      calls.set(table, call)
       let operation = 'select'
-
-      const result = () => {
-        if (table === 'invoice_payments' && call === 3) return { data: state.payments || [], error: null }
-        return { data: null, error: null }
-      }
       const query = {
         select() { return query },
         eq() { return query },
@@ -41,12 +33,33 @@ function createSupabaseStub(state: DatabaseState) {
         },
         update(payload: Record<string, unknown>) {
           operation = 'update'
-          state.updatedInvoice = payload
+          if (table === 'invoices') state.updatedInvoice = payload
           return query
         },
         maybeSingle() {
+          if (table === 'payment_checkout_sessions') {
+            if (operation === 'update') return Promise.resolve({ data: { id: 31 }, error: null })
+            return Promise.resolve({
+              data: state.checkoutSession ?? {
+                organization_id: 'org-test', invoice_id: 42, client_id: 7,
+                amount_cents: 10_000, currency: 'CHF', status: 'created',
+              },
+              error: null,
+            })
+          }
           if (table === 'invoice_payments') return Promise.resolve({ data: state.existingPayment ?? null, error: null })
-          if (table === 'invoices') return Promise.resolve({ data: state.invoice ?? null, error: null })
+          if (table === 'invoices') {
+            if (operation === 'update') return Promise.resolve({ data: { id: 42 }, error: null })
+            return Promise.resolve({
+              data: state.invoice ?? {
+                id: 42, number: 'FAC-2026-0042', total_cents: 10_000,
+                amount_cents: 10_000, due_at: '2026-08-31', status: 'sent',
+                currency: 'CHF', client_id: 7,
+              },
+              error: null,
+            })
+          }
+          if (table === 'clients') return Promise.resolve({ data: { id: 7, name: 'Client Test', email: null }, error: null })
           return Promise.resolve({ data: null, error: null })
         },
         single() {
@@ -54,7 +67,10 @@ function createSupabaseStub(state: DatabaseState) {
           return Promise.resolve(result())
         },
         then(resolve: (value: unknown) => unknown, reject: (reason: unknown) => unknown) {
-          return Promise.resolve(result()).then(resolve, reject)
+          const result = table === 'invoice_payments'
+            ? { data: state.payments || [], error: null }
+            : { data: null, error: null }
+          return Promise.resolve(result).then(resolve, reject)
         },
       }
       return query
@@ -104,6 +120,10 @@ describe('Stripe TWINT webhook', () => {
     vi.stubGlobal('readRawBody', () => Promise.resolve('{"id":"evt_test"}'))
     vi.stubGlobal('getStripeClient', () => ({ webhooks: { constructEvent } }))
     vi.stubGlobal('logAudit', audit)
+    vi.stubGlobal('notifyOperationalEvent', vi.fn().mockResolvedValue(undefined))
+    vi.stubGlobal('sendTransactionalEmail', vi.fn().mockResolvedValue({ emailId: 'email-test' }))
+    vi.stubGlobal('portalEmailLayout', vi.fn(() => '<p>Reçu</p>'))
+    vi.stubGlobal('escapeEmailHtml', (value: unknown) => String(value))
   })
 
   it('rejects an invalid Stripe signature before touching the database', async () => {
@@ -117,7 +137,8 @@ describe('Stripe TWINT webhook', () => {
   })
 
   it('ignores unrelated and unpaid events', async () => {
-    const getSupabaseAdmin = vi.fn()
+    const from = vi.fn()
+    const getSupabaseAdmin = vi.fn(() => ({ from }))
     vi.stubGlobal('getSupabaseAdmin', getSupabaseAdmin)
 
     stripeEvent = { type: 'payment_intent.created', created: 1, data: { object: {} } }
@@ -125,7 +146,8 @@ describe('Stripe TWINT webhook', () => {
 
     stripeEvent = paidCheckoutEvent({ payment_status: 'unpaid' })
     await expect(handler({})).resolves.toEqual({ received: true })
-    expect(getSupabaseAdmin).not.toHaveBeenCalled()
+    expect(getSupabaseAdmin).toHaveBeenCalledTimes(2)
+    expect(from).not.toHaveBeenCalled()
   })
 
   it('is idempotent when Stripe retries the same payment', async () => {
@@ -153,7 +175,7 @@ describe('Stripe TWINT webhook', () => {
     }
     vi.stubGlobal('getSupabaseAdmin', () => createSupabaseStub(state))
 
-    await expect(handler({})).resolves.toEqual({ received: true })
+    await expect(handler({})).resolves.toEqual({ received: true, duplicate: false })
     expect(state.insertedPayment).toMatchObject({
       organization_id: 'org-test',
       invoice_id: 42,
