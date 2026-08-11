@@ -1,0 +1,8 @@
+project_id = "antoinequarroz-preflight"
+
+[db]
+port = 55432
+shadow_port = 55420
+
+[db.seed]
+enabled = false

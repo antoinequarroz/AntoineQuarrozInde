@@ -51,7 +51,7 @@ describe('AQ-058 release pipeline', () => {
     const workflow = await readFile(workflowPath, 'utf8')
 
     expect(workflow).toContain("if: github.event_name == 'push' && github.ref == 'refs/heads/main'")
-    expect(workflow).toContain('needs: quality')
+    expect(workflow).toContain('needs: [quality, database]')
     expect(workflow).toContain('needs: [quality, deploy]')
     expect(workflow).toContain("github.event_name != 'push' || needs.deploy.result == 'success'")
     expect(workflow.indexOf('\n  deploy:')).toBeLessThan(workflow.indexOf('\n  e2e:'))
