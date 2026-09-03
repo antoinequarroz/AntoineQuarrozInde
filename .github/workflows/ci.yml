@@ -117,6 +117,8 @@ jobs:
         run: bash scripts/ops/verify-private-noindex.sh https://www.antoinequarroz.ch
       - name: Verify the OpenAI crawler policy
         run: bash scripts/ops/verify-openai-robots-policy.sh https://www.antoinequarroz.ch
+      - name: Verify localized home and legal pages
+        run: bash scripts/ops/verify-localized-pages.sh https://www.antoinequarroz.ch
 
   e2e:
     if: >-

@@ -1,11 +1,24 @@
 {
+  "seo": {
+    "home": {
+      "title": "Antoine Quarroz — Freelance Web Developer in Valais",
+      "description": "Freelance web developer based in Valais, Antoine Quarroz builds custom websites, mobile apps and CMS solutions for clients in Switzerland and worldwide.",
+      "job_title": "Freelance web developer",
+      "knows_about": ["Web development", "Nuxt", "Vue.js", "Mobile applications", "CMS"],
+      "areas_served": ["Valais", "Switzerland", "Europe", "Worldwide"]
+    }
+  },
   "nav": {
     "home": "Home",
     "about": "About",
     "services": "Services",
     "portfolio": "Portfolio",
     "blog": "Blog",
-    "contact": "Contact"
+    "contact": "Contact",
+    "open_menu": "Open menu",
+    "close_menu": "Close menu",
+    "mobile_menu": "Main menu",
+    "change_language": "Change language"
   },
   "hero": {
     "badge": "Available for new projects",
@@ -29,7 +42,8 @@
     "fact_since": "Freelancing since 2026",
     "tools_title": "My daily stack",
     "label_1": "Background",
-    "label_2": "Mission"
+    "label_2": "Mission",
+    "photo_soon": "Photo coming soon"
   },
   "blog": {
     "preview_action": "Quick preview",
@@ -78,7 +92,8 @@
         "Scalable"
       ]
     },
-    "cta": "Learn more"
+    "cta": "Learn more",
+    "areas": "Areas"
   },
   "portfolio": {
     "badge": "Portfolio",
@@ -156,6 +171,7 @@
     "badge": "Contact",
     "title": "Let's start your\nproject together.",
     "subtitle": "Have an idea? A project? Let's chat over a virtual coffee.",
+    "quick_reply_at": "Quick reply at",
     "form": {
       "name": "Your name",
       "email": "Your email",

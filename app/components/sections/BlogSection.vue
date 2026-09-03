@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const store = useArticlesStore()
 
 const articles = computed(() => store.published.slice(0, 3))
@@ -56,7 +56,7 @@ const { dialogRef, handleDialogKeydown } = useAccessibleDialog(
 </script>
 
 <template>
-  <section v-if="articles.length" id="blog" class="section-padding section-surface">
+  <section v-if="locale === 'fr' && articles.length" id="blog" class="section-padding section-surface">
     <div class="section-background">
       <div class="section-grid" />
     </div>

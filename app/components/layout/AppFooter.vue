@@ -12,8 +12,10 @@ const socials = [
 const navLinks = computed(() => [
   { key: 'about', href: `${localePath('/')}#about` },
   { key: 'services', href: `${localePath('/')}#services` },
-  { key: 'portfolio', href: `${localePath('/')}#portfolio` },
-  { key: 'blog', href: `${localePath('/')}#blog` },
+  ...(locale.value === 'fr' ? [
+    { key: 'portfolio', href: `${localePath('/')}#portfolio` },
+    { key: 'blog', href: `${localePath('/')}#blog` },
+  ] : []),
   { key: 'contact', href: `${localePath('/')}#contact` },
 ])
 

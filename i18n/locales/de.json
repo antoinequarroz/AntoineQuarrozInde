@@ -1,11 +1,24 @@
 {
+  "seo": {
+    "home": {
+      "title": "Antoine Quarroz — Freelance-Webentwickler im Wallis",
+      "description": "Antoine Quarroz ist Freelance-Webentwickler im Wallis und entwickelt individuelle Websites, mobile Apps und CMS-Lösungen für Kunden in der Schweiz und weltweit.",
+      "job_title": "Freelance-Webentwickler",
+      "knows_about": ["Webentwicklung", "Nuxt", "Vue.js", "Mobile Apps", "CMS"],
+      "areas_served": ["Wallis", "Schweiz", "Europa", "weltweit"]
+    }
+  },
   "nav": {
     "home": "Startseite",
     "about": "Über mich",
     "services": "Leistungen",
     "portfolio": "Portfolio",
     "blog": "Blog",
-    "contact": "Kontakt"
+    "contact": "Kontakt",
+    "open_menu": "Menü öffnen",
+    "close_menu": "Menü schließen",
+    "mobile_menu": "Hauptmenü",
+    "change_language": "Sprache ändern"
   },
   "hero": {
     "badge": "Verfügbar für neue Projekte",
@@ -29,7 +42,8 @@
     "fact_since": "Freelancer seit 2026",
     "tools_title": "Mein täglicher Stack",
     "label_1": "Werdegang",
-    "label_2": "Mission"
+    "label_2": "Mission",
+    "photo_soon": "Foto folgt"
   },
   "blog": {
     "preview_action": "Schnellvorschau",
@@ -78,7 +92,8 @@
         "Skalierbar"
       ]
     },
-    "cta": "Mehr erfahren"
+    "cta": "Mehr erfahren",
+    "areas": "Regionen"
   },
   "portfolio": {
     "badge": "Portfolio",
@@ -156,6 +171,7 @@
     "badge": "Kontakt",
     "title": "Starten wir Ihr\nProjekt gemeinsam.",
     "subtitle": "Eine Idee? Ein Projekt? Lassen Sie uns darüber sprechen.",
+    "quick_reply_at": "Schnelle Antwort an",
     "form": {
       "name": "Ihr Name",
       "email": "Ihre E-Mail",

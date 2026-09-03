@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const { t, locale } = useI18n()
+const localePath = useLocalePath()
 const { track } = useMarketing()
 
 type ServiceKey = 'vitrine' | 'mobile' | 'cms'
@@ -71,9 +72,9 @@ const localZones = computed(() => {
         </h2>
         <p class="section-subtitle mx-auto text-center">{{ t('services.subtitle') }}</p>
         <p class="mt-3 text-xs text-gray-500 dark:text-white/55 text-center">
-          Zones: {{ localZones }}
+          {{ t('services.areas') }}: {{ localZones }}
         </p>
-        <div class="mt-3 flex flex-wrap justify-center gap-2">
+        <div v-if="locale === 'fr'" class="mt-3 flex flex-wrap justify-center gap-2">
           <NuxtLink to="/creation-site-internet-valais" class="inline-flex min-h-11 items-center rounded-lg border border-violet-500/20 px-3 py-1.5 text-xs text-violet-700 dark:text-violet-200">
             Sites web en Valais
           </NuxtLink>
@@ -152,7 +153,7 @@ const localZones = computed(() => {
               </ul>
 
               <a
-                href="/#contact"
+                :href="`${localePath('/')}#contact`"
                 class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all group/link"
                 :class="index === 1
                   ? 'bg-violet-600 text-white hover:bg-violet-500'

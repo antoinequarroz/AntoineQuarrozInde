@@ -1,11 +1,24 @@
 {
+  "seo": {
+    "home": {
+      "title": "Antoine Quarroz — Développeur Web Freelance en Valais",
+      "description": "Développeur web freelance basé en Valais, Antoine Quarroz conçoit des sites, applications mobiles et CMS sur mesure en Suisse et à distance.",
+      "job_title": "Développeur web freelance",
+      "knows_about": ["Développement web", "Nuxt", "Vue.js", "Applications mobiles", "CMS"],
+      "areas_served": ["Valais", "Suisse", "Europe", "Monde"]
+    }
+  },
   "nav": {
     "home": "Accueil",
     "about": "À propos",
     "services": "Services",
     "portfolio": "Portfolio",
     "blog": "Blog",
-    "contact": "Contact"
+    "contact": "Contact",
+    "open_menu": "Ouvrir le menu",
+    "close_menu": "Fermer le menu",
+    "mobile_menu": "Menu principal",
+    "change_language": "Changer de langue"
   },
   "hero": {
     "badge": "Disponible pour de nouveaux mandats",
@@ -29,7 +42,8 @@
     "fact_since": "Freelance depuis 2026",
     "tools_title": "Mon stack au quotidien",
     "label_1": "Parcours",
-    "label_2": "Mission"
+    "label_2": "Mission",
+    "photo_soon": "Photo à venir"
   },
   "blog": {
     "preview_action": "Aperçu rapide",
@@ -78,7 +92,8 @@
         "Évolutif"
       ]
     },
-    "cta": "En savoir plus"
+    "cta": "En savoir plus",
+    "areas": "Zones"
   },
   "portfolio": {
     "badge": "Portfolio",
@@ -156,6 +171,7 @@
     "badge": "Contact",
     "title": "Démarrons votre\nprojet ensemble.",
     "subtitle": "Une idée ? Un projet ? Parlons-en autour d'un café virtuel.",
+    "quick_reply_at": "Réponse rapide à",
     "form": {
       "name": "Votre nom",
       "email": "Votre email",

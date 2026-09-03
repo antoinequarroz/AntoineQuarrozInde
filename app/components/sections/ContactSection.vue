@@ -321,7 +321,7 @@ const contactInfo = computed(() => [
               {{ status === 'sending' ? t('contact.form.sending') : t('contact.form.send') }}
             </button>
             <p class="text-xs text-gray-500 dark:text-white/50 text-center">
-              Réponse rapide sur
+              {{ t('contact.quick_reply_at') }}
               <a :href="`mailto:${EMAIL}`" class="text-violet-600 dark:text-violet-300 underline" @click="track('contact_email_click')">{{ EMAIL }}</a>
             </p>
           </form>

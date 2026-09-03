@@ -1,5 +1,6 @@
 <script setup lang="ts">
-const { t } = useI18n();
+const { t, locale } = useI18n();
+const localePath = useLocalePath();
 
 const sceneUrl = "https://prod.spline.design/PyzDhpQ9E5f1E3MT/scene.splinecode";
 </script>
@@ -68,13 +69,14 @@ const sceneUrl = "https://prod.spline.design/PyzDhpQ9E5f1E3MT/scene.splinecode";
 
                         <div class="pointer-events-auto mt-6 flex flex-col gap-3 min-[430px]:flex-row">
                             <a
-                                href="/#contact"
+                                :href="`${localePath('/')}#contact`"
                                 class="inline-flex min-h-12 items-center justify-center rounded-xl bg-violet-600 px-6 text-sm font-semibold text-white shadow-[0_10px_35px_rgba(124,58,237,0.32)] transition hover:bg-violet-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
                             >
                                 {{ t("hero.cta_primary") }}
                             </a>
                             <a
-                                href="/#portfolio"
+                                v-if="locale === 'fr'"
+                                :href="`${localePath('/')}#portfolio`"
                                 class="inline-flex min-h-12 items-center justify-center rounded-xl border border-white/25 bg-black/20 px-6 text-sm font-semibold text-white backdrop-blur-sm transition hover:border-cyan-300/50 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
                             >
                                 {{ t("hero.cta_secondary") }}

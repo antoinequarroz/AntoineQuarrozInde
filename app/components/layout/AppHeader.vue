@@ -1,5 +1,6 @@
 <script setup lang="ts">
-const { t } = useI18n()
+const { t, locale } = useI18n()
+const localePath = useLocalePath()
 const scrollY = useWindowScroll().y
 const isScrolled = computed(() => scrollY.value > 70)
 
@@ -12,12 +13,14 @@ const menuLabels = computed(() => ({
 }))
 
 const navLinks = computed(() => [
-  { key: 'home', href: '/#hero' },
-  { key: 'about', href: '/#about' },
-  { key: 'services', href: '/#services' },
-  { key: 'portfolio', href: '/#portfolio' },
-  { key: 'blog', href: '/#blog' },
-  { key: 'contact', href: '/#contact' },
+  { key: 'home', href: `${localePath('/')}#hero` },
+  { key: 'about', href: `${localePath('/')}#about` },
+  { key: 'services', href: `${localePath('/')}#services` },
+  ...(locale.value === 'fr' ? [
+    { key: 'portfolio', href: `${localePath('/')}#portfolio` },
+    { key: 'blog', href: `${localePath('/')}#blog` },
+  ] : []),
+  { key: 'contact', href: `${localePath('/')}#contact` },
 ])
 
 function closeMenu() {
@@ -53,7 +56,7 @@ onBeforeUnmount(() => {
       >
         <!-- Left -->
         <div class="flex items-center gap-2.5">
-          <NuxtLink to="/" aria-label="Accueil — Antoine Quarroz" class="h-11 w-11 rounded-xl bg-gradient-brand flex items-center justify-center shadow-glow-sm">
+          <NuxtLink :to="localePath('/')" :aria-label="`${t('nav.home')} — Antoine Quarroz`" class="h-11 w-11 rounded-xl bg-gradient-brand flex items-center justify-center shadow-glow-sm">
             <span class="font-display font-bold text-white text-xs">AQ</span>
           </NuxtLink>
           <span
@@ -82,7 +85,7 @@ onBeforeUnmount(() => {
           <UiLangSwitcher />
           <UiThemeToggle />
           <a
-            href="/#contact"
+            :href="`${localePath('/')}#contact`"
             class="hidden md:inline-flex items-center justify-center px-4 py-2 rounded-full text-sm font-semibold transition-colors"
             :class="isScrolled ? 'bg-violet-600 text-white hover:bg-violet-500' : 'bg-white text-black hover:bg-white/90'"
           >
@@ -165,7 +168,7 @@ onBeforeUnmount(() => {
             </a>
           </nav>
 
-          <a href="/#contact" class="btn-primary w-full justify-center py-4 text-base" @click="closeMenu">
+          <a :href="`${localePath('/')}#contact`" class="btn-primary w-full justify-center py-4 text-base" @click="closeMenu">
             {{ t('nav.contact') }}
           </a>
         </div>

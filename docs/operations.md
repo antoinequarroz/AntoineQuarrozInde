@@ -175,6 +175,34 @@ Pour un rollback durable, restaurer `server/routes/robots.txt.ts` et
 `server/utils/robotsPolicy.ts` au commit précédent, reconstruire l'image puis
 rejouer le contrôle.
 
+### Pages localisées FR/EN/DE
+
+La décision humaine `OD-SEO-001` publie l'accueil et les pages légales en
+français (`fr-CH`), anglais (`en-US`) et allemand (`de-CH`). Chaque variante
+doit rendre côté serveur un title et une description dans sa langue, une
+self-canonical absolue, les quatre alternates réciproques (`fr-CH`, `en-US`,
+`de-CH`, `x-default`) et des liens de changement de langue avec un véritable
+`href`. Les trois accueils doivent aussi publier un `og:url` égal à leur URL.
+
+Après une livraison, contrôler les trois accueils et les neuf pages légales :
+
+```bash
+bash scripts/ops/verify-localized-pages.sh \
+  https://www.antoinequarroz.ch
+```
+
+Le script journalise le domaine contrôlé et échoue si une des 12 URL est
+indisponible, si une canonical pointe vers une autre langue, si un alternate
+manque ou n'est pas réciproque, ou si le sélecteur n'est pas explorable sans
+JavaScript. Il est anonyme, borné dans le temps et ne transmet aucun secret.
+Les articles et pages de services restent français uniquement jusqu'à
+validation de traductions humaines; aucune variante localisée fictive ne doit
+être ajoutée.
+
+En cas d'incohérence, revenir à l'image `antoinequarroz-web:previous`, restaurer
+les catalogues et composants au commit antérieur, puis rejouer le contrôle sur
+les 12 URL avant de rétablir la release.
+
 ## Surveillance
 
 `/api/health` contrôle le serveur Nuxt et l'accès à Supabase. Le timer

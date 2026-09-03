@@ -56,7 +56,10 @@ const googleReviews = computed<DisplayReview[]>(() => googleStore.reviews.map(re
   translated: Boolean(review.originalLanguage && review.contentLanguage && review.originalLanguage !== review.contentLanguage),
 })))
 
-const reviews = computed(() => [...googleReviews.value, ...manualReviews.value])
+const reviews = computed(() => [
+  ...googleReviews.value,
+  ...(locale.value === 'fr' ? manualReviews.value : []),
+])
 const stars = (rating: number) => Array.from({ length: 5 }, (_, i) => i < rating)
 const displayRating = computed(() => googleReviews.value.length ? googleStore.rating : store.avgRating)
 const displayCount = computed(() => googleReviews.value.length ? googleStore.userRatingCount : manualReviews.value.length)
@@ -67,7 +70,7 @@ const content = computed(() => {
       badge: 'Testimonials', titleA: 'Clients talk about', titleB: 'the experience.',
       subtitle: 'Real feedback from projects built with care, clarity and performance.', reviewsLabel: 'reviews',
       source: 'View on Google Maps', report: 'Report', sorted: 'Google reviews are selected and ordered by relevance by Google Maps.',
-      translated: 'Translated review', visited: 'Visited',
+      translated: 'Translated review', visited: 'Visited', rating: 'out of 5',
     }
   }
   if (locale.value === 'de') {
@@ -75,14 +78,14 @@ const content = computed(() => {
       badge: 'Kundenstimmen', titleA: 'Kunden sprechen über', titleB: 'die Zusammenarbeit.',
       subtitle: 'Echtes Feedback zu Projekten mit Klarheit, Design und Performance.', reviewsLabel: 'Bewertungen',
       source: 'Auf Google Maps ansehen', report: 'Melden', sorted: 'Google-Bewertungen werden von Google Maps nach Relevanz ausgewählt und sortiert.',
-      translated: 'Übersetzte Bewertung', visited: 'Besucht',
+      translated: 'Übersetzte Bewertung', visited: 'Besucht', rating: 'von 5',
     }
   }
   return {
     badge: 'Témoignages', titleA: 'Ce que disent', titleB: 'mes clients.',
     subtitle: 'Des retours concrets sur des projets pensés avec soin, clarté et performance.', reviewsLabel: 'avis',
     source: 'Voir sur Google Maps', report: 'Signaler', sorted: 'Les avis Google sont sélectionnés et classés par pertinence par Google Maps.',
-    translated: 'Avis traduit', visited: 'Visite',
+    translated: 'Avis traduit', visited: 'Visite', rating: 'sur 5',
   }
 })
 
@@ -125,7 +128,7 @@ function formatVisitDate(value: string) {
           :class="review.source === 'google' ? 'border-cyan-500/25 shadow-cyan-500/5 hover:border-cyan-500/40 dark:border-cyan-300/20' : 'border-violet-500/15 shadow-violet-500/10 hover:border-violet-500/25 dark:border-white/10'"
         >
           <div class="flex items-start justify-between gap-4">
-            <div class="flex gap-0.5" :aria-label="`${review.rating} sur 5`">
+            <div class="flex gap-0.5" :aria-label="`${review.rating} ${content.rating}`">
               <span v-for="(filled, idx) in stars(review.rating)" :key="idx" :class="filled ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'" class="text-sm" aria-hidden="true">★</span>
             </div>
             <span v-if="review.source === 'google'" translate="no" class="text-xs font-normal text-[#5e5e5e] dark:text-white/70">Google Maps</span>
