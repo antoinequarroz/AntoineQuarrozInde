@@ -99,6 +99,7 @@ test('sandbox covers client to paid invoice and cleans up business data', async 
         image: 'https://example.invalid/e2e-project.png',
         liveUrl: 'https://example.invalid/e2e-project',
         featured: false,
+        portfolioVisible: false,
         caseStudyPublished: false,
       },
     })

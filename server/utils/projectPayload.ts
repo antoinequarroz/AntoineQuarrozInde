@@ -42,6 +42,14 @@ function requiredUrl(value: unknown, field: string) {
   return url
 }
 
+function booleanValue(value: unknown, field: string) {
+  if (value === undefined || value === null) return false
+  if (typeof value !== 'boolean') {
+    throw createError({ statusCode: 400, message: `${field} must be a boolean` })
+  }
+  return value
+}
+
 function resultList(value: unknown) {
   if (!Array.isArray(value)) return []
   return value.slice(0, 6).flatMap((item) => {
@@ -59,7 +67,8 @@ export function projectPayload(body: Record<string, unknown>, organizationId: st
     throw createError({ statusCode: 400, message: 'Invalid project category' })
   }
 
-  const caseStudyPublished = Boolean(body.caseStudyPublished)
+  const portfolioVisible = booleanValue(body.portfolioVisible, 'portfolioVisible')
+  const caseStudyPublished = booleanValue(body.caseStudyPublished, 'caseStudyPublished')
   const slug = requiredText(body.slug, 'slug', 180)
   const completedAt = optionalText(body.completedAt, 10)
   const clientId = body.clientId ? Number(body.clientId) : null
@@ -88,6 +97,7 @@ export function projectPayload(body: Record<string, unknown>, organizationId: st
     live_url: requiredUrl(body.liveUrl, 'liveUrl'),
     code_url: optionalUrl(body.codeUrl),
     featured: Boolean(body.featured),
+    portfolio_visible: portfolioVisible,
     case_study_published: caseStudyPublished,
     client_label: optionalText(body.clientLabel, 180),
     project_role: optionalText(body.projectRole, 180),

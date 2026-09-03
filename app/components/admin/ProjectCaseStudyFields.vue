@@ -2,6 +2,7 @@
 import type { ProjectResult } from '~/types'
 
 interface ProjectCaseStudyForm {
+  portfolioVisible: boolean
   caseStudyPublished: boolean
   clientLabel: string
   projectRole: string
@@ -19,6 +20,9 @@ interface ProjectCaseStudyForm {
 }
 
 const model = defineModel<ProjectCaseStudyForm>({ required: true })
+withDefaults(defineProps<{ canManagePublication?: boolean }>(), {
+  canManagePublication: true,
+})
 
 function addResult() {
   if (model.value.results.length >= 6) return
@@ -33,19 +37,45 @@ function addGalleryImage() {
 
 <template>
   <section class="border-t border-gray-100 pt-5 dark:border-white/[0.06]">
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-      <div class="max-w-2xl">
-        <h3 class="font-display text-base font-semibold text-gray-900 dark:text-white">Étude de cas publique</h3>
-        <p class="mt-1 text-sm leading-relaxed text-gray-500 dark:text-gray-400">
-          Tous les détails ci-dessous sont facultatifs. La page reste invisible tant que la publication n’est pas activée.
-        </p>
+    <fieldset class="rounded-2xl border border-violet-200/70 bg-violet-50/50 p-4 dark:border-violet-400/20 dark:bg-violet-500/[0.06]">
+      <legend class="px-1 font-display text-base font-semibold text-gray-900 dark:text-white">Publication</legend>
+      <p class="mt-1 text-sm leading-relaxed text-gray-500 dark:text-gray-400">
+        Choisissez séparément la carte du portfolio et la page détaillée. Un réglage ne modifie jamais l’autre.
+      </p>
+      <p v-if="!canManagePublication" class="mt-2 text-xs font-medium text-amber-700 dark:text-amber-300">
+        Seuls les propriétaires et administrateurs peuvent modifier ces réglages.
+      </p>
+
+      <div class="mt-4 grid gap-3 sm:grid-cols-2">
+        <label class="flex min-h-16 cursor-pointer items-start gap-3 rounded-xl border border-gray-200 bg-white p-3 dark:border-white/10 dark:bg-white/[0.04]" :class="!canManagePublication && 'cursor-not-allowed opacity-65'">
+          <input v-model="model.portfolioVisible" type="checkbox" :disabled="!canManagePublication" class="mt-0.5 h-5 w-5 rounded border-gray-300 text-violet-600 focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 disabled:cursor-not-allowed">
+          <span class="min-w-0">
+            <span class="block text-sm font-semibold text-gray-800 dark:text-gray-100">Afficher dans le portfolio</span>
+            <span class="mt-1 block text-xs leading-relaxed text-gray-500 dark:text-gray-400">Rend la carte visible sur la page d’accueil.</span>
+            <span class="mt-2 block text-xs font-semibold" :class="model.portfolioVisible ? 'text-emerald-700 dark:text-emerald-300' : 'text-gray-500 dark:text-gray-400'" role="status">
+              {{ model.portfolioVisible ? 'Visible' : 'Masqué' }}
+            </span>
+          </span>
+        </label>
+
+        <label class="flex min-h-16 cursor-pointer items-start gap-3 rounded-xl border border-gray-200 bg-white p-3 dark:border-white/10 dark:bg-white/[0.04]" :class="!canManagePublication && 'cursor-not-allowed opacity-65'">
+          <input v-model="model.caseStudyPublished" type="checkbox" :disabled="!canManagePublication" class="mt-0.5 h-5 w-5 rounded border-gray-300 text-violet-600 focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 disabled:cursor-not-allowed">
+          <span class="min-w-0">
+            <span class="block text-sm font-semibold text-gray-800 dark:text-gray-100">Publier l’étude de cas</span>
+            <span class="mt-1 block text-xs leading-relaxed text-gray-500 dark:text-gray-400">Rend la page détaillée et son lien publics.</span>
+            <span class="mt-2 block text-xs font-semibold" :class="model.caseStudyPublished ? 'text-cyan-700 dark:text-cyan-300' : 'text-gray-500 dark:text-gray-400'" role="status">
+              {{ model.caseStudyPublished ? 'Publiée' : 'Brouillon' }}
+            </span>
+          </span>
+        </label>
       </div>
-      <label class="inline-flex min-h-11 cursor-pointer items-center gap-3 self-start rounded-xl border border-gray-200 px-3 dark:border-white/10">
-        <input v-model="model.caseStudyPublished" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-violet-600 focus:ring-violet-500">
-        <span class="text-sm font-semibold" :class="model.caseStudyPublished ? 'text-violet-700 dark:text-violet-200' : 'text-gray-600 dark:text-gray-300'">
-          {{ model.caseStudyPublished ? 'Publiée' : 'Brouillon' }}
-        </span>
-      </label>
+    </fieldset>
+
+    <div class="mt-6 max-w-2xl">
+      <h3 class="font-display text-base font-semibold text-gray-900 dark:text-white">Contenu de l’étude de cas</h3>
+      <p class="mt-1 text-sm leading-relaxed text-gray-500 dark:text-gray-400">
+        Tous les détails ci-dessous sont facultatifs. Ils restent enregistrés lorsque l’étude repasse en brouillon.
+      </p>
     </div>
 
     <div class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

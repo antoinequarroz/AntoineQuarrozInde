@@ -5,6 +5,7 @@ definePageMeta({ layout: 'admin', middleware: 'admin' })
 
 const store = useProjectsStore()
 const clients = useClientsStore()
+const auth = useAuthStore()
 const route = useRoute()
 const toast = useToast()
 
@@ -12,6 +13,10 @@ const showForm = ref(route.query.new === '1')
 const closeForm = () => { showForm.value = false }
 const { dialogRef, handleDialogKeydown } = useAccessibleDialog(showForm, closeForm, '[data-dialog-close]')
 const editingProject = ref<Project | null>(null)
+const canManagePublication = computed(() => {
+  const organization = auth.organizations.find(item => item.id === auth.currentOrganizationId)
+  return organization?.role === 'owner' || organization?.role === 'admin'
+})
 
 const form = reactive({
   title: '',
@@ -25,6 +30,7 @@ const form = reactive({
   liveUrl: '',
   codeUrl: '',
   featured: false,
+  portfolioVisible: false,
   clientId: null as number | null,
   caseStudyPublished: false,
   clientLabel: '',
@@ -46,7 +52,7 @@ function openNew() {
   editingProject.value = null
   Object.assign(form, {
     title: '', slug: '', category: 'web', tags: '', description: '', descriptionEn: '', descriptionDe: '', image: null,
-    liveUrl: '', codeUrl: '', featured: false, clientId: null,
+    liveUrl: '', codeUrl: '', featured: false, portfolioVisible: false, clientId: null,
     caseStudyPublished: false, clientLabel: '', projectRole: '', projectDuration: '',
     completedAt: '', challenge: '', approach: '', solution: '', outcome: '',
     deliverables: '', galleryImages: [], results: [], seoTitle: '', seoDescription: '',
@@ -60,7 +66,7 @@ function openEdit(project: Project) {
     title: project.title, slug: project.slug, category: project.category,
     tags: project.tags.join(', '), description: project.description,
     descriptionEn: project.descriptionEn || '', descriptionDe: project.descriptionDe || '', image: project.image,
-    liveUrl: project.liveUrl || '', codeUrl: project.codeUrl || '', featured: project.featured, clientId: project.clientId,
+    liveUrl: project.liveUrl || '', codeUrl: project.codeUrl || '', featured: project.featured, portfolioVisible: project.portfolioVisible, clientId: project.clientId,
     caseStudyPublished: project.caseStudyPublished,
     clientLabel: project.clientLabel || '',
     projectRole: project.projectRole || '',
@@ -110,6 +116,7 @@ async function handleSubmit() {
     liveUrl: form.liveUrl || null,
     codeUrl: form.codeUrl || null,
     featured: form.featured,
+    portfolioVisible: form.portfolioVisible,
     clientId: form.clientId,
     caseStudyPublished: form.caseStudyPublished,
     clientLabel: form.clientLabel || null,
@@ -168,7 +175,7 @@ const catColors: Record<string, string> = {
     <div class="flex items-center justify-between gap-4">
       <div>
         <h1 class="font-display font-semibold text-xl text-gray-900 dark:text-white">Projets</h1>
-        <p class="text-sm text-gray-400 mt-0.5">{{ store.projects.length }} projet(s) · {{ store.featured.length }} mis en avant</p>
+        <p class="text-sm text-gray-400 mt-0.5">{{ store.projects.length }} projet(s) · {{ store.portfolio.length }} dans le portfolio · {{ store.projects.filter(project => project.caseStudyPublished).length }} étude(s) publiée(s)</p>
       </div>
       <button
         class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold
@@ -265,22 +272,15 @@ const catColors: Record<string, string> = {
               <input id="project-code-url" v-model="form.codeUrl" type="url" class="input-field" placeholder="https://github.com/..." autocomplete="url">
             </div>
 
-            <AdminProjectCaseStudyFields v-model="form" />
+            <AdminProjectCaseStudyFields v-model="form" :can-manage-publication="canManagePublication" />
 
-            <div class="flex items-center gap-3">
-              <button
-                type="button"
-                role="switch"
-                :aria-checked="form.featured"
-                aria-label="Mettre en avant"
-                class="relative w-10 h-6 rounded-full transition-colors duration-200 flex-shrink-0 before:absolute before:-inset-2.5 before:rounded-xl"
-                :class="form.featured ? 'bg-violet-500' : 'bg-gray-200 dark:bg-gray-700'"
-                @click="form.featured = !form.featured"
-              >
-                <span class="absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200" :class="form.featured ? 'translate-x-4' : 'translate-x-0'" />
-              </button>
-              <span class="text-sm text-gray-600 dark:text-gray-300">Mettre en avant</span>
-            </div>
+            <label class="flex min-h-11 items-start gap-3 rounded-xl border border-gray-100 p-3 dark:border-white/[0.06]">
+              <input v-model="form.featured" type="checkbox" class="mt-0.5 h-5 w-5 rounded border-gray-300 text-violet-600 focus:ring-2 focus:ring-violet-500 focus:ring-offset-2">
+              <span>
+                <span class="block text-sm font-semibold text-gray-700 dark:text-gray-200">Mettre en avant</span>
+                <span class="mt-1 block text-xs text-gray-500 dark:text-gray-400">Place le projet avant les autres cartes visibles, sans changer sa publication.</span>
+              </span>
+            </label>
 
             <div class="admin-sticky-actions sticky bottom-0 bg-white dark:bg-[#111118] flex gap-3 pt-2 border-t border-gray-100 dark:border-white/[0.06]">
               <button type="submit" class="flex-1 py-2.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold transition-colors">
@@ -319,7 +319,8 @@ const catColors: Record<string, string> = {
         <div class="mt-2 flex items-center gap-2 flex-wrap">
           <span class="text-xs font-semibold px-2 py-1 rounded-lg" :class="catColors[project.category]">{{ project.category }}</span>
           <span v-if="project.featured" class="text-xs font-semibold px-2 py-1 rounded-lg bg-yellow-50 text-yellow-600 dark:bg-yellow-500/10 dark:text-yellow-400">★</span>
-          <span v-if="project.caseStudyPublished" class="rounded-lg bg-cyan-50 px-2 py-1 text-xs font-semibold text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300">Étude publiée</span>
+          <span class="rounded-lg px-2 py-1 text-xs font-semibold" :class="project.portfolioVisible ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' : 'bg-gray-100 text-gray-600 dark:bg-white/[0.06] dark:text-gray-300'">Portfolio {{ project.portfolioVisible ? 'visible' : 'masqué' }}</span>
+          <span class="rounded-lg px-2 py-1 text-xs font-semibold" :class="project.caseStudyPublished ? 'bg-cyan-50 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300' : 'bg-gray-100 text-gray-600 dark:bg-white/[0.06] dark:text-gray-300'">Étude {{ project.caseStudyPublished ? 'publiée' : 'brouillon' }}</span>
           <span v-for="tag in project.tags.slice(0, 2)" :key="`m-${project.id}-${tag}`" class="text-xs bg-gray-50 dark:bg-white/[0.04] text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded-md">{{ tag }}</span>
         </div>
         <div class="mt-3 flex items-center gap-3">
@@ -338,6 +339,7 @@ const catColors: Record<string, string> = {
           <tr class="border-b border-gray-100 dark:border-white/[0.06]">
             <th class="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Projet</th>
             <th class="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide hidden sm:table-cell">Catégorie</th>
+            <th class="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Publication</th>
             <th class="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide hidden md:table-cell">Technologies</th>
             <th class="text-right px-5 py-3.5 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Actions</th>
           </tr>
@@ -367,7 +369,12 @@ const catColors: Record<string, string> = {
             <td class="px-5 py-3.5 hidden sm:table-cell">
               <span class="text-xs font-semibold px-2.5 py-1 rounded-lg" :class="catColors[project.category]">{{ project.category }}</span>
               <span v-if="project.featured" class="ml-1.5 text-xs font-semibold px-2 py-1 rounded-lg bg-yellow-50 text-yellow-600 dark:bg-yellow-500/10 dark:text-yellow-400">★</span>
-              <span v-if="project.caseStudyPublished" class="ml-1.5 rounded-lg bg-cyan-50 px-2 py-1 text-xs font-semibold text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300">Étude publiée</span>
+            </td>
+            <td class="px-5 py-3.5">
+              <div class="flex flex-col items-start gap-1">
+                <span class="rounded-lg px-2 py-1 text-xs font-semibold" :class="project.portfolioVisible ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' : 'bg-gray-100 text-gray-600 dark:bg-white/[0.06] dark:text-gray-300'">Portfolio {{ project.portfolioVisible ? 'visible' : 'masqué' }}</span>
+                <span class="rounded-lg px-2 py-1 text-xs font-semibold" :class="project.caseStudyPublished ? 'bg-cyan-50 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300' : 'bg-gray-100 text-gray-600 dark:bg-white/[0.06] dark:text-gray-300'">Étude {{ project.caseStudyPublished ? 'publiée' : 'brouillon' }}</span>
+              </div>
             </td>
             <td class="px-5 py-3.5 hidden md:table-cell">
               <div class="flex flex-wrap gap-1">
