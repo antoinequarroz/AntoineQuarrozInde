@@ -9,13 +9,13 @@ l’audit sont désormais exécutés dans une seule transaction SQL. La fonction
 réservée à `service_role`, et ses lectures comme ses écritures sont bornées par
 `organization_id`.
 
-La livraison de l’activation n’est cependant pas encore autorisée. Le contrôle
-du runtime de production effectué le 3 septembre 2026 retourne toujours
-`1ac8ec147d70d118681d163086e9f08d4a8d4027`, et non le commit de transition
-`a49609492c289c94af9ed1af71c51a31798ee023`. Tant que ce dernier n’a pas été
-livré seul et validé en production, l’image de rollback reste une image qui ne
-filtre pas `portfolio_visible`. Déployer les deux commits dans une seule release
-réintroduirait donc le risque majeur de divulgation en cas de rollback.
+La livraison de l’activation est maintenant autorisée. La phase de transition a
+été livrée séparément par le merge commit
+`3ef740821b0294517c910057aa591652c8693715` : `main`, le runtime de production et
+le workflow de déploiement convergent sur ce SHA. L’image actuellement en ligne
+sait filtrer `portfolio_visible`, la base est saine et les six projets existants
+restent visibles après backfill. Elle constitue donc une image de rollback sûre
+avant la livraison du commit d’activation.
 
 ## Périmètre examiné
 
@@ -33,7 +33,7 @@ réintroduirait donc le risque majeur de divulgation en cas de rollback.
 
 ## Résolution des findings précédents
 
-### 1. Livraison en deux phases et rollback — résolu dans le code, prérequis opérationnel non satisfait
+### 1. Livraison en deux phases et rollback — résolu
 
 Le schéma est maintenant réellement découpé en deux migrations append-only :
 
@@ -49,10 +49,13 @@ de nouveaux projets privés sans fournir de contrôle pour les publier, ce qui
 est une limitation temporaire acceptable d’un rollback d’urgence, mais il ne
 les divulgue pas.
 
-La garantie dépend toutefois de l’ordre réel de livraison. L’endpoint public
-`https://www.antoinequarroz.ch/api/version` annonce encore `1ac8ec…`. L’image
-actuellement disponible comme rollback n’est donc pas `a496094`. L’étape 1 doit
-être promue seule, vérifiée saine, puis seulement l’étape 2 peut être livrée.
+L’ordre réel de livraison est maintenant prouvé. `main` et l’endpoint public
+`https://www.antoinequarroz.ch/api/version` annoncent le merge de transition
+`3ef740…`. Le workflow `33804569896` est terminé avec succès sur ce SHA : les
+jobs qualité, base, déploiement et E2E sont réussis. `/api/health` confirme
+`application: ok` et `database: ok`, et `/api/projects` retourne les six projets
+existants avec `portfolio_visible=true`. L’image de transition est donc bien
+l’image de production et la future image de rollback avant l’activation.
 
 ### 2. Audit atomique — résolu
 
@@ -91,19 +94,8 @@ Aucun.
 
 ### Major
 
-#### 1. La phase de transition n’est pas encore l’image de rollback en production
-
-Le code a désormais la bonne stratégie en deux commits, mais la production
-retourne encore la version `1ac8ec…`. Si `a99b5e2` est promu maintenant avec son
-parent dans une seule release, la migration d’activation peut créer des lignes
-privées alors que le rollback automatique remettra une image antérieure à
-`a496094`, qui ignore le filtre. Le risque de republication de projets masqués
-demeure donc au niveau du déploiement, malgré sa résolution dans le diff.
-
-Action requise : livrer uniquement `a496094`, vérifier `/api/version`, la santé
-et le filtrage public, puis construire/livrer `a99b5e2` dans une seconde release
-dont l’image précédente est bien `a496094`. Aucun nouveau changement de code
-n’est requis pour lever ce finding.
+Aucun. Le finding opérationnel précédent est résolu par la livraison séparée et
+vérifiée de la transition `3ef740…`.
 
 ### Minor
 
@@ -164,8 +156,19 @@ Aucun finding mineur bloquant ou régressif identifié dans le diff d’activati
   exit `0`.
 - Via Portly, contrôle de production
   `https://www.antoinequarroz.ch/api/version` : HTTP réussi, version
-  `1ac8ec147d70d118681d163086e9f08d4a8d4027`, construite le
-  `2026-09-03T18:55:20Z`.
+  `3ef740821b0294517c910057aa591652c8693715`, construite le
+  `2026-09-03T20:56:13Z`.
+- Via Portly, `https://www.antoinequarroz.ch/api/health` : `status: ok`,
+  `application: ok` et `database: ok`.
+- Via Portly, `https://www.antoinequarroz.ch/api/projects` : six projets
+  retournés, tous avec `portfolio_visible=true` et sans changement de leur état
+  `case_study_published=false`.
+- Via Portly, `git ls-remote origin refs/heads/main` : `main` pointe sur
+  `3ef740821b0294517c910057aa591652c8693715`.
+- Via Portly, `gh run view 33804569896` : workflow `Quality` terminé avec
+  conclusion `success` sur `3ef740…`; jobs `quality`, `database`, `deploy` et
+  `e2e` réussis. Le job conditionnel `accessibility` est marqué `skipped`, sans
+  affecter la conclusion du workflow.
 
-Max severity: major
-Ship allowed: no
+Max severity: none
+Ship allowed: yes
