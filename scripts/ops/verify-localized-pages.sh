@@ -182,14 +182,23 @@ for (const page of pages) {
       fail(`${page.path}: expected localized og:url ${expectedUrl}.`)
     }
     if (page.locale.lang !== 'fr-CH') {
-      if (/\bid=["'](?:portfolio|blog)["']/i.test(page.html)) {
-        fail(`${page.path}: unapproved French editorial section is exposed.`)
+      const visibleMarkup = page.html.replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi, '')
+      if (!/\bid=["']portfolio["']/i.test(visibleMarkup)) {
+        fail(`${page.path}: localized portfolio section is missing.`)
       }
-      if (/href=["']\/(?:creation-site-internet-valais|application-mobile-valais)["']/i.test(page.html)) {
+      if (/\bid=["']blog["']/i.test(visibleMarkup)) {
+        fail(`${page.path}: unapproved French blog section is exposed.`)
+      }
+      if (/href=["']\/(?:creation-site-internet-valais|application-mobile-valais)["']/i.test(visibleMarkup)) {
         fail(`${page.path}: French-only service link is exposed.`)
       }
-      if (page.html.includes('Photo à venir') || page.html.includes('Réponse rapide sur')
-        || page.html.includes('Respire est une app') || page.html.includes('Rallye Team Quarroz est')) {
+      const withoutMarkedFrenchFallbacks = visibleMarkup.replace(
+        /<([a-z][\w-]*)\b[^>]*\blang=["']fr["'][^>]*>[\s\S]*?<\/\1>/gi,
+        '',
+      )
+      if (visibleMarkup.includes('Photo à venir') || visibleMarkup.includes('Réponse rapide sur')
+        || withoutMarkedFrenchFallbacks.includes('Respire est une app')
+        || withoutMarkedFrenchFallbacks.includes('Rallye Team Quarroz est')) {
         fail(`${page.path}: untranslated French microcopy is exposed.`)
       }
     }

@@ -44,7 +44,11 @@ function fixture(origin: string, requestPath: string) {
     .map(item => `<a href="${localizedPath(item.prefix, basePath)}" lang="${item.lang}">${item.lang}</a>`)
     .join('')
 
-  return `<!doctype html><html lang="${locale.lang}"><head><title>${title}</title><meta name="description" content="${description}">${isHome ? `<meta property="og:url" content="${origin}${requestPath}">` : ''}<link rel="canonical" href="${origin}${requestPath}">${alternates}</head><body>${languageLinks}</body></html>`
+  const portfolio = isHome
+    ? '<section id="portfolio"><p lang="fr">Respire est une app</p></section><script type="application/json">{"description":"Rallye Team Quarroz est un projet"}</script>'
+    : ''
+
+  return `<!doctype html><html lang="${locale.lang}"><head><title>${title}</title><meta name="description" content="${description}">${isHome ? `<meta property="og:url" content="${origin}${requestPath}">` : ''}<link rel="canonical" href="${origin}${requestPath}">${alternates}</head><body>${languageLinks}${portfolio}</body></html>`
 }
 
 async function listen(mutate: (path: string, html: string) => string = (_path, html) => html) {
@@ -151,6 +155,9 @@ describe('AQ-SEO-004 localized public pages', () => {
     ['missing language href', (path: string, html: string) => path === '/conditions-utilisation' ? html.replace('<a href="/en/conditions-utilisation"', '<a data-href="/en/conditions-utilisation"') : html],
     ['foreign homepage copy', (path: string, html: string) => path === '/en' ? html.replace(locales[1].title, locales[0].title) : html],
     ['wrong Open Graph URL', (path: string, html: string) => path === '/de' ? html.replace(/(<meta property="og:url" content="https?:\/\/[^"/]+)\/de">/, '$1/">') : html],
+    ['missing localized portfolio', (path: string, html: string) => path === '/en' ? html.replace('id="portfolio"', 'id="portfolio-missing"') : html],
+    ['French blog exposed', (path: string, html: string) => path === '/de' ? html.replace('</body>', '<section id="blog"></section></body>') : html],
+    ['unmarked French portfolio fallback', (path: string, html: string) => path === '/en' ? html.replace('lang="fr"', '') : html],
   ])('rejects localized inconsistency: %s', async (_name, mutate) => {
     const origin = await listen(mutate)
     await expect(runProof(origin)).rejects.toMatchObject({ code: 1 })
