@@ -12,6 +12,9 @@ validate_caddy_config() {
 }
 
 reload_caddy_config() {
+  # Git may replace the bind-mounted Caddyfile inode during checkout. Recreate
+  # the container so it mounts the release file before asking Caddy to reload.
+  docker compose up -d --no-deps --force-recreate caddy
   docker compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile
 }
 

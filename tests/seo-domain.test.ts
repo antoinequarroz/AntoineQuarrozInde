@@ -46,6 +46,7 @@ describe('AQ-SEO-001 canonical public domain', () => {
     const deploy = await readFile('scripts/ops/deploy-release.sh', 'utf8')
 
     expect(deploy).toContain('docker compose run --rm --no-deps caddy caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile')
+    expect(deploy).toContain('docker compose up -d --no-deps --force-recreate caddy')
     expect(deploy).toContain('docker compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile')
     expect(deploy.lastIndexOf('validate_caddy_config\n')).toBeLessThan(deploy.indexOf('docker compose build web'))
     expect(deploy.lastIndexOf('wait_for_health\n')).toBeLessThan(deploy.lastIndexOf('reload_caddy_config\n'))

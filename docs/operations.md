@@ -80,8 +80,10 @@ conteneur candidat a été lancé.
 Le domaine public préféré est `https://www.antoinequarroz.ch`. Caddy redirige
 les requêtes reçues sur `https://antoinequarroz.ch` vers `www` avec un statut
 permanent, en conservant le chemin et les paramètres. Pendant une release,
-`scripts/ops/deploy-release.sh` valide le `Caddyfile` avant le build puis recharge
-atomiquement la configuration après le retour au vert du conteneur web.
+`scripts/ops/deploy-release.sh` valide le `Caddyfile` avant le build puis recrée
+le conteneur Caddy après le retour au vert du conteneur web. Cette recréation est
+nécessaire pour rafraîchir le montage du fichier lorsqu'un checkout Git remplace
+son inode ; Caddy recharge ensuite explicitement la configuration validée.
 
 La CI contrôle ensuite la redirection et la disponibilité de la destination :
 
@@ -104,11 +106,13 @@ le valider, puis le recharger dans le conteneur actif :
 ```bash
 docker compose run --rm --no-deps caddy caddy validate \
   --config /etc/caddy/Caddyfile --adapter caddyfile
+docker compose up -d --no-deps --force-recreate caddy
 docker compose exec -T caddy caddy reload \
   --config /etc/caddy/Caddyfile --adapter caddyfile
 ```
 
-Le reload Caddy est atomique : une configuration invalide n'est pas chargée.
+La validation précède toujours la recréation : une configuration invalide n'est
+donc pas activée.
 Le rollback d'image web reste indépendant et continue d'utiliser le tag `previous`.
 
 ## Surveillance
