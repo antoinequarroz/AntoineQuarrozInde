@@ -139,6 +139,42 @@ En cas de régression, revenir à l'image `antoinequarroz-web:previous`. Pour un
 rollback de code durable, restaurer la version précédente de `nuxt.config.ts`,
 reconstruire l'image et rejouer la commande de contrôle ci-dessus.
 
+### Politique des crawlers OpenAI
+
+La décision humaine `OD-SEO-003` sépare deux usages : `OAI-SearchBot` est
+explicitement autorisé pour rendre les pages publiques éligibles à ChatGPT
+Search, tandis que `GPTBot` est refusé pour indiquer que le contenu ne doit pas
+être utilisé pour entraîner les modèles génératifs d'OpenAI. Le groupe
+`User-agent: *` continue d'autoriser les moteurs classiques et les crawlers sans
+règle spécifique. Le sitemap canonique reste déclaré une seule fois.
+
+Cette politique suit la documentation officielle vérifiée pendant sa préparation :
+<https://developers.openai.com/api/docs/bots>. OpenAI indique qu'une mise à jour
+de `robots.txt` peut prendre environ 24 heures à être prise en compte pour la
+recherche. Elle ne garantit ni apparition, ni classement, ni citation.
+`ChatGPT-User` correspond à certaines visites initiées par un utilisateur et
+n'est pas piloté ici : OpenAI précise que ces visites peuvent ne pas suivre les
+règles de `robots.txt`.
+
+Après une livraison, contrôler la séparation des groupes et la disponibilité du
+sitemap :
+
+```bash
+bash scripts/ops/verify-openai-robots-policy.sh \
+  https://www.antoinequarroz.ch
+```
+
+Le script échoue si une règle manque, est contradictoire ou appartient au
+mauvais groupe, si le sitemap n'est pas l'URL canonique attendue ou si une des
+ressources est indisponible. Il est anonyme, borné dans le temps et ne transmet
+aucun secret. `robots.txt` exprime une politique de crawling, jamais un contrôle
+d'accès aux données.
+
+En cas de mauvaise politique, revenir à l'image `antoinequarroz-web:previous`.
+Pour un rollback durable, restaurer `server/routes/robots.txt.ts` et
+`server/utils/robotsPolicy.ts` au commit précédent, reconstruire l'image puis
+rejouer le contrôle.
+
 ## Surveillance
 
 `/api/health` contrôle le serveur Nuxt et l'accès à Supabase. Le timer
