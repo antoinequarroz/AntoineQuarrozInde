@@ -6,6 +6,7 @@ export default defineEventHandler(async (event) => {
     .select('*')
     .order('created_at', { ascending: false })
   if (org?.id) query = query.eq('organization_id', org.id)
+  if (!org?.role) query = query.or('portfolio_visible.eq.true,case_study_published.eq.true')
   const { data, error } = await query
 
   if (error) {
