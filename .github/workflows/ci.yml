@@ -80,8 +80,18 @@ jobs:
       VPS_PROJECT_DIR: ${{ secrets.VPS_PROJECT_DIR }}
       VPS_SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
       VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+      SUPABASE_BACKUP_AGE_RECIPIENT: ${{ secrets.SUPABASE_BACKUP_AGE_RECIPIENT }}
     steps:
       - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22.19.0
+          cache: npm
+      - run: npm ci --legacy-peer-deps
+      - name: Install encrypted backup tooling
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq age
       - name: Verify deployment secrets
         run: |
           test -n "$VPS_HOST"
@@ -89,9 +99,24 @@ jobs:
           test -n "$VPS_PROJECT_DIR"
           test -n "$VPS_SSH_PRIVATE_KEY"
           test -n "$VPS_KNOWN_HOSTS"
+          test -n "$SUPABASE_ACCESS_TOKEN"
+          test -n "$SUPABASE_PROJECT_REF"
+          test -n "$SUPABASE_BACKUP_AGE_RECIPIENT"
           [[ "$VPS_HOST" =~ ^[A-Za-z0-9.-]+$ ]]
           [[ "$VPS_USER" =~ ^[a-z_][a-z0-9_-]*$ ]]
           [[ "$VPS_PROJECT_DIR" =~ ^/[A-Za-z0-9._/-]+$ ]]
+          [[ "$SUPABASE_PROJECT_REF" =~ ^[a-z0-9]{20}$ ]]
+          [[ "$SUPABASE_BACKUP_AGE_RECIPIENT" =~ ^age1[0-9a-z]{20,}$ ]]
+      - name: Promote verified Supabase migrations
+        run: bash scripts/ops/promote-supabase-migrations.sh "$RUNNER_TEMP/aq060-migration-artifacts"
+      - name: Preserve encrypted pre-migration recovery artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: supabase-pre-migration-${{ github.sha }}
+          path: ${{ runner.temp }}/aq060-migration-artifacts/*
+          if-no-files-found: ignore
+          retention-days: 30
       - name: Configure dedicated SSH identity
         run: |
           install -d -m 700 "$HOME/.ssh"

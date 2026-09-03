@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
-const migration = readFileSync(new URL('../supabase/migrations/20260809173732_project_profitability.sql', import.meta.url), 'utf8')
+const migration = readFileSync(new URL('../supabase/migrations/20260809175124_project_profitability.sql', import.meta.url), 'utf8')
 
 describe('project profitability migration', () => {
   it('keeps quote and invoice project links inside the same organization', () => {

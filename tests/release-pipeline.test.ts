@@ -73,6 +73,28 @@ describe('AQ-058 release pipeline', () => {
     expect(gate).not.toContain('exec bash -s')
   })
 
+  it('promotes Supabase only inside the approved Production job before SSH deployment', async () => {
+    const workflow = await readFile(workflowPath, 'utf8')
+    const promoteScript = await readFile('scripts/ops/promote-supabase-migrations.sh', 'utf8')
+
+    expect(workflow).toContain('environment:\n      name: Production')
+    expect(workflow).toContain('SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}')
+    expect(workflow).toContain('SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}')
+    expect(workflow).toContain('SUPABASE_BACKUP_AGE_RECIPIENT: ${{ secrets.SUPABASE_BACKUP_AGE_RECIPIENT }}')
+    expect(workflow).not.toContain('SUPABASE_DB_PASSWORD')
+    expect(workflow.indexOf('Promote verified Supabase migrations')).toBeLessThan(workflow.indexOf('Deploy the exact main commit'))
+    expect(workflow).toContain('if: always()')
+    expect(workflow).toContain('if-no-files-found: ignore')
+    expect(workflow).not.toMatch(/pull_request_target/)
+
+    expect(promoteScript).toContain('db push --linked --dry-run')
+    expect(promoteScript).toContain('db dump --linked')
+    expect(promoteScript).toContain('age --recipient')
+    expect(promoteScript).toContain('db push --linked --yes')
+    expect(promoteScript).not.toMatch(/db reset|migration repair|--include-all|--debug/)
+    expect(promoteScript).not.toContain('--password')
+  })
+
   unixIt('accepts only the expected healthy production release', async () => {
     const expectedSha = 'a'.repeat(40)
     const baseUrl = await serveRelease(expectedSha)

@@ -31,15 +31,33 @@ Une pull request ne déploie jamais : elle exécute uniquement les contrôles de
 qualité et d'accessibilité. Après fusion dans `main`, le workflow suit cet ordre
 strict :
 
-1. tests, TypeScript, build et budgets ;
-2. déploiement du SHA exact sur le VPS avec `scripts/ops/deploy-from-ci.sh` ;
-3. attente de ce même SHA sur `/api/version` et d'un `/api/health` vert ;
-4. vérification que l'apex redirige définitivement vers `www` en conservant l'URI ;
-5. E2E de production avec les identifiants du compte sandbox.
+1. tests, TypeScript, build, budgets et préflight PostgreSQL local ;
+2. approbation humaine de l'environnement GitHub `Production` ;
+3. détection, sauvegarde chiffrée et promotion des migrations en attente ;
+4. déploiement du SHA exact sur le VPS avec `scripts/ops/deploy-from-ci.sh` ;
+5. attente de ce même SHA sur `/api/version` et d'un `/api/health` vert ;
+6. vérification que l'apex redirige définitivement vers `www` en conservant l'URI ;
+7. vérification des routes privées, des crawlers, des pages localisées et des routes françaises uniquement ;
+8. E2E de production avec les identifiants du compte sandbox.
 
 Les exécutions planifiées et manuelles vérifient la production courante sans
-redéployer. Les migrations Supabase ne sont volontairement pas automatiques :
-elles doivent être revues et appliquées avant la livraison du code qui en dépend.
+redéployer. Sur un push `main`, les secrets de production ne deviennent
+accessibles au runner qu'après l'approbation. Le job compare alors les migrations
+locales avec `supabase_migrations.schema_migrations` et exécute un
+`db push --dry-run`.
+
+S'il n'existe aucune migration en attente, aucune sauvegarde ni mutation n'est
+effectuée. Sinon, `scripts/ops/promote-supabase-migrations.sh` crée d'abord un
+dump du schéma et des données `public`, l'archive et le chiffre avec `age`. Seuls
+le fichier `.age`, sa somme SHA-256 et un manifeste sans secret sont conservés
+30 jours comme artefact GitHub. Les fichiers SQL clairs et le profil Supabase
+temporaire sont toujours supprimés.
+
+Les migrations versionnées sont ensuite appliquées et l'historique est relu.
+Le déploiement SSH du conteneur ne commence que si l'historique est aligné. Une
+divergence, un dump incomplet, une migration en échec ou une post-vérification
+incohérente bloque le nouveau conteneur et les E2E; l'application précédente
+reste active.
 
 Avant toute livraison, le job `database` construit une pile Supabase locale
 éphémère, injecte `supabase/schema.sql` comme socle de test, rejoue toutes les
@@ -51,15 +69,41 @@ Le lancer localement avec Docker actif :
 npm run test:db
 ```
 
-Un échec bloque le job `deploy`; il n'applique jamais la migration en production.
+Un échec bloque le job `deploy`; ce préflight local n'applique jamais de
+migration en production.
 
-L'environnement GitHub `Production` contient uniquement les secrets suivants :
+L'environnement GitHub `Production` est limité à la branche `main`, exige
+Antoine comme reviewer et contient uniquement les secrets suivants :
 
 - `VPS_SSH_PRIVATE_KEY` : clé Ed25519 dédiée à GitHub Actions ;
 - `VPS_KNOWN_HOSTS` : ligne de clé d'hôte vérifiée, jamais produite à l'aveugle dans la CI ;
 - `VPS_HOST` : adresse du VPS ;
 - `VPS_USER` : utilisateur de déploiement non-root ;
-- `VPS_PROJECT_DIR` : chemin absolu du dépôt sur le VPS.
+- `VPS_PROJECT_DIR` : chemin absolu du dépôt sur le VPS ;
+- `SUPABASE_ACCESS_TOKEN` : jeton personnel Supabase utilisé par la CLI ;
+- `SUPABASE_PROJECT_REF` : identifiant de 20 caractères du projet attendu ;
+- `SUPABASE_BACKUP_AGE_RECIPIENT` : clé publique `age` dont la clé privée reste hors de GitHub et du VPS.
+
+### Reprise après une migration
+
+Il n'existe aucun rollback SQL automatique : plusieurs migrations peuvent être
+validées avant qu'une suivante échoue, et tenter de les annuler peut supprimer
+des données. Toute migration doit rester compatible avec l'image applicative
+précédente; une suppression ou un renommage se livre en plusieurs phases.
+
+En cas d'incident, télécharger l'artefact correspondant au SHA depuis GitHub,
+vérifier sa somme puis le déchiffrer sur une machine de reprise isolée :
+
+```bash
+sha256sum -c supabase-pre-migration-<sha>.tar.gz.age.sha256
+age --decrypt --identity /chemin/hors-ligne/aq-production.agekey \
+  --output supabase-pre-migration.tar.gz \
+  supabase-pre-migration-<sha>.tar.gz.age
+```
+
+Tester d'abord le dump dans un projet Supabase temporaire. Une restauration de
+production reste une opération manuelle explicitement approuvée; ne jamais
+utiliser `migration repair` ou `db reset --linked` comme rollback automatique.
 
 La clé personnelle utilisée par `scripts/deploy-vps.ps1` reste distincte. La clé
 CI est installée dans `authorized_keys` avec `restrict` et une commande forcée
@@ -69,7 +113,7 @@ copiée depuis `scripts/ops/ci-ssh-gate.sh`. Installer aussi
 shell, faire de redirection de port ou exécuter un script fourni par le runner :
 elle ne lance que cette commande de livraison fixe. Pour révoquer l'automatisation,
 supprimer la clé publique GitHub Actions du fichier
-`~/.ssh/authorized_keys`, puis supprimer ou désactiver les cinq secrets de
+`~/.ssh/authorized_keys`, puis supprimer ou désactiver les secrets de
 l'environnement `Production`. Le déploiement manuel reste disponible pendant
 le rollback. Un échec de build, de santé ou de version empêche les E2E et le
 script VPS remet automatiquement l'image `previous` en service lorsque le

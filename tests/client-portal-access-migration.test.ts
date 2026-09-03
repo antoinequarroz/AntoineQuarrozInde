@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
-const migration = readFileSync(new URL('../supabase/migrations/20260810123730_client_portal_access_lifecycle.sql', import.meta.url), 'utf8')
+const migration = readFileSync(new URL('../supabase/migrations/20260810131102_client_portal_access_lifecycle.sql', import.meta.url), 'utf8')
 
 describe('client portal access lifecycle migration', () => {
   it('links Auth identities inside an organization without exposing credentials', () => {
