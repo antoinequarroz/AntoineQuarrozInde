@@ -113,6 +113,8 @@ jobs:
         run: bash scripts/ops/verify-production-release.sh "$EXPECTED_SHA" https://www.antoinequarroz.ch
       - name: Verify the canonical public domain
         run: bash scripts/ops/verify-domain-canonicalization.sh https://antoinequarroz.ch https://www.antoinequarroz.ch
+      - name: Verify private routes are non-indexable
+        run: bash scripts/ops/verify-private-noindex.sh https://www.antoinequarroz.ch
 
   e2e:
     if: >-

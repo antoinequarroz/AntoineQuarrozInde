@@ -115,6 +115,30 @@ La validation précède toujours la recréation : une configuration invalide n'e
 donc pas activée.
 Le rollback d'image web reste indépendant et continue d'utiliser le tag `previous`.
 
+### Non-indexation des surfaces privées
+
+Nuxt ajoute `X-Robots-Tag: noindex, nofollow` aux réponses de `/admin`,
+`/admin/**`, `/portal`, `/portal/**` et `/offline`. Cette directive demande aux
+moteurs de recherche de ne pas indexer ces pages ni suivre leurs liens. Elle ne
+constitue jamais une protection d'accès : les middlewares, contrôles API et
+politiques de base de données restent responsables de la sécurité.
+
+Après une livraison, contrôler anonymement les pages représentatives :
+
+```bash
+bash scripts/ops/verify-private-noindex.sh \
+  https://www.antoinequarroz.ch
+```
+
+Le contrôle accepte les statuts HTTP applicatifs de `2xx` à `4xx`, mais échoue
+si une réponse ne contient pas à la fois `noindex` et `nofollow`, si l'origine
+n'est pas une URL HTTP(S) sûre ou si le serveur est indisponible. Il n'utilise
+aucun identifiant et n'affiche aucun secret.
+
+En cas de régression, revenir à l'image `antoinequarroz-web:previous`. Pour un
+rollback de code durable, restaurer la version précédente de `nuxt.config.ts`,
+reconstruire l'image et rejouer la commande de contrôle ci-dessus.
+
 ## Surveillance
 
 `/api/health` contrôle le serveur Nuxt et l'accès à Supabase. Le timer

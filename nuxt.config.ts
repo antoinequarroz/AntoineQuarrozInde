@@ -35,6 +35,14 @@
 
   css: ['~/assets/css/main.css'],
 
+  routeRules: {
+    '/admin': { headers: { 'X-Robots-Tag': 'noindex, nofollow' } },
+    '/admin/**': { headers: { 'X-Robots-Tag': 'noindex, nofollow' } },
+    '/portal': { headers: { 'X-Robots-Tag': 'noindex, nofollow' } },
+    '/portal/**': { headers: { 'X-Robots-Tag': 'noindex, nofollow' } },
+    '/offline': { headers: { 'X-Robots-Tag': 'noindex, nofollow' } },
+  },
+
   pwa: {
     registerType: 'autoUpdate',
     injectRegister: 'auto',
