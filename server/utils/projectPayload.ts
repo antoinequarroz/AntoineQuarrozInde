@@ -36,6 +36,12 @@ function optionalUrl(value: unknown) {
   }
 }
 
+function requiredUrl(value: unknown, field: string) {
+  const url = optionalUrl(value)
+  if (!url) throw createError({ statusCode: 400, message: `${field} is required` })
+  return url
+}
+
 function resultList(value: unknown) {
   if (!Array.isArray(value)) return []
   return value.slice(0, 6).flatMap((item) => {
@@ -53,10 +59,6 @@ export function projectPayload(body: Record<string, unknown>, organizationId: st
     throw createError({ statusCode: 400, message: 'Invalid project category' })
   }
 
-  const challenge = optionalText(body.challenge, 4000)
-  const solution = optionalText(body.solution, 6000)
-  const outcome = optionalText(body.outcome, 4000)
-  const results = resultList(body.results)
   const caseStudyPublished = Boolean(body.caseStudyPublished)
   const slug = requiredText(body.slug, 'slug', 180)
   const completedAt = optionalText(body.completedAt, 10)
@@ -72,13 +74,6 @@ export function projectPayload(body: Record<string, unknown>, organizationId: st
     throw createError({ statusCode: 400, message: 'Invalid project client' })
   }
 
-  if (caseStudyPublished && (!challenge || !solution || (!outcome && !results.length))) {
-    throw createError({
-      statusCode: 400,
-      message: 'A published case study needs a challenge, a solution and an outcome or verified result',
-    })
-  }
-
   return {
     organization_id: organizationId,
     client_id: clientId,
@@ -87,8 +82,10 @@ export function projectPayload(body: Record<string, unknown>, organizationId: st
     category,
     tags: textArray(body.tags, 20),
     description: requiredText(body.description, 'description', 1200),
-    image: optionalText(body.image, 2000),
-    live_url: optionalUrl(body.liveUrl),
+    description_en: optionalText(body.descriptionEn, 1200),
+    description_de: optionalText(body.descriptionDe, 1200),
+    image: requiredText(body.image, 'image', 2000),
+    live_url: requiredUrl(body.liveUrl, 'liveUrl'),
     code_url: optionalUrl(body.codeUrl),
     featured: Boolean(body.featured),
     case_study_published: caseStudyPublished,
@@ -96,15 +93,15 @@ export function projectPayload(body: Record<string, unknown>, organizationId: st
     project_role: optionalText(body.projectRole, 180),
     project_duration: optionalText(body.projectDuration, 120),
     completed_at: completedAt,
-    challenge,
+    challenge: optionalText(body.challenge, 4000),
     approach: optionalText(body.approach, 6000),
-    solution,
-    outcome,
+    solution: optionalText(body.solution, 6000),
+    outcome: optionalText(body.outcome, 4000),
     deliverables: textArray(body.deliverables, 20),
     gallery_images: textArray(body.galleryImages, 12, 2000)
       .map(optionalUrl)
       .filter((url): url is string => Boolean(url)),
-    results,
+    results: resultList(body.results),
     seo_title: optionalText(body.seoTitle, 70),
     seo_description: optionalText(body.seoDescription, 180),
   }

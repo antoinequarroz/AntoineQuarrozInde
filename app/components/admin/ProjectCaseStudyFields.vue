@@ -37,7 +37,7 @@ function addGalleryImage() {
       <div class="max-w-2xl">
         <h3 class="font-display text-base font-semibold text-gray-900 dark:text-white">Étude de cas publique</h3>
         <p class="mt-1 text-sm leading-relaxed text-gray-500 dark:text-gray-400">
-          Documentez le travail réel. La page reste invisible tant que la publication n’est pas activée.
+          Tous les détails ci-dessous sont facultatifs. La page reste invisible tant que la publication n’est pas activée.
         </p>
       </div>
       <label class="inline-flex min-h-11 cursor-pointer items-center gap-3 self-start rounded-xl border border-gray-200 px-3 dark:border-white/10">
@@ -69,7 +69,7 @@ function addGalleryImage() {
 
     <div class="mt-4 grid gap-4 md:grid-cols-2">
       <div>
-        <label for="case-challenge" class="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">Besoin initial *</label>
+        <label for="case-challenge" class="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">Besoin initial</label>
         <textarea id="case-challenge" v-model="model.challenge" rows="5" maxlength="4000" class="input-field resize-y" placeholder="Quel problème concret fallait-il résoudre ?" />
       </div>
       <div>
@@ -77,11 +77,11 @@ function addGalleryImage() {
         <textarea id="case-approach" v-model="model.approach" rows="5" maxlength="6000" class="input-field resize-y" placeholder="Comment avez-vous cadré, conçu et organisé le travail ?" />
       </div>
       <div>
-        <label for="case-solution" class="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">Solution réalisée *</label>
+        <label for="case-solution" class="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">Solution réalisée</label>
         <textarea id="case-solution" v-model="model.solution" rows="5" maxlength="6000" class="input-field resize-y" placeholder="Décrivez précisément ce qui a été livré." />
       </div>
       <div>
-        <label for="case-outcome" class="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">Résultat vérifiable *</label>
+        <label for="case-outcome" class="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">Résultat vérifiable</label>
         <textarea id="case-outcome" v-model="model.outcome" rows="5" maxlength="4000" class="input-field resize-y" placeholder="Résultat observé, retour client ou amélioration constatée. N’inventez aucun chiffre." />
       </div>
     </div>

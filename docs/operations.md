@@ -203,6 +203,35 @@ En cas d'incohérence, revenir à l'image `antoinequarroz-web:previous`, restaur
 les catalogues et composants au commit antérieur, puis rejouer le contrôle sur
 les 12 URL avant de rétablir la release.
 
+### Routes publiques françaises uniquement
+
+La décision `OD-SEO-001` conserve en français uniquement les quatre pages de
+services, le blog et ses articles, les cas clients et les études de cas. Les
+anciennes URL préfixées par `/en` ou `/de` doivent répondre par une redirection
+permanente `308` vers le chemin français correspondant, en conservant exactement
+le suffixe encodé et les paramètres. Elles ne doivent jamais retourner un
+contenu français indexable sous une langue étrangère.
+
+Après une livraison, lancer la preuve anonyme et en lecture seule :
+
+```bash
+bash scripts/ops/verify-french-only-routes.sh \
+  https://www.antoinequarroz.ch
+```
+
+Le contrôle exige un `200`, une canonical française exacte et aucune directive
+`noindex` sur les six pages françaises statiques. Il vérifie ensuite, sans les
+suivre, les 16 redirections EN/DE des six familles statiques et de deux canaris
+dynamiques indépendants des données. Enfin, il refuse toute entrée EN/DE des
+huit familles dans le sitemap, tout `hreflang` fictif et tout faux choix de
+langue explorable sans JavaScript. Les appels sont bornés dans le temps et ne
+transmettent aucun identifiant.
+
+En cas d'échec après livraison, remettre en service l'image
+`antoinequarroz-web:previous`, puis restaurer et redéployer le SHA antérieur.
+Rejouer cette preuve et la vérification des pages localisées avant de rétablir
+la release. Aucune restauration de données n'est nécessaire.
+
 ## Surveillance
 
 `/api/health` contrôle le serveur Nuxt et l'accès à Supabase. Le timer

@@ -130,26 +130,22 @@ const tools = [
             <span class="block section-heading-gradient">{{ t('about.title').split('\n')[1] }}</span>
           </h2>
 
-          <dl class="mt-4 max-[430px]:mt-3.5 space-y-4.5">
-            <div class="grid grid-cols-1 gap-2 sm:grid-cols-[88px_1fr] sm:gap-5 items-start">
-              <dt class="pt-1 text-xs font-bold uppercase tracking-[0.2em] text-violet-500 dark:text-violet-400">
-                {{ t('about.label_1') }}
-              </dt>
-              <dd class="text-sm max-[390px]:text-sm leading-relaxed text-gray-900 dark:text-white/90">
-                {{ t('about.description_1') }}
-              </dd>
-            </div>
+          <dl class="mt-4 grid grid-cols-1 items-start gap-x-6 gap-y-2 max-[430px]:mt-3.5 sm:grid-cols-[max-content_minmax(0,1fr)]">
+            <dt class="pt-1 text-xs font-bold uppercase tracking-[0.2em] text-violet-500 dark:text-violet-400">
+              {{ t('about.label_1') }}
+            </dt>
+            <dd class="min-w-0 break-words text-sm leading-relaxed text-gray-900 dark:text-white/90">
+              {{ t('about.description_1') }}
+            </dd>
 
-            <div class="h-px bg-gradient-to-r from-violet-500/20 via-fuchsia-400/10 to-transparent" />
+            <div class="my-2 h-px bg-gradient-to-r from-violet-500/20 via-fuchsia-400/10 to-transparent sm:col-span-2 sm:my-2.5" />
 
-            <div class="grid grid-cols-1 gap-2 sm:grid-cols-[88px_1fr] sm:gap-5 items-start">
-              <dt class="pt-1 text-xs font-bold uppercase tracking-[0.2em] text-fuchsia-500 dark:text-fuchsia-400">
-                {{ t('about.label_2') }}
-              </dt>
-              <dd class="text-sm max-[390px]:text-sm leading-relaxed text-gray-700 dark:text-white/70">
-                {{ t('about.description_2') }}
-              </dd>
-            </div>
+            <dt class="pt-1 text-xs font-bold uppercase tracking-[0.2em] text-fuchsia-500 dark:text-fuchsia-400">
+              {{ t('about.label_2') }}
+            </dt>
+            <dd class="min-w-0 break-words text-sm leading-relaxed text-gray-700 dark:text-white/70">
+              {{ t('about.description_2') }}
+            </dd>
           </dl>
 
           <!-- Citation -->

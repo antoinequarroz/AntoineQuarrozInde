@@ -19,6 +19,8 @@ const form = reactive({
   category: 'web' as Project['category'],
   tags: '',
   description: '',
+  descriptionEn: '',
+  descriptionDe: '',
   image: null as string | null,
   liveUrl: '',
   codeUrl: '',
@@ -43,7 +45,7 @@ const form = reactive({
 function openNew() {
   editingProject.value = null
   Object.assign(form, {
-    title: '', slug: '', category: 'web', tags: '', description: '', image: null,
+    title: '', slug: '', category: 'web', tags: '', description: '', descriptionEn: '', descriptionDe: '', image: null,
     liveUrl: '', codeUrl: '', featured: false, clientId: null,
     caseStudyPublished: false, clientLabel: '', projectRole: '', projectDuration: '',
     completedAt: '', challenge: '', approach: '', solution: '', outcome: '',
@@ -56,7 +58,8 @@ function openEdit(project: Project) {
   editingProject.value = project
   Object.assign(form, {
     title: project.title, slug: project.slug, category: project.category,
-    tags: project.tags.join(', '), description: project.description, image: project.image,
+    tags: project.tags.join(', '), description: project.description,
+    descriptionEn: project.descriptionEn || '', descriptionDe: project.descriptionDe || '', image: project.image,
     liveUrl: project.liveUrl || '', codeUrl: project.codeUrl || '', featured: project.featured, clientId: project.clientId,
     caseStudyPublished: project.caseStudyPublished,
     clientLabel: project.clientLabel || '',
@@ -84,6 +87,11 @@ onMounted(() => {
 })
 
 async function handleSubmit() {
+  if (!form.image) {
+    toast.error('Ajoutez une image de couverture')
+    return
+  }
+
   const generatedSlug = form.title
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
@@ -96,6 +104,8 @@ async function handleSubmit() {
     category: form.category,
     tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
     description: form.description,
+    descriptionEn: form.descriptionEn || null,
+    descriptionDe: form.descriptionDe || null,
     image: form.image,
     liveUrl: form.liveUrl || null,
     codeUrl: form.codeUrl || null,
@@ -212,14 +222,31 @@ const catColors: Record<string, string> = {
               </div>
             </div>
 
-            <div>
-              <label for="project-description" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Description *</label>
-              <textarea id="project-description" v-model="form.description" rows="2" class="input-field resize-none" placeholder="Description courte..." required />
-            </div>
+            <fieldset class="rounded-xl border border-gray-100 p-4 dark:border-white/[0.06]">
+              <legend class="px-1 text-sm font-semibold text-gray-800 dark:text-gray-200">Descriptions du portfolio</legend>
+              <p class="mb-4 text-xs leading-relaxed text-gray-500 dark:text-gray-400">
+                Le français est obligatoire. Si une traduction manque, le site affiche temporairement la description française dans cette langue.
+              </p>
+              <div class="grid gap-4 lg:grid-cols-3">
+                <div>
+                  <label for="project-description" class="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">Français *</label>
+                  <textarea id="project-description" v-model="form.description" rows="4" maxlength="1200" lang="fr" class="input-field resize-y" placeholder="Description courte en français..." required />
+                </div>
+                <div>
+                  <label for="project-description-en" class="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">English</label>
+                  <textarea id="project-description-en" v-model="form.descriptionEn" rows="4" maxlength="1200" lang="en" class="input-field resize-y" placeholder="Short description in English..." />
+                </div>
+                <div>
+                  <label for="project-description-de" class="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">Deutsch</label>
+                  <textarea id="project-description-de" v-model="form.descriptionDe" rows="4" maxlength="1200" lang="de" class="input-field resize-y" placeholder="Kurze Beschreibung auf Deutsch..." />
+                </div>
+              </div>
+            </fieldset>
 
             <div>
-              <p class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Image de couverture</p>
+              <p class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Image de couverture *</p>
               <UiAppImageUpload v-model="form.image" />
+              <p class="mt-1 text-xs text-gray-400">Obligatoire pour afficher le projet dans le portfolio.</p>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -228,13 +255,13 @@ const catColors: Record<string, string> = {
                 <input id="project-tags" v-model="form.tags" type="text" class="input-field" placeholder="Vue 3, Nuxt, Tailwind">
               </div>
               <div>
-                <label for="project-live-url" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">URL Live</label>
-                <input id="project-live-url" v-model="form.liveUrl" type="url" class="input-field" placeholder="https://..." autocomplete="url">
+                <label for="project-live-url" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">URL du projet *</label>
+                <input id="project-live-url" v-model="form.liveUrl" type="url" class="input-field" placeholder="https://..." autocomplete="url" required>
               </div>
             </div>
 
             <div>
-              <label for="project-code-url" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">URL GitHub</label>
+              <label for="project-code-url" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">URL GitHub <span class="font-normal text-gray-400">(facultatif)</span></label>
               <input id="project-code-url" v-model="form.codeUrl" type="url" class="input-field" placeholder="https://github.com/..." autocomplete="url">
             </div>
 

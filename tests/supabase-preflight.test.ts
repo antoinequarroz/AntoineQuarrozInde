@@ -17,8 +17,9 @@ describe('AQ-059 Supabase preflight', () => {
 
     expect(script).toContain('mktemp -d')
     expect(script).toContain('trap cleanup EXIT INT TERM')
-    expect(script).toContain('export HOME="$cli_home"')
-    expect(script).toContain('readonly project_id="aq059-${BASHPID}-${RANDOM}"')
+    expect(script).toContain('unset SUPABASE_ACCESS_TOKEN')
+    expect(script).toContain('readonly project_id="aq059-$$-${RANDOM}"')
+    expect(script).not.toMatch(/export (?:HOME|USERPROFILE)=/)
     expect(script).toContain('20260701000000_initial_schema.sql')
     expect(script).toContain('20260701000001_platform_compatibility.sql')
     expect(script).toContain('db reset --local --no-seed')

@@ -79,8 +79,8 @@ const googleReviewsStore = useGoogleReviewsStore()
 await useAsyncData(`index-data-${locale.value}`, () =>
   Promise.all([
     googleReviewsStore.ensureLoaded(),
+    projectsStore.ensureLoaded(),
     ...(locale.value === 'fr' ? [
-      projectsStore.ensureLoaded(),
       articlesStore.ensureLoaded(),
       reviewsStore.ensureLoaded(),
     ] : []),
@@ -93,7 +93,7 @@ await useAsyncData(`index-data-${locale.value}`, () =>
     <SectionsHeroSplineSection />
     <SectionsAboutSection />
     <SectionsServicesSection />
-    <SectionsPortfolioSection v-if="locale === 'fr'" />
+    <SectionsPortfolioSection />
     <SectionsBlogSection />
     <SectionsReviewsSection />
     <SectionsContactSection />

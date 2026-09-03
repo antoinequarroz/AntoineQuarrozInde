@@ -5,16 +5,12 @@ readonly repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)"
 readonly temp_parent="${RUNNER_TEMP:-${TMPDIR:-/tmp}}"
 readonly temp_root="$(mktemp -d "$temp_parent/aq059-supabase.XXXXXX")"
 readonly project_root="$temp_root/project"
-readonly cli_home="$temp_root/home"
-readonly project_id="aq059-${BASHPID}-${RANDOM}"
+readonly project_id="aq059-$$-${RANDOM}"
 readonly supabase_cli=(npx --no-install supabase)
 
-# An isolated HOME prevents the local preflight from reading a developer's
-# linked Supabase profile or access token.
-mkdir -p "$cli_home"
-chmod 700 "$cli_home" 2>/dev/null || true
-export HOME="$cli_home"
-export USERPROFILE="$cli_home"
+# Local checks do not need a platform access token. The temporary project has
+# no remote link, so clearing it keeps the preflight isolated from production.
+unset SUPABASE_ACCESS_TOKEN
 
 cleanup() {
   "${supabase_cli[@]}" stop --workdir "$project_root" --no-backup >/dev/null 2>&1 || true
@@ -27,7 +23,8 @@ trap cleanup EXIT INT TERM
 
 install -d "$project_root/supabase/migrations" "$project_root/supabase/tests/database"
 install -m 600 "$repo_root/supabase/config.toml" "$project_root/supabase/config.toml"
-sed -i "s/^project_id = .*/project_id = \"$project_id\"/" "$project_root/supabase/config.toml"
+sed -i.bak "s/^project_id = .*/project_id = \"$project_id\"/" "$project_root/supabase/config.toml"
+rm -f -- "$project_root/supabase/config.toml.bak"
 install -m 600 "$repo_root/supabase/schema.sql" \
   "$project_root/supabase/migrations/20260701000000_initial_schema.sql"
 install -m 600 "$repo_root/supabase/tests/fixtures/platform_compatibility.sql" \

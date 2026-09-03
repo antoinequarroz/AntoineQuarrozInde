@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-08-04T12:00:00+02:00",
+  "generatedAt": "2026-09-03T17:18:00Z",
   "title": "Design System: Antoine Quarroz — Studio digital premium",
   "extensions": {
     "colorMeta": {
@@ -16,17 +16,71 @@
         "canonical": "#a78bfa",
         "tonalRamp": ["#24104f", "#3c1c7a", "#5b32a3", "#7c5bd0", "#a78bfa", "#c4b5fd", "#e4ddff", "#f7f4ff"]
       },
+      "violet-profond": {
+        "role": "primary",
+        "displayName": "Violet profond",
+        "canonical": "#5b21b6",
+        "tonalRamp": ["#18052f", "#290850", "#3d0d78", "#4c1d95", "#5b21b6", "#8b5cf6", "#c4b5fd", "#f5f3ff"]
+      },
+      "fuchsia-transition": {
+        "role": "secondary",
+        "displayName": "Fuchsia transition",
+        "canonical": "#a855f7",
+        "tonalRamp": ["#2d073e", "#4a0d67", "#6b1592", "#861dc2", "#a855f7", "#c084fc", "#e9d5ff", "#faf5ff"]
+      },
       "cyan-electrique": {
         "role": "secondary",
         "displayName": "Cyan électrique",
         "canonical": "#22d3ee",
         "tonalRamp": ["#042f36", "#07515d", "#08798a", "#06a4bc", "#22d3ee", "#67e8f9", "#baeef6", "#ecfeff"]
       },
+      "cyan-lumiere": {
+        "role": "secondary",
+        "displayName": "Cyan lumière",
+        "canonical": "#a5f3fc",
+        "tonalRamp": ["#07343a", "#0b5660", "#117d8a", "#22b8ca", "#67e8f9", "#a5f3fc", "#cffafe", "#ecfeff"]
+      },
+      "blanc-surface": {
+        "role": "neutral",
+        "displayName": "Blanc surface",
+        "canonical": "#ffffff",
+        "tonalRamp": ["#17171b", "#303036", "#505058", "#74747c", "#a3a3aa", "#d4d4d8", "#f4f4f5", "#ffffff"]
+      },
+      "brume-claire": {
+        "role": "neutral",
+        "displayName": "Brume claire",
+        "canonical": "#f7f8ff",
+        "tonalRamp": ["#171821", "#30313d", "#50515f", "#757684", "#a4a5b3", "#d4d5e2", "#ebeefa", "#f7f8ff"]
+      },
       "nuit-studio": {
         "role": "neutral",
         "displayName": "Nuit studio",
         "canonical": "#080810",
         "tonalRamp": ["#080810", "#13131f", "#252536", "#414158", "#66667c", "#9393a5", "#c8c8d2", "#f4f4f7"]
+      },
+      "nuit-profonde": {
+        "role": "neutral",
+        "displayName": "Nuit profonde",
+        "canonical": "#06060e",
+        "tonalRamp": ["#06060e", "#11111c", "#222232", "#3d3d52", "#626278", "#9090a1", "#c6c6d0", "#f3f3f6"]
+      },
+      "carte-nocturne": {
+        "role": "neutral",
+        "displayName": "Carte nocturne",
+        "canonical": "#13131f",
+        "tonalRamp": ["#09090f", "#13131f", "#282838", "#46465a", "#6c6c80", "#9999aa", "#ccccd5", "#f5f5f7"]
+      },
+      "encre": {
+        "role": "neutral",
+        "displayName": "Encre",
+        "canonical": "#111827",
+        "tonalRamp": ["#080b12", "#111827", "#263247", "#475569", "#64748b", "#94a3b8", "#cbd5e1", "#f8fafc"]
+      },
+      "texte-lumiere": {
+        "role": "neutral",
+        "displayName": "Texte lumière",
+        "canonical": "#f3f4f6",
+        "tonalRamp": ["#111317", "#292c32", "#484c55", "#6e737e", "#9ca3af", "#d1d5db", "#e5e7eb", "#f9fafb"]
       }
     },
     "typographyMeta": {
@@ -34,9 +88,21 @@
         "displayName": "Display studio",
         "purpose": "Hero et déclarations publiques à forte valeur."
       },
+      "headline": {
+        "displayName": "Titre de section",
+        "purpose": "Titres des grandes sections de la vitrine."
+      },
+      "title": {
+        "displayName": "Titre fonctionnel",
+        "purpose": "Cartes, groupes de formulaire et modales."
+      },
       "body": {
         "displayName": "Lecture fonctionnelle",
         "purpose": "Contenus, formulaires et données du back-office."
+      },
+      "label": {
+        "displayName": "Repère compact",
+        "purpose": "Badges, métadonnées, navigation compacte et tableaux."
       }
     },
     "shadows": [

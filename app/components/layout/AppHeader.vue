@@ -16,10 +16,8 @@ const navLinks = computed(() => [
   { key: 'home', href: `${localePath('/')}#hero` },
   { key: 'about', href: `${localePath('/')}#about` },
   { key: 'services', href: `${localePath('/')}#services` },
-  ...(locale.value === 'fr' ? [
-    { key: 'portfolio', href: `${localePath('/')}#portfolio` },
-    { key: 'blog', href: `${localePath('/')}#blog` },
-  ] : []),
+  { key: 'portfolio', href: `${localePath('/')}#portfolio` },
+  ...(locale.value === 'fr' ? [{ key: 'blog', href: `${localePath('/')}#blog` }] : []),
   { key: 'contact', href: `${localePath('/')}#contact` },
 ])
 

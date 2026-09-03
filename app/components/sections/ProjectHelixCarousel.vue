@@ -8,7 +8,7 @@ const props = defineProps<{
   activeCategory?: PortfolioCategory
 }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const localePath = useLocalePath()
 const { track } = useMarketing()
 const rootRef = ref<HTMLElement | null>(null)
@@ -59,6 +59,18 @@ const activeProofs = computed(() => {
 
 function categoryLabel(category: PortfolioCategory) {
   return t(`portfolio.${category}`)
+}
+
+function descriptionFor(project: Project) {
+  if (locale.value === 'en' && project.descriptionEn?.trim()) return project.descriptionEn
+  if (locale.value === 'de' && project.descriptionDe?.trim()) return project.descriptionDe
+  return project.description
+}
+
+function descriptionLanguage(project: Project) {
+  if (locale.value === 'en' && project.descriptionEn?.trim()) return 'en'
+  if (locale.value === 'de' && project.descriptionDe?.trim()) return 'de'
+  return 'fr'
 }
 
 function collectCards() {
@@ -227,8 +239,8 @@ onBeforeUnmount(() => {
               </div>
             </div>
             <div class="p-3.5 max-[390px]:p-3">
-              <p class="line-clamp-3 text-sm leading-relaxed text-gray-600 dark:text-gray-300">{{ project.description }}</p>
-              <NuxtLink v-if="project.caseStudyPublished" :to="localePath(`/projets/${project.slug}`)" class="mt-3 inline-flex min-h-11 items-center text-sm font-bold text-violet-700 transition-colors hover:text-violet-500 dark:text-violet-200 dark:hover:text-white" @click="trackProject('project_case_study_click', project)">
+              <p :lang="descriptionLanguage(project)" class="line-clamp-3 text-sm leading-relaxed text-gray-600 dark:text-gray-300">{{ descriptionFor(project) }}</p>
+              <NuxtLink v-if="locale === 'fr' && project.caseStudyPublished" :to="localePath(`/projets/${project.slug}`)" class="mt-3 inline-flex min-h-11 items-center text-sm font-bold text-violet-700 transition-colors hover:text-violet-500 dark:text-violet-200 dark:hover:text-white" @click="trackProject('project_case_study_click', project)">
                 {{ t('portfolio.read_case_study') }} <span class="ml-2" aria-hidden="true">→</span>
               </NuxtLink>
             </div>
@@ -256,9 +268,9 @@ onBeforeUnmount(() => {
                 <span class="rounded-full bg-violet-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-violet-700 dark:text-violet-200">{{ categoryLabel(activeProject.category) }}</span>
                 <span class="font-display text-sm text-gray-400">{{ String(activeSourceIndex + 1).padStart(2, '0') }}/{{ String(projects.length).padStart(2, '0') }}</span>
               </div>
-              <p class="mt-5 text-xs font-bold uppercase tracking-[0.2em] text-cyan-600 dark:text-cyan-300">{{ t('portfolio.case_study') }}</p>
+              <p v-if="locale === 'fr' && activeProject.caseStudyPublished" class="mt-5 text-xs font-bold uppercase tracking-[0.2em] text-cyan-600 dark:text-cyan-300">{{ t('portfolio.case_study') }}</p>
               <h3 class="mt-3 font-display text-2xl font-bold leading-tight text-gray-950 dark:text-white xl:text-3xl">{{ activeProject.title }}</h3>
-              <p class="mt-2 line-clamp-4 text-sm leading-relaxed text-gray-600 dark:text-gray-300">{{ activeProject.description }}</p>
+              <p :lang="descriptionLanguage(activeProject)" class="mt-2 line-clamp-4 text-sm leading-relaxed text-gray-600 dark:text-gray-300">{{ descriptionFor(activeProject) }}</p>
               <div v-if="activeProject.tags.length || activeProofs.length" class="mt-4 space-y-3 rounded-2xl bg-violet-50/80 p-3 dark:bg-violet-500/10">
                 <div v-if="activeProject.tags.length">
                   <p class="text-xs font-bold uppercase tracking-[0.14em] text-violet-700 dark:text-violet-200">{{ t('portfolio.technologies') }}</p>
@@ -274,7 +286,7 @@ onBeforeUnmount(() => {
                 </div>
               </div>
               <div class="mt-5 flex flex-wrap gap-2">
-                <NuxtLink v-if="activeProject.caseStudyPublished" :to="localePath(`/projets/${activeProject.slug}`)" class="btn-primary rounded-full px-4 py-2 text-xs" @click="trackProject('project_case_study_click', activeProject)">{{ t('portfolio.read_case_study') }}</NuxtLink>
+                <NuxtLink v-if="locale === 'fr' && activeProject.caseStudyPublished" :to="localePath(`/projets/${activeProject.slug}`)" class="btn-primary rounded-full px-4 py-2 text-xs" @click="trackProject('project_case_study_click', activeProject)">{{ t('portfolio.read_case_study') }}</NuxtLink>
                 <a v-if="activeProject.liveUrl" :href="activeProject.liveUrl" target="_blank" rel="noopener noreferrer" class="btn-primary rounded-full px-4 py-2 text-xs" @click="trackProject('project_live_click', activeProject)">{{ t('portfolio.view') }}</a>
                 <a v-if="activeProject.codeUrl" :href="activeProject.codeUrl" target="_blank" rel="noopener noreferrer" class="btn-secondary rounded-full px-4 py-2 text-xs" @click="trackProject('project_code_click', activeProject)">{{ t('portfolio.code') }}</a>
               </div>
@@ -320,7 +332,7 @@ onBeforeUnmount(() => {
               </div>
               <div class="p-3 xl:p-3.5">
                 <h3 class="font-display text-base font-bold leading-tight text-white xl:text-lg">{{ project.title }}</h3>
-                <p class="mt-2 line-clamp-2 text-sm leading-relaxed text-white/70">{{ project.description }}</p>
+                <p :lang="descriptionLanguage(project)" class="mt-2 line-clamp-2 text-sm leading-relaxed text-white/70">{{ descriptionFor(project) }}</p>
                 <div class="mt-4 flex flex-wrap gap-1.5">
                   <span v-for="tag in project.tags.slice(0, 3)" :key="tag" class="rounded-full bg-white/[0.08] px-2.5 py-1 text-xs text-white/70">{{ tag }}</span>
                 </div>

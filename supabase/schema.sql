@@ -24,6 +24,8 @@ create table if not exists public.projects (
   category text not null check (category in ('web', 'mobile', 'cms')),
   tags text[] not null default '{}',
   description text not null,
+  description_en text,
+  description_de text,
   image text,
   live_url text,
   code_url text,

@@ -119,6 +119,8 @@ jobs:
         run: bash scripts/ops/verify-openai-robots-policy.sh https://www.antoinequarroz.ch
       - name: Verify localized home and legal pages
         run: bash scripts/ops/verify-localized-pages.sh https://www.antoinequarroz.ch
+      - name: Verify French-only route policy
+        run: bash scripts/ops/verify-french-only-routes.sh https://www.antoinequarroz.ch
 
   e2e:
     if: >-

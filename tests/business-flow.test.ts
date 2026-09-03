@@ -15,6 +15,10 @@ describe('parcours client vers paiement', () => {
       slug: 'portail-client',
       category: 'web',
       description: 'Un portail de suivi de projet.',
+      descriptionEn: 'A project tracking portal.',
+      descriptionDe: 'Ein Portal zur Projektverfolgung.',
+      image: 'https://example.com/project.jpg',
+      liveUrl: 'https://example.com/project',
       featured: true,
       caseStudyPublished: true,
       clientLabel: 'PME suisse',
@@ -25,7 +29,43 @@ describe('parcours client vers paiement', () => {
 
     expect(payload.client_id).toBe(42)
     expect(payload.client_label).toBe('PME suisse')
+    expect(payload.description_en).toBe('A project tracking portal.')
+    expect(payload.description_de).toBe('Ein Portal zur Projektverfolgung.')
     expect(payload).not.toHaveProperty('client_email')
+  })
+
+  it('publie un projet avec le minimum sans imposer les champs détaillés de l’étude de cas', async () => {
+    const { projectPayload } = await import('../server/utils/projectPayload')
+    const payload = projectPayload({
+      title: 'Site vitrine',
+      slug: 'site-vitrine',
+      category: 'web',
+      description: 'Une courte description.',
+      image: 'https://example.com/cover.jpg',
+      liveUrl: 'https://example.com',
+      caseStudyPublished: true,
+    }, 'org-test')
+
+    expect(payload.case_study_published).toBe(true)
+    expect(payload.challenge).toBeNull()
+    expect(payload.solution).toBeNull()
+    expect(payload.outcome).toBeNull()
+    expect(payload.code_url).toBeNull()
+  })
+
+  it('exige une image et une URL publique, mais pas de lien GitHub', async () => {
+    const { projectPayload } = await import('../server/utils/projectPayload')
+    const base = {
+      title: 'Site vitrine',
+      slug: 'site-vitrine',
+      category: 'web',
+      description: 'Une courte description.',
+      liveUrl: 'https://example.com',
+    }
+
+    expect(() => projectPayload(base, 'org-test')).toThrow('image is required')
+    expect(() => projectPayload({ ...base, image: 'https://example.com/cover.jpg', liveUrl: '' }, 'org-test')).toThrow('liveUrl is required')
+    expect(projectPayload({ ...base, image: 'https://example.com/cover.jpg' }, 'org-test').code_url).toBeNull()
   })
 
   it('conserve les mêmes totaux du devis à la facture', () => {

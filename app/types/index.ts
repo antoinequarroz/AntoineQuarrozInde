@@ -6,6 +6,8 @@ export interface Project {
   category: 'web' | 'mobile' | 'cms'
   tags: string[]
   description: string
+  descriptionEn: string | null
+  descriptionDe: string | null
   image: string | null
   liveUrl: string | null
   codeUrl: string | null

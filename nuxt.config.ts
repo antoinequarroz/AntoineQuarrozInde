@@ -1,4 +1,6 @@
-﻿export default defineNuxtConfig({
+﻿import { createI18nPagesConfig } from './shared/utils/localizedRoutePolicy'
+
+export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
 
@@ -27,6 +29,8 @@
     ],
     defaultLocale: 'fr',
     strategy: 'prefix_except_default',
+    customRoutes: 'config',
+    pages: createI18nPagesConfig(),
     vueI18n: './i18n.config.ts',
     bundle: {
       optimizeTranslationDirective: false,

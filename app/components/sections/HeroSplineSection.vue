@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { t, locale } = useI18n();
+const { t } = useI18n();
 const localePath = useLocalePath();
 
 const sceneUrl = "https://prod.spline.design/PyzDhpQ9E5f1E3MT/scene.splinecode";
@@ -75,7 +75,6 @@ const sceneUrl = "https://prod.spline.design/PyzDhpQ9E5f1E3MT/scene.splinecode";
                                 {{ t("hero.cta_primary") }}
                             </a>
                             <a
-                                v-if="locale === 'fr'"
                                 :href="`${localePath('/')}#portfolio`"
                                 class="inline-flex min-h-12 items-center justify-center rounded-xl border border-white/25 bg-black/20 px-6 text-sm font-semibold text-white backdrop-blur-sm transition hover:border-cyan-300/50 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
                             >

@@ -8,6 +8,8 @@ type ProjectRow = {
   category: Project['category']
   tags: string[] | null
   description: string
+  description_en?: string | null
+  description_de?: string | null
   image: string | null
   live_url: string | null
   code_url: string | null
@@ -44,6 +46,8 @@ function mapProject(row: ProjectRow): Project {
     category: row.category,
     tags: row.tags ?? [],
     description: row.description,
+    descriptionEn: row.description_en ?? null,
+    descriptionDe: row.description_de ?? null,
     image: row.image,
     liveUrl: row.live_url,
     codeUrl: row.code_url,

@@ -29,8 +29,6 @@ export default defineEventHandler(async (event) => {
     '/en',
     '/de',
     '/blog',
-    '/en/blog',
-    '/de/blog',
     '/confidentialite',
     '/conditions-utilisation',
     '/mentions-legales',
@@ -60,14 +58,12 @@ export default defineEventHandler(async (event) => {
 
     for (const project of projects ?? []) {
       const lastmod = project.completed_at || project.created_at || now
-      for (const prefix of ['', '/en', '/de']) {
-        entries.push({
-          path: `${prefix}/projets/${encodeURIComponent(project.slug)}`,
-          lastmod,
-          changefreq: 'monthly',
-          priority: '0.9',
-        })
-      }
+      entries.push({
+        path: `/projets/${encodeURIComponent(project.slug)}`,
+        lastmod,
+        changefreq: 'monthly',
+        priority: '0.9',
+      })
     }
   }
   catch (error) {
