@@ -14,6 +14,7 @@ type ProjectRow = {
   live_url: string | null
   code_url: string | null
   featured: boolean
+  portfolio_visible?: boolean | null
   case_study_published?: boolean | null
   client_label?: string | null
   project_role?: string | null
@@ -52,6 +53,7 @@ function mapProject(row: ProjectRow): Project {
     liveUrl: row.live_url,
     codeUrl: row.code_url,
     featured: row.featured,
+    portfolioVisible: Boolean(row.portfolio_visible),
     caseStudyPublished: Boolean(row.case_study_published),
     clientLabel: row.client_label ?? null,
     projectRole: row.project_role ?? null,
@@ -127,7 +129,8 @@ export const useProjectsStore = defineStore('projects', () => {
   }
 
   const featured = computed(() => projects.value.filter(p => p.featured))
-  const byCategory = (cat: string) => projects.value.filter(p => cat === 'all' || p.category === cat)
+  const portfolio = computed(() => projects.value.filter(p => p.portfolioVisible))
+  const byCategory = (cat: string) => portfolio.value.filter(p => cat === 'all' || p.category === cat)
 
-  return { projects, loading, loaded, ensureLoaded, add, update, remove, featured, byCategory }
+  return { projects, loading, loaded, ensureLoaded, add, update, remove, featured, portfolio, byCategory }
 })

@@ -7,10 +7,10 @@ type PortfolioFilter = 'all' | 'web' | 'mobile' | 'cms'
 const activeFilter = ref<PortfolioFilter>('all')
 
 const projectCounts = computed<Record<PortfolioFilter, number>>(() => ({
-  all: store.projects.length,
-  web: store.projects.filter(project => project.category === 'web').length,
-  mobile: store.projects.filter(project => project.category === 'mobile').length,
-  cms: store.projects.filter(project => project.category === 'cms').length,
+  all: store.portfolio.length,
+  web: store.portfolio.filter(project => project.category === 'web').length,
+  mobile: store.portfolio.filter(project => project.category === 'mobile').length,
+  cms: store.portfolio.filter(project => project.category === 'cms').length,
 }))
 
 const filters = computed(() => [

@@ -30,6 +30,7 @@ create table if not exists public.projects (
   live_url text,
   code_url text,
   featured boolean not null default false,
+  portfolio_visible boolean not null default true,
   case_study_published boolean not null default false,
   client_label text,
   project_role text,
@@ -217,6 +218,7 @@ create table if not exists public.application_errors (
 );
 
 create index if not exists idx_projects_organization_id on public.projects(organization_id);
+create index if not exists idx_projects_portfolio_visible on public.projects(organization_id, portfolio_visible) where portfolio_visible = true;
 create index if not exists idx_projects_case_study_published on public.projects(organization_id, case_study_published) where case_study_published = true;
 create index if not exists idx_articles_organization_id on public.articles(organization_id);
 create index if not exists idx_reviews_organization_id on public.reviews(organization_id);
