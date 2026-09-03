@@ -20,6 +20,7 @@ describe('parcours client vers paiement', () => {
       image: 'https://example.com/project.jpg',
       liveUrl: 'https://example.com/project',
       featured: true,
+      portfolioVisible: true,
       caseStudyPublished: true,
       clientLabel: 'PME suisse',
       challenge: 'Centraliser les échanges.',
@@ -31,10 +32,11 @@ describe('parcours client vers paiement', () => {
     expect(payload.client_label).toBe('PME suisse')
     expect(payload.description_en).toBe('A project tracking portal.')
     expect(payload.description_de).toBe('Ein Portal zur Projektverfolgung.')
+    expect(payload.portfolio_visible).toBe(true)
     expect(payload).not.toHaveProperty('client_email')
   })
 
-  it('publie un projet avec le minimum sans imposer les champs détaillés de l’étude de cas', async () => {
+  it('affiche un projet minimal dans le portfolio sans publier son étude de cas', async () => {
     const { projectPayload } = await import('../server/utils/projectPayload')
     const payload = projectPayload({
       title: 'Site vitrine',
@@ -43,10 +45,12 @@ describe('parcours client vers paiement', () => {
       description: 'Une courte description.',
       image: 'https://example.com/cover.jpg',
       liveUrl: 'https://example.com',
-      caseStudyPublished: true,
+      portfolioVisible: true,
+      caseStudyPublished: false,
     }, 'org-test')
 
-    expect(payload.case_study_published).toBe(true)
+    expect(payload.portfolio_visible).toBe(true)
+    expect(payload.case_study_published).toBe(false)
     expect(payload.challenge).toBeNull()
     expect(payload.solution).toBeNull()
     expect(payload.outcome).toBeNull()

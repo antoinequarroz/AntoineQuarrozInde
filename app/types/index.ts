@@ -12,7 +12,7 @@ export interface Project {
   liveUrl: string | null
   codeUrl: string | null
   featured: boolean
-  portfolioVisible?: boolean
+  portfolioVisible: boolean
   caseStudyPublished: boolean
   clientLabel: string | null
   projectRole: string | null

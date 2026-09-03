@@ -1,6 +1,6 @@
 begin;
 
-select plan(8);
+select plan(10);
 
 select is(
   (
@@ -36,6 +36,25 @@ select ok(
   not has_table_privilege('anon', 'public.invoice_payments', 'SELECT')
   and not has_table_privilege('authenticated', 'public.invoice_payments', 'SELECT'),
   'invoice payments are not readable through public Data API roles'
+);
+
+select ok(
+  not has_table_privilege('anon', 'public.projects', 'SELECT')
+  and not has_table_privilege('authenticated', 'public.projects', 'SELECT'),
+  'projects remain accessible only through the organization-aware server API'
+);
+
+select ok(
+  exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'projects'
+      and column_name = 'portfolio_visible'
+      and is_nullable = 'NO'
+      and column_default = 'false'
+  ),
+  'new projects are private in the portfolio by default'
 );
 
 select ok(

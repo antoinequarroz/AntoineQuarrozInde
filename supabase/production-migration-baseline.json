@@ -25,5 +25,6 @@
   "20260810221033_add_recurring_invoices.sql",
   "20260810221045_add_invoice_reminder_preferences.sql",
   "20260903170153_add_project_localized_descriptions.sql",
-  "20260903193214_add_project_portfolio_visibility.sql"
+  "20260903193214_add_project_portfolio_visibility.sql",
+  "20260903203219_activate_project_portfolio_visibility.sql"
 ]
