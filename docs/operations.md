@@ -34,7 +34,8 @@ strict :
 1. tests, TypeScript, build et budgets ;
 2. déploiement du SHA exact sur le VPS avec `scripts/ops/deploy-from-ci.sh` ;
 3. attente de ce même SHA sur `/api/version` et d'un `/api/health` vert ;
-4. E2E de production avec les identifiants du compte sandbox.
+4. vérification que l'apex redirige définitivement vers `www` en conservant l'URI ;
+5. E2E de production avec les identifiants du compte sandbox.
 
 Les exécutions planifiées et manuelles vérifient la production courante sans
 redéployer. Les migrations Supabase ne sont volontairement pas automatiques :
@@ -73,6 +74,42 @@ l'environnement `Production`. Le déploiement manuel reste disponible pendant
 le rollback. Un échec de build, de santé ou de version empêche les E2E et le
 script VPS remet automatiquement l'image `previous` en service lorsque le
 conteneur candidat a été lancé.
+
+### Domaine canonique et Caddy
+
+Le domaine public préféré est `https://www.antoinequarroz.ch`. Caddy redirige
+les requêtes reçues sur `https://antoinequarroz.ch` vers `www` avec un statut
+permanent, en conservant le chemin et les paramètres. Pendant une release,
+`scripts/ops/deploy-release.sh` valide le `Caddyfile` avant le build puis recharge
+atomiquement la configuration après le retour au vert du conteneur web.
+
+La CI contrôle ensuite la redirection et la disponibilité de la destination :
+
+```bash
+bash scripts/ops/verify-domain-canonicalization.sh \
+  https://antoinequarroz.ch \
+  https://www.antoinequarroz.ch
+```
+
+Pour contrôler manuellement la conservation de l'URI sans suivre la redirection :
+
+```bash
+curl -sS -o /dev/null -D - \
+  'https://antoinequarroz.ch/verification?utm_source=manual'
+```
+
+En cas de régression de routage, restaurer le `Caddyfile` de la release précédente,
+le valider, puis le recharger dans le conteneur actif :
+
+```bash
+docker compose run --rm --no-deps caddy validate \
+  --config /etc/caddy/Caddyfile --adapter caddyfile
+docker compose exec -T caddy caddy reload \
+  --config /etc/caddy/Caddyfile --adapter caddyfile
+```
+
+Le reload Caddy est atomique : une configuration invalide n'est pas chargée.
+Le rollback d'image web reste indépendant et continue d'utiliser le tag `previous`.
 
 ## Surveillance
 

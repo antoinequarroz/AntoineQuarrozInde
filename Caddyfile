@@ -1,4 +1,8 @@
-antoinequarroz.ch, www.antoinequarroz.ch {
-  encode zstd gzip
-  reverse_proxy web:3000
+antoinequarroz.ch {
+	redir https://www.antoinequarroz.ch{uri} permanent
+}
+
+www.antoinequarroz.ch {
+	encode zstd gzip
+	reverse_proxy web:3000
 }

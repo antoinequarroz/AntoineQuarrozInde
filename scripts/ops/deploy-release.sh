@@ -7,6 +7,14 @@ readonly candidate_tag="candidate"
 readonly previous_tag="previous"
 readonly max_health_attempts=45
 
+validate_caddy_config() {
+  docker compose run --rm --no-deps caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+}
+
+reload_caddy_config() {
+  docker compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile
+}
+
 wait_for_health() {
   local attempt status
 
@@ -59,10 +67,13 @@ export APP_VERSION="$(git rev-parse HEAD)"
 export APP_BUILD_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 export APP_IMAGE_TAG="$candidate_tag"
 
+validate_caddy_config
+
 trap rollback ERR
 docker compose build web
 docker compose up -d --no-build --remove-orphans
 wait_for_health
+reload_caddy_config
 trap - ERR
 
 docker compose ps

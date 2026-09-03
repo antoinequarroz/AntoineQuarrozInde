@@ -111,6 +111,8 @@ jobs:
             "bash -s -- '$EXPECTED_SHA' '$VPS_PROJECT_DIR'"
       - name: Verify the public release
         run: bash scripts/ops/verify-production-release.sh "$EXPECTED_SHA" https://www.antoinequarroz.ch
+      - name: Verify the canonical public domain
+        run: bash scripts/ops/verify-domain-canonicalization.sh https://antoinequarroz.ch https://www.antoinequarroz.ch
 
   e2e:
     if: >-

@@ -198,7 +198,7 @@
     supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
     adminEmail: process.env.ADMIN_EMAIL || '',
     public: {
-      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'https://www.antoinequarroz.dev',
+      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'https://www.antoinequarroz.ch',
       plausibleDomain: process.env.NUXT_PUBLIC_PLAUSIBLE_DOMAIN || 'antoinequarroz.ch',
       plausibleEndpoint: process.env.NUXT_PUBLIC_PLAUSIBLE_ENDPOINT || 'https://plausible.io/api/event',
       calLink: process.env.NUXT_PUBLIC_CAL_LINK || '',
