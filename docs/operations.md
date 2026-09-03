@@ -102,7 +102,7 @@ En cas de régression de routage, restaurer le `Caddyfile` de la release précé
 le valider, puis le recharger dans le conteneur actif :
 
 ```bash
-docker compose run --rm --no-deps caddy validate \
+docker compose run --rm --no-deps caddy caddy validate \
   --config /etc/caddy/Caddyfile --adapter caddyfile
 docker compose exec -T caddy caddy reload \
   --config /etc/caddy/Caddyfile --adapter caddyfile

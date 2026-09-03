@@ -8,7 +8,7 @@ readonly previous_tag="previous"
 readonly max_health_attempts=45
 
 validate_caddy_config() {
-  docker compose run --rm --no-deps caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+  docker compose run --rm --no-deps caddy caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
 }
 
 reload_caddy_config() {
