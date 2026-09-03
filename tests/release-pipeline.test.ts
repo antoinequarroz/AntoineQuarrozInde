@@ -80,8 +80,8 @@ describe('AQ-058 release pipeline', () => {
     expect(workflow).toContain('environment:\n      name: Production')
     expect(workflow).toContain('SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}')
     expect(workflow).toContain('SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}')
-    expect(workflow).toContain('SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}')
     expect(workflow).toContain('SUPABASE_BACKUP_AGE_RECIPIENT: ${{ secrets.SUPABASE_BACKUP_AGE_RECIPIENT }}')
+    expect(workflow).not.toContain('SUPABASE_DB_PASSWORD')
     expect(workflow.indexOf('Promote verified Supabase migrations')).toBeLessThan(workflow.indexOf('Deploy the exact main commit'))
     expect(workflow).toContain('if: always()')
     expect(workflow).toContain('if-no-files-found: ignore')
@@ -92,6 +92,7 @@ describe('AQ-058 release pipeline', () => {
     expect(promoteScript).toContain('age --recipient')
     expect(promoteScript).toContain('db push --linked --yes')
     expect(promoteScript).not.toMatch(/db reset|migration repair|--include-all|--debug/)
+    expect(promoteScript).not.toContain('--password')
   })
 
   unixIt('accepts only the expected healthy production release', async () => {

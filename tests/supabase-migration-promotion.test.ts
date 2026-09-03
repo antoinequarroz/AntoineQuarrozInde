@@ -23,7 +23,7 @@ const divergedTable = `Local | Remote | Time (UTC)
                | 20260802000000 | 2026-08-02 00:00:00
 `
 
-async function fixture(scenario: 'aligned' | 'pending' | 'diverged' | 'dump-failure' | 'push-failure') {
+async function fixture(scenario: 'aligned' | 'pending' | 'diverged' | 'dump-failure' | 'push-failure' | 'verification-failure') {
   const root = await mkdtemp(join(tmpdir(), 'aq060-promotion-test-'))
   const bin = join(root, 'bin')
   const artifacts = join(root, 'artifacts')
@@ -38,7 +38,7 @@ args="$*"
 if [[ "$args" == *" migration list "* ]]; then
   count=0; [[ -f "$AQ_FAKE_STATE" ]] && count="$(cat "$AQ_FAKE_STATE")"
   count=$((count + 1)); printf '%s' "$count" > "$AQ_FAKE_STATE"
-  if [[ "$AQ_FAKE_SCENARIO" == "diverged" ]]; then printf '%s' "$AQ_DIVERGED_TABLE"
+  if [[ "$AQ_FAKE_SCENARIO" == "diverged" || ( "$AQ_FAKE_SCENARIO" == "verification-failure" && "$count" -gt 1 ) ]]; then printf '%s' "$AQ_DIVERGED_TABLE"
   elif [[ "$AQ_FAKE_SCENARIO" == "aligned" || "$count" -gt 1 ]]; then printf '%s' "$AQ_ALIGNED_TABLE"
   else printf '%s' "$AQ_PENDING_TABLE"; fi
 elif [[ "$args" == *" db dump "* ]]; then
@@ -76,7 +76,6 @@ cp "$input" "$output"
       GITHUB_SHA: sha,
       SUPABASE_ACCESS_TOKEN: 'access-token-secret',
       SUPABASE_PROJECT_REF: 'abcdefghijklmnopqrst',
-      SUPABASE_DB_PASSWORD: 'database-password-secret',
       SUPABASE_BACKUP_AGE_RECIPIENT: `age1${'q'.repeat(40)}`,
       AQ_FAKE_LOG: log,
       AQ_FAKE_STATE: state,
@@ -91,9 +90,11 @@ cp "$input" "$output"
 describe('AQ-060 Supabase migration promotion', () => {
   it('keeps the GitHub workflow free of plaintext database backup artifacts', async () => {
     const workflow = await readFile('.github/workflows/ci.yml', 'utf8')
+    const promotionScript = await readFile(script, 'utf8')
     expect(workflow).toContain('supabase-pre-migration-${{ github.sha }}')
     expect(workflow).toContain('aq060-migration-artifacts/*')
     expect(workflow).not.toMatch(/path:.*\.(?:sql|tar\.gz)\s*$/m)
+    expect(promotionScript).not.toMatch(/export (?:HOME|USERPROFILE)=/)
   })
 
   unixIt('does not dump or push when production is already aligned', async () => {
@@ -127,8 +128,8 @@ describe('AQ-060 Supabase migration promotion', () => {
       backup_created: true,
       plan: { status: 'pending', pendingVersions: ['20260802000000'] },
     })
-    expect(`${result.stdout}${result.stderr}`).not.toContain('database-password-secret')
     expect(`${result.stdout}${result.stderr}`).not.toContain('access-token-secret')
+    expect(calls).not.toContain('--password')
   })
 
   unixIt('refuses divergent histories before backup or push', async () => {
@@ -140,6 +141,18 @@ describe('AQ-060 Supabase migration promotion', () => {
     expect(calls).not.toMatch(/db push --linked --yes/)
   })
 
+  unixIt('blocks promotion when the clear backup cannot be created', async () => {
+    const test = await fixture('dump-failure')
+    await expect(execFileAsync('bash', [script, test.artifacts], { cwd: process.cwd(), env: test.env }))
+      .rejects.toMatchObject({ code: 1 })
+    const calls = await readFile(test.log, 'utf8')
+    const files = await readdir(test.artifacts)
+
+    expect(calls).toContain('db dump --linked')
+    expect(calls).not.toMatch(/db push --linked --yes/)
+    expect(files.some(file => file.endsWith('.sql') || file.endsWith('.tar.gz') || file.endsWith('.age'))).toBe(false)
+  })
+
   unixIt('keeps only the encrypted recovery artifact when a push fails', async () => {
     const test = await fixture('push-failure')
     await expect(execFileAsync('bash', [script, test.artifacts], { cwd: process.cwd(), env: test.env }))
@@ -149,5 +162,16 @@ describe('AQ-060 Supabase migration promotion', () => {
     expect(files).toContain(`supabase-pre-migration-${sha}.tar.gz.age`)
     expect(files.some(file => file.endsWith('.sql') || file.endsWith('.tar.gz'))).toBe(false)
     expect(manifest.state).toBe('push_failed')
+  })
+
+  unixIt('blocks application delivery when post-push history is not aligned', async () => {
+    const test = await fixture('verification-failure')
+    await expect(execFileAsync('bash', [script, test.artifacts], { cwd: process.cwd(), env: test.env }))
+      .rejects.toMatchObject({ code: 65 })
+    const calls = await readFile(test.log, 'utf8')
+    const manifest = JSON.parse(await readFile(join(test.artifacts, 'migration-manifest.json'), 'utf8'))
+
+    expect(calls).toMatch(/db push --linked --yes/)
+    expect(manifest).toMatchObject({ state: 'verification_failed', backup_created: true })
   })
 })

@@ -16,7 +16,7 @@ if [[ ! "$expected_sha" =~ ^[0-9a-f]{40}$ ]]; then
   exit 64
 fi
 
-for required_name in SUPABASE_ACCESS_TOKEN SUPABASE_PROJECT_REF SUPABASE_DB_PASSWORD SUPABASE_BACKUP_AGE_RECIPIENT; do
+for required_name in SUPABASE_ACCESS_TOKEN SUPABASE_PROJECT_REF SUPABASE_BACKUP_AGE_RECIPIENT; do
   if [[ -z "${!required_name:-}" ]]; then
     echo "Missing required Production setting: $required_name" >&2
     exit 64
@@ -38,7 +38,6 @@ done
 install -d -m 700 "$artifact_dir"
 readonly temp_root="$(mktemp -d "$temp_parent/aq060-supabase.XXXXXX")"
 readonly project_root="$temp_root/project"
-readonly cli_home="$temp_root/home"
 readonly clear_backup="$temp_root/clear-backup"
 readonly list_before="$temp_root/migration-list-before.txt"
 readonly list_after="$temp_root/migration-list-after.txt"
@@ -52,9 +51,7 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-install -d -m 700 "$cli_home" "$project_root/supabase/migrations" "$clear_backup"
-export HOME="$cli_home"
-export USERPROFILE="$cli_home"
+install -d -m 700 "$project_root/supabase/migrations" "$clear_backup"
 install -m 600 "$repo_root/supabase/config.toml" "$project_root/supabase/config.toml"
 cp "$repo_root"/supabase/migrations/*.sql "$project_root/supabase/migrations/"
 
@@ -90,10 +87,8 @@ write_manifest() {
 
 run_supabase "project link" link \
   --project-ref "$SUPABASE_PROJECT_REF" \
-  --password "$SUPABASE_DB_PASSWORD" \
   --workdir "$project_root" >/dev/null
 run_supabase "migration history check" migration list --linked \
-  --password "$SUPABASE_DB_PASSWORD" \
   --workdir "$project_root" > "$list_before"
 
 set +e
@@ -106,7 +101,6 @@ if (( plan_status != 0 )); then
 fi
 
 run_supabase "migration dry-run" db push --linked --dry-run \
-  --password "$SUPABASE_DB_PASSWORD" \
   --workdir "$project_root" >/dev/null
 
 pending_count="$(jq -r '.pendingVersions | length' <<<"$plan_json")"
@@ -118,12 +112,10 @@ fi
 
 write_manifest "backup_started" "$plan_json" false
 run_supabase "schema backup" db dump --linked \
-  --password "$SUPABASE_DB_PASSWORD" \
   --schema public \
   --file "$clear_backup/public-schema.sql" \
   --workdir "$project_root" >/dev/null
 run_supabase "data backup" db dump --linked \
-  --password "$SUPABASE_DB_PASSWORD" \
   --schema public \
   --data-only --use-copy \
   --file "$clear_backup/public-data.sql" \
@@ -142,14 +134,12 @@ rm -rf -- "$clear_backup" "$temp_root/pre-migration.tar.gz"
 write_manifest "backup_ready" "$plan_json" true
 
 if ! run_supabase "migration push" db push --linked --yes \
-  --password "$SUPABASE_DB_PASSWORD" \
   --workdir "$project_root" >/dev/null; then
   write_manifest "push_failed" "$plan_json" true
   exit 1
 fi
 
 run_supabase "post-push history check" migration list --linked \
-  --password "$SUPABASE_DB_PASSWORD" \
   --workdir "$project_root" > "$list_after"
 set +e
 post_plan_json="$(read_plan "$list_after")"
@@ -161,7 +151,6 @@ if (( post_status != 0 )) || [[ "$(jq -r '.status' <<<"$post_plan_json")" != "al
   exit 65
 fi
 run_supabase "post-push dry-run" db push --linked --dry-run \
-  --password "$SUPABASE_DB_PASSWORD" \
   --workdir "$project_root" >/dev/null
 
 write_manifest "promoted" "$plan_json" true

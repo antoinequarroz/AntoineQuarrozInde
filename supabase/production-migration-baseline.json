@@ -23,5 +23,6 @@
   "20260810131102_client_portal_access_lifecycle.sql",
   "20260810221013_add_bank_import_fingerprint.sql",
   "20260810221033_add_recurring_invoices.sql",
-  "20260810221045_add_invoice_reminder_preferences.sql"
+  "20260810221045_add_invoice_reminder_preferences.sql",
+  "20260903170153_add_project_localized_descriptions.sql"
 ]

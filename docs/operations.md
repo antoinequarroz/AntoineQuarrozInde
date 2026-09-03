@@ -79,10 +79,9 @@ Antoine comme reviewer et contient uniquement les secrets suivants :
 - `VPS_KNOWN_HOSTS` : ligne de clé d'hôte vérifiée, jamais produite à l'aveugle dans la CI ;
 - `VPS_HOST` : adresse du VPS ;
 - `VPS_USER` : utilisateur de déploiement non-root ;
-- `VPS_PROJECT_DIR` : chemin absolu du dépôt sur le VPS.
+- `VPS_PROJECT_DIR` : chemin absolu du dépôt sur le VPS ;
 - `SUPABASE_ACCESS_TOKEN` : jeton personnel Supabase utilisé par la CLI ;
 - `SUPABASE_PROJECT_REF` : identifiant de 20 caractères du projet attendu ;
-- `SUPABASE_DB_PASSWORD` : mot de passe PostgreSQL utilisé uniquement par la CLI ;
 - `SUPABASE_BACKUP_AGE_RECIPIENT` : clé publique `age` dont la clé privée reste hors de GitHub et du VPS.
 
 ### Reprise après une migration
