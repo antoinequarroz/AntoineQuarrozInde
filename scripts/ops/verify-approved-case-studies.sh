@@ -2,8 +2,26 @@
 set -euo pipefail
 
 readonly base_url="${1:-https://www.antoinequarroz.ch}"
+readonly fallback_node_image="antoinequarroz-web:candidate"
 
-node - "$base_url" <<'NODE'
+run_node() {
+  local argument="$1"
+
+  if command -v node >/dev/null 2>&1; then
+    node - "$argument"
+    return
+  fi
+
+  if ! command -v docker >/dev/null 2>&1 \
+    || ! docker image inspect "$fallback_node_image" >/dev/null 2>&1; then
+    echo "Node.js is required locally or in ${fallback_node_image}." >&2
+    return 69
+  fi
+
+  docker run --rm -i "$fallback_node_image" node - "$argument"
+}
+
+run_node "$base_url" <<'NODE'
 const rawOrigin = process.argv[2]
 const MAX_BYTES = 1024 * 1024
 const ALLOWED_SERVICES = new Set([

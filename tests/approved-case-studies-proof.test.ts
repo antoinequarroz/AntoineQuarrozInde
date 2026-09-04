@@ -1,4 +1,5 @@
 import { execFile } from 'node:child_process'
+import { readFile } from 'node:fs/promises'
 import { createServer } from 'node:http'
 import { promisify } from 'node:util'
 
@@ -138,6 +139,14 @@ afterEach(async () => {
 })
 
 describe('AQ-SEO-012 anonymous approved case-study proof', () => {
+  it('can reuse the candidate image when Node.js is absent from the VPS host', async () => {
+    const source = await readFile(script, 'utf8')
+
+    expect(source).toContain('command -v node')
+    expect(source).toContain('docker image inspect "$fallback_node_image"')
+    expect(source).toContain('docker run --rm -i "$fallback_node_image" node')
+  })
+
   it.each(['valid', 'empty', 'multiple'] as const)('accepts the %s public state', async (variant) => {
     const origin = await serve(variant)
     await expect(run(origin)).resolves.toMatchObject({ stdout: expect.stringContaining('proof passed') })
