@@ -17,7 +17,9 @@ identique d'inventer une date de modification.
 - [x] Scripts Bash valides.
 - [x] Préflight Supabase éphémère : rejeu complet, lint sans erreur, aucun avis
   sécurité et 82/82 assertions pgTAP réussies.
-- [ ] CI de la pull request réussie.
+- [x] CI de la pull request réussie sur le SHA
+  `6851c961695b8c0dc711236666556ecac528e800` : qualité, accessibilité, base de
+  données, GitGuardian et aperçu Vercel validés.
 
 ## Ordre et sûreté des migrations
 
@@ -62,7 +64,7 @@ point de reprise des données. Toute correction DB ultérieure doit être une
 nouvelle migration append-only, jamais une modification de l'historique déjà
 appliqué.
 
-## Blocage restant
+## État de livraison
 
-Le seul blocage avant fusion est le résultat de la CI de la pull request. Aucun
-déploiement manuel ni accès de production n'est requis à ce stade.
+Aucun blocage technique n'est détecté avant fusion. La fusion et le déploiement
+automatique sur `main` restent soumis à la validation explicite d'Antoine.
