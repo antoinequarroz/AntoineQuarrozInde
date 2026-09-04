@@ -308,6 +308,31 @@ transmet aucun identifiant. Son échec bloque la release. Après un échec en
 production, remettre l'image `antoinequarroz-web:previous`, vérifier la santé et
 rejouer toutes les preuves SEO avant de rétablir le déploiement.
 
+### Listing du blog rendu côté serveur
+
+La page `/blog` charge une liste publique minimale et liée à l'organisation
+canonique. Le HTML initial doit contenir le titre, l'extrait, la date et un vrai
+lien vers chaque article publié. Le corps des articles, les brouillons et les
+champs internes ne sont jamais ajoutés au payload du listing, même lorsqu'une
+requête contient des en-têtes d'authentification ou d'organisation.
+
+Après une livraison, lancer la preuve anonyme et en lecture seule :
+
+```bash
+bash scripts/ops/verify-blog-ssr.sh \
+  https://www.antoinequarroz.ch
+```
+
+Le contrôle compare `/api/public/articles` au contenu visible et au payload Nuxt
+du HTML brut de `/blog`. Il vérifie les champs exacts du résumé, les dates, les
+liens explorables sans JavaScript, l'absence de données supplémentaires et
+l'état vide serveur. Cette preuve est aussi exécutée sur le VPS avant que la
+transaction de déploiement désarme son rollback. Une API indisponible, une fuite
+de champ, un article absent du HTML ou un faux état vide remet donc
+automatiquement en service l'image `antoinequarroz-web:previous`. Vérifier alors
+la santé et rejouer la preuve avant une nouvelle livraison. Aucune restauration
+de données n'est nécessaire.
+
 ## Surveillance
 
 `/api/health` contrôle le serveur Nuxt et l'accès à Supabase. Le timer

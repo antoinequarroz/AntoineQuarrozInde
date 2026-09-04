@@ -17,10 +17,49 @@ useHead({
   ],
 })
 
-const store = useArticlesStore()
-const articles = computed(() => store.published)
+type PublicArticleSummary = {
+  title: string
+  slug: string
+  excerpt: string
+  cover_image: string | null
+  published_at: string | null
+  tags: string[]
+  created_at: string
+  read_time: number
+}
 
-onMounted(() => store.ensureLoaded())
+const {
+  data: articleData,
+  error: articleError,
+  status: articleStatus,
+  refresh: refreshArticles,
+} = await useAsyncData<PublicArticleSummary[]>(
+  'public-blog-articles',
+  () => $fetch('/api/public/articles'),
+  { default: () => [] },
+)
+
+const articles = computed(() => articleData.value ?? [])
+
+function publicationDate(article: PublicArticleSummary) {
+  return article.published_at || article.created_at
+}
+
+function articlePath(slug: string) {
+  return `/blog/${encodeURIComponent(slug)}`
+}
+
+function formatPublicationDate(article: PublicArticleSummary) {
+  const value = publicationDate(article)
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value.slice(0, 10)
+  return new Intl.DateTimeFormat('fr-CH', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'Europe/Zurich',
+  }).format(date)
+}
 </script>
 
 <template>
@@ -34,8 +73,25 @@ onMounted(() => store.ensureLoaded())
       </div>
 
       <!-- Articles -->
-      <!-- Skeleton while loading -->
-      <div v-if="store.loading" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div
+        v-if="articleError"
+        role="alert"
+        class="mx-auto max-w-xl rounded-2xl border border-red-200 bg-red-50 p-6 text-center text-red-900 dark:border-red-400/20 dark:bg-red-400/10 dark:text-red-100"
+      >
+        <p class="font-semibold">Les articles ne peuvent pas être chargés pour le moment.</p>
+        <p class="mt-2 text-sm">Tu peux réessayer dans quelques instants.</p>
+        <button
+          type="button"
+          class="btn-secondary mt-6 min-h-11"
+          :disabled="articleStatus === 'pending'"
+          @click="refreshArticles()"
+        >
+          Réessayer
+        </button>
+      </div>
+
+      <!-- Skeleton while loading during a client-side retry/navigation -->
+      <div v-else-if="articleStatus === 'pending'" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6" aria-label="Chargement des articles">
         <div
           v-for="i in 6"
           :key="i"
@@ -54,13 +110,13 @@ onMounted(() => store.ensureLoaded())
       <div v-else-if="articles.length" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
         <article
           v-for="article in articles"
-          :key="article.id"
+          :key="article.slug"
           class="group card-glow overflow-hidden hover:-translate-y-2 transition-transform duration-500"
         >
           <div class="h-44 bg-gradient-to-br from-violet-500/20 to-purple-600/20 dark:from-violet-500/30 dark:to-purple-600/30 relative overflow-hidden">
             <img
-              v-if="article.coverImage"
-              :src="article.coverImage"
+              v-if="article.cover_image"
+              :src="article.cover_image"
               :alt="article.title"
               class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
               loading="lazy"
@@ -84,12 +140,12 @@ onMounted(() => store.ensureLoaded())
             </p>
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2 text-xs text-gray-400">
-                <span>{{ article.createdAt }}</span>
+                <time :datetime="publicationDate(article)">{{ formatPublicationDate(article) }}</time>
                 <span>·</span>
-                <span>{{ article.readTime }} min</span>
+                <span>{{ article.read_time }} min</span>
               </div>
               <NuxtLink
-                :to="`/blog/${article.slug}`"
+                :to="articlePath(article.slug)"
                 class="inline-flex items-center gap-1.5 text-xs font-semibold text-violet-600 dark:text-violet-400"
               >
                 Lire
@@ -102,7 +158,7 @@ onMounted(() => store.ensureLoaded())
         </article>
       </div>
 
-      <div v-else-if="!store.loading" class="text-center py-20 text-gray-400">
+      <div v-else class="text-center py-20 text-gray-400">
         <p class="text-lg">Premiers articles bientôt disponibles...</p>
         <NuxtLink to="/" class="btn-secondary mt-6 mx-auto inline-flex text-sm">← Retour à l'accueil</NuxtLink>
       </div>

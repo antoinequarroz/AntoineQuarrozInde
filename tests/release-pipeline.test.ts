@@ -9,6 +9,7 @@ const workflowPath = '.github/workflows/ci.yml'
 const verifyScript = 'scripts/ops/verify-production-release.sh'
 const deployScript = 'scripts/ops/deploy-from-ci.sh'
 const sshGateScript = 'scripts/ops/ci-ssh-gate.sh'
+const releaseScript = 'scripts/ops/deploy-release.sh'
 const servers: ReturnType<typeof createServer>[] = []
 const unixIt = process.platform === 'win32' ? it.skip : it
 
@@ -55,6 +56,16 @@ describe('AQ-058 release pipeline', () => {
     expect(workflow).toContain('needs: [quality, deploy]')
     expect(workflow).toContain("github.event_name != 'push' || needs.deploy.result == 'success'")
     expect(workflow.indexOf('\n  deploy:')).toBeLessThan(workflow.indexOf('\n  e2e:'))
+  })
+
+  it('keeps the blog SSR proof inside the automatic rollback transaction', async () => {
+    const release = await readFile(releaseScript, 'utf8')
+    const proof = 'bash scripts/ops/verify-blog-ssr.sh https://www.antoinequarroz.ch'
+    const proofIndex = release.indexOf(proof)
+
+    expect(release).toContain(proof)
+    expect(release.indexOf('trap rollback ERR')).toBeLessThan(proofIndex)
+    expect(release.indexOf('trap - ERR', proofIndex)).toBeGreaterThan(proofIndex)
   })
 
   it('requires a dedicated key and strict host verification', async () => {

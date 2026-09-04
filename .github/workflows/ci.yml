@@ -148,6 +148,8 @@ jobs:
         run: bash scripts/ops/verify-french-only-routes.sh https://www.antoinequarroz.ch
       - name: Verify sitemap discovery
         run: bash scripts/ops/verify-sitemap-discovery.sh https://www.antoinequarroz.ch
+      - name: Verify server-rendered blog discovery
+        run: bash scripts/ops/verify-blog-ssr.sh https://www.antoinequarroz.ch
 
   e2e:
     if: >-

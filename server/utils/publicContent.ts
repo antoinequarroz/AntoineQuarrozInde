@@ -15,6 +15,17 @@ export const PUBLIC_ARTICLE_COLUMNS = [
   'read_time',
 ].join(',')
 
+export const PUBLIC_ARTICLE_SUMMARY_COLUMNS = [
+  'title',
+  'slug',
+  'excerpt',
+  'cover_image',
+  'published_at',
+  'tags',
+  'created_at',
+  'read_time',
+].join(',')
+
 export const PUBLIC_PROJECT_COLUMNS = [
   'id',
   'title',
@@ -66,6 +77,19 @@ export function serializePublicArticle(row: PublicArticleRow) {
     published: row.published,
     published_at: row.published_at ?? null,
     updated_at: row.updated_at,
+    tags: Array.isArray(row.tags) ? row.tags : [],
+    created_at: row.created_at,
+    read_time: row.read_time,
+  }
+}
+
+export function serializePublicArticleSummary(row: PublicArticleRow) {
+  return {
+    title: row.title,
+    slug: row.slug,
+    excerpt: row.excerpt,
+    cover_image: row.cover_image ?? null,
+    published_at: row.published_at ?? null,
     tags: Array.isArray(row.tags) ? row.tags : [],
     created_at: row.created_at,
     read_time: row.read_time,
