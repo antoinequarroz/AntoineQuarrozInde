@@ -145,7 +145,17 @@ La CI contrôle ensuite la redirection et la disponibilité de la destination :
 bash scripts/ops/verify-domain-canonicalization.sh \
   https://antoinequarroz.ch \
   https://www.antoinequarroz.ch
+bash scripts/ops/verify-security-headers.sh \
+  https://www.antoinequarroz.ch
 ```
+
+Caddy ajoute sur le domaine canonique une politique CSP limitée aux protections
+qui ne modifient pas le chargement des scripts, styles ou médias : interdiction
+d'encapsuler le site, de définir une base distante et de charger des objets. Il
+active également HSTS pendant un an, `nosniff`, une politique de référent stricte
+et désactive caméra, géolocalisation et microphone. `includeSubDomains` et
+`preload` restent volontairement absents tant que tous les sous-domaines ne sont
+pas inventoriés.
 
 Pour contrôler manuellement la conservation de l'URI sans suivre la redirection :
 
