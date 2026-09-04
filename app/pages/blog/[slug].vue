@@ -5,10 +5,10 @@ import {
   resolveArticleEditorialMeta,
 } from '~~/shared/utils/articleSeo'
 import {
-  PUBLIC_SEO_IDENTITY,
   resolvePublicSocialImage,
   serializeJsonLd,
 } from '~~/shared/utils/publicSeoIdentity'
+import { resolvePublicBreadcrumbTrail } from '~~/shared/utils/publicStructuredData'
 
 const route = useRoute()
 const { t } = useI18n()
@@ -37,7 +37,12 @@ const editorialMeta = (() => {
   }
 })()
 
-const canonicalUrl = `${siteUrl}/blog/${article.value.slug}`
+const breadcrumbs = computed(() => resolvePublicBreadcrumbTrail(siteUrl, [
+  { name: 'Accueil', path: '/' },
+  { name: 'Blog', path: '/blog' },
+  { name: article.value!.title, path: `/blog/${encodeURIComponent(article.value!.slug)}` },
+]))
+const canonicalUrl = computed(() => breadcrumbs.value.items.at(-1)!.url)
 const socialImage = computed(() => resolvePublicSocialImage(siteUrl, article.value?.coverImage))
 const socialImageAlt = computed(() => socialImage.value.isFallback
   ? t('seo.social.default_image_alt')
@@ -64,31 +69,36 @@ useHead(() => ({
   link: [
     {
       rel: 'canonical',
-      href: canonicalUrl,
+      href: canonicalUrl.value,
     },
   ],
   script: [{
     type: 'application/ld+json',
     innerHTML: serializeJsonLd({
       '@context': 'https://schema.org',
-      '@type': 'BlogPosting',
-      headline: article.value?.title,
-      description: article.value?.excerpt,
-      image: socialImage.value.url,
-      inLanguage: ARTICLE_LANGUAGE,
-      url: canonicalUrl,
-      mainEntityOfPage: {
-        '@type': 'WebPage',
-        '@id': canonicalUrl,
-      },
-      author: {
-        '@type': 'Person',
-        '@id': `${siteUrl}/#person`,
-        name: editorialMeta.authorName,
-        url: `${siteUrl}/`,
-      },
-      datePublished: editorialMeta.datePublished,
-      ...(editorialMeta.dateModified ? { dateModified: editorialMeta.dateModified } : {}),
+      '@graph': [
+        {
+          '@type': 'BlogPosting',
+          headline: article.value?.title,
+          description: article.value?.excerpt,
+          image: socialImage.value.url,
+          inLanguage: ARTICLE_LANGUAGE,
+          url: canonicalUrl.value,
+          mainEntityOfPage: {
+            '@type': 'WebPage',
+            '@id': canonicalUrl.value,
+          },
+          author: {
+            '@type': 'Person',
+            '@id': `${siteUrl}/#person`,
+            name: editorialMeta.authorName,
+            url: `${siteUrl}/`,
+          },
+          datePublished: editorialMeta.datePublished,
+          ...(editorialMeta.dateModified ? { dateModified: editorialMeta.dateModified } : {}),
+        },
+        breadcrumbs.value.jsonLd,
+      ],
     }),
   }],
 }))
@@ -112,6 +122,7 @@ function renderMarkdown(md: string): string {
   <div v-if="article" class="pt-28 pb-20">
     <div class="section-container">
       <div class="max-w-3xl mx-auto">
+        <UiAppBreadcrumbs :items="breadcrumbs.items" class="mb-4" />
         <!-- Back -->
         <NuxtLink to="/blog" class="inline-flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 mb-8 transition-colors">
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">

@@ -1,13 +1,13 @@
 ---
 ticket: AQ-SEO-010
-validated: no
+validated: yes
 ---
 
 # AQ-SEO-010 — Services et chemins de navigation structurés
 
 ## Plan ordonné
 
-- [ ] **1. Construire un modèle partagé sûr pour les fils d'Ariane et services**
+- [x] **1. Construire un modèle partagé sûr pour les fils d'Ariane et services**
   - **Objectif :** fournir une source unique, typée et validée pour le rendu
     visible et les objets Schema.org, sans dupliquer les URLs ni accepter de
     données commerciales arbitraires.
@@ -33,7 +33,7 @@ validated: no
     entrées et réutilisation de `serializeJsonLd`. Le rollback supprime seulement
     l'utilitaire et le composant avec leurs usages.
 
-- [ ] **2. Décrire les quatre services depuis leur contenu visible approuvé**
+- [x] **2. Décrire les quatre services depuis leur contenu visible approuvé**
   - **Objectif :** ajouter à chaque page de service un fil visible et un objet
     `Service` correspondant exactement à son H1, son introduction, Antoine et
     la zone « Valais ».
@@ -60,7 +60,7 @@ validated: no
     aucun accès CRM ou secret. Retour à l'image applicative précédente sans
     opération de données.
 
-- [ ] **3. Ajouter le même fil visible et structuré aux contenus profonds**
+- [x] **3. Ajouter le même fil visible et structuré aux contenus profonds**
   - **Objectif :** rendre la hiérarchie explicite sur chaque article et étude de
     cas publiée sans altérer les schémas `BlogPosting` et `CreativeWork`
     existants.
@@ -84,7 +84,7 @@ validated: no
     pas; liste blanche JSON-LD et sérialisation sûre conservées. Rollback
     applicatif uniquement.
 
-- [ ] **4. Bloquer la release sur toute incohérence Service/Breadcrumb**
+- [x] **4. Bloquer la release sur toute incohérence Service/Breadcrumb**
   - **Objectif :** contrôler anonymement toutes les pages concernées après
     déploiement et refuser un objet absent, invalide, contradictoire ou enrichi
     d'une propriété commerciale non approuvée.
@@ -147,6 +147,26 @@ validated: no
 
 ## Validation humaine requise
 
-En attente. La validation explicite d'Antoine est requise avant toute
-implémentation, tout changement de code applicatif, ouverture de PR ou
-déploiement.
+Validation explicite reçue d'Antoine le 4 septembre 2026 (« je valide »).
+
+## Preuves d'implémentation
+
+- Le modèle partagé valide les origines, chemins, libellés, ordre et doublons;
+  les `23/23` tests AQ-SEO-010 couvrent aussi les divergences de service,
+  fournisseur, zone, canonical et breadcrumb ainsi que les propriétés interdites.
+- Les quatre pages de service, les articles et les études de cas utilisent le
+  composant SSR accessible et un `BreadcrumbList` construit depuis les mêmes
+  valeurs. `BlogPosting` et `CreativeWork` sont conservés dans leurs `@graph`.
+- La suite Vitest complète passe avec `55` fichiers et `344/344` tests; le
+  typecheck, le build Nuxt et les budgets passent également.
+- L'E2E public passe `6/6`, dont les quatre services avec JavaScript désactivé.
+  L'inspection navigateur confirme le landmark nommé, le lien « Accueil » et la
+  page courante dans l'arbre d'accessibilité.
+- La preuve locale valide `4` pages de service et `6` contenus profonds. La
+  preuve `BlogPosting` valide toujours les `6` articles publiés après composition
+  du graphe.
+- La CI post-déploiement exécute désormais la preuve dédiée et le runbook décrit
+  son diagnostic ainsi que le rollback applicatif sans migration.
+- La revue finale et sécurité est consignée dans
+  `docs/reviews/AQ-SEO-010.md` avec `Max severity: none` et
+  `Ship allowed: yes`.
