@@ -1,3 +1,8 @@
+import type {
+  ProjectCaseStudyServicePath,
+  ProjectClientDisclosureStatus,
+} from '~~/shared/utils/projectCaseStudyApproval'
+
 export interface Project {
   id: number
   clientId: number | null
@@ -11,17 +16,28 @@ export interface Project {
   image: string | null
   liveUrl: string | null
   codeUrl: string | null
+  caseStudyLiveUrl?: string | null
+  caseStudyCodeUrl?: string | null
   featured: boolean
   portfolioVisible: boolean
   caseStudyPublished: boolean
+  caseStudyApprovedAt: string | null
+  caseStudyApprovedBy: string | null
   clientLabel: string | null
+  clientDisclosureStatus: ProjectClientDisclosureStatus
   projectRole: string | null
   projectDuration: string | null
+  caseStudyTimelineApproved: boolean
   completedAt: string | null
   challenge: string | null
+  projectScope: string | null
+  keyDecisions: string | null
   approach: string | null
   solution: string | null
   outcome: string | null
+  outcomeApproved: boolean
+  caseStudyLinksApproved: boolean
+  relatedServicePaths: ProjectCaseStudyServicePath[]
   deliverables: string[]
   galleryImages: string[]
   results: ProjectResult[]
@@ -38,6 +54,9 @@ export interface Project {
 export interface ProjectResult {
   value: string
   label: string
+  measurementContext: string | null
+  evidenceNote: string | null
+  approved: boolean
 }
 
 export interface ContactForm {

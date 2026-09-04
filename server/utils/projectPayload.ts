@@ -1,4 +1,10 @@
+import {
+  isProjectCaseStudyServicePath,
+  type ProjectClientDisclosureStatus,
+} from '../../shared/utils/projectCaseStudyApproval'
+
 const PROJECT_CATEGORIES = new Set(['web', 'mobile', 'cms'])
+const CLIENT_DISCLOSURE_STATUSES = new Set<ProjectClientDisclosureStatus>(['pending', 'anonymous', 'approved'])
 
 function requiredText(value: unknown, field: string, maxLength: number) {
   const text = String(value ?? '').trim()
@@ -51,14 +57,40 @@ function booleanValue(value: unknown, field: string) {
 }
 
 function resultList(value: unknown) {
-  if (!Array.isArray(value)) return []
-  return value.slice(0, 6).flatMap((item) => {
-    if (!item || typeof item !== 'object') return []
+  if (value === undefined || value === null) return []
+  if (!Array.isArray(value)) throw createError({ statusCode: 400, message: 'results must be an array' })
+  if (value.length > 6) throw createError({ statusCode: 400, message: 'A project can contain at most 6 results' })
+  return value.map((item, index) => {
+    if (!item || typeof item !== 'object') {
+      throw createError({ statusCode: 400, message: `result ${index + 1} is invalid` })
+    }
     const record = item as Record<string, unknown>
-    const resultValue = optionalText(record.value, 40)
-    const label = optionalText(record.label, 120)
-    return resultValue && label ? [{ value: resultValue, label }] : []
+    return {
+      value: requiredText(record.value, `result ${index + 1} value`, 40),
+      label: requiredText(record.label, `result ${index + 1} label`, 120),
+      measurementContext: optionalText(record.measurementContext, 240),
+      evidenceNote: optionalText(record.evidenceNote, 1000),
+      approved: booleanValue(record.approved, `result ${index + 1} approved`),
+    }
   })
+}
+
+function clientDisclosureStatus(value: unknown): ProjectClientDisclosureStatus {
+  const status = String(value ?? 'pending') as ProjectClientDisclosureStatus
+  if (!CLIENT_DISCLOSURE_STATUSES.has(status)) {
+    throw createError({ statusCode: 400, message: 'Invalid client disclosure status' })
+  }
+  return status
+}
+
+function relatedServicePaths(value: unknown) {
+  if (value === undefined || value === null) return []
+  if (!Array.isArray(value)) throw createError({ statusCode: 400, message: 'relatedServicePaths must be an array' })
+  const paths = value.map(item => String(item ?? '').trim())
+  if (new Set(paths).size !== paths.length || paths.some(path => !isProjectCaseStudyServicePath(path))) {
+    throw createError({ statusCode: 400, message: 'Invalid related case-study service' })
+  }
+  return paths
 }
 
 export function projectPayload(body: Record<string, unknown>, organizationId: string) {
@@ -100,13 +132,20 @@ export function projectPayload(body: Record<string, unknown>, organizationId: st
     portfolio_visible: portfolioVisible,
     case_study_published: caseStudyPublished,
     client_label: optionalText(body.clientLabel, 180),
+    client_disclosure_status: clientDisclosureStatus(body.clientDisclosureStatus),
     project_role: optionalText(body.projectRole, 180),
     project_duration: optionalText(body.projectDuration, 120),
+    case_study_timeline_approved: booleanValue(body.caseStudyTimelineApproved, 'caseStudyTimelineApproved'),
     completed_at: completedAt,
     challenge: optionalText(body.challenge, 4000),
+    project_scope: optionalText(body.projectScope, 6000),
+    key_decisions: optionalText(body.keyDecisions, 6000),
     approach: optionalText(body.approach, 6000),
     solution: optionalText(body.solution, 6000),
     outcome: optionalText(body.outcome, 4000),
+    outcome_approved: booleanValue(body.outcomeApproved, 'outcomeApproved'),
+    case_study_links_approved: booleanValue(body.caseStudyLinksApproved, 'caseStudyLinksApproved'),
+    related_service_paths: relatedServicePaths(body.relatedServicePaths),
     deliverables: textArray(body.deliverables, 20),
     gallery_images: textArray(body.galleryImages, 12, 2000)
       .map(optionalUrl)
@@ -114,5 +153,6 @@ export function projectPayload(body: Record<string, unknown>, organizationId: st
     results: resultList(body.results),
     seo_title: optionalText(body.seoTitle, 70),
     seo_description: optionalText(body.seoDescription, 180),
+    case_study_approval_confirmed: booleanValue(body.caseStudyApprovalConfirmed, 'caseStudyApprovalConfirmed'),
   }
 }

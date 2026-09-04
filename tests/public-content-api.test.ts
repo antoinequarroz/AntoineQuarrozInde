@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { readFile } from 'node:fs/promises'
 import {
+  LEGACY_PUBLIC_PROJECT_COLUMNS,
   PUBLIC_ARTICLE_COLUMNS,
   PUBLIC_PROJECT_COLUMNS,
   serializePublicArticle,
@@ -23,8 +24,8 @@ function createQuery(rows: Row[]) {
       return query
     }),
     or: vi.fn((expression: string) => {
-      expect(expression).toBe('portfolio_visible.eq.true,case_study_published.eq.true')
-      filters.push(row => row.portfolio_visible === true || row.case_study_published === true)
+      expect(expression).toBe('portfolio_visible.eq.true,and(case_study_published.eq.true,case_study_approved_at.not.is.null)')
+      filters.push(row => row.portfolio_visible === true || (row.case_study_published === true && row.case_study_approved_at))
       return query
     }),
     order: vi.fn(() => query),
@@ -159,17 +160,25 @@ const projectRows = [
   portfolio_visible: portfolioVisible,
   case_study_published: caseStudyPublished,
   case_study_published_at: caseStudyPublished ? `2026-08-0${index + 1}T10:00:00Z` : null,
+  case_study_approved_at: caseStudyPublished ? `2026-08-0${index + 1}T10:00:00Z` : null,
   client_label: 'Attribution publique',
+  client_disclosure_status: 'approved',
   project_role: 'Développement',
   project_duration: '3 mois',
+  case_study_timeline_approved: true,
   completed_at: '2026-08-01',
   challenge: 'Détail étude',
+  project_scope: 'Périmètre',
+  key_decisions: 'Décisions',
   approach: 'Approche',
   solution: 'Solution',
   outcome: 'Résultat',
+  outcome_approved: true,
+  case_study_links_approved: true,
+  related_service_paths: ['/developpeur-web-valais'],
   deliverables: ['Site'],
   gallery_images: ['/gallery.webp'],
-  results: [{ value: '+10%', label: 'Conversion' }],
+  results: [{ value: '+10%', label: 'Conversion', measurementContext: null, evidenceNote: 'Privé', approved: true }],
   seo_title: 'Titre SEO',
   seo_description: 'Description SEO',
   workflow_status: 'active',
@@ -189,6 +198,8 @@ const projectRows = [
 
 const publicProjectKeys = [
   'approach',
+  'case_study_code_url',
+  'case_study_live_url',
   'case_study_published',
   'case_study_published_at',
   'category',
@@ -205,11 +216,14 @@ const publicProjectKeys = [
   'gallery_images',
   'id',
   'image',
+  'key_decisions',
   'live_url',
   'outcome',
   'portfolio_visible',
   'project_duration',
   'project_role',
+  'project_scope',
+  'related_service_paths',
   'results',
   'seo_description',
   'seo_title',
@@ -259,7 +273,7 @@ describe('public content APIs', () => {
 
     expect(query.select).toHaveBeenCalledWith(PUBLIC_PROJECT_COLUMNS)
     expect(query.eq).toHaveBeenCalledWith('organization_id', 'org-public')
-    expect(query.or).toHaveBeenCalledWith('portfolio_visible.eq.true,case_study_published.eq.true')
+    expect(query.or).toHaveBeenCalledWith('portfolio_visible.eq.true,and(case_study_published.eq.true,case_study_approved_at.not.is.null)')
     expect(result.map(project => project.id)).toEqual([2, 3, 4])
     expect(result.every(project => Object.keys(project).sort().join(',') === publicProjectKeys.join(','))).toBe(true)
 
@@ -290,6 +304,34 @@ describe('public content APIs', () => {
       budget_cents: 100000,
       internal_hourly_cost_cents: 7500,
     })
+  })
+
+  it('keeps legacy-schema portfolio cards public while every detailed case stays fail-closed', async () => {
+    const primary: Record<string, any> = {}
+    primary.select = vi.fn(() => primary)
+    primary.eq = vi.fn(() => primary)
+    primary.order = vi.fn(() => primary)
+    primary.or = vi.fn(() => primary)
+    primary.then = (resolve: (value: unknown) => unknown) => Promise.resolve(resolve({
+      data: null,
+      error: { code: '42703', message: 'column projects.case_study_approved_at does not exist' },
+    }))
+    const legacy = createQuery([projectRows[1]!])
+    const from = vi.fn()
+      .mockReturnValueOnce(primary)
+      .mockReturnValueOnce(legacy)
+
+    vi.stubGlobal('defineEventHandler', (handler: unknown) => handler)
+    vi.stubGlobal('resolveOrganizationContext', vi.fn().mockResolvedValue({ id: 'org-public', role: null }))
+    vi.stubGlobal('getSupabaseAdmin', () => ({ from }))
+
+    const { default: handler } = await import('../server/api/projects.get')
+    const result = await handler({ context: {} } as never) as Row[]
+
+    expect(legacy.select).toHaveBeenCalledWith(LEGACY_PUBLIC_PROJECT_COLUMNS)
+    expect(legacy.eq).toHaveBeenCalledWith('portfolio_visible', true)
+    expect(result).toHaveLength(1)
+    expect(result[0]).toMatchObject({ portfolio_visible: true, case_study_published: false })
   })
 
   it('fails closed when no public organization can be resolved', async () => {

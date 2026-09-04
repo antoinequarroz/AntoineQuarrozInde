@@ -5,6 +5,7 @@ import {
   serializeJsonLd,
 } from '~~/shared/utils/publicSeoIdentity'
 import { resolvePublicBreadcrumbTrail } from '~~/shared/utils/publicStructuredData'
+import { projectCaseStudyServiceLabel } from '~~/shared/utils/projectCaseStudyApproval'
 
 const route = useRoute()
 const { t, locale } = useI18n()
@@ -49,11 +50,20 @@ const completedDate = computed(() => {
 })
 
 const storySections = computed(() => [
-  { key: 'challenge', title: t('case_study.challenge'), content: project.value?.challenge },
+  { key: 'context', title: 'Contexte', content: project.value?.challenge },
+  { key: 'role', title: 'Rôle d’Antoine', content: project.value?.projectRole },
+  { key: 'scope', title: 'Périmètre', content: project.value?.projectScope },
+  { key: 'decisions', title: 'Décisions', content: project.value?.keyDecisions },
+  { key: 'results', title: 'Résultats', content: project.value?.outcome },
+].filter(section => section.content))
+const supplementarySections = computed(() => [
   { key: 'approach', title: t('case_study.approach'), content: project.value?.approach },
   { key: 'solution', title: t('case_study.solution'), content: project.value?.solution },
-  { key: 'outcome', title: t('case_study.outcome'), content: project.value?.outcome },
 ].filter(section => section.content))
+const relatedServices = computed(() => (project.value?.relatedServicePaths ?? []).flatMap(path => {
+  const label = projectCaseStudyServiceLabel(path)
+  return label ? [{ path, label }] : []
+}))
 
 useSeoMeta({
   title: pageTitle,
@@ -148,26 +158,31 @@ useHead(() => ({
       </div>
     </section>
 
-    <section v-if="project.results.length" class="section-container py-16 md:py-20">
-      <p class="text-center text-xs font-bold uppercase tracking-[0.22em] text-cyan-600 dark:text-cyan-300">{{ t('case_study.verified_results') }}</p>
-      <dl class="mx-auto mt-7 grid max-w-5xl gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <div v-for="result in project.results" :key="`${result.value}-${result.label}`" class="rounded-3xl border border-violet-500/15 bg-white/70 p-6 text-center dark:border-white/10 dark:bg-white/[0.04]">
-          <dt class="font-display text-3xl font-bold text-violet-700 dark:text-violet-200 md:text-4xl">{{ result.value }}</dt>
-          <dd class="mt-2 text-sm leading-relaxed text-gray-600 dark:text-gray-300">{{ result.label }}</dd>
-        </div>
-      </dl>
-    </section>
-
     <section class="section-container py-16 md:py-24">
       <div class="mx-auto max-w-5xl space-y-16 md:space-y-24">
-        <article v-for="(section, index) in storySections" :key="section.key" class="grid gap-5 md:grid-cols-[11rem_minmax(0,1fr)] md:gap-12">
+        <article v-for="(section, index) in storySections" :key="section.key" :data-case-study-section="section.key" class="grid gap-5 md:grid-cols-[11rem_minmax(0,1fr)] md:gap-12">
           <div>
             <span class="font-display text-sm text-violet-500/70">{{ String(index + 1).padStart(2, '0') }}</span>
             <h2 class="mt-2 font-display text-2xl font-bold text-gray-950 dark:text-white md:text-3xl">{{ section.title }}</h2>
           </div>
           <p class="whitespace-pre-line text-lg leading-8 text-gray-600 dark:text-gray-300">{{ section.content }}</p>
         </article>
+        <article v-for="section in supplementarySections" :key="section.key" class="grid gap-5 border-t border-violet-500/10 pt-12 md:grid-cols-[11rem_minmax(0,1fr)] md:gap-12">
+          <h2 class="font-display text-2xl font-bold text-gray-950 dark:text-white md:text-3xl">{{ section.title }}</h2>
+          <p class="whitespace-pre-line text-lg leading-8 text-gray-600 dark:text-gray-300">{{ section.content }}</p>
+        </article>
       </div>
+    </section>
+
+    <section v-if="project.results.length" class="section-container pb-16 md:pb-20" data-case-study-measures>
+      <h2 class="text-center font-display text-2xl font-bold text-gray-950 dark:text-white">{{ t('case_study.verified_results') }}</h2>
+      <dl class="mx-auto mt-7 grid max-w-5xl gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div v-for="result in project.results" :key="`${result.value}-${result.label}`" class="rounded-3xl border border-violet-500/15 bg-white/70 p-6 text-center dark:border-white/10 dark:bg-white/[0.04]">
+          <dt class="font-display text-3xl font-bold text-violet-700 dark:text-violet-200 md:text-4xl">{{ result.value }}</dt>
+          <dd class="mt-2 text-sm leading-relaxed text-gray-600 dark:text-gray-300">{{ result.label }}</dd>
+          <dd v-if="result.measurementContext" class="mt-2 text-xs leading-relaxed text-gray-500 dark:text-gray-400">{{ result.measurementContext }}</dd>
+        </div>
+      </dl>
     </section>
 
     <section v-if="project.deliverables.length || project.tags.length" class="border-y border-violet-500/10 bg-violet-50/55 py-16 dark:border-white/10 dark:bg-white/[0.025] md:py-20">
@@ -183,6 +198,16 @@ useHead(() => ({
           <div class="mt-6 flex flex-wrap gap-2">
             <span v-for="tag in project.tags" :key="tag" class="rounded-full border border-violet-500/15 bg-white/70 px-4 py-2 text-sm font-semibold text-violet-700 dark:border-white/10 dark:bg-white/[0.05] dark:text-violet-100">{{ tag }}</span>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <section v-if="relatedServices.length" class="section-container py-16 md:py-20" data-case-study-services>
+      <div class="rounded-3xl border border-violet-500/15 bg-white/70 p-6 dark:border-white/10 dark:bg-white/[0.04] sm:p-8">
+        <h2 class="font-display text-2xl font-bold text-gray-950 dark:text-white">Services liés à ce projet</h2>
+        <p class="mt-3 max-w-2xl leading-relaxed text-gray-600 dark:text-gray-300">Découvrez les services correspondant au périmètre réellement présenté dans cette étude.</p>
+        <div class="mt-5 flex flex-wrap gap-3">
+          <NuxtLink v-for="service in relatedServices" :key="service.path" :to="service.path" class="btn-secondary">{{ service.label }}</NuxtLink>
         </div>
       </div>
     </section>
@@ -203,8 +228,8 @@ useHead(() => ({
           <p class="mt-4 leading-relaxed text-white/70">{{ t('case_study.cta_text') }}</p>
           <div class="mt-7 flex flex-wrap justify-center gap-3">
             <NuxtLink :to="localePath('/#contact')" class="btn-primary">{{ t('case_study.cta_button') }}</NuxtLink>
-            <a v-if="project.liveUrl" :href="project.liveUrl" target="_blank" rel="noopener noreferrer" class="btn-secondary border-white/15 bg-white/5 text-white hover:bg-white/10">{{ t('case_study.view_live') }}</a>
-            <a v-if="project.codeUrl" :href="project.codeUrl" target="_blank" rel="noopener noreferrer" class="btn-secondary border-white/15 bg-white/5 text-white hover:bg-white/10">{{ t('case_study.view_code') }}</a>
+            <a v-if="project.caseStudyLiveUrl" :href="project.caseStudyLiveUrl" target="_blank" rel="noopener noreferrer" class="btn-secondary border-white/15 bg-white/5 text-white hover:bg-white/10">{{ t('case_study.view_live') }}</a>
+            <a v-if="project.caseStudyCodeUrl" :href="project.caseStudyCodeUrl" target="_blank" rel="noopener noreferrer" class="btn-secondary border-white/15 bg-white/5 text-white hover:bg-white/10">{{ t('case_study.view_code') }}</a>
           </div>
         </div>
       </div>

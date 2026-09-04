@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Project, ProjectResult } from '~/types'
+import { caseStudyPublicationBlockers } from '~~/shared/utils/projectCaseStudyApproval'
 
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 
@@ -33,14 +34,23 @@ const form = reactive({
   portfolioVisible: false,
   clientId: null as number | null,
   caseStudyPublished: false,
+  caseStudyApprovedAt: '',
+  caseStudyApprovalConfirmed: false,
   clientLabel: '',
+  clientDisclosureStatus: 'pending' as Project['clientDisclosureStatus'],
   projectRole: '',
   projectDuration: '',
+  caseStudyTimelineApproved: false,
   completedAt: '',
   challenge: '',
+  projectScope: '',
+  keyDecisions: '',
   approach: '',
   solution: '',
   outcome: '',
+  outcomeApproved: false,
+  caseStudyLinksApproved: false,
+  relatedServicePaths: [] as Project['relatedServicePaths'],
   deliverables: '',
   galleryImages: [] as Array<string | null>,
   results: [] as ProjectResult[],
@@ -53,8 +63,11 @@ function openNew() {
   Object.assign(form, {
     title: '', slug: '', category: 'web', tags: '', description: '', descriptionEn: '', descriptionDe: '', image: null,
     liveUrl: '', codeUrl: '', featured: false, portfolioVisible: false, clientId: null,
-    caseStudyPublished: false, clientLabel: '', projectRole: '', projectDuration: '',
-    completedAt: '', challenge: '', approach: '', solution: '', outcome: '',
+    caseStudyPublished: false, caseStudyApprovedAt: '', caseStudyApprovalConfirmed: false,
+    clientLabel: '', clientDisclosureStatus: 'pending', projectRole: '', projectDuration: '',
+    caseStudyTimelineApproved: false, completedAt: '', challenge: '', projectScope: '', keyDecisions: '',
+    approach: '', solution: '', outcome: '', outcomeApproved: false, caseStudyLinksApproved: false,
+    relatedServicePaths: [],
     deliverables: '', galleryImages: [], results: [], seoTitle: '', seoDescription: '',
   })
   showForm.value = true
@@ -68,14 +81,23 @@ function openEdit(project: Project) {
     descriptionEn: project.descriptionEn || '', descriptionDe: project.descriptionDe || '', image: project.image,
     liveUrl: project.liveUrl || '', codeUrl: project.codeUrl || '', featured: project.featured, portfolioVisible: project.portfolioVisible, clientId: project.clientId,
     caseStudyPublished: project.caseStudyPublished,
+    caseStudyApprovedAt: project.caseStudyApprovedAt || '',
+    caseStudyApprovalConfirmed: false,
     clientLabel: project.clientLabel || '',
+    clientDisclosureStatus: project.clientDisclosureStatus,
     projectRole: project.projectRole || '',
     projectDuration: project.projectDuration || '',
+    caseStudyTimelineApproved: project.caseStudyTimelineApproved,
     completedAt: project.completedAt || '',
     challenge: project.challenge || '',
+    projectScope: project.projectScope || '',
+    keyDecisions: project.keyDecisions || '',
     approach: project.approach || '',
     solution: project.solution || '',
     outcome: project.outcome || '',
+    outcomeApproved: project.outcomeApproved,
+    caseStudyLinksApproved: project.caseStudyLinksApproved,
+    relatedServicePaths: [...project.relatedServicePaths],
     deliverables: project.deliverables.join(', '),
     galleryImages: [...project.galleryImages],
     results: project.results.map(result => ({ ...result })),
@@ -96,6 +118,24 @@ async function handleSubmit() {
   if (!form.image) {
     toast.error('Ajoutez une image de couverture')
     return
+  }
+
+  const incompleteResultIndex = form.results.findIndex(result => !result.value.trim() || !result.label.trim())
+  if (incompleteResultIndex !== -1) {
+    toast.error(`Complétez ou supprimez la mesure ${incompleteResultIndex + 1}`)
+    return
+  }
+
+  if (form.caseStudyPublished) {
+    const blockers = caseStudyPublicationBlockers(form)
+    if (blockers.length) {
+      toast.error(`Publication bloquée : ${blockers.map(blocker => blocker.label).join(', ')}`)
+      return
+    }
+    if (!form.caseStudyApprovedAt && !form.caseStudyApprovalConfirmed) {
+      toast.error('Confirmez la validation finale de cette étude')
+      return
+    }
   }
 
   const generatedSlug = form.title
@@ -119,17 +159,25 @@ async function handleSubmit() {
     portfolioVisible: form.portfolioVisible,
     clientId: form.clientId,
     caseStudyPublished: form.caseStudyPublished,
+    caseStudyApprovalConfirmed: form.caseStudyApprovalConfirmed,
     clientLabel: form.clientLabel || null,
+    clientDisclosureStatus: form.clientDisclosureStatus,
     projectRole: form.projectRole || null,
     projectDuration: form.projectDuration || null,
+    caseStudyTimelineApproved: form.caseStudyTimelineApproved,
     completedAt: form.completedAt || null,
     challenge: form.challenge || null,
+    projectScope: form.projectScope || null,
+    keyDecisions: form.keyDecisions || null,
     approach: form.approach || null,
     solution: form.solution || null,
     outcome: form.outcome || null,
+    outcomeApproved: form.outcomeApproved,
+    caseStudyLinksApproved: form.caseStudyLinksApproved,
+    relatedServicePaths: form.relatedServicePaths,
     deliverables: form.deliverables.split(',').map(item => item.trim()).filter(Boolean),
     galleryImages: form.galleryImages.filter((image): image is string => Boolean(image)),
-    results: form.results.filter(result => result.value.trim() && result.label.trim()),
+    results: form.results,
     seoTitle: form.seoTitle || null,
     seoDescription: form.seoDescription || null,
   }
@@ -144,8 +192,8 @@ async function handleSubmit() {
     }
     showForm.value = false
   }
-  catch {
-    toast.error('Erreur lors de la sauvegarde')
+  catch (error: any) {
+    toast.error(error?.data?.message || error?.data?.statusMessage || 'Erreur lors de la sauvegarde')
   }
 }
 
@@ -175,7 +223,7 @@ const catColors: Record<string, string> = {
     <div class="flex items-center justify-between gap-4">
       <div>
         <h1 class="font-display font-semibold text-xl text-gray-900 dark:text-white">Projets</h1>
-        <p class="text-sm text-gray-400 mt-0.5">{{ store.projects.length }} projet(s) · {{ store.portfolio.length }} dans le portfolio · {{ store.projects.filter(project => project.caseStudyPublished).length }} étude(s) publiée(s)</p>
+        <p class="text-sm text-gray-400 mt-0.5">{{ store.projects.length }} projet(s) · {{ store.portfolio.length }} dans le portfolio · {{ store.projects.filter(project => project.caseStudyPublished && project.caseStudyApprovedAt).length }} étude(s) publique(s)</p>
       </div>
       <button
         class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold
@@ -320,12 +368,12 @@ const catColors: Record<string, string> = {
           <span class="text-xs font-semibold px-2 py-1 rounded-lg" :class="catColors[project.category]">{{ project.category }}</span>
           <span v-if="project.featured" class="text-xs font-semibold px-2 py-1 rounded-lg bg-yellow-50 text-yellow-600 dark:bg-yellow-500/10 dark:text-yellow-400">★</span>
           <span class="rounded-lg px-2 py-1 text-xs font-semibold" :class="project.portfolioVisible ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' : 'bg-gray-100 text-gray-600 dark:bg-white/[0.06] dark:text-gray-300'">Portfolio {{ project.portfolioVisible ? 'visible' : 'masqué' }}</span>
-          <span class="rounded-lg px-2 py-1 text-xs font-semibold" :class="project.caseStudyPublished ? 'bg-cyan-50 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300' : 'bg-gray-100 text-gray-600 dark:bg-white/[0.06] dark:text-gray-300'">Étude {{ project.caseStudyPublished ? 'publiée' : 'brouillon' }}</span>
+          <span class="rounded-lg px-2 py-1 text-xs font-semibold" :class="project.caseStudyPublished && project.caseStudyApprovedAt ? 'bg-cyan-50 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300' : project.caseStudyPublished ? 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300' : 'bg-gray-100 text-gray-600 dark:bg-white/[0.06] dark:text-gray-300'">Étude {{ project.caseStudyPublished && project.caseStudyApprovedAt ? 'publiée' : project.caseStudyPublished ? 'à approuver' : 'brouillon' }}</span>
           <span v-for="tag in project.tags.slice(0, 2)" :key="`m-${project.id}-${tag}`" class="text-xs bg-gray-50 dark:bg-white/[0.04] text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded-md">{{ tag }}</span>
         </div>
         <div class="mt-3 flex items-center gap-3">
           <NuxtLink :to="`/admin/projects/${project.id}`" class="text-xs font-semibold text-violet-600">Piloter</NuxtLink>
-          <NuxtLink v-if="project.caseStudyPublished" :to="`/projets/${project.slug}`" target="_blank" class="text-xs font-semibold text-cyan-700 dark:text-cyan-300">Voir l’étude</NuxtLink>
+          <NuxtLink v-if="project.caseStudyPublished && project.caseStudyApprovedAt" :to="`/projets/${project.slug}`" target="_blank" class="text-xs font-semibold text-cyan-700 dark:text-cyan-300">Voir l’étude</NuxtLink>
           <button class="text-xs text-violet-600" @click="openEdit(project)">Editer</button>
           <button class="text-xs text-red-500" @click="handleDelete(project.id)">Supprimer</button>
         </div>
@@ -373,7 +421,7 @@ const catColors: Record<string, string> = {
             <td class="px-5 py-3.5">
               <div class="flex flex-col items-start gap-1">
                 <span class="rounded-lg px-2 py-1 text-xs font-semibold" :class="project.portfolioVisible ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' : 'bg-gray-100 text-gray-600 dark:bg-white/[0.06] dark:text-gray-300'">Portfolio {{ project.portfolioVisible ? 'visible' : 'masqué' }}</span>
-                <span class="rounded-lg px-2 py-1 text-xs font-semibold" :class="project.caseStudyPublished ? 'bg-cyan-50 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300' : 'bg-gray-100 text-gray-600 dark:bg-white/[0.06] dark:text-gray-300'">Étude {{ project.caseStudyPublished ? 'publiée' : 'brouillon' }}</span>
+                <span class="rounded-lg px-2 py-1 text-xs font-semibold" :class="project.caseStudyPublished && project.caseStudyApprovedAt ? 'bg-cyan-50 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300' : project.caseStudyPublished ? 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300' : 'bg-gray-100 text-gray-600 dark:bg-white/[0.06] dark:text-gray-300'">Étude {{ project.caseStudyPublished && project.caseStudyApprovedAt ? 'publiée' : project.caseStudyPublished ? 'à approuver' : 'brouillon' }}</span>
               </div>
             </td>
             <td class="px-5 py-3.5 hidden md:table-cell">
@@ -385,7 +433,7 @@ const catColors: Record<string, string> = {
               <div class="flex items-center justify-end gap-1.5">
                 <NuxtLink :to="`/admin/projects/${project.id}`" aria-label="Ouvrir le cockpit du projet" class="flex h-8 items-center rounded-lg px-2 text-xs font-semibold text-violet-600 hover:bg-violet-50 dark:text-violet-300 dark:hover:bg-violet-500/10">Piloter</NuxtLink>
                 <NuxtLink
-                  v-if="project.caseStudyPublished"
+                  v-if="project.caseStudyPublished && project.caseStudyApprovedAt"
                   :to="`/projets/${project.slug}`"
                   target="_blank"
                   aria-label="Voir l’étude de cas publiée"

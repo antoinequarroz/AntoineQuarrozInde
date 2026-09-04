@@ -158,6 +158,8 @@ jobs:
         run: bash scripts/ops/verify-service-breadcrumbs.sh https://www.antoinequarroz.ch
       - name: Verify service decision content
         run: bash scripts/ops/verify-service-decision-content.sh https://www.antoinequarroz.ch
+      - name: Verify approved case studies
+        run: bash scripts/ops/verify-approved-case-studies.sh https://www.antoinequarroz.ch
 
   e2e:
     if: >-

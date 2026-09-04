@@ -81,6 +81,7 @@ ${articleEntry}
 function queryResult(data: unknown[] | null, error: unknown = null) {
   const query: any = {
     eq: vi.fn(() => query),
+    not: vi.fn(() => query),
     then: (resolve: (value: unknown) => void) => resolve({ data, error }),
   }
   return query
@@ -206,6 +207,7 @@ describe('AQ-SEO-006 sitemap discovery', () => {
     expect(select.projects).toHaveBeenCalledWith('slug, case_study_published_at, updated_at, created_at')
     expect(projectQuery.eq).toHaveBeenNthCalledWith(1, 'organization_id', 'org-public')
     expect(projectQuery.eq).toHaveBeenNthCalledWith(2, 'case_study_published', true)
+    expect(projectQuery.not).toHaveBeenCalledWith('case_study_approved_at', 'is', null)
     expect(xml).toContain('<loc>https://example.test/blog/article</loc>')
     expect(xml).toContain('<loc>https://example.test/projets/etude</loc>')
     expect(setHeader).toHaveBeenCalledWith(event, 'content-type', 'application/xml; charset=UTF-8')

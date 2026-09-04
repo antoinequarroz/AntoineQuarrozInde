@@ -395,6 +395,29 @@ transmet aucun identifiant. Son échec bloque la release. Après un échec en
 production, remettre l'image `antoinequarroz-web:previous`, vérifier la santé et
 rejouer toutes les preuves SEO avant de rétablir le déploiement.
 
+### Publication des études de cas approuvées
+
+Une étude détaillée n'est publique que si sa publication possède une approbation
+finale courante. Le nom du client, la temporalité, les liens et chaque mesure
+restent filtrés par leur propre décision. Les notes de preuve, l'approbateur et
+les états internes ne doivent jamais apparaître dans l'API ou le HTML public.
+
+Après une livraison, lancer la preuve anonyme et en lecture seule :
+
+```bash
+bash scripts/ops/verify-approved-case-studies.sh \
+  https://www.antoinequarroz.ch
+```
+
+Le contrôle accepte également un catalogue vide. Pour chaque étude publique, il
+compare l'API, le sitemap, le hub et la page détaillée, vérifie l'ordre des cinq
+passages, les services autorisés, les mesures réduites aux champs publics et
+l'absence de données privées. Les requêtes refusent les redirections et sont
+bornées à 15 secondes et 1 Mio. Cette preuve s'exécute dans la transaction de
+déploiement : un échec remet en service l'image `previous`. Ne pas activer la
+migration stricte AQ-SEO-012 tant que cette image de transition n'a pas été
+observée saine et conservée comme image de rollback.
+
 ### Listing du blog rendu côté serveur
 
 La page `/blog` charge une liste publique minimale et liée à l'organisation
