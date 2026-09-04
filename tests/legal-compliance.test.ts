@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
+import { sitemapStaticPaths } from '../server/utils/sitemapDiscovery'
 
 const legalPage = readFileSync(new URL('../app/pages/mentions-legales.vue', import.meta.url), 'utf8')
 const footer = readFileSync(new URL('../app/components/layout/AppFooter.vue', import.meta.url), 'utf8')
-const sitemap = readFileSync(new URL('../server/routes/sitemap.xml.ts', import.meta.url), 'utf8')
 const privacy = readFileSync(new URL('../app/pages/confidentialite.vue', import.meta.url), 'utf8')
 
 describe('public legal information', () => {
@@ -21,9 +21,9 @@ describe('public legal information', () => {
     expect(legalPage).toContain('Infomaniak Network SA')
     expect(legalPage).not.toMatch(/\bIBAN\b/i)
     expect(footer).toContain("localePath('/mentions-legales')")
-    expect(sitemap).toContain("'/mentions-legales'")
-    expect(sitemap).toContain("'/en/mentions-legales'")
-    expect(sitemap).toContain("'/de/mentions-legales'")
+    expect(sitemapStaticPaths).toContain('/mentions-legales')
+    expect(sitemapStaticPaths).toContain('/en/mentions-legales')
+    expect(sitemapStaticPaths).toContain('/de/mentions-legales')
   })
 
   it('documents the real CRM and analytics data flow', () => {

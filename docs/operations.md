@@ -91,6 +91,15 @@ validées avant qu'une suivante échoue, et tenter de les annuler peut supprimer
 des données. Toute migration doit rester compatible avec l'image applicative
 précédente; une suppression ou un renommage se livre en plusieurs phases.
 
+La migration éditoriale AQ-SEO-006 installe en plus un garde-fou de base de
+données avant la nouvelle image : une ancienne image peut encore créer et
+modifier un brouillon, mais toute création publique, publication ou
+dépublication directe est refusée. Seule la RPC atomique
+`save_article_with_publication_audit` peut changer la visibilité et écrire son
+audit. Un rollback vers l'image `previous` reste donc sûr, mais la publication
+d'articles y est volontairement indisponible jusqu'au rétablissement de l'image
+AQ-SEO-006 ou d'une version ultérieure compatible.
+
 En cas d'incident, télécharger l'artefact correspondant au SHA depuis GitHub,
 vérifier sa somme puis le déchiffrer sur une machine de reprise isolée :
 
@@ -275,6 +284,29 @@ En cas d'échec après livraison, remettre en service l'image
 `antoinequarroz-web:previous`, puis restaurer et redéployer le SHA antérieur.
 Rejouer cette preuve et la vérification des pages localisées avant de rétablir
 la release. Aucune restauration de données n'est nécessaire.
+
+### Découverte des contenus publiés
+
+Le sitemap public doit contenir `/cas-clients-valais`, tous les articles
+publiés et toutes les études de cas publiées de l'organisation canonique. Les
+brouillons, données CRM, routes privées et variantes EN/DE non traduites ne
+doivent jamais y apparaître. Une panne Supabase rend volontairement le sitemap
+indisponible avec un statut `503` plutôt que de servir un XML incomplet en
+succès.
+
+Après une livraison, lancer la preuve anonyme et en lecture seule :
+
+```bash
+bash scripts/ops/verify-sitemap-discovery.sh \
+  https://www.antoinequarroz.ch
+```
+
+Le contrôle compare le sitemap aux deux API publiques, vérifie les dates
+`lastmod`, l'absence de champs internes et de doublons, ainsi que le lien SSR de
+chaque étude depuis `/cas-clients-valais`. Il est borné dans le temps et ne
+transmet aucun identifiant. Son échec bloque la release. Après un échec en
+production, remettre l'image `antoinequarroz-web:previous`, vérifier la santé et
+rejouer toutes les preuves SEO avant de rétablir le déploiement.
 
 ## Surveillance
 

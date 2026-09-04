@@ -239,40 +239,14 @@ describe('AQ-SEO-005 French-only route policy', () => {
     expect(switcher).not.toContain(':to="switchLocalePath(item.code)"')
   })
 
-  it('emits one French sitemap entry per published project and no fictional blog or project locale', async () => {
-    const setHeader = vi.fn()
-    const eq = vi.fn().mockResolvedValue({
-      data: [
-        { slug: 'premier-projet', created_at: '2026-01-01T00:00:00.000Z', completed_at: null },
-        { slug: 'projet avec espace', created_at: '2026-02-01T00:00:00.000Z', completed_at: '2026-03-01T00:00:00.000Z' },
-      ],
-      error: null,
-    })
-    const select = vi.fn(() => ({ eq }))
-    const from = vi.fn(() => ({ select }))
+  it('keeps French-only dynamic families out of fictional locale entries', async () => {
+    const { sitemapStaticPaths } = await import('../server/utils/sitemapDiscovery')
 
-    vi.stubGlobal('defineEventHandler', (handler: unknown) => handler)
-    vi.stubGlobal('useRuntimeConfig', () => ({ public: { siteUrl: 'https://example.test/' } }))
-    vi.stubGlobal('getSupabaseAdmin', () => ({ from }))
-    vi.stubGlobal('setHeader', setHeader)
-
-    const { default: sitemapHandler } = await import('../server/routes/sitemap.xml')
-    const xml = await sitemapHandler({} as never)
-    const projectLocations = [...xml.matchAll(/<loc>([^<]*\/projets\/[^<]+)<\/loc>/g)]
-      .map(match => match[1])
-
-    expect(from).toHaveBeenCalledWith('projects')
-    expect(select).toHaveBeenCalledWith('slug, created_at, completed_at')
-    expect(eq).toHaveBeenCalledWith('case_study_published', true)
-    expect(projectLocations).toEqual([
-      'https://example.test/projets/premier-projet',
-      'https://example.test/projets/projet%20avec%20espace',
-    ])
-    expect(xml).toContain('<loc>https://example.test/blog</loc>')
-    expect(xml).not.toMatch(/<loc>https:\/\/example\.test\/(?:en|de)\/blog<\/loc>/)
-    expect(xml).not.toMatch(/<loc>https:\/\/example\.test\/(?:en|de)\/projets\//)
-    expect(xml).not.toContain('/cas-clients-valais</loc>')
-    expect(setHeader).toHaveBeenCalledWith({}, 'content-type', 'application/xml; charset=UTF-8')
+    expect(sitemapStaticPaths).toContain('/blog')
+    expect(sitemapStaticPaths).toContain('/cas-clients-valais')
+    expect(sitemapStaticPaths).not.toContain('/en/blog')
+    expect(sitemapStaticPaths).not.toContain('/de/blog')
+    expect(sitemapStaticPaths.some(path => /^\/(?:en|de)\/projets\//.test(path))).toBe(false)
   })
 
   it.each(['en', 'de'] as const)('redirects every unavailable %s route family to its French path', (locale) => {

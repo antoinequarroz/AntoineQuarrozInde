@@ -44,18 +44,36 @@ export const useArticlesStore = defineStore('articles', () => {
   const articles = ref<Article[]>([])
   const loading = ref(false)
   const loaded = ref(false)
+  const loadedContext = ref<string | null>(null)
+  const loadingContext = ref<string | null>(null)
+  let requestVersion = 0
+
+  function requestContext() {
+    return auth.accessToken
+      ? `authenticated:${auth.userEmail ?? ''}:${auth.currentOrganizationId ?? ''}`
+      : 'public'
+  }
 
   async function ensureLoaded(force = false) {
-    if (loading.value) return
-    if (loaded.value && !force) return
+    const context = requestContext()
+    if (loading.value && loadingContext.value === context) return
+    if (loaded.value && loadedContext.value === context && !force) return
+
+    const version = ++requestVersion
     loading.value = true
+    loadingContext.value = context
     try {
-      const rows = await $fetch<ArticleRow[]>('/api/articles')
+      const rows = await $fetch<ArticleRow[]>('/api/articles', { headers: auth.authHeader() })
+      if (version !== requestVersion) return
       articles.value = rows.map(mapArticle)
       loaded.value = true
+      loadedContext.value = context
     }
     finally {
-      loading.value = false
+      if (version === requestVersion) {
+        loading.value = false
+        loadingContext.value = null
+      }
     }
   }
 
