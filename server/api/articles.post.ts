@@ -1,28 +1,21 @@
 export default defineEventHandler(async (event) => {
-  const { org } = await requireAdmin(event)
+  const { org, user } = await requireAdmin(event)
   const body = await readBody(event)
   const supabase = getSupabaseAdmin()
 
-  const payload = {
-    organization_id: org.id,
-    title: body.title,
-    slug: body.slug,
-    excerpt: body.excerpt,
-    content: body.content,
-    cover_image: body.coverImage ?? null,
-    published: Boolean(body.published),
-    tags: body.tags ?? [],
-    read_time: Number(body.readTime ?? 5),
-  }
+  const payload = articlePayload(body)
 
   const { data, error } = await supabase
-    .from('articles')
-    .insert(payload)
-    .select('*')
-    .single()
+    .rpc('save_article_with_publication_audit', {
+      p_organization_id: org.id,
+      p_article_id: null,
+      p_actor_user_id: user?.id ?? null,
+      p_actor_role: org.role,
+      p_payload: payload,
+    })
 
   if (error) {
-    throw createError({ statusCode: 500, message: error.message })
+    throw articlePublicationRpcError(error)
   }
 
   return data

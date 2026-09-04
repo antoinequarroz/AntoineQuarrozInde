@@ -1,16 +1,28 @@
+import {
+  isPublicContentRole,
+  PUBLIC_ARTICLE_COLUMNS,
+  serializePublicArticle,
+} from '../utils/publicContent'
+
 export default defineEventHandler(async (event) => {
   const org = await resolveOrganizationContext(event)
+  if (!org?.id) return []
+
   const supabase = getSupabaseAdmin()
+  const publicView = isPublicContentRole(org.role)
   let query = supabase
     .from('articles')
-    .select('*')
+    .select(publicView ? PUBLIC_ARTICLE_COLUMNS : '*')
+    .eq('organization_id', org.id)
     .order('created_at', { ascending: false })
-  if (org?.id) query = query.eq('organization_id', org.id)
+  if (publicView) query = query.eq('published', true)
   const { data, error } = await query
 
   if (error) {
     throw createError({ statusCode: 500, message: error.message })
   }
 
-  return data ?? []
+  if (!publicView) return data ?? []
+
+  return (data ?? []).map(serializePublicArticle)
 })

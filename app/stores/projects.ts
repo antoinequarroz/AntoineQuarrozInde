@@ -82,18 +82,36 @@ export const useProjectsStore = defineStore('projects', () => {
   const projects = ref<Project[]>([])
   const loading = ref(false)
   const loaded = ref(false)
+  const loadedContext = ref<string | null>(null)
+  const loadingContext = ref<string | null>(null)
+  let requestVersion = 0
+
+  function requestContext() {
+    return auth.accessToken
+      ? `authenticated:${auth.userEmail ?? ''}:${auth.currentOrganizationId ?? ''}`
+      : 'public'
+  }
 
   async function ensureLoaded(force = false) {
-    if (loading.value) return
-    if (loaded.value && !force) return
+    const context = requestContext()
+    if (loading.value && loadingContext.value === context) return
+    if (loaded.value && loadedContext.value === context && !force) return
+
+    const version = ++requestVersion
     loading.value = true
+    loadingContext.value = context
     try {
       const rows = await $fetch<ProjectRow[]>('/api/projects', { headers: auth.authHeader() })
+      if (version !== requestVersion) return
       projects.value = rows.map(mapProject)
       loaded.value = true
+      loadedContext.value = context
     }
     finally {
-      loading.value = false
+      if (version === requestVersion) {
+        loading.value = false
+        loadingContext.value = null
+      }
     }
   }
 

@@ -1,54 +1,35 @@
 <script setup lang="ts">
 const runtimeConfig = useRuntimeConfig()
 const siteUrl = runtimeConfig.public.siteUrl.replace(/\/+$/, '')
+const localePath = useLocalePath()
+const projectsStore = useProjectsStore()
 
-const cases = [
-  {
-    client: 'Etablissement local - Valais',
-    title: 'Refonte de site vitrine pour clarifier l offre',
-    challenge: 'Site vieillissant, message confus, prise de contact faible.',
-    solution: 'Refonte UX, hierarchie de contenu simplifiee, optimisation performance et SEO local.',
-    result: 'Navigation plus lisible, meilleure perception de marque, plus de demandes qualifiees.',
-    stack: ['Nuxt', 'Tailwind', 'SEO technique'],
-  },
-  {
-    client: 'Cabinet sante - Valais central',
-    title: 'Site oriente conversion pour prise de rendez-vous',
-    challenge: 'Parcours utilisateur long et informations essentielles peu visibles.',
-    solution: 'Architecture des pages orientee intentions, sections preuve, CTA visibles et contenu re-ecrit.',
-    result: 'Parcours plus court, experience mobile plus fluide, progression des prises de contact.',
-    stack: ['Vue', 'Design system', 'Copywriting UX'],
-  },
-  {
-    client: 'PME de services - Bas-Valais',
-    title: 'Back-office simple pour gagner du temps au quotidien',
-    challenge: 'Gestion de contenu manuelle et repetitive.',
-    solution: 'Mise en place d un espace admin adapte aux besoins reels de l equipe.',
-    result: 'Moins de friction au quotidien, plus d autonomie sur les mises a jour.',
-    stack: ['Nuxt', 'Supabase', 'PostgreSQL'],
-  },
-]
+await projectsStore.ensureLoaded()
+
+const publishedCases = computed(() => (
+  projectsStore.projects.filter(project => project.caseStudyPublished)
+))
 
 const faq = [
   {
-    q: 'Combien coute un site web en Valais ?',
-    a: 'Le budget depend du volume de pages, du niveau de personnalisation et des integrations. Un cadrage court permet de chiffrer proprement.',
+    q: 'Combien coûte un site web en Valais ?',
+    a: 'Le budget dépend du volume de pages, du niveau de personnalisation et des intégrations. Un cadrage court permet de chiffrer proprement.',
   },
   {
-    q: 'En combien de temps un projet peut etre livre ?',
+    q: 'En combien de temps un projet peut-il être livré ?',
     a: 'Pour un site vitrine standard, la livraison se fait souvent en quelques semaines selon le contenu disponible et le rythme de validation.',
   },
   {
-    q: 'Le site est-il optimise pour le SEO local ?',
-    a: 'Oui. Structure technique, balises, performance, maillage interne et pages ciblees sont prepares pour un referencement local solide.',
+    q: 'Le site est-il optimisé pour le SEO local ?',
+    a: 'Oui. Structure technique, balises, performance, maillage interne et pages ciblées sont préparés pour un référencement local solide.',
   },
 ]
 
 useSeoMeta({
-  title: 'Cas clients | Developpeur web en Valais - Antoine Quarroz',
-  description: 'Etudes de cas web en Valais: contexte, approche, decisions techniques et resultats business pour independants, PME et startups.',
+  title: 'Cas clients | Développeur web en Valais - Antoine Quarroz',
+  description: 'Études de cas web en Valais : contexte, approche, décisions techniques et résultats business pour indépendants, PME et startups.',
   ogTitle: 'Cas clients web en Valais - Antoine Quarroz',
-  ogDescription: 'Retours concrets sur des projets web et mobile en Valais: objectifs, execution et impact.',
+  ogDescription: 'Retours concrets sur des projets web et mobile en Valais : objectifs, exécution et impact.',
   ogUrl: `${siteUrl}/cas-clients-valais`,
   ogType: 'website',
   robots: 'index, follow',
@@ -90,46 +71,63 @@ useHead({
           Cas clients web en Valais
         </h1>
         <p class="section-subtitle max-w-3xl">
-          Des projets menes de bout en bout, avec une logique simple: clarifier l offre, reduire la friction
-          utilisateur et transformer le trafic en demandes qualifiees.
+          Des projets menés de bout en bout, avec une logique simple : clarifier l’offre, réduire la friction
+          utilisateur et transformer le trafic en demandes qualifiées.
         </p>
 
-        <div class="mt-10 grid gap-5">
+        <div v-if="publishedCases.length" class="mt-10 grid gap-6 md:grid-cols-2">
           <article
-            v-for="item in cases"
-            :key="item.title"
-            class="rounded-2xl border border-violet-500/15 bg-white/70 p-5 dark:border-white/10 dark:bg-white/[0.04]"
+            v-for="project in publishedCases"
+            :key="project.id"
+            class="group overflow-hidden rounded-3xl border border-violet-500/15 bg-white/70 shadow-lg shadow-violet-500/5 dark:border-white/10 dark:bg-white/[0.04]"
           >
-            <p class="text-xs font-semibold uppercase tracking-[0.14em] text-violet-600 dark:text-violet-300">
-              {{ item.client }}
-            </p>
-            <h2 class="mt-2 font-display text-2xl font-bold text-gray-900 dark:text-white">
-              {{ item.title }}
-            </h2>
-            <div class="mt-4 grid gap-3 md:grid-cols-3">
-              <div class="rounded-xl border border-violet-500/10 p-3 dark:border-white/10">
-                <p class="text-xs font-semibold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">Defi</p>
-                <p class="mt-1 text-sm text-gray-700 dark:text-gray-200">{{ item.challenge }}</p>
-              </div>
-              <div class="rounded-xl border border-violet-500/10 p-3 dark:border-white/10">
-                <p class="text-xs font-semibold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">Solution</p>
-                <p class="mt-1 text-sm text-gray-700 dark:text-gray-200">{{ item.solution }}</p>
-              </div>
-              <div class="rounded-xl border border-violet-500/10 p-3 dark:border-white/10">
-                <p class="text-xs font-semibold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">Resultat</p>
-                <p class="mt-1 text-sm text-gray-700 dark:text-gray-200">{{ item.result }}</p>
-              </div>
-            </div>
-            <div class="mt-4 flex flex-wrap gap-2">
-              <span
-                v-for="tag in item.stack"
-                :key="tag"
-                class="rounded-full border border-violet-500/15 px-3 py-1 text-xs text-violet-700 dark:border-violet-400/25 dark:text-violet-200"
+            <NuxtLink :to="localePath(`/projets/${project.slug}`)" class="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-violet-500">
+              <img
+                v-if="project.image"
+                :src="project.image"
+                alt=""
+                class="aspect-[16/9] w-full object-cover outline outline-1 -outline-offset-1 outline-black/10 transition-transform duration-150 group-hover:scale-[1.02] motion-reduce:transform-none motion-reduce:transition-none dark:outline-white/10"
+                loading="lazy"
+                decoding="async"
               >
-                {{ tag }}
-              </span>
-            </div>
+              <div class="p-5 sm:p-6">
+                <p v-if="project.clientLabel" class="text-xs font-semibold uppercase tracking-[0.14em] text-violet-600 dark:text-violet-300">
+                  {{ project.clientLabel }}
+                </p>
+                <h2 class="font-display text-2xl font-bold text-gray-900 dark:text-white" :class="project.clientLabel ? 'mt-2' : ''">
+                  {{ project.title }}
+                </h2>
+                <p class="mt-3 text-sm leading-relaxed text-gray-700 dark:text-gray-200">
+                  {{ project.description }}
+                </p>
+                <div v-if="project.tags.length" class="mt-5 flex flex-wrap gap-2">
+                  <span
+                    v-for="tag in project.tags"
+                    :key="tag"
+                    class="rounded-full border border-violet-500/15 px-3 py-1 text-xs text-violet-700 dark:border-violet-400/25 dark:text-violet-200"
+                  >
+                    {{ tag }}
+                  </span>
+                </div>
+                <span class="mt-5 inline-flex min-h-11 items-center text-sm font-bold text-violet-700 transition-colors group-hover:text-violet-500 dark:text-violet-200 dark:group-hover:text-white">
+                  Lire l’étude de cas <span class="ml-2" aria-hidden="true">→</span>
+                </span>
+              </div>
+            </NuxtLink>
           </article>
+        </div>
+
+        <div v-else class="mt-10 rounded-3xl border border-violet-500/15 bg-white/70 p-6 text-center dark:border-white/10 dark:bg-white/[0.04] sm:p-10">
+          <h2 class="font-display text-2xl font-bold text-gray-900 dark:text-white">
+            Les prochaines études arrivent bientôt
+          </h2>
+          <p class="mx-auto mt-3 max-w-xl leading-relaxed text-gray-600 dark:text-gray-300">
+            En attendant leur publication, découvrez les projets déjà présentés dans mon portfolio ou échangeons sur votre besoin.
+          </p>
+          <div class="mt-6 flex flex-wrap justify-center gap-3">
+            <NuxtLink :to="localePath('/#portfolio')" class="btn-secondary">Voir le portfolio</NuxtLink>
+            <NuxtLink :to="localePath('/#contact')" class="btn-primary">Parler de votre projet</NuxtLink>
+          </div>
         </div>
 
         <div class="mt-10 rounded-2xl border border-violet-500/15 bg-white/70 p-5 dark:border-white/10 dark:bg-white/[0.04]">
@@ -143,7 +141,7 @@ useHead({
         </div>
 
         <div class="mt-8">
-          <a href="/#contact" class="btn-primary">Parler de votre projet</a>
+          <NuxtLink :to="localePath('/#contact')" class="btn-primary">Parler de votre projet</NuxtLink>
         </div>
       </div>
     </div>

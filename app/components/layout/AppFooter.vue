@@ -20,6 +20,7 @@ const navLinks = computed(() => [
 const stack = ['Vue 3 / Nuxt', 'TypeScript', 'Flutter', 'Tailwind CSS', 'Supabase']
 
 const localSeoLinks = [
+  { label: 'Cas clients en Valais', href: '/cas-clients-valais' },
   { label: 'Developpeur web Valais', href: '/developpeur-web-valais' },
   { label: 'Creation site internet Valais', href: '/creation-site-internet-valais' },
   { label: 'Refonte site web Valais', href: '/refonte-site-web-valais' },
