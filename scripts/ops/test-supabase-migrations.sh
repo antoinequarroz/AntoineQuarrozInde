@@ -36,6 +36,8 @@ cp "$repo_root"/supabase/tests/database/*.sql "$project_root/supabase/tests/data
   --workdir "$project_root" \
   --exclude gotrue,realtime,storage-api,imgproxy,kong,mailpit,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
 "${supabase_cli[@]}" db reset --local --no-seed --workdir "$project_root"
+"${supabase_cli[@]}" db lint --local --workdir "$project_root" --schema public --level error --fail-on error
+"${supabase_cli[@]}" db advisors --local --workdir "$project_root" --type security --level error --fail-on error
 "${supabase_cli[@]}" test db --local --workdir "$project_root" supabase/tests/database
 
 echo "Supabase schema, migrations and pgTAP checks passed in an ephemeral local database."

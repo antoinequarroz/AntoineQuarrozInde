@@ -59,6 +59,8 @@ create table if not exists public.articles (
   content text not null,
   cover_image text,
   published boolean not null default false,
+  author_key text not null default 'antoine-quarroz'
+    constraint articles_author_key_approved check (author_key = 'antoine-quarroz'),
   tags text[] not null default '{}',
   read_time integer not null default 5 check (read_time > 0),
   published_at timestamptz,
@@ -138,7 +140,34 @@ begin
     new.updated_at := new.created_at;
     new.published_at := case when new.published then new.created_at else null end;
   else
-    new.updated_at := statement_timestamp();
+    if row(
+      new.organization_id,
+      new.title,
+      new.slug,
+      new.excerpt,
+      new.content,
+      new.cover_image,
+      new.published,
+      new.author_key,
+      new.tags,
+      new.read_time
+    ) is distinct from row(
+      old.organization_id,
+      old.title,
+      old.slug,
+      old.excerpt,
+      old.content,
+      old.cover_image,
+      old.published,
+      old.author_key,
+      old.tags,
+      old.read_time
+    ) then
+      new.updated_at := statement_timestamp();
+    else
+      new.updated_at := old.updated_at;
+    end if;
+
     if new.published then
       if old.published then
         new.published_at := old.published_at;
@@ -264,6 +293,7 @@ declare
   v_before public.articles%rowtype;
   v_input public.articles%rowtype;
   v_saved public.articles%rowtype;
+  v_author_key text;
   v_before_publication jsonb;
   v_after_publication jsonb;
   v_publication_changed boolean;
@@ -274,9 +304,17 @@ begin
   end if;
 
   v_input := jsonb_populate_record(null::public.articles, p_payload);
-  v_after_publication := jsonb_build_object('published', coalesce(v_input.published, false));
 
   if p_article_id is null then
+    v_author_key := case
+      when p_payload ? 'author_key' then v_input.author_key
+      else 'antoine-quarroz'
+    end;
+    v_after_publication := jsonb_build_object(
+      'published', coalesce(v_input.published, false),
+      'authorKey', v_author_key
+    );
+
     if coalesce(v_input.published, false)
       and coalesce(p_actor_role, '') not in ('owner', 'admin') then
       raise exception 'article_publication_forbidden' using errcode = '42501';
@@ -290,11 +328,11 @@ begin
     begin
       insert into public.articles (
         organization_id, title, slug, excerpt, content, cover_image, published,
-        tags, read_time
+        tags, read_time, author_key
       ) values (
         p_organization_id, v_input.title, v_input.slug, v_input.excerpt,
         v_input.content, v_input.cover_image, coalesce(v_input.published, false),
-        v_input.tags, v_input.read_time
+        v_input.tags, v_input.read_time, v_author_key
       )
       returning * into v_saved;
     exception when others then
@@ -324,7 +362,18 @@ begin
     raise exception 'article_not_found' using errcode = 'P0002';
   end if;
 
-  v_before_publication := jsonb_build_object('published', v_before.published);
+  v_author_key := case
+    when p_payload ? 'author_key' then v_input.author_key
+    else v_before.author_key
+  end;
+  v_before_publication := jsonb_build_object(
+    'published', v_before.published,
+    'authorKey', v_before.author_key
+  );
+  v_after_publication := jsonb_build_object(
+    'published', coalesce(v_input.published, false),
+    'authorKey', v_author_key
+  );
   v_publication_changed := v_before.published is distinct from coalesce(v_input.published, false);
 
   if v_publication_changed and coalesce(p_actor_role, '') not in ('owner', 'admin') then
@@ -345,7 +394,8 @@ begin
         cover_image = v_input.cover_image,
         published = coalesce(v_input.published, false),
         tags = v_input.tags,
-        read_time = v_input.read_time
+        read_time = v_input.read_time,
+        author_key = v_author_key
     where organization_id = p_organization_id
       and id = p_article_id
     returning * into v_saved;

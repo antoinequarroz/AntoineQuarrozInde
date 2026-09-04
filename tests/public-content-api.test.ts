@@ -77,6 +77,7 @@ const articleRows = [
     content: 'Contenu public',
     cover_image: null,
     published: true,
+    author_key: 'antoine-quarroz',
     published_at: '2026-09-01T10:00:00Z',
     updated_at: '2026-09-01T11:00:00Z',
     tags: ['SEO'],
@@ -93,6 +94,7 @@ const articleRows = [
     content: 'Contenu privé',
     cover_image: null,
     published: false,
+    author_key: 'antoine-quarroz',
     published_at: null,
     updated_at: '2026-09-02T11:00:00Z',
     tags: [],
@@ -109,6 +111,7 @@ const articleRows = [
     content: 'Interdit',
     cover_image: null,
     published: true,
+    author_key: 'antoine-quarroz',
     published_at: '2026-09-03T10:00:00Z',
     updated_at: '2026-09-03T11:00:00Z',
     tags: [],
@@ -118,6 +121,7 @@ const articleRows = [
 ]
 
 const publicArticleKeys = [
+  'author_key',
   'content',
   'cover_image',
   'created_at',
