@@ -20,7 +20,11 @@ post-déploiement qui bloque les divergences entre contenu, canonical et JSON-LD
 - [x] E2E public local : 6/6 réussis, dont les services sans JavaScript.
 - [x] Preuve locale : 4 services et 6 contenus profonds valides; les 6 articles
   publiés conservent un `BlogPosting` valide.
-- [ ] CI de la pull request réussie sur son SHA exact.
+- [x] CI de la pull request réussie sur le SHA d'implémentation
+  `ad5a4a3a95d24b17a85a2f88ebc5c19e1a37648c` : `quality`,
+  `accessibility`, `database`, GitGuardian et l'aperçu Vercel sont validés.
+  Le commit documentaire qui consigne cette preuve doit lui aussi rester vert
+  avant fusion.
 
 ## Migrations et données
 
@@ -63,6 +67,6 @@ restauration SQL, suppression de données ou action sur Supabase n'est nécessai
 
 ## État de livraison
 
-Aucun blocage technique n'est détecté avant PR. La fusion et le déploiement
-automatique sur `main` restent soumis au succès de la CI et à la validation
-explicite d'Antoine.
+Aucun blocage technique n'est détecté sur la PR #59. La fusion et le
+déploiement automatique sur `main` restent soumis au succès de la CI du dernier
+commit et à la validation explicite d'Antoine.
