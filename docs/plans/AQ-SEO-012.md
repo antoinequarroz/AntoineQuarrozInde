@@ -1,6 +1,6 @@
 ---
 ticket: AQ-SEO-012
-validated: no
+validated: yes
 ---
 
 # AQ-SEO-012 — Évaluer un projet au moyen de preuves approuvées
@@ -245,3 +245,5 @@ implémentation. Cette validation ne vaut pas consentement pour publier un nom,
 un lien, une durée ou un résultat de projet existant; chacun restera privé tant
 qu'il n'aura pas été approuvé dans le dashboard puis validé lors de la
 publication de l'étude concernée.
+
+Validation explicite reçue d'Antoine le 4 septembre 2026 (« je valide »).
