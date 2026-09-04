@@ -232,6 +232,9 @@ découvertes dans le sitemap :
 ```bash
 bash scripts/ops/verify-service-breadcrumbs.sh \
   https://www.antoinequarroz.ch
+
+bash scripts/ops/verify-service-decision-content.sh \
+  https://www.antoinequarroz.ch
 ```
 
 Le contrôle exige les quatre services même lorsqu'aucun article ou cas client
@@ -241,6 +244,16 @@ une offre, une note, un avis, une disponibilité ou un résultat artificiel est
 ajouté. Il ne suit aucune redirection, borne les réponses, reste sur l'origine
 fournie et ne requiert aucun secret. Le changement est purement applicatif : en
 cas de régression, remettre l'image `previous` sans restauration de base.
+
+Le second contrôle vérifie également que chaque service répond, en SSR et dans
+le même ordre, aux questions sur les livrables, le déroulement, les facteurs de
+délai, les limites et la prochaine étape. Il exige une introduction qui nomme
+l'offre, le public et le Valais, puis les liens locaux vers le portfolio publié
+et le contact. Il refuse les montants, devises, pourcentages, durées chiffrées,
+promesses de résultat, textes corrompus, redirections et réponses trop grandes.
+Comme le contrôle du balisage structuré, il reste anonyme, ne quitte jamais
+l'origine fournie et ne nécessite aucun secret. Son rollback est uniquement
+applicatif via l'image `previous`.
 
 ### Non-indexation des surfaces privées
 

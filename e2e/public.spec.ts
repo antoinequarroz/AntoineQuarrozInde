@@ -112,3 +112,50 @@ test('service pages expose an accessible breadcrumb without JavaScript', async (
 
   await context.close()
 })
+
+test('service pages answer decision questions and expose proof and contact without JavaScript', async ({ browser }) => {
+  const paths = [
+    '/developpeur-web-valais',
+    '/creation-site-internet-valais',
+    '/refonte-site-web-valais',
+    '/application-mobile-valais',
+  ]
+  const expectedHeadings = [
+    'Quels livrables sont inclus ?',
+    'Comment se déroule le projet ?',
+    'Quels délais prévoir ?',
+    'Quelles sont les limites ?',
+    'Quelle est la prochaine étape ?',
+  ]
+  const context = await browser.newContext({ javaScriptEnabled: false })
+  const page = await context.newPage()
+
+  for (const path of paths) {
+    const response = await page.goto(path)
+    expect(response?.ok()).toBeTruthy()
+
+    const introduction = page.locator('[data-service-introduction]')
+    await expect(introduction).toBeVisible()
+    await expect(introduction).toContainText('Valais')
+    await expect(introduction).toHaveAttribute('data-service-offer', '')
+    await expect(introduction).toHaveAttribute('data-service-audience', '')
+    await expect(introduction).toHaveAttribute('data-service-area', '')
+
+    const decisionContent = page.locator('[data-service-decision-content]')
+    await expect(decisionContent).toBeVisible()
+    const sectionHeadings = await decisionContent.locator('[data-service-section]').evaluateAll(sections => sections.map((section) => {
+      return section.querySelector('h2')?.textContent?.trim()
+    }))
+    expect(sectionHeadings).toEqual(expectedHeadings)
+    await expect(decisionContent.locator('[data-service-deliverable]').first()).toBeVisible()
+    await expect(decisionContent.locator('[data-service-process-step]').first()).toBeVisible()
+    await expect(decisionContent.locator('[data-service-timeline]')).toBeVisible()
+    await expect(decisionContent.locator('[data-service-limit]').first()).toBeVisible()
+    await expect(decisionContent.locator('[data-service-next-step]')).toBeVisible()
+    await expect(decisionContent.locator('[data-service-proof-note]')).toBeVisible()
+    await expect(decisionContent.locator('[data-service-proof-link]')).toHaveAttribute('href', '/#portfolio')
+    await expect(decisionContent.locator('[data-service-contact-link]')).toHaveAttribute('href', '/#contact')
+  }
+
+  await context.close()
+})
