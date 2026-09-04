@@ -7,7 +7,7 @@ validated: yes
 
 ## Plan ordonné
 
-- [ ] **1. Créer un contrat éditorial partagé et un rendu SSR accessible**
+- [x] **1. Créer un contrat éditorial partagé et un rendu SSR accessible**
   - **Objectif :** garantir que les quatre pages possèdent toutes les réponses
     attendues dans le même ordre, tout en laissant à chaque service une copie
     spécifique et approuvable.
@@ -33,7 +33,7 @@ validated: yes
     fermées et échappement Vue par défaut. Le rollback supprime le modèle et le
     composant sans toucher aux données.
 
-- [ ] **2. Enrichir les quatre services avec les affirmations approuvées**
+- [x] **2. Enrichir les quatre services avec les affirmations approuvées**
   - **Objectif :** remplacer les introductions incomplètes ou mal accentuées,
     puis couvrir sur chaque page les livrables, le processus, les facteurs de
     délai, les limites, la preuve et la prochaine étape.
@@ -67,7 +67,7 @@ validated: yes
     explicitement approuvée ci-dessous est publiable. Rollback applicatif vers
     les quatre pages précédentes.
 
-- [ ] **3. Ajouter une preuve HTTP fail-closed du contenu décisionnel**
+- [x] **3. Ajouter une preuve HTTP fail-closed du contenu décisionnel**
   - **Objectif :** empêcher qu'une page perde une question, sa preuve ou son
     contact, et bloquer l'apparition d'une précision commerciale non approuvée.
   - **Fichiers attendus :** nouveau
@@ -94,7 +94,7 @@ validated: yes
     ressources bornées. En cas d'échec post-déploiement, conserver le diagnostic
     et restaurer l'image `previous` sans opération Supabase.
 
-- [ ] **4. Revoir la copie, la sécurité et la release complète**
+- [x] **4. Revoir la copie, la sécurité et la release complète**
   - **Objectif :** vérifier indépendamment que la copie publiée correspond à la
     matrice approuvée, que les critères sont tous couverts et qu'aucune promesse
     ou donnée sensible n'a été ajoutée.
@@ -113,6 +113,22 @@ validated: yes
     PR verte sur son SHA exact, puis validation humaine séparée avant Production.
   - **Sécurité / rollback :** confirmer l'absence de migration, secret et
     mutation; rollback d'image uniquement.
+
+## Preuves d'implémentation
+
+- Contrat éditorial, composant SSR et quatre pages spécifiques implémentés sans
+  migration, dépendance, route ni donnée distante.
+- Contrôle ciblé : 48/48 tests Vitest réussis, incluant les variantes négatives
+  réseau, structure, copie, précision commerciale et URL.
+- Non-régression : 56 fichiers et 392/392 tests Vitest réussis; typecheck, build
+  Nitro, budgets et `git diff --check` réussis.
+- Aperçu Portly : contrôles HTTP AQ-SEO-010 et AQ-SEO-011 réussis sur les quatre
+  services; 7/7 parcours Playwright publics réussis, dont la lecture sans
+  JavaScript.
+- Inspection visuelle et accessibilité : bureau et mobile, thèmes clair et
+  sombre, absence de débordement, cible CTA de 52 px et focus clavier visible.
+- Revue indépendante documentée dans `docs/reviews/AQ-SEO-011.md` avec
+  `Max severity: none` et `Ship allowed: yes`.
 
 ## Matrice d'approbation de la copie
 

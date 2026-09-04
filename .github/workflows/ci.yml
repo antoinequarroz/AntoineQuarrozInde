@@ -156,6 +156,8 @@ jobs:
         run: bash scripts/ops/verify-blog-posting.sh https://www.antoinequarroz.ch
       - name: Verify service and breadcrumb structured data
         run: bash scripts/ops/verify-service-breadcrumbs.sh https://www.antoinequarroz.ch
+      - name: Verify service decision content
+        run: bash scripts/ops/verify-service-decision-content.sh https://www.antoinequarroz.ch
 
   e2e:
     if: >-

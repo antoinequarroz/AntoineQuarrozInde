@@ -3,13 +3,39 @@ import {
   resolvePublicBreadcrumbTrail,
   resolvePublicService,
 } from '~~/shared/utils/publicStructuredData'
+import { resolvePublicServiceDecisionContent } from '~~/shared/utils/publicServiceContent'
 import { serializeJsonLd } from '~~/shared/utils/publicSeoIdentity'
 
 const runtimeConfig = useRuntimeConfig()
 const siteUrl = runtimeConfig.public.siteUrl.replace(/\/+$/, '')
+const decisionContent = resolvePublicServiceDecisionContent({
+  introduction: 'J’aide les indépendants et les PME du Valais dont le site est lent, difficile à administrer ou peu clair à moderniser son expérience, sa base technique et son référencement.',
+  deliverables: [
+    'Un audit de l’expérience et de la base technique existante.',
+    'Une liste de priorités qui distingue ce qui peut être conservé de ce qui doit évoluer.',
+    'Une interface modernisée et les corrections de performance et de SEO retenues dans le périmètre.',
+    'La migration et la mise en ligne lorsque les accès et la technologie le permettent.',
+  ],
+  process: [
+    'L’audit commence par le site existant, ses objectifs et les accès disponibles.',
+    'Les problèmes sont classés par priorité avant de choisir entre correction et reconstruction.',
+    'La réalisation avance avec des validations sur les pages et parcours concernés.',
+    'La migration est préparée, vérifiée puis suivie après la mise en ligne.',
+  ],
+  timeline: 'Le planning est proposé après l’audit. Il dépend de la dette technique, des technologies existantes, des accès, du volume de contenu, des migrations et du rythme des validations.',
+  limits: [
+    'L’audit détermine ce qui peut réellement être conservé dans le site actuel.',
+    'Les effets d’une refonte sur le classement et la conversion restent variables.',
+    'Les plateformes et services tiers peuvent limiter les corrections possibles.',
+  ],
+  nextStep: 'Indiquez-moi l’adresse du site, les difficultés rencontrées et la priorité du moment. L’audit permettra ensuite de définir les actions utiles.',
+  proofNote: 'Le portfolio montre les réalisations web actuellement publiées. Les études détaillées ne sont ajoutées qu’après validation de leur contenu.',
+  proof: { label: 'Voir les réalisations web du portfolio', path: '/#portfolio' },
+  contact: { label: 'Demander un premier audit', path: '/#contact' },
+})
 const service = Object.freeze({
   name: 'Refonte de site web en Valais',
-  description: 'Votre site est lent, peu lisible ou ne convertit pas. Je vous aide a le moderniser avec une approche orientée resultat: UX, performance, SEO et maintenance.',
+  description: decisionContent.introduction,
   path: '/refonte-site-web-valais',
   areaServed: 'Valais',
 })
@@ -24,10 +50,10 @@ const serviceJsonLd = resolvePublicService(siteUrl, {
 })
 
 useSeoMeta({
-  title: 'Refonte Site Web Valais - Antoine Quarroz',
-  description: 'Refonte de site web en Valais. Amelioration UX, vitesse, structure SEO et taux de conversion.',
-  ogTitle: 'Refonte Site Web Valais - Antoine Quarroz',
-  ogDescription: 'Modernisation de votre site existant pour gagner en clarté et performance.',
+  title: 'Refonte de site web en Valais | Antoine Quarroz',
+  description: 'Refonte de sites web en Valais : audit, priorités UX et techniques, modernisation, migration et suivi selon le périmètre défini.',
+  ogTitle: 'Refonte de site web en Valais | Antoine Quarroz',
+  ogDescription: 'Audit et modernisation de l’expérience, de la base technique et du référencement.',
   ogUrl: canonicalUrl,
   robots: 'index, follow',
 })
@@ -54,21 +80,11 @@ useHead({
         <UiAppBreadcrumbs :items="breadcrumbs.items" class="mb-6" />
         <span class="badge mb-4">Refonte</span>
         <h1 data-service-name class="section-heading">{{ service.name }}</h1>
-        <p data-service-description class="section-subtitle max-w-3xl">
+        <p data-service-description data-service-introduction data-service-offer data-service-audience data-service-area class="section-subtitle max-w-3xl">
           {{ service.description }}
         </p>
 
-        <div class="mt-8 rounded-2xl border border-violet-500/15 bg-white/70 p-5 dark:border-white/10 dark:bg-white/[0.04]">
-          <h2 class="font-display text-xl font-bold text-gray-900 dark:text-white">Ce qui change apres la refonte</h2>
-          <ul class="mt-4 grid gap-2 text-sm text-gray-700 dark:text-gray-200 sm:grid-cols-2">
-            <li class="rounded-lg border border-violet-500/10 px-3 py-2 dark:border-white/10">Navigation plus simple</li>
-            <li class="rounded-lg border border-violet-500/10 px-3 py-2 dark:border-white/10">Temps de chargement reduit</li>
-            <li class="rounded-lg border border-violet-500/10 px-3 py-2 dark:border-white/10">Structure SEO propre</li>
-            <li class="rounded-lg border border-violet-500/10 px-3 py-2 dark:border-white/10">Pages orientées conversion</li>
-          </ul>
-        </div>
-
-        <div class="mt-8"><a href="/#contact" class="btn-primary">Demander un audit</a></div>
+        <UiServiceDecisionContent :content="decisionContent" />
       </div>
     </div>
   </section>
