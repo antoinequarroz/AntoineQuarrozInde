@@ -22,7 +22,7 @@ describe('project portfolio compatibility release', () => {
       readFile('app/components/sections/PortfolioSection.vue', 'utf8'),
     ])
 
-    expect(publicApi).toContain("query.or('portfolio_visible.eq.true,case_study_published.eq.true')")
+    expect(publicApi).toContain("query.or('portfolio_visible.eq.true,and(case_study_published.eq.true,case_study_approved_at.not.is.null)')")
     expect(store).toContain('portfolio_visible')
     expect(store).toContain('projects.value.filter(p => p.portfolioVisible)')
     expect(portfolio).toContain('store.portfolio')

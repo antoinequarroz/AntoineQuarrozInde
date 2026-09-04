@@ -78,6 +78,7 @@ docker compose up -d --no-build --remove-orphans
 wait_for_health
 reload_caddy_config
 bash scripts/ops/verify-blog-ssr.sh https://www.antoinequarroz.ch
+bash scripts/ops/verify-approved-case-studies.sh https://www.antoinequarroz.ch
 trap - ERR
 
 docker compose ps

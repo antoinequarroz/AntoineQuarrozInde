@@ -7,7 +7,7 @@ validated: yes
 
 ## Plan ordonné
 
-- [ ] **1. Ajouter un contrat de preuve privé et rétrocompatible**
+- [x] **1. Ajouter un contrat de preuve privé et rétrocompatible**
   - **Objectif :** représenter le périmètre, les décisions, la confidentialité,
     les approbations optionnelles, les services pertinents et la validation
     finale sans auto-approuver ni supprimer les projets existants.
@@ -35,7 +35,7 @@ validated: yes
     implicite. Cette phase est compatible avec l'ancien RPC et ne retire aucune
     donnée; les champs privés ne sont jamais ajoutés à la projection publique.
 
-- [ ] **2. Donner au dashboard une prépublication actionnable**
+- [x] **2. Donner au dashboard une prépublication actionnable**
   - **Objectif :** permettre de préparer librement un brouillon, de comprendre
     exactement ce qui bloque la publication et d'approuver séparément chaque
     catégorie sensible.
@@ -65,7 +65,7 @@ validated: yes
     sécurité. Les notes de preuve restent dans la vue authentifiée; aucun nom de
     client CRM n'est recopié automatiquement dans le champ public.
 
-- [ ] **3. Installer la porte publique fail-closed et le rendu probant**
+- [x] **3. Installer la porte publique fail-closed et le rendu probant**
   - **Objectif :** ne rendre, indexer et structurer que les études disposant
     d'une validation finale courante, avec cinq passages explicites et des
     données sensibles filtrées par leur propre approbation.
@@ -128,7 +128,7 @@ validated: yes
     l'image `previous`. Aucun rollback vers une image antérieure qui ignore les
     approbations; aucune restauration SQL automatique ni suppression de colonne.
 
-- [ ] **5. Ajouter une preuve de release de bout en bout**
+- [x] **5. Ajouter une preuve de release de bout en bout**
   - **Objectif :** empêcher qu'une étude non approuvée, incomplète ou mal liée
     atteigne le sitemap ou qu'un champ privé apparaisse après déploiement.
   - **Fichiers attendus :** nouveau
@@ -177,6 +177,12 @@ validated: yes
     audits prouvent l'action sans recopier la donnée sensible.
 
 ## Matrice d'approbation proposée
+
+> État au 5 septembre 2026 : la release de transition (étapes 1, 2, 3 et 5)
+> est implémentée et sa revue autorise la livraison. L'étape 4 reste
+> volontairement non activée jusqu'à ce que cette image soit déployée, prouvée
+> en production et conservée comme rollback `previous`. L'étape 6 ne sera
+> complète qu'après la revue distincte de cette activation.
 
 La validation de ce plan approuve les règles de traitement ci-dessous, pas la
 publication d'un projet réel. Chaque projet devra encore être relu et republié

@@ -1,3 +1,4 @@
+import { isMissingCaseStudyApprovalSchema } from '../utils/publicContent'
 import { buildSitemapEntries, renderSitemapXml } from '../utils/sitemapDiscovery'
 
 export default defineEventHandler(async (event) => {
@@ -8,7 +9,7 @@ export default defineEventHandler(async (event) => {
     if (!org?.id) throw new Error('sitemap_organization_unavailable')
 
     const supabase = getSupabaseAdmin()
-    const [articlesResult, projectsResult] = await Promise.all([
+    const [articlesResult, initialProjectsResult] = await Promise.all([
       supabase
         .from('articles')
         .select('slug, published_at, updated_at, created_at')
@@ -18,8 +19,12 @@ export default defineEventHandler(async (event) => {
         .from('projects')
         .select('slug, case_study_published_at, updated_at, created_at')
         .eq('organization_id', org.id)
-        .eq('case_study_published', true),
+        .eq('case_study_published', true)
+        .not('case_study_approved_at', 'is', null),
     ])
+    const projectsResult = isMissingCaseStudyApprovalSchema(initialProjectsResult.error)
+      ? { data: [], error: null }
+      : initialProjectsResult
 
     if (articlesResult.error || projectsResult.error) {
       throw articlesResult.error || projectsResult.error

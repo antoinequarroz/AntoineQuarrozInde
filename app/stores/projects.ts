@@ -13,17 +13,28 @@ type ProjectRow = {
   image: string | null
   live_url: string | null
   code_url: string | null
+  case_study_live_url?: string | null
+  case_study_code_url?: string | null
   featured: boolean
   portfolio_visible?: boolean | null
   case_study_published?: boolean | null
+  case_study_approved_at?: string | null
+  case_study_approved_by?: string | null
   client_label?: string | null
+  client_disclosure_status?: Project['clientDisclosureStatus'] | null
   project_role?: string | null
   project_duration?: string | null
+  case_study_timeline_approved?: boolean | null
   completed_at?: string | null
   challenge?: string | null
+  project_scope?: string | null
+  key_decisions?: string | null
   approach?: string | null
   solution?: string | null
   outcome?: string | null
+  outcome_approved?: boolean | null
+  case_study_links_approved?: boolean | null
+  related_service_paths?: Project['relatedServicePaths'] | null
   deliverables?: string[] | null
   gallery_images?: string[] | null
   results?: ProjectResult[] | null
@@ -52,20 +63,39 @@ function mapProject(row: ProjectRow): Project {
     image: row.image,
     liveUrl: row.live_url,
     codeUrl: row.code_url,
+    caseStudyLiveUrl: row.case_study_live_url ?? null,
+    caseStudyCodeUrl: row.case_study_code_url ?? null,
     featured: row.featured,
     portfolioVisible: Boolean(row.portfolio_visible),
     caseStudyPublished: Boolean(row.case_study_published),
+    caseStudyApprovedAt: row.case_study_approved_at ?? null,
+    caseStudyApprovedBy: row.case_study_approved_by ?? null,
     clientLabel: row.client_label ?? null,
+    clientDisclosureStatus: row.client_disclosure_status ?? 'pending',
     projectRole: row.project_role ?? null,
     projectDuration: row.project_duration ?? null,
+    caseStudyTimelineApproved: Boolean(row.case_study_timeline_approved),
     completedAt: row.completed_at ?? null,
     challenge: row.challenge ?? null,
+    projectScope: row.project_scope ?? null,
+    keyDecisions: row.key_decisions ?? null,
     approach: row.approach ?? null,
     solution: row.solution ?? null,
     outcome: row.outcome ?? null,
+    outcomeApproved: Boolean(row.outcome_approved),
+    caseStudyLinksApproved: Boolean(row.case_study_links_approved),
+    relatedServicePaths: row.related_service_paths ?? [],
     deliverables: row.deliverables ?? [],
     galleryImages: row.gallery_images ?? [],
-    results: Array.isArray(row.results) ? row.results : [],
+    results: Array.isArray(row.results)
+      ? row.results.map(result => ({
+          value: result.value,
+          label: result.label,
+          measurementContext: result.measurementContext ?? null,
+          evidenceNote: result.evidenceNote ?? null,
+          approved: result.approved === true,
+        }))
+      : [],
     seoTitle: row.seo_title ?? null,
     seoDescription: row.seo_description ?? null,
     workflowStatus: row.workflow_status ?? 'planning',
@@ -115,7 +145,7 @@ export const useProjectsStore = defineStore('projects', () => {
     }
   }
 
-  async function add(project: Omit<Project, 'id' | 'createdAt'>) {
+  async function add(project: Omit<Project, 'id' | 'createdAt' | 'caseStudyApprovedAt' | 'caseStudyApprovedBy'> & { caseStudyApprovalConfirmed?: boolean }) {
     const row = await $fetch<ProjectRow>('/api/projects', {
       method: 'POST',
       body: project,

@@ -142,7 +142,7 @@ describe('project publication states', () => {
     const result = await handler({} as never)
 
     expect(query.eq).toHaveBeenCalledWith('organization_id', 'org-public')
-    expect(query.or).toHaveBeenCalledWith('portfolio_visible.eq.true,case_study_published.eq.true')
+    expect(query.or).toHaveBeenCalledWith('portfolio_visible.eq.true,and(case_study_published.eq.true,case_study_approved_at.not.is.null)')
     expect(result[0]).toMatchObject({ client_label: null, challenge: null })
   })
 
@@ -158,12 +158,13 @@ describe('project publication states', () => {
 
     expect(form).toContain('portfolioVisible: false')
     expect(form).toContain('Portfolio {{ project.portfolioVisible ? \'visible\' : \'masqué\' }}')
-    expect(form).toContain('Étude {{ project.caseStudyPublished ? \'publiée\' : \'brouillon\' }}')
+    expect(form).toContain("project.caseStudyPublished && project.caseStudyApprovedAt ? 'publiée' : project.caseStudyPublished ? 'à approuver' : 'brouillon'")
+    expect(form).toContain('v-if="project.caseStudyPublished && project.caseStudyApprovedAt"')
     expect(fields).toContain('Afficher dans le portfolio')
     expect(fields).toContain('Publier l’étude de cas')
     expect(fields).toContain(':disabled="!canManagePublication"')
     expect(store).toContain('projects.value.filter(p => p.portfolioVisible)')
-    expect(publicApi).toContain("query.or('portfolio_visible.eq.true,case_study_published.eq.true')")
+    expect(publicApi).toContain("query.or('portfolio_visible.eq.true,and(case_study_published.eq.true,case_study_approved_at.not.is.null)')")
     expect(updateApi).toContain("rpc('save_project_with_publication_audit'")
     expect(updateApi).not.toContain('logAudit(')
     expect(sitemap).toContain(".eq('case_study_published', true)")

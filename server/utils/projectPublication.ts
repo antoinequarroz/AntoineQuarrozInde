@@ -50,5 +50,14 @@ export function projectPublicationRpcError(error: { code?: string | null, messag
   if (error.code === 'P0002' || message.includes('project_not_found')) {
     return createError({ statusCode: 404, message: 'Project not found' })
   }
+  if (message.includes('project_case_study_locked')) {
+    return createError({
+      statusCode: 409,
+      message: 'Unpublish the case study before changing its approved content',
+    })
+  }
+  if (error.code === '22023' || message.includes('project_case_study_')) {
+    return createError({ statusCode: 400, message })
+  }
   return createError({ statusCode: 500, message })
 }
