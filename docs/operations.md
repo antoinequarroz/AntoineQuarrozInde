@@ -38,7 +38,8 @@ strict :
 5. attente de ce même SHA sur `/api/version` et d'un `/api/health` vert ;
 6. vérification que l'apex redirige définitivement vers `www` en conservant l'URI ;
 7. vérification des routes privées, des crawlers, des pages localisées et des routes françaises uniquement ;
-8. E2E de production avec les identifiants du compte sandbox.
+8. validation de l'identité éditoriale et du `BlogPosting` de chaque article publié ;
+9. E2E de production avec les identifiants du compte sandbox.
 
 Les exécutions planifiées et manuelles vérifient la production courante sans
 redéployer. Sur un push `main`, les secrets de production ne deviennent
@@ -190,6 +191,28 @@ Pour éviter les requêtes arbitraires, il ne contacte que le domaine canonique 
 le chemin public `media` d'un hôte Supabase en HTTPS, sans suivre de redirection.
 Il ne requiert aucun secret ni accès CRM. En cas de régression, remettre en ligne
 l'image applicative `previous`; aucune migration ni donnée n'est à restaurer.
+
+### Attribution et fraîcheur des articles
+
+Chaque article public doit exposer Antoine comme auteur approuvé, sa date source
+de publication et une date de modification uniquement lorsque `updated_at` est
+strictement postérieur à `published_at`. Le contenu visible et le JSON-LD
+`BlogPosting` reprennent les mêmes valeurs, la même image et la même URL
+canonique.
+
+Après une livraison, contrôler anonymement tous les articles découverts depuis
+l'API publique :
+
+```bash
+bash scripts/ops/verify-blog-posting.sh \
+  https://www.antoinequarroz.ch
+```
+
+Le contrôle échoue sur une date invalide ou inventée, un auteur absent, une
+divergence visible/structurée, un contenu non SSR ou un canonical incorrect. Il
+ne suit aucune redirection, borne la taille des réponses et ne requiert aucun
+secret. La migration auteur est append-only et accepte encore les payloads de
+l'image précédente; un rollback applicatif ne supprime donc aucune donnée.
 
 ### Non-indexation des surfaces privées
 

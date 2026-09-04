@@ -152,6 +152,8 @@ jobs:
         run: bash scripts/ops/verify-blog-ssr.sh https://www.antoinequarroz.ch
       - name: Verify public identity and social previews
         run: bash scripts/ops/verify-identity-social.sh https://www.antoinequarroz.ch
+      - name: Verify article attribution and BlogPosting data
+        run: bash scripts/ops/verify-blog-posting.sh https://www.antoinequarroz.ch
 
   e2e:
     if: >-

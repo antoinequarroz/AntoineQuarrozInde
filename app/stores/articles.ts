@@ -6,8 +6,11 @@ export interface Article {
   content: string
   coverImage: string | null
   published: boolean
+  authorKey: string
   tags: string[]
   createdAt: string
+  publishedAt: string | null
+  updatedAt: string | null
   readTime: number
 }
 
@@ -19,8 +22,11 @@ type ArticleRow = {
   content: string
   cover_image: string | null
   published: boolean
+  author_key: string
   tags: string[] | null
   created_at: string
+  published_at: string | null
+  updated_at: string | null
   read_time: number
 }
 
@@ -33,8 +39,11 @@ function mapArticle(row: ArticleRow): Article {
     content: row.content,
     coverImage: row.cover_image,
     published: row.published,
+    authorKey: row.author_key,
     tags: row.tags ?? [],
     createdAt: row.created_at?.slice(0, 10) ?? '',
+    publishedAt: row.published_at ?? null,
+    updatedAt: row.updated_at ?? null,
     readTime: row.read_time,
   }
 }
@@ -77,7 +86,7 @@ export const useArticlesStore = defineStore('articles', () => {
     }
   }
 
-  async function add(article: Omit<Article, 'id' | 'createdAt'>) {
+  async function add(article: Omit<Article, 'id' | 'createdAt' | 'publishedAt' | 'updatedAt'>) {
     const row = await $fetch<ArticleRow>('/api/articles', {
       method: 'POST',
       body: article,

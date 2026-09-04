@@ -183,7 +183,7 @@ select is(
       and action = 'article.publication_changed'
     order by id desc limit 1
   ),
-  '{"after":{"published":false},"before":null}'::jsonb,
+  '{"after":{"authorKey":"antoine-quarroz","published":false},"before":null}'::jsonb,
   'private creation records its exact initial publication state'
 );
 
@@ -270,7 +270,7 @@ select is(
       and entity_id = (select id::text from public.articles where slug = 'aqseo006-public')
     order by id desc limit 1
   ),
-  '{"after":{"published":true},"before":null}'::jsonb,
+  '{"after":{"authorKey":"antoine-quarroz","published":true},"before":null}'::jsonb,
   'public creation records its exact initial publication state'
 );
 
@@ -444,7 +444,7 @@ select is(
       and entity_id = (select id::text from public.articles where slug = 'aqseo006-private')
     order by id desc limit 1
   ),
-  '{"after":{"published":true},"before":{"published":false}}'::jsonb,
+  '{"after":{"authorKey":"antoine-quarroz","published":true},"before":{"authorKey":"antoine-quarroz","published":false}}'::jsonb,
   'first publication records exact before and after states'
 );
 
@@ -545,7 +545,7 @@ select is(
       and entity_id = (select id::text from public.articles where slug = 'aqseo006-private')
     order by id desc limit 1
   ),
-  '{"after":{"published":true},"before":{"published":false}}'::jsonb,
+  '{"after":{"authorKey":"antoine-quarroz","published":true},"before":{"authorKey":"antoine-quarroz","published":false}}'::jsonb,
   'republication records its exact previous and next states'
 );
 

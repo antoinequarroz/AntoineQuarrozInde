@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Article } from '~/stores/articles'
+import { PUBLIC_SEO_IDENTITY } from '~~/shared/utils/publicSeoIdentity'
 
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 
@@ -20,13 +21,14 @@ const form = reactive({
   content: '',
   coverImage: null as string | null,
   published: false,
+  authorKey: PUBLIC_SEO_IDENTITY.key,
   tags: '',
   readTime: 5,
 })
 
 function openNew() {
   editingArticle.value = null
-  Object.assign(form, { title: '', slug: '', excerpt: '', content: '', coverImage: null, published: false, tags: '', readTime: 5 })
+  Object.assign(form, { title: '', slug: '', excerpt: '', content: '', coverImage: null, published: false, authorKey: PUBLIC_SEO_IDENTITY.key, tags: '', readTime: 5 })
   previewMode.value = false
   showForm.value = true
 }
@@ -50,6 +52,7 @@ async function handleSubmit() {
     content: form.content,
     coverImage: form.coverImage,
     published: form.published,
+    authorKey: form.authorKey,
     tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
     readTime: form.readTime,
   }
@@ -174,6 +177,11 @@ function renderMarkdown(md: string): string {
               <div>
                 <p class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Image de couverture</p>
                 <UiAppImageUpload v-model="form.coverImage" />
+              </div>
+              <div>
+                <label for="article-author" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Auteur</label>
+                <input id="article-author" :value="PUBLIC_SEO_IDENTITY.name" type="text" class="input-field" aria-describedby="article-author-hint" readonly>
+                <p id="article-author-hint" class="mt-1.5 text-xs text-gray-400">Cet auteur apparaîtra sur l’article et renverra vers votre profil.</p>
               </div>
               <div class="grid grid-cols-2 gap-4">
                 <div>

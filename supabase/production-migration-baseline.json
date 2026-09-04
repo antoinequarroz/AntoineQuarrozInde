@@ -27,5 +27,6 @@
   "20260903170153_add_project_localized_descriptions.sql",
   "20260903193214_add_project_portfolio_visibility.sql",
   "20260903203219_activate_project_portfolio_visibility.sql",
-  "20260903232000_add_editorial_timestamps_article_audit.sql"
+  "20260903232000_add_editorial_timestamps_article_audit.sql",
+  "20260904163123_add_article_author_attribution.sql"
 ]

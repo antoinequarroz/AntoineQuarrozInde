@@ -1,5 +1,14 @@
 <script setup lang="ts">
-import { resolvePublicSocialImage } from '~~/shared/utils/publicSeoIdentity'
+import {
+  ARTICLE_LANGUAGE,
+  formatArticleEditorialDate,
+  resolveArticleEditorialMeta,
+} from '~~/shared/utils/articleSeo'
+import {
+  PUBLIC_SEO_IDENTITY,
+  resolvePublicSocialImage,
+  serializeJsonLd,
+} from '~~/shared/utils/publicSeoIdentity'
 
 const route = useRoute()
 const { t } = useI18n()
@@ -15,6 +24,20 @@ if (!article.value) {
   throw createError({ statusCode: 404, message: 'Article non trouvé' })
 }
 
+const editorialMeta = (() => {
+  try {
+    return resolveArticleEditorialMeta({
+      authorKey: article.value.authorKey,
+      publishedAt: article.value.publishedAt,
+      updatedAt: article.value.updatedAt,
+    })
+  }
+  catch {
+    throw createError({ statusCode: 404, message: 'Article non disponible' })
+  }
+})()
+
+const canonicalUrl = `${siteUrl}/blog/${article.value.slug}`
 const socialImage = computed(() => resolvePublicSocialImage(siteUrl, article.value?.coverImage))
 const socialImageAlt = computed(() => socialImage.value.isFallback
   ? t('seo.social.default_image_alt')
@@ -27,7 +50,8 @@ useSeoMeta({
   ogDescription: () => article.value?.excerpt,
   ogImage: () => socialImage.value.url,
   ogImageAlt: () => socialImageAlt.value,
-  ogUrl: () => `${siteUrl}/blog/${article.value?.slug ?? ''}`,
+  ogUrl: canonicalUrl,
+  ogType: 'article',
   robots: 'index, follow',
   twitterCard: 'summary_large_image',
   twitterTitle: () => `${article.value?.title} — Antoine Quarroz`,
@@ -36,14 +60,38 @@ useSeoMeta({
   twitterImageAlt: () => socialImageAlt.value,
 })
 
-useHead({
+useHead(() => ({
   link: [
     {
       rel: 'canonical',
-      href: `${siteUrl}/blog/${article.value.slug}`,
+      href: canonicalUrl,
     },
   ],
-})
+  script: [{
+    type: 'application/ld+json',
+    innerHTML: serializeJsonLd({
+      '@context': 'https://schema.org',
+      '@type': 'BlogPosting',
+      headline: article.value?.title,
+      description: article.value?.excerpt,
+      image: socialImage.value.url,
+      inLanguage: ARTICLE_LANGUAGE,
+      url: canonicalUrl,
+      mainEntityOfPage: {
+        '@type': 'WebPage',
+        '@id': canonicalUrl,
+      },
+      author: {
+        '@type': 'Person',
+        '@id': `${siteUrl}/#person`,
+        name: editorialMeta.authorName,
+        url: `${siteUrl}/`,
+      },
+      datePublished: editorialMeta.datePublished,
+      ...(editorialMeta.dateModified ? { dateModified: editorialMeta.dateModified } : {}),
+    }),
+  }],
+}))
 
 // Simple markdown renderer (headings, bold, paragraphs)
 function renderMarkdown(md: string): string {
@@ -80,9 +128,30 @@ function renderMarkdown(md: string): string {
           <h1 class="font-display font-bold text-3xl sm:text-4xl text-gray-900 dark:text-white mb-4 leading-tight">
             {{ article.title }}
           </h1>
-          <div class="flex items-center gap-4 text-sm text-gray-400">
-            <span>{{ article.createdAt }}</span>
-            <span>·</span>
+          <div class="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-gray-500 dark:text-gray-400">
+            <span>
+              Par
+              <NuxtLink data-article-author to="/#about" class="font-medium text-violet-700 hover:underline dark:text-violet-300">
+                {{ editorialMeta.authorName }}
+              </NuxtLink>
+            </span>
+            <span aria-hidden="true">·</span>
+            <span>
+              Publié le
+              <time data-article-published :datetime="editorialMeta.datePublished">
+                {{ formatArticleEditorialDate(editorialMeta.datePublished) }}
+              </time>
+            </span>
+            <template v-if="editorialMeta.dateModified">
+              <span aria-hidden="true">·</span>
+              <span>
+                Mis à jour le
+                <time data-article-modified :datetime="editorialMeta.dateModified">
+                  {{ formatArticleEditorialDate(editorialMeta.dateModified) }}
+                </time>
+              </span>
+            </template>
+            <span aria-hidden="true">·</span>
             <span>{{ article.readTime }} min de lecture</span>
           </div>
         </div>

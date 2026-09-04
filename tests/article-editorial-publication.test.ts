@@ -36,6 +36,7 @@ describe('article editorial publication', () => {
       excerpt: 'Résumé',
       content: 'Contenu',
       published: false,
+      authorKey: 'antoine-quarroz',
       tags: ['seo'],
       readTime: 7,
     })
@@ -47,10 +48,13 @@ describe('article editorial publication', () => {
       content: 'Contenu',
       cover_image: null,
       published: false,
+      author_key: 'antoine-quarroz',
       tags: ['seo'],
       read_time: 7,
     })
     expect(() => articlePayload({ published: 'false' })).toThrow('published must be a boolean')
+    expect(() => articlePayload({ published: false, authorKey: null })).toThrow('authorKey must identify an approved author')
+    expect(() => articlePayload({ published: false, authorKey: 'unknown' })).toThrow('authorKey must identify an approved author')
   })
 
   it('creates an article through the atomic audited operation', async () => {

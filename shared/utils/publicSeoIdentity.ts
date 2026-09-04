@@ -1,4 +1,5 @@
 export const PUBLIC_SEO_IDENTITY = Object.freeze({
+  key: 'antoine-quarroz',
   name: 'Antoine Quarroz',
   email: 'info@antoinequarroz.ch',
   emailHref: 'mailto:info@antoinequarroz.ch',
