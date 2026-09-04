@@ -6,6 +6,11 @@
       "job_title": "Freelance-Webentwickler",
       "knows_about": ["Webentwicklung", "Nuxt", "Vue.js", "Mobile Apps", "CMS"],
       "areas_served": ["Wallis", "Schweiz", "Europa", "weltweit"]
+    },
+    "social": {
+      "default_image_alt": "Porträt von Antoine Quarroz, Freelance-Webentwickler im Wallis",
+      "article_image_alt": "Bild zum Artikel „{title}“",
+      "project_image_alt": "Vorschau des Projekts „{title}“"
     }
   },
   "nav": {

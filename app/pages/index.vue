@@ -1,4 +1,10 @@
 <script setup lang="ts">
+import {
+  PUBLIC_SEO_IDENTITY,
+  resolvePublicSocialImage,
+  serializeJsonLd,
+} from '~~/shared/utils/publicSeoIdentity'
+
 const runtimeConfig = useRuntimeConfig()
 const siteUrl = runtimeConfig.public.siteUrl.replace(/\/+$/, '')
 const i18n = useI18n()
@@ -6,6 +12,12 @@ const { t, locale } = i18n
 const translatedList = i18n.tm as unknown as (key: string) => string[]
 const localePath = useLocalePath()
 const canonicalUrl = computed(() => `${siteUrl}${localePath('/', locale.value)}`)
+const socialImage = resolvePublicSocialImage(siteUrl).url
+const approvedProfiles = PUBLIC_SEO_IDENTITY.profiles.map(profile => profile.href)
+const postalAddress = {
+  '@type': 'PostalAddress',
+  ...PUBLIC_SEO_IDENTITY.address,
+}
 
 useSeoMeta({
   title: () => t('seo.home.title'),
@@ -30,40 +42,42 @@ useHead(() => ({
   script: [
     {
       type: 'application/ld+json',
-      innerHTML: JSON.stringify({
+      innerHTML: serializeJsonLd({
         '@context': 'https://schema.org',
         '@graph': [
           {
             '@type': 'Person',
             '@id': `${siteUrl}/#person`,
-            name: 'Antoine Quarroz',
+            name: PUBLIC_SEO_IDENTITY.name,
             jobTitle: t('seo.home.job_title'),
             url: canonicalUrl.value,
-            image: `${siteUrl}/about.jpg`,
-            email: 'mailto:info@antoinequarroz.ch',
-            address: {
-              '@type': 'PostalAddress',
-              addressLocality: 'Valais',
-              addressCountry: 'CH',
-            },
+            image: socialImage,
+            email: PUBLIC_SEO_IDENTITY.emailHref,
+            telephone: PUBLIC_SEO_IDENTITY.telephone,
+            address: postalAddress,
+            sameAs: approvedProfiles,
             knowsAbout: translatedList('seo.home.knows_about'),
           },
           {
             '@type': 'ProfessionalService',
             '@id': `${siteUrl}/#business`,
-            name: 'Antoine Quarroz',
+            name: PUBLIC_SEO_IDENTITY.name,
             url: canonicalUrl.value,
-            image: `${siteUrl}/about.jpg`,
+            image: socialImage,
+            email: PUBLIC_SEO_IDENTITY.emailHref,
+            telephone: PUBLIC_SEO_IDENTITY.telephone,
+            address: postalAddress,
             areaServed: translatedList('seo.home.areas_served'),
             founder: { '@id': `${siteUrl}/#person` },
-            sameAs: [],
+            sameAs: approvedProfiles,
           },
           {
             '@type': 'WebSite',
             '@id': `${siteUrl}/#website`,
             url: `${siteUrl}/`,
-            name: 'Antoine Quarroz',
+            name: PUBLIC_SEO_IDENTITY.name,
             inLanguage: ['fr-CH', 'en-US', 'de-CH'],
+            publisher: { '@id': `${siteUrl}/#business` },
           },
         ],
       }),

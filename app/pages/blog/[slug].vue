@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import { resolvePublicSocialImage } from '~~/shared/utils/publicSeoIdentity'
+
 const route = useRoute()
+const { t } = useI18n()
 const store = useArticlesStore()
 const runtimeConfig = useRuntimeConfig()
 const siteUrl = runtimeConfig.public.siteUrl.replace(/\/+$/, '')
@@ -12,15 +15,25 @@ if (!article.value) {
   throw createError({ statusCode: 404, message: 'Article non trouvé' })
 }
 
+const socialImage = computed(() => resolvePublicSocialImage(siteUrl, article.value?.coverImage))
+const socialImageAlt = computed(() => socialImage.value.isFallback
+  ? t('seo.social.default_image_alt')
+  : t('seo.social.article_image_alt', { title: article.value?.title ?? '' }))
+
 useSeoMeta({
   title: () => `${article.value?.title} — Antoine Quarroz`,
   description: () => article.value?.excerpt,
   ogTitle: () => `${article.value?.title} — Antoine Quarroz`,
   ogDescription: () => article.value?.excerpt,
-  ogImage: () => article.value?.coverImage ?? undefined,
+  ogImage: () => socialImage.value.url,
+  ogImageAlt: () => socialImageAlt.value,
   ogUrl: () => `${siteUrl}/blog/${article.value?.slug ?? ''}`,
   robots: 'index, follow',
   twitterCard: 'summary_large_image',
+  twitterTitle: () => `${article.value?.title} — Antoine Quarroz`,
+  twitterDescription: () => article.value?.excerpt,
+  twitterImage: () => socialImage.value.url,
+  twitterImageAlt: () => socialImageAlt.value,
 })
 
 useHead({

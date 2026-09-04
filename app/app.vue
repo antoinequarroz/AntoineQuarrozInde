@@ -1,5 +1,11 @@
 <script setup lang="ts">
-const { locale } = useI18n()
+import { resolvePublicSocialImage } from '~~/shared/utils/publicSeoIdentity'
+
+const { locale, t } = useI18n()
+const runtimeConfig = useRuntimeConfig()
+const defaultSocialImage = computed(() => resolvePublicSocialImage(
+  String(runtimeConfig.public.siteUrl),
+).url)
 
 const documentLanguage = computed(() => ({
   fr: 'fr-CH',
@@ -12,6 +18,14 @@ useHead(() => ({
     lang: documentLanguage.value,
   },
 }))
+
+useSeoMeta({
+  ogImage: () => defaultSocialImage.value,
+  ogImageAlt: () => t('seo.social.default_image_alt'),
+  twitterCard: 'summary_large_image',
+  twitterImage: () => defaultSocialImage.value,
+  twitterImageAlt: () => t('seo.social.default_image_alt'),
+})
 </script>
 
 <template>
