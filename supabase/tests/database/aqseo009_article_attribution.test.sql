@@ -1,6 +1,6 @@
 begin;
 
-select plan(14);
+select plan(18);
 
 insert into public.organizations (id, name, slug)
 values
@@ -196,6 +196,79 @@ select is(
   (select author_key from public.articles where slug = 'aqseo009-legacy-draft'),
   'antoine-quarroz',
   'a legacy update preserves the existing author'
+);
+
+create temporary table aqseo009_dates as
+select id, published_at, updated_at
+from public.articles
+where slug = 'aqseo009-attributed';
+
+select pg_sleep(0.01);
+
+select lives_ok(
+  $$
+    set local role service_role;
+    select public.save_article_with_publication_audit(
+      '00000000-0000-0000-0000-000000000901',
+      (select id from public.articles where slug = 'aqseo009-attributed'),
+      null, 'owner',
+      '{
+        "title":"Attributed article",
+        "slug":"aqseo009-attributed",
+        "excerpt":"Attributed excerpt",
+        "content":"Attributed content",
+        "published":true,
+        "author_key":"antoine-quarroz",
+        "tags":[],
+        "read_time":5
+      }'::jsonb
+    );
+    reset role
+  $$,
+  'an identical CRM save succeeds without inventing a modification'
+);
+
+select ok(
+  (
+    select a.published_at = d.published_at and a.updated_at = d.updated_at
+    from public.articles a
+    join aqseo009_dates d using (id)
+  ),
+  'an identical save preserves publication and modification timestamps'
+);
+
+select pg_sleep(0.01);
+
+select lives_ok(
+  $$
+    set local role service_role;
+    select public.save_article_with_publication_audit(
+      '00000000-0000-0000-0000-000000000901',
+      (select id from public.articles where slug = 'aqseo009-attributed'),
+      null, 'owner',
+      '{
+        "title":"Attributed article",
+        "slug":"aqseo009-attributed",
+        "excerpt":"Attributed excerpt",
+        "content":"Attributed content revised",
+        "published":true,
+        "author_key":"antoine-quarroz",
+        "tags":[],
+        "read_time":5
+      }'::jsonb
+    );
+    reset role
+  $$,
+  'a real editorial modification still succeeds'
+);
+
+select ok(
+  (
+    select a.published_at = d.published_at and a.updated_at > d.updated_at
+    from public.articles a
+    join aqseo009_dates d using (id)
+  ),
+  'a real editorial modification preserves publication and advances modification'
 );
 
 select throws_ok(

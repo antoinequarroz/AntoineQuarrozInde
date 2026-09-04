@@ -140,7 +140,34 @@ begin
     new.updated_at := new.created_at;
     new.published_at := case when new.published then new.created_at else null end;
   else
-    new.updated_at := statement_timestamp();
+    if row(
+      new.organization_id,
+      new.title,
+      new.slug,
+      new.excerpt,
+      new.content,
+      new.cover_image,
+      new.published,
+      new.author_key,
+      new.tags,
+      new.read_time
+    ) is distinct from row(
+      old.organization_id,
+      old.title,
+      old.slug,
+      old.excerpt,
+      old.content,
+      old.cover_image,
+      old.published,
+      old.author_key,
+      old.tags,
+      old.read_time
+    ) then
+      new.updated_at := statement_timestamp();
+    else
+      new.updated_at := old.updated_at;
+    end if;
+
     if new.published then
       if old.published then
         new.published_at := old.published_at;

@@ -212,7 +212,10 @@ Le contrôle échoue sur une date invalide ou inventée, un auteur absent, une
 divergence visible/structurée, un contenu non SSR ou un canonical incorrect. Il
 ne suit aucune redirection, borne la taille des réponses et ne requiert aucun
 secret. La migration auteur est append-only et accepte encore les payloads de
-l'image précédente; un rollback applicatif ne supprime donc aucune donnée.
+l'image précédente; un rollback applicatif ne supprime donc aucune donnée. Une
+migration append-only complémentaire conserve aussi `updated_at` lors d'une
+sauvegarde strictement identique et ne l'avance qu'après un changement
+éditorial. Le préflight pgTAP couvre les deux comportements avant déploiement.
 
 ### Non-indexation des surfaces privées
 

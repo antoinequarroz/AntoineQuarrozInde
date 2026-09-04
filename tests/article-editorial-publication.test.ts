@@ -11,8 +11,9 @@ describe('article editorial publication', () => {
   })
 
   it('adds stable editorial dates with an append-only historical backfill', async () => {
-    const [migration, schema] = await Promise.all([
+    const [migration, freshnessMigration, schema] = await Promise.all([
       readFile('supabase/migrations/20260903232000_add_editorial_timestamps_article_audit.sql', 'utf8'),
+      readFile('supabase/migrations/20260904171054_preserve_article_timestamp_on_noop_update.sql', 'utf8'),
       readFile('supabase/schema.sql', 'utf8'),
     ])
 
@@ -24,8 +25,12 @@ describe('article editorial publication', () => {
     expect(migration).toContain('maintain_article_editorial_timestamps')
     expect(migration).toContain('maintain_project_editorial_timestamps')
     expect(migration).not.toMatch(/drop\s+(table|column)/i)
+    expect(freshnessMigration).toContain('new.updated_at := old.updated_at')
+    expect(freshnessMigration).toContain('is distinct from row')
+    expect(freshnessMigration).not.toMatch(/drop\s+(table|column)/i)
     expect(schema).toContain('published_at timestamptz')
     expect(schema).toContain('case_study_published_at timestamptz')
+    expect(schema).toContain('new.updated_at := old.updated_at')
   })
 
   it('maps the article form payload without allowing ambiguous publication values', async () => {

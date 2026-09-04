@@ -153,8 +153,10 @@ reçue d'Antoine le 4 septembre 2026 (« je valide »).
 
 ## Preuves d'implémentation
 
-- Migration créée par la CLI Supabase, rejouée sur une pile locale éphémère et
-  validée avec 78 assertions pgTAP, dont 14 dédiées à AQ-SEO-009.
+- Migrations créées par la CLI Supabase, rejouées sur une pile locale éphémère
+  et validées avec 82 assertions pgTAP, dont 18 dédiées à AQ-SEO-009. La
+  correction append-only issue de la revue conserve `updated_at` pour un
+  payload identique et l'avance toujours pour une vraie modification.
 - Lint PostgreSQL : aucune erreur de schéma; conseiller Supabase de sécurité :
   aucun problème détecté.
 - Tests ciblés : 29/29 réussis après la dernière modification du script de
