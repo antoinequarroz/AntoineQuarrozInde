@@ -2,8 +2,40 @@
 set -euo pipefail
 
 readonly base_url="${1:-https://www.antoinequarroz.ch}"
+readonly fallback_node_image="antoinequarroz-web:candidate"
 
-origin="$({ node - "$base_url" <<'NODE'
+proof_dir="$(mktemp -d)"
+readonly proof_dir
+
+cleanup() {
+  rm -rf -- "$proof_dir"
+}
+trap cleanup EXIT
+
+run_node() {
+  local argument="$1"
+
+  if command -v node >/dev/null 2>&1; then
+    node - "$argument"
+    return
+  fi
+
+  if ! command -v docker >/dev/null 2>&1 \
+    || ! docker image inspect "$fallback_node_image" >/dev/null 2>&1; then
+    echo "Node.js is required locally or in ${fallback_node_image}." >&2
+    return 69
+  fi
+
+  if [[ "$argument" == "$proof_dir" ]]; then
+    argument='/proof'
+  fi
+
+  docker run --rm -i --network none \
+    --mount "type=bind,source=${proof_dir},target=/proof,readonly" \
+    "$fallback_node_image" node - "$argument"
+}
+
+origin="$({ run_node "$base_url" <<'NODE'
 const value = process.argv[2]
 try {
   const url = new URL(value)
@@ -25,14 +57,6 @@ NODE
 }
 readonly origin
 
-proof_dir="$(mktemp -d)"
-readonly proof_dir
-
-cleanup() {
-  rm -rf -- "$proof_dir"
-}
-trap cleanup EXIT
-
 fetch_proof() {
   local path="$1"
   local name="$2"
@@ -52,7 +76,7 @@ fetch_proof() {
 fetch_proof '/api/public/articles' 'articles'
 fetch_proof '/blog' 'blog'
 
-node - "$proof_dir" <<'NODE'
+run_node "$proof_dir" <<'NODE'
 const { readFileSync } = require('node:fs')
 const { join } = require('node:path')
 
