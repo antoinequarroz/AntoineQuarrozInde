@@ -4,6 +4,7 @@ import {
   resolvePublicSocialImage,
   serializeJsonLd,
 } from '~~/shared/utils/publicSeoIdentity'
+import { resolvePublicBreadcrumbTrail } from '~~/shared/utils/publicStructuredData'
 
 const route = useRoute()
 const { t, locale } = useI18n()
@@ -29,8 +30,12 @@ onMounted(() => {
   }
 })
 
-const canonicalPath = computed(() => localePath(`/projets/${project.value?.slug ?? ''}`))
-const canonicalUrl = computed(() => `${siteUrl}${canonicalPath.value}`)
+const breadcrumbs = computed(() => resolvePublicBreadcrumbTrail(siteUrl, [
+  { name: 'Accueil', path: '/' },
+  { name: 'Cas clients', path: '/cas-clients-valais' },
+  { name: project.value!.title, path: `/projets/${encodeURIComponent(project.value!.slug)}` },
+]))
+const canonicalUrl = computed(() => breadcrumbs.value.items.at(-1)!.url)
 const pageTitle = computed(() => project.value?.seoTitle || `${project.value?.title} — Antoine Quarroz`)
 const pageDescription = computed(() => project.value?.seoDescription || project.value?.description)
 const socialImage = computed(() => resolvePublicSocialImage(siteUrl, project.value?.image))
@@ -73,14 +78,19 @@ useHead(() => ({
     type: 'application/ld+json',
     innerHTML: serializeJsonLd({
       '@context': 'https://schema.org',
-      '@type': 'CreativeWork',
-      name: project.value?.title,
-      description: pageDescription.value,
-      image: socialImage.value.url,
-      url: canonicalUrl.value,
-      creator: { '@id': `${siteUrl}/#person`, '@type': 'Person', name: PUBLIC_SEO_IDENTITY.name, url: siteUrl },
-      dateCreated: project.value?.completedAt || project.value?.createdAt,
-      keywords: project.value?.tags.join(', '),
+      '@graph': [
+        {
+          '@type': 'CreativeWork',
+          name: project.value?.title,
+          description: pageDescription.value,
+          image: socialImage.value.url,
+          url: canonicalUrl.value,
+          creator: { '@id': `${siteUrl}/#person`, '@type': 'Person', name: PUBLIC_SEO_IDENTITY.name, url: siteUrl },
+          dateCreated: project.value?.completedAt || project.value?.createdAt,
+          keywords: project.value?.tags.join(', '),
+        },
+        breadcrumbs.value.jsonLd,
+      ],
     }),
   }],
 }))
@@ -91,6 +101,7 @@ useHead(() => ({
     <section class="relative border-b border-violet-500/10 pb-16 pt-8 dark:border-white/10 md:pb-24 md:pt-14">
       <div class="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_20%_15%,rgba(124,58,237,0.17),transparent_34%),radial-gradient(circle_at_82%_24%,rgba(34,211,238,0.12),transparent_30%)]" />
       <div class="section-container">
+        <UiAppBreadcrumbs :items="breadcrumbs.items" class="mb-4" />
         <NuxtLink :to="localePath('/#portfolio')" class="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-violet-700 transition-colors hover:text-violet-500 dark:text-violet-200 dark:hover:text-white">
           <span aria-hidden="true">←</span>
           {{ t('case_study.back') }}

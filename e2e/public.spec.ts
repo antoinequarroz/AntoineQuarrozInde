@@ -87,3 +87,28 @@ test('blog hydration keeps the server-rendered article list stable', async ({ pa
   expect(hydrationMessages).toEqual([])
   expect(pageErrors).toEqual([])
 })
+
+test('service pages expose an accessible breadcrumb without JavaScript', async ({ browser }) => {
+  const paths = [
+    '/developpeur-web-valais',
+    '/creation-site-internet-valais',
+    '/refonte-site-web-valais',
+    '/application-mobile-valais',
+  ]
+  const context = await browser.newContext({ javaScriptEnabled: false })
+  const page = await context.newPage()
+
+  for (const path of paths) {
+    const response = await page.goto(path)
+    expect(response?.ok()).toBeTruthy()
+    const html = await response!.text()
+    const breadcrumb = page.getByRole('navigation', { name: 'Fil d’Ariane' })
+    await expect(breadcrumb).toBeVisible()
+    await expect(breadcrumb.getByRole('link', { name: 'Accueil' })).toHaveAttribute('href', '/')
+    await expect(breadcrumb.locator('[aria-current="page"]')).toHaveText(/Valais/)
+    expect(html).toContain('BreadcrumbList')
+    expect(html).toContain('Service')
+  }
+
+  await context.close()
+})

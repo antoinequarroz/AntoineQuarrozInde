@@ -217,6 +217,31 @@ migration append-only complémentaire conserve aussi `updated_at` lors d'une
 sauvegarde strictement identique et ne l'avance qu'après un changement
 éditorial. Le préflight pgTAP couvre les deux comportements avant déploiement.
 
+### Services et fils d'Ariane structurés
+
+Les quatre pages françaises de service exposent un objet `Service` limité aux
+informations réellement visibles et approuvées : intitulé, description,
+fournisseur Antoine Quarroz, zone « Valais » et URL canonique. Les services, les
+articles et les études de cas profondes rendent également un fil d'Ariane SSR
+accessible et un `BreadcrumbList` construit depuis exactement les mêmes
+libellés et URLs.
+
+Après une livraison, contrôler anonymement toutes les pages concernées
+découvertes dans le sitemap :
+
+```bash
+bash scripts/ops/verify-service-breadcrumbs.sh \
+  https://www.antoinequarroz.ch
+```
+
+Le contrôle exige les quatre services même lorsqu'aucun article ou cas client
+n'est publié. Il échoue si le fil visible, le JSON-LD ou le canonical divergent,
+si le fournisseur ou la zone ne correspondent plus au contenu, ou si un prix,
+une offre, une note, un avis, une disponibilité ou un résultat artificiel est
+ajouté. Il ne suit aucune redirection, borne les réponses, reste sur l'origine
+fournie et ne requiert aucun secret. Le changement est purement applicatif : en
+cas de régression, remettre l'image `previous` sans restauration de base.
+
 ### Non-indexation des surfaces privées
 
 Nuxt ajoute `X-Robots-Tag: noindex, nofollow` aux réponses de `/admin`,
