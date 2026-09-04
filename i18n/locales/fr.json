@@ -6,6 +6,11 @@
       "job_title": "Développeur web freelance",
       "knows_about": ["Développement web", "Nuxt", "Vue.js", "Applications mobiles", "CMS"],
       "areas_served": ["Valais", "Suisse", "Europe", "Monde"]
+    },
+    "social": {
+      "default_image_alt": "Portrait d’Antoine Quarroz, développeur web freelance en Valais",
+      "article_image_alt": "Image de l’article « {title} »",
+      "project_image_alt": "Aperçu du projet « {title} »"
     }
   },
   "nav": {

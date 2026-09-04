@@ -1,4 +1,10 @@
 <script setup lang="ts">
+import {
+  PUBLIC_SEO_IDENTITY,
+  resolvePublicSocialImage,
+  serializeJsonLd,
+} from '~~/shared/utils/publicSeoIdentity'
+
 const route = useRoute()
 const { t, locale } = useI18n()
 const localePath = useLocalePath()
@@ -27,6 +33,10 @@ const canonicalPath = computed(() => localePath(`/projets/${project.value?.slug 
 const canonicalUrl = computed(() => `${siteUrl}${canonicalPath.value}`)
 const pageTitle = computed(() => project.value?.seoTitle || `${project.value?.title} — Antoine Quarroz`)
 const pageDescription = computed(() => project.value?.seoDescription || project.value?.description)
+const socialImage = computed(() => resolvePublicSocialImage(siteUrl, project.value?.image))
+const socialImageAlt = computed(() => socialImage.value.isFallback
+  ? t('seo.social.default_image_alt')
+  : t('seo.social.project_image_alt', { title: project.value?.title ?? '' }))
 const completedDate = computed(() => {
   if (!project.value?.completedAt) return ''
   return new Intl.DateTimeFormat(locale.value, { month: 'long', year: 'numeric' })
@@ -45,25 +55,30 @@ useSeoMeta({
   description: pageDescription,
   ogTitle: pageTitle,
   ogDescription: pageDescription,
-  ogImage: () => project.value?.image || undefined,
+  ogImage: () => socialImage.value.url,
+  ogImageAlt: () => socialImageAlt.value,
   ogUrl: canonicalUrl,
   ogType: 'article',
   robots: 'index, follow',
   twitterCard: 'summary_large_image',
+  twitterTitle: pageTitle,
+  twitterDescription: pageDescription,
+  twitterImage: () => socialImage.value.url,
+  twitterImageAlt: () => socialImageAlt.value,
 })
 
 useHead(() => ({
   link: [{ rel: 'canonical', href: canonicalUrl.value }],
   script: [{
     type: 'application/ld+json',
-    innerHTML: JSON.stringify({
+    innerHTML: serializeJsonLd({
       '@context': 'https://schema.org',
       '@type': 'CreativeWork',
       name: project.value?.title,
       description: pageDescription.value,
-      image: project.value?.image || undefined,
+      image: socialImage.value.url,
       url: canonicalUrl.value,
-      creator: { '@type': 'Person', name: 'Antoine Quarroz', url: siteUrl },
+      creator: { '@id': `${siteUrl}/#person`, '@type': 'Person', name: PUBLIC_SEO_IDENTITY.name, url: siteUrl },
       dateCreated: project.value?.completedAt || project.value?.createdAt,
       keywords: project.value?.tags.join(', '),
     }),

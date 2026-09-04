@@ -1,13 +1,15 @@
 <script setup lang="ts">
+import {
+  PUBLIC_COUNTRY_LABELS,
+  PUBLIC_SEO_IDENTITY,
+  type PublicSeoLocale,
+} from '~~/shared/utils/publicSeoIdentity'
+
 const { t, locale } = useI18n()
 const localePath = useLocalePath()
 const year = new Date().getFullYear()
-const contactCountry = computed(() => locale.value === 'de' ? 'Schweiz' : locale.value === 'en' ? 'Switzerland' : 'Suisse')
-
-const socials = [
-  { name: 'GitHub', href: 'https://github.com/antoinequarroz', icon: 'github' },
-  { name: 'LinkedIn', href: 'https://www.linkedin.com/in/antoine-quarroz-376020187/', icon: 'linkedin' },
-]
+const contactCountry = computed(() => PUBLIC_COUNTRY_LABELS[locale.value as PublicSeoLocale] ?? PUBLIC_COUNTRY_LABELS.fr)
+const socials = PUBLIC_SEO_IDENTITY.profiles
 
 const navLinks = computed(() => [
   { key: 'about', href: `${localePath('/')}#about` },
@@ -145,22 +147,23 @@ const localSeoLinks = [
               <ul class="space-y-3">
                 <li>
                   <a
-                    href="mailto:info@antoinequarroz.ch"
+                    :href="PUBLIC_SEO_IDENTITY.emailHref"
                     class="inline-flex min-h-11 items-center text-sm text-gray-600 transition-colors hover:text-violet-600 focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:text-white/60 dark:hover:text-violet-400"
                   >
-                    info@antoinequarroz.ch
+                    {{ PUBLIC_SEO_IDENTITY.email }}
                   </a>
                 </li>
                 <li class="text-sm text-gray-600 dark:text-white/60">
-                  Rue de l’Evouette 5<br>
-                  1969 Saint-Martin VS, {{ contactCountry }}
+                  {{ PUBLIC_SEO_IDENTITY.address.streetAddress }}<br>
+                  {{ PUBLIC_SEO_IDENTITY.address.postalCode }} {{ PUBLIC_SEO_IDENTITY.address.addressLocality }},
+                  {{ PUBLIC_SEO_IDENTITY.address.addressRegion }}, {{ contactCountry }}
                 </li>
                 <li>
                   <a
-                    href="tel:+41791576450"
+                    :href="PUBLIC_SEO_IDENTITY.phoneHref"
                     class="inline-flex min-h-11 items-center text-sm text-gray-600 transition-colors hover:text-violet-600 focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:text-white/60 dark:hover:text-violet-400"
                   >
-                    +41 79 157 64 50
+                    {{ PUBLIC_SEO_IDENTITY.phone }}
                   </a>
                 </li>
               </ul>

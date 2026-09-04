@@ -168,6 +168,29 @@ La validation précède toujours la recréation : une configuration invalide n'e
 donc pas activée.
 Le rollback d'image web reste indépendant et continue d'utiliser le tag `previous`.
 
+### Identité publique et aperçus sociaux
+
+La page d'accueil reprend une identité publique unique dans son contenu visible
+et ses nœuds JSON-LD `Person` et `ProfessionalService`. Elle contient uniquement
+les coordonnées et profils déjà approuvés. Toutes les pages présentes dans le
+sitemap doivent également publier une image Open Graph/Twitter absolue avec un
+texte alternatif; une image d'article ou de projet absente ou invalide revient
+sur `/about.jpg`.
+
+Après une livraison, contrôler anonymement l'ensemble des URL indexables :
+
+```bash
+bash scripts/ops/verify-identity-social.sh \
+  https://www.antoinequarroz.ch
+```
+
+Le contrôle échoue si les coordonnées structurées divergent du footer, si une
+balise ou son alt manque, ou si une image ne répond pas avec un type MIME image.
+Pour éviter les requêtes arbitraires, il ne contacte que le domaine canonique et
+le chemin public `media` d'un hôte Supabase en HTTPS, sans suivre de redirection.
+Il ne requiert aucun secret ni accès CRM. En cas de régression, remettre en ligne
+l'image applicative `previous`; aucune migration ni donnée n'est à restaurer.
+
 ### Non-indexation des surfaces privées
 
 Nuxt ajoute `X-Robots-Tag: noindex, nofollow` aux réponses de `/admin`,
