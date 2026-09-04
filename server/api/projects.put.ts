@@ -12,7 +12,9 @@ export default defineEventHandler(async (event) => {
       p_organization_id: org.id,
       p_project_id: id,
       p_actor_user_id: user?.id ?? null,
-      p_actor_role: org.role,
+      // Kept only for the stable RPC signature. The activated database RPC
+      // derives the authoritative role from organization_memberships.
+      p_actor_role: null,
       p_payload: payload,
     })
 

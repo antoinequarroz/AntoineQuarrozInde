@@ -98,7 +98,7 @@ validated: yes
     reste intacte dans le dashboard; le rollback de cette phase ne doit pas être
     utilisé après l'activation suivante.
 
-- [ ] **4. Activer la validation et l'audit atomiques après la transition**
+- [x] **4. Activer la validation et l'audit atomiques après la transition**
   - **Objectif :** faire du RPC la source de vérité transactionnelle : seul
     `owner/admin` publie, les champs critiques sont complets, et une étude
     publique ne change jamais après sa validation.
@@ -179,10 +179,11 @@ validated: yes
 ## Matrice d'approbation proposée
 
 > État au 5 septembre 2026 : la release de transition (étapes 1, 2, 3 et 5)
-> est implémentée et sa revue autorise la livraison. L'étape 4 reste
-> volontairement non activée jusqu'à ce que cette image soit déployée, prouvée
-> en production et conservée comme rollback `previous`. L'étape 6 ne sera
-> complète qu'après la revue distincte de cette activation.
+> est déployée et prouvée en production au SHA
+> `3523993d107addab2765eaeebf39eea100149a93`, conservé comme rollback
+> compatible. L'étape 4 est implémentée et validée localement; elle reste hors
+> production jusqu'à sa revue et à la validation humaine distincte prévues à
+> l'étape 6.
 
 La validation de ce plan approuve les règles de traitement ci-dessous, pas la
 publication d'un projet réel. Chaque projet devra encore être relu et republié

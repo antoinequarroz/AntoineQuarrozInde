@@ -11,9 +11,10 @@ describe('project publication states', () => {
   })
 
   it('adds a private-by-default portfolio state without hiding existing projects', async () => {
-    const [compatibilityMigration, activationMigration, schema] = await Promise.all([
+    const [compatibilityMigration, activationMigration, caseStudyActivationMigration, schema] = await Promise.all([
       readFile('supabase/migrations/20260903193214_add_project_portfolio_visibility.sql', 'utf8'),
       readFile('supabase/migrations/20260903203219_activate_project_portfolio_visibility.sql', 'utf8'),
+      readFile('supabase/migrations/20260904230738_activate_project_case_study_approvals.sql', 'utf8'),
       readFile('supabase/schema.sql', 'utf8'),
     ])
 
@@ -30,6 +31,11 @@ describe('project publication states', () => {
     expect(schema).toContain('portfolio_visible boolean not null default false')
     expect(activationMigration).toContain('save_project_with_publication_audit')
     expect(activationMigration).toContain('for update')
+    expect(caseStudyActivationMigration).toContain('projects_case_study_publication_matches_approval')
+    expect(caseStudyActivationMigration).toContain('enforce_project_case_study_activation')
+    expect(caseStudyActivationMigration).toContain('save_project_with_publication_audit_transition')
+    expect(caseStudyActivationMigration).toContain('from public.organization_memberships')
+    expect(caseStudyActivationMigration).not.toMatch(/security\s+definer/i)
   })
 
   it.each([
@@ -110,7 +116,7 @@ describe('project publication states', () => {
       p_organization_id: 'org-test',
       p_project_id: 12,
       p_actor_user_id: 'user-test',
-      p_actor_role: 'admin',
+      p_actor_role: null,
       p_payload: payload,
     })
   })
@@ -122,6 +128,10 @@ describe('project publication states', () => {
       .toMatchObject({ statusCode: 403 })
     expect(projectPublicationRpcError({ code: 'P0002', message: 'project_not_found' }))
       .toMatchObject({ statusCode: 404 })
+    expect(projectPublicationRpcError({ code: '42501', message: 'project_actor_membership_required' }))
+      .toMatchObject({ statusCode: 403, message: expect.stringContaining('membership') })
+    expect(projectPublicationRpcError({ code: '42501', message: 'project_case_study_approver_forbidden' }))
+      .toMatchObject({ statusCode: 403, message: expect.stringContaining('owner or administrator') })
   })
 
   it('filters the anonymous API to public portfolio cards or published studies', async () => {

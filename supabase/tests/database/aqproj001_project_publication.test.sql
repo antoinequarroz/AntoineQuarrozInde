@@ -5,6 +5,20 @@ select plan(12);
 insert into public.organizations (id, name, slug)
 values ('00000000-0000-0000-0000-000000000101', 'AQ Project Publication', 'aq-project-publication');
 
+insert into auth.users (
+  id, aud, role, email, encrypted_password, raw_app_meta_data,
+  raw_user_meta_data, created_at, updated_at
+) values
+  ('00000000-0000-0000-0000-000000000110', 'authenticated', 'authenticated',
+   'aqproj001-manager@example.test', '', '{}'::jsonb, '{}'::jsonb, now(), now()),
+  ('00000000-0000-0000-0000-000000000111', 'authenticated', 'authenticated',
+   'aqproj001-admin@example.test', '', '{}'::jsonb, '{}'::jsonb, now(), now());
+
+insert into public.organization_memberships (organization_id, user_id, role)
+values
+  ('00000000-0000-0000-0000-000000000101', '00000000-0000-0000-0000-000000000110', 'manager'),
+  ('00000000-0000-0000-0000-000000000101', '00000000-0000-0000-0000-000000000111', 'admin');
+
 select ok(
   exists (
     select 1
@@ -54,7 +68,7 @@ select lives_ok(
     select public.save_project_with_publication_audit(
       '00000000-0000-0000-0000-000000000101',
       null,
-      null,
+      '00000000-0000-0000-0000-000000000110',
       'manager',
       '{
         "title":"Private project",
@@ -67,6 +81,8 @@ select lives_ok(
         "featured":false,
         "portfolio_visible":false,
         "case_study_published":false,
+        "client_disclosure_status":"pending",
+        "case_study_approval_confirmed":false,
         "deliverables":[],
         "gallery_images":[],
         "results":[]
@@ -85,7 +101,7 @@ select is(
     order by id desc
     limit 1
   ),
-  '{"after":{"portfolioVisible":false,"caseStudyPublished":false},"before":null}'::jsonb,
+  '{"after":{"portfolioVisible":false,"caseStudyApproved":false,"caseStudyPublished":false},"before":null}'::jsonb,
   'project creation and its initial private publication state are audited'
 );
 
@@ -94,7 +110,7 @@ select throws_ok(
     select public.save_project_with_publication_audit(
       '00000000-0000-0000-0000-000000000101',
       (select id from public.projects where slug = 'aqproj001-private'),
-      null,
+      '00000000-0000-0000-0000-000000000110',
       'manager',
       '{
         "title":"Private project",
@@ -107,6 +123,8 @@ select throws_ok(
         "featured":false,
         "portfolio_visible":true,
         "case_study_published":false,
+        "client_disclosure_status":"pending",
+        "case_study_approval_confirmed":false,
         "deliverables":[],
         "gallery_images":[],
         "results":[]
@@ -124,12 +142,27 @@ select is(
   'a refused manager transition leaves the portfolio state unchanged'
 );
 
+create function pg_temp.reject_project_publication_audit()
+returns trigger
+language plpgsql
+as $$
+begin
+  raise exception 'forced_project_audit_failure' using errcode = '23514';
+end;
+$$;
+
+create trigger reject_project_publication_audit
+  before insert on public.audit_logs
+  for each row
+  when (new.action = 'project.publication_changed')
+  execute function pg_temp.reject_project_publication_audit();
+
 select throws_ok(
   $$
     select public.save_project_with_publication_audit(
       '00000000-0000-0000-0000-000000000101',
       (select id from public.projects where slug = 'aqproj001-private'),
-      '00000000-0000-0000-0000-000000000999',
+      '00000000-0000-0000-0000-000000000111',
       'admin',
       '{
         "title":"Private project",
@@ -142,16 +175,20 @@ select throws_ok(
         "featured":false,
         "portfolio_visible":true,
         "case_study_published":false,
+        "client_disclosure_status":"pending",
+        "case_study_approval_confirmed":false,
         "deliverables":[],
         "gallery_images":[],
         "results":[]
       }'::jsonb
     )
   $$,
-  '23503',
-  'insert or update on table "audit_logs" violates foreign key constraint "audit_logs_actor_user_id_fkey"',
+  '23514',
+  'forced_project_audit_failure',
   'an audit failure rejects the whole publication transaction'
 );
+
+drop trigger reject_project_publication_audit on public.audit_logs;
 
 select is(
   (select portfolio_visible from public.projects where slug = 'aqproj001-private'),
@@ -164,7 +201,7 @@ select lives_ok(
     select public.save_project_with_publication_audit(
       '00000000-0000-0000-0000-000000000101',
       (select id from public.projects where slug = 'aqproj001-private'),
-      null,
+      '00000000-0000-0000-0000-000000000111',
       'admin',
       '{
         "title":"Private project",
@@ -177,6 +214,8 @@ select lives_ok(
         "featured":false,
         "portfolio_visible":true,
         "case_study_published":false,
+        "client_disclosure_status":"pending",
+        "case_study_approval_confirmed":false,
         "deliverables":[],
         "gallery_images":[],
         "results":[]
@@ -201,7 +240,7 @@ select is(
     order by id desc
     limit 1
   ),
-  '{"after":{"portfolioVisible":true,"caseStudyPublished":false},"before":{"portfolioVisible":false,"caseStudyPublished":false}}'::jsonb,
+  '{"after":{"portfolioVisible":true,"caseStudyApproved":false,"caseStudyPublished":false},"before":{"portfolioVisible":false,"caseStudyApproved":false,"caseStudyPublished":false}}'::jsonb,
   'the successful transition stores its exact previous and next states'
 );
 
