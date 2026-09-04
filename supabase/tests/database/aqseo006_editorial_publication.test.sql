@@ -7,6 +7,21 @@ values
   ('00000000-0000-0000-0000-000000000601', 'AQ SEO Editorial A', 'aq-seo-editorial-a'),
   ('00000000-0000-0000-0000-000000000602', 'AQ SEO Editorial B', 'aq-seo-editorial-b');
 
+insert into auth.users (
+  id, aud, role, email, encrypted_password, raw_app_meta_data,
+  raw_user_meta_data, created_at, updated_at
+) values (
+  '00000000-0000-0000-0000-000000000610', 'authenticated', 'authenticated',
+  'aqseo006-owner@example.test', '', '{}'::jsonb, '{}'::jsonb, now(), now()
+);
+
+insert into public.organization_memberships (organization_id, user_id, role)
+values (
+  '00000000-0000-0000-0000-000000000601',
+  '00000000-0000-0000-0000-000000000610',
+  'owner'
+);
+
 select ok(
   exists (
     select 1
@@ -566,9 +581,36 @@ select ok(
   'a private historical project keeps created_at as its stable initial date'
 );
 
-update public.projects
-set case_study_published = true
-where slug = 'aqseo006-project';
+select public.save_project_with_publication_audit(
+  '00000000-0000-0000-0000-000000000601',
+  (select id from public.projects where slug = 'aqseo006-project'),
+  '00000000-0000-0000-0000-000000000610',
+  null,
+  '{
+    "title":"Timestamp project",
+    "slug":"aqseo006-project",
+    "category":"web",
+    "tags":[],
+    "description":"Project description",
+    "image":"https://example.com/project.jpg",
+    "live_url":"https://example.com/project",
+    "featured":false,
+    "portfolio_visible":false,
+    "case_study_published":true,
+    "client_disclosure_status":"anonymous",
+    "project_role":"Conception et développement",
+    "challenge":"Contexte vérifié",
+    "project_scope":"Périmètre vérifié",
+    "key_decisions":"Décisions vérifiées",
+    "outcome":"Résultat qualitatif vérifié",
+    "outcome_approved":true,
+    "related_service_paths":["/developpeur-web-valais"],
+    "case_study_approval_confirmed":true,
+    "deliverables":[],
+    "gallery_images":[],
+    "results":[]
+  }'::jsonb
+);
 
 select ok(
   (

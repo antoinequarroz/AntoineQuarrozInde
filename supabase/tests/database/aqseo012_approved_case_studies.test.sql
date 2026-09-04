@@ -60,10 +60,21 @@ values
 insert into auth.users (
   id, aud, role, email, encrypted_password, raw_app_meta_data,
   raw_user_meta_data, created_at, updated_at
-) values (
+) values
+(
   '00000000-0000-0000-0000-000000001210', 'authenticated', 'authenticated',
-  'aqseo012@example.test', '', '{}'::jsonb, '{}'::jsonb, now(), now()
+  'aqseo012-owner@example.test', '', '{}'::jsonb, '{}'::jsonb, now(), now()
+),
+(
+  '00000000-0000-0000-0000-000000001211', 'authenticated', 'authenticated',
+  'aqseo012-manager@example.test', '', '{}'::jsonb, '{}'::jsonb, now(), now()
 );
+
+insert into public.organization_memberships (organization_id, user_id, role)
+values
+  ('00000000-0000-0000-0000-000000001201', '00000000-0000-0000-0000-000000001210', 'owner'),
+  ('00000000-0000-0000-0000-000000001202', '00000000-0000-0000-0000-000000001210', 'owner'),
+  ('00000000-0000-0000-0000-000000001201', '00000000-0000-0000-0000-000000001211', 'manager');
 
 select is(
   (
@@ -119,7 +130,7 @@ select ok(
       and p.proname = 'save_project_with_publication_audit'
       and not p.prosecdef
   ),
-  'the transition save function remains security invoker'
+  'the activated save function remains security invoker'
 );
 
 select ok(
@@ -138,42 +149,32 @@ select ok(
     'public.save_project_with_publication_audit(uuid,bigint,uuid,text,jsonb)',
     'EXECUTE'
   ),
-  'only the service role can execute the transition save function'
+  'only the service role can execute the activated save function'
 );
 
 select lives_ok(
   $$
     select public.save_project_with_publication_audit(
-      '00000000-0000-0000-0000-000000001201', null, null, 'manager',
-      '{
-        "title":"Legacy draft",
-        "slug":"aqseo012-legacy",
-        "category":"web",
-        "tags":[],
-        "description":"Legacy description",
-        "portfolio_visible":false,
-        "case_study_published":false,
-        "featured":false,
-        "deliverables":[],
-        "gallery_images":[],
-        "results":[]
-      }'::jsonb
+      '00000000-0000-0000-0000-000000001201', null,
+      '00000000-0000-0000-0000-000000001211', 'owner',
+      pg_temp.aqseo012_payload(false, false)
+        || '{"slug":"aqseo012-legacy","portfolio_visible":false}'::jsonb
     )
   $$,
-  'the previous application contract can still create a private draft'
+  'a manager can still create a private draft through the activated contract'
 );
 
 select ok(
   (select case_study_approved_at is null and case_study_approved_by is null
    from public.projects where slug = 'aqseo012-legacy'),
-  'a legacy write never receives implicit approval'
+  'a private draft never receives implicit approval'
 );
 
 select throws_ok(
   $$
     select public.save_project_with_publication_audit(
       '00000000-0000-0000-0000-000000001201', null,
-      '00000000-0000-0000-0000-000000001210', 'manager',
+      '00000000-0000-0000-0000-000000001211', 'owner',
       pg_temp.aqseo012_payload(true)
     )
   $$,
@@ -343,7 +344,8 @@ select throws_ok(
 select lives_ok(
   $$
     select public.save_project_with_publication_audit(
-      '00000000-0000-0000-0000-000000001201', null, null, 'manager',
+      '00000000-0000-0000-0000-000000001201', null,
+      '00000000-0000-0000-0000-000000001211', 'owner',
       pg_temp.aqseo012_payload(false, false)
         || '{"slug":"aqseo012-rollback","portfolio_visible":false}'::jsonb
     )
@@ -361,9 +363,9 @@ select throws_ok(
         || '{"slug":"aqseo012-rollback"}'::jsonb
     )
   $$,
-  '23503',
-  'insert or update on table "projects" violates foreign key constraint "projects_case_study_approved_by_fkey"',
-  'an invalid approval actor rolls back the whole publication transaction'
+  '42501',
+  'project_actor_membership_required',
+  'an actor outside the organization cannot start an approval transaction'
 );
 
 select ok(

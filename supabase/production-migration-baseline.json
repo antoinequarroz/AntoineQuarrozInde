@@ -30,5 +30,6 @@
   "20260903232000_add_editorial_timestamps_article_audit.sql",
   "20260904163123_add_article_author_attribution.sql",
   "20260904171054_preserve_article_timestamp_on_noop_update.sql",
-  "20260904205717_add_project_case_study_approvals.sql"
+  "20260904205717_add_project_case_study_approvals.sql",
+  "20260904230738_activate_project_case_study_approvals.sql"
 ]

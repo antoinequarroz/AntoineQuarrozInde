@@ -41,6 +41,18 @@ export function assertCanChangeProjectPublication(
 export function projectPublicationRpcError(error: { code?: string | null, message?: string | null }) {
   const message = String(error.message || 'Unable to save project')
 
+  if (message.includes('project_actor_membership_required')) {
+    return createError({
+      statusCode: 403,
+      message: 'A current organization membership is required to save this project',
+    })
+  }
+  if (message.includes('project_case_study_approver_forbidden')) {
+    return createError({
+      statusCode: 403,
+      message: 'Only a current owner or administrator can approve a case study',
+    })
+  }
   if (error.code === '42501' || message.includes('project_publication_forbidden')) {
     return createError({
       statusCode: 403,
