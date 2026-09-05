@@ -68,6 +68,20 @@ describe('AQ-058 release pipeline', () => {
     expect(release.indexOf('trap - ERR', proofIndex)).toBeGreaterThan(proofIndex)
   })
 
+  it('runs Node-based VPS proofs through the candidate image when the host has no runtime', async () => {
+    const [release, nodeShim] = await Promise.all([
+      readFile(releaseScript, 'utf8'),
+      readFile('scripts/ops/node-proof-bin/node', 'utf8'),
+    ])
+
+    expect(release).toContain('if ! command -v node >/dev/null 2>&1')
+    expect(release).toContain('export PATH="$PWD/scripts/ops/node-proof-bin:$PATH"')
+    expect(nodeShim).toContain('antoinequarroz-web:candidate')
+    expect(nodeShim).toContain('docker run --rm -i')
+    expect(release.indexOf('docker compose build web')).toBeLessThan(release.indexOf('export PATH='))
+    expect(release.indexOf('export PATH=')).toBeLessThan(release.indexOf('bash scripts/ops/verify-seo-release.sh'))
+  })
+
   it('requires a dedicated key and strict host verification', async () => {
     const workflow = await readFile(workflowPath, 'utf8')
     const gate = await readFile(sshGateScript, 'utf8')

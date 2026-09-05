@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+readonly fallback_node_image="${AQ_NODE_PROOF_IMAGE:-antoinequarroz-web:candidate}"
+
+if [[ "${1:-}" != '-' ]]; then
+  echo "The production Node shim only accepts scripts on standard input." >&2
+  exit 64
+fi
+
+if ! command -v docker >/dev/null 2>&1 \
+  || ! docker image inspect "$fallback_node_image" >/dev/null 2>&1; then
+  echo "The containerized Node runtime ${fallback_node_image} is unavailable." >&2
+  exit 69
+fi
+
+docker_mounts=()
+for argument in "$@"; do
+  if [[ "$argument" == /tmp/* && -e "$argument" ]]; then
+    canonical_path="$(realpath "$argument")"
+    if [[ "$canonical_path" == /tmp/* ]]; then
+      docker_mounts+=(--mount "type=bind,src=${canonical_path},dst=${canonical_path},readonly")
+    fi
+  fi
+done
+
+exec docker run --rm -i "${docker_mounts[@]}" "$fallback_node_image" node "$@"
