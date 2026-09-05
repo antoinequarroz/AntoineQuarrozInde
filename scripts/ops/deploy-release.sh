@@ -77,6 +77,14 @@ docker compose build web
 docker compose up -d --no-build --remove-orphans
 wait_for_health
 reload_caddy_config
+
+# The VPS deliberately keeps the application runtime inside Docker. Make the
+# candidate image's Node binary available to the post-deploy proof scripts
+# without installing a second runtime on the host.
+if ! command -v node >/dev/null 2>&1; then
+  export PATH="$PWD/scripts/ops/node-proof-bin:$PATH"
+fi
+
 bash scripts/ops/verify-seo-release.sh "$APP_VERSION" https://www.antoinequarroz.ch https://antoinequarroz.ch
 trap - ERR
 
