@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { classifyAcquisition } from '~~/shared/utils/acquisitionChannel'
+
 const { t } = useI18n()
 const { track } = useMarketing()
 const { trackPlausible } = usePlausibleEvent()
@@ -10,6 +12,10 @@ const isLocalhost = isClient
   : false
 const shouldUseTurnstile = !!turnstileSiteKey && !isLocalhost
 const turnstileReady = ref(false)
+const turnstileShouldLoad = ref(false)
+const sectionRef = ref<HTMLElement | null>(null)
+const selectedService = ref('')
+const errorMessage = ref('')
 
 const form = reactive({
   name: '',
@@ -29,11 +35,40 @@ type FormStatus = 'idle' | 'sending' | 'success' | 'error'
 const status = ref<FormStatus>('idle')
 const attribution = ref(captureLeadAttribution())
 
-useHead({
-  script: shouldUseTurnstile
+useHead(() => ({
+  script: shouldUseTurnstile && turnstileShouldLoad.value
     ? [{ src: 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit', async: true, defer: true }]
     : [],
-})
+}))
+
+let turnstileObserver: IntersectionObserver | null = null
+let turnstilePollTimer: ReturnType<typeof setTimeout> | null = null
+let turnstilePollAttempts = 0
+
+function beginTurnstileLoad() {
+  if (!shouldUseTurnstile || turnstileShouldLoad.value) return
+  turnstileShouldLoad.value = true
+  turnstileReady.value = true
+
+  const waitForTurnstile = () => {
+    if ((window as any).turnstile) {
+      renderTurnstile()
+      return
+    }
+    turnstilePollAttempts += 1
+    if (turnstilePollAttempts < 80) turnstilePollTimer = setTimeout(waitForTurnstile, 150)
+  }
+  waitForTurnstile()
+}
+
+function handleServiceSelected(event: Event) {
+  const detail = (event as CustomEvent<{ title?: string }>).detail
+  const title = detail?.title?.trim()
+  if (!title) return
+
+  selectedService.value = title
+  if (!form.subject.trim()) form.subject = `${t('contact.form.project_prefix')} ${title}`
+}
 
 const renderTurnstile = () => {
   if (!shouldUseTurnstile || !turnstileContainer.value) return
@@ -55,29 +90,38 @@ const renderTurnstile = () => {
 }
 
 onMounted(() => {
+  window.addEventListener('aq:service-selected', handleServiceSelected)
   if (!shouldUseTurnstile) return
-  turnstileReady.value = true
-  const waitForTurnstile = () => {
-    if ((window as any).turnstile) {
-      renderTurnstile()
-      return
-    }
-    window.setTimeout(waitForTurnstile, 150)
-  }
-  waitForTurnstile()
+
+  turnstileObserver = new IntersectionObserver(([entry]) => {
+    if (!entry?.isIntersecting) return
+    beginTurnstileLoad()
+    turnstileObserver?.disconnect()
+  }, { rootMargin: '900px 0px' })
+
+  if (sectionRef.value) turnstileObserver.observe(sectionRef.value)
+  else beginTurnstileLoad()
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('aq:service-selected', handleServiceSelected)
+  turnstileObserver?.disconnect()
+  if (turnstilePollTimer) clearTimeout(turnstilePollTimer)
 })
 
 async function handleSubmit() {
   if (status.value === 'sending') return
   if (shouldUseTurnstile && !turnstileToken.value) {
+    errorMessage.value = t('contact.form.captcha_error')
     status.value = 'error'
     setTimeout(() => { status.value = 'idle' }, 5000)
     return
   }
+  errorMessage.value = ''
   status.value = 'sending'
 
   try {
-    await $fetch('/api/contact', {
+    const contactResult = await $fetch<{ acquisitionChannel?: string }>('/api/contact', {
       method: 'POST',
       body: {
         name: form.name,
@@ -93,8 +137,10 @@ async function handleSubmit() {
     status.value = 'success'
     track('contact_form_submit_success')
     trackPlausible('Contact Sent', {
-      source: attribution.value.utmSource || attribution.value.referrerHost || 'direct',
-      medium: attribution.value.utmMedium || 'none',
+      channel: contactResult.acquisitionChannel || classifyAcquisition({
+        utmSource: attribution.value.utmSource,
+        referrerHost: attribution.value.referrerHost,
+      }),
     })
     form.name = ''
     form.email = ''
@@ -110,6 +156,7 @@ async function handleSubmit() {
     }
   }
   catch {
+    errorMessage.value = t('contact.form.error')
     status.value = 'error'
     track('contact_form_submit_error')
   }
@@ -144,7 +191,7 @@ const contactInfo = computed(() => [
 </script>
 
 <template>
-  <section id="contact" class="section-padding section-surface">
+  <section id="contact" ref="sectionRef" class="section-padding section-surface">
     <div class="section-background">
       <div class="section-grid" />
     </div>
@@ -189,6 +236,10 @@ const contactInfo = computed(() => [
           class="lg:col-span-3"
         >
           <form id="contact-form" class="card-glass scroll-mt-24 p-4 max-[390px]:p-3.5 md:p-8 space-y-4 md:space-y-5" @submit.prevent="handleSubmit">
+            <div v-if="selectedService" role="status" class="flex items-center gap-2 rounded-xl bg-violet-500/10 px-3 py-2.5 text-sm text-violet-800 dark:text-violet-100">
+              <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+              <span><strong>{{ t('contact.form.selected_service') }}</strong> {{ selectedService }}</span>
+            </div>
             <div class="hidden" aria-hidden="true">
               <label for="contact-website">Website</label>
               <input
@@ -207,6 +258,7 @@ const contactInfo = computed(() => [
                 <input
                   id="contact-name"
                   v-model="form.name"
+                  name="name"
                   type="text"
                   required
                   autocomplete="name"
@@ -221,6 +273,7 @@ const contactInfo = computed(() => [
                 <input
                   id="contact-email"
                   v-model="form.email"
+                  name="email"
                   type="email"
                   required
                   autocomplete="email"
@@ -237,6 +290,7 @@ const contactInfo = computed(() => [
                 <input
                   id="contact-subject"
                   v-model="form.subject"
+                  name="subject"
                   type="text"
                   autocomplete="off"
                   class="input-field"
@@ -248,7 +302,7 @@ const contactInfo = computed(() => [
                 <label for="contact-budget" class="block text-xs font-semibold text-gray-500 dark:text-white/50 uppercase tracking-wider mb-1.5">
                   {{ t('contact.form.budget') }}
                 </label>
-                <select id="contact-budget" v-model="form.budget" class="input-field" autocomplete="off">
+                <select id="contact-budget" v-model="form.budget" name="budget" class="input-field" autocomplete="off">
                   <option value="">{{ t('contact.form.budget_select') }}</option>
                   <option value="<2k">{{ t('contact.form.budget_under_2k') }}</option>
                   <option value="2k-5k">{{ t('contact.form.budget_2_5k') }}</option>
@@ -260,7 +314,7 @@ const contactInfo = computed(() => [
                 <label for="contact-timeline" class="block text-xs font-semibold text-gray-500 dark:text-white/50 uppercase tracking-wider mb-1.5">
                   {{ t('contact.form.timeline') }}
                 </label>
-                <select id="contact-timeline" v-model="form.timeline" class="input-field" autocomplete="off">
+                <select id="contact-timeline" v-model="form.timeline" name="timeline" class="input-field" autocomplete="off">
                   <option value="">{{ t('contact.form.timeline_select') }}</option>
                   <option value="urgent">{{ t('contact.form.timeline_urgent') }}</option>
                   <option value="1mois">{{ t('contact.form.timeline_month') }}</option>
@@ -282,6 +336,7 @@ const contactInfo = computed(() => [
               <textarea
                 id="contact-message"
                 v-model="form.message"
+                name="message"
                 rows="5"
                 required
                 class="input-field resize-none"
@@ -301,7 +356,7 @@ const contactInfo = computed(() => [
                 <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                {{ t('contact.form.error') }}
+                {{ errorMessage || t('contact.form.error') }}
               </div>
             </Transition>
 
@@ -334,7 +389,7 @@ const contactInfo = computed(() => [
 <style scoped>
 .fade-enter-active,
 .fade-leave-active {
-  transition: all 0.3s ease;
+  transition: opacity 0.3s ease, transform 0.3s ease;
 }
 .fade-enter-from,
 .fade-leave-to {

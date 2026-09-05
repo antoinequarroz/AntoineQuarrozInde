@@ -34,6 +34,10 @@ describe('acquisition revenue attribution', () => {
       { source: 'instagram', leads: 2, activeClients: 1, acceptedQuotes: 2, acceptedQuoteCents: 15_000, collectedRevenueCents: 8_000, leadToQuoteRate: 50 },
     ])
     expect(result.commercialTotals).toEqual({ leads: 3, activeClients: 2, acceptedQuotes: 3, acceptedQuoteCents: 35_000, collectedRevenueCents: 28_000 })
+    expect(result.channelAttribution).toEqual([
+      { channel: 'campaign', leads: 2, activeClients: 1, acceptedQuotes: 2, acceptedQuoteCents: 15_000, collectedRevenueCents: 8_000, leadToQuoteRate: 50 },
+      { channel: 'direct', leads: 1, activeClients: 1, acceptedQuotes: 1, acceptedQuoteCents: 20_000, collectedRevenueCents: 20_000, leadToQuoteRate: 100 },
+    ])
   })
 
   it('normalizes direct traffic and ignores orphaned commercial records', () => {

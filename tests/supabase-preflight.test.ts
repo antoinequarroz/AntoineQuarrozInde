@@ -36,7 +36,7 @@ describe('AQ-059 Supabase preflight', () => {
 
     expect(workflow).toContain('\n  database:')
     expect(workflow.indexOf('\n  database:')).toBeLessThan(workflow.indexOf('\n  deploy:'))
-    expect(workflow).toContain('needs: [quality, database]')
+    expect(workflow).toContain('needs: [quality, database, seo-quality]')
     expect(workflow).toContain('run: npm run test:db')
     expect(workflow).not.toMatch(/supabase (?:db push|link|migration repair)/)
   })

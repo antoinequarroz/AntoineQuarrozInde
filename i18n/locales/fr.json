@@ -23,7 +23,8 @@
     "open_menu": "Ouvrir le menu",
     "close_menu": "Fermer le menu",
     "mobile_menu": "Menu principal",
-    "change_language": "Changer de langue"
+    "change_language": "Changer de langue",
+    "skip_to_content": "Aller au contenu"
   },
   "hero": {
     "badge": "Disponible pour de nouveaux mandats",
@@ -67,9 +68,14 @@
     "badge": "Services",
     "title": "Ce que je\npeux faire pour vous.",
     "subtitle": "Des solutions digitales complètes, de la conception à la mise en ligne.",
+    "choice_help": "Choisissez selon le résultat que vous voulez obtenir — je vous aide ensuite à préciser le périmètre.",
+    "best_for": "Idéal pour :",
+    "choose": "Choisir ce service",
     "vitrine": {
       "title": "Sites Vitrine",
       "description": "Des sites web modernes, rapides et optimisés SEO qui reflètent parfaitement votre image de marque et convertissent vos visiteurs.",
+      "intent": "Être visible",
+      "best_for": "les indépendants, PME et organisations qui veulent présenter leur offre et générer des contacts.",
       "features": [
         "Design sur mesure",
         "100% responsive",
@@ -80,6 +86,8 @@
     "mobile": {
       "title": "Applications Mobiles",
       "description": "Des applications iOS et Android natives ou cross-platform, intuitives et performantes qui offrent une expérience utilisateur exceptionnelle.",
+      "intent": "Créer un produit",
+      "best_for": "les services utilisés régulièrement, les parcours métier ou les idées d’application à valider.",
       "features": [
         "iOS & Android",
         "UI/UX soigné",
@@ -90,6 +98,8 @@
     "cms": {
       "title": "Solutions CMS",
       "description": "Des systèmes de gestion de contenu sur mesure, pensés pour vous permettre de gérer votre business en toute autonomie.",
+      "intent": "Gagner en autonomie",
+      "best_for": "les équipes qui publient souvent ou gèrent des contenus, des clients et des opérations.",
       "features": [
         "Interface intuitive",
         "Sur mesure",
@@ -115,7 +125,11 @@
     "live_available": "Projet accessible en ligne",
     "source_available": "Code source accessible",
     "read_case_study": "Découvrir l’étude de cas",
-    "selection_count": "{count} projet(s) dans cette sélection. Faites défiler pour les faire tourner avant de passer à la suite.",
+    "selection_count_one": "{count} projet dans cette sélection. Faites défiler pour l’explorer.",
+    "selection_count_many": "{count} projets dans cette sélection. Faites défiler pour les explorer.",
+    "browse_hint": "Faites glisser pour explorer",
+    "project_position": "Projet {current} sur {total}",
+    "mobile_carousel_label": "Projets du portfolio",
     "case_study": "Case study",
     "context": "Contexte",
     "impact": "Impact",
@@ -201,7 +215,10 @@
       "send": "Envoyer le message",
       "sending": "Envoi en cours...",
       "success": "Message envoyé ! Je vous répondrai dans les 24h.",
-      "error": "Erreur lors de l'envoi. Réessayez ou contactez-moi directement."
+      "error": "Erreur lors de l'envoi. Réessayez ou contactez-moi directement.",
+      "project_prefix": "Projet :",
+      "selected_service": "Service sélectionné :",
+      "captcha_error": "La vérification anti-spam n’est pas encore prête. Patientez un instant ou contactez-moi par email."
     },
     "info": {
       "email": "contact-email",

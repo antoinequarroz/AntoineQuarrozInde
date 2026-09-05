@@ -60,6 +60,10 @@ const tools = [
                   v-if="!imageError"
                   :src="photoSrc"
                   alt="Antoine Quarroz"
+                  width="1170"
+                  height="1423"
+                  loading="lazy"
+                  decoding="async"
                   class="h-full w-full object-cover object-top"
                   @error="imageError = true"
                 />

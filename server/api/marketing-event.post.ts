@@ -11,8 +11,7 @@ export default defineEventHandler(async (event) => {
   else if (++rate.count > 60) throw createError({ statusCode: 429, message: 'Too many events' })
   const eventName = String(body.event || '')
   if (!isAllowedMarketingEvent(eventName)) throw createError({ statusCode: 400, message: 'Unknown event' })
-  const metadata = body.metadata && typeof body.metadata === 'object' ? body.metadata : {}
-  if (JSON.stringify(metadata).length > 2_000) throw createError({ statusCode: 400, message: 'Metadata too large' })
+  const metadata = marketingMetadataPayload(body.metadata)
 
   const payload = {
     organization_id: org?.id ?? null,

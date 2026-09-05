@@ -1,5 +1,7 @@
 type HeroVariant = 'A' | 'B'
 
+import { classifyAcquisition } from '~~/shared/utils/acquisitionChannel'
+
 export function useMarketing() {
   const variant = useState<HeroVariant>('hero-variant', () => 'A')
 
@@ -17,13 +19,20 @@ export function useMarketing() {
 
   async function track(event: string, metadata: Record<string, any> = {}) {
     try {
+      const attribution = captureLeadAttribution()
       await $fetch('/api/marketing-event', {
         method: 'POST',
         body: {
           event,
           variant: variant.value,
           path: import.meta.client ? window.location.pathname : '/',
-          metadata,
+          metadata: {
+            ...metadata,
+            acquisitionChannel: classifyAcquisition({
+              utmSource: attribution.utmSource,
+              referrerHost: attribution.referrerHost,
+            }),
+          },
         },
       })
     } catch {}

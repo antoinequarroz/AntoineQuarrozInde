@@ -63,6 +63,7 @@ export default defineEventHandler(async (event) => {
 
   const config = useRuntimeConfig()
   const cleanAttribution = leadAttributionPayload(attribution)
+  const acquisitionChannel = leadAcquisitionChannel(attribution)
 
   if (config.turnstileSecretKey) {
     if (!turnstileToken || typeof turnstileToken !== 'string') {
@@ -88,7 +89,7 @@ export default defineEventHandler(async (event) => {
   // If no API key configured, return success anyway (dev mode)
   if (!config.resendApiKey) {
     console.warn('[contact] RESEND_API_KEY not set — email not actually sent')
-    return { success: true }
+    return { success: true, acquisitionChannel }
   }
 
   const resend = new Resend(config.resendApiKey)
@@ -187,5 +188,5 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 500, message: 'Erreur lors de l\'envoi' })
   }
 
-  return { success: true, clientId: linkedClientId }
+  return { success: true, clientId: linkedClientId, acquisitionChannel }
 })

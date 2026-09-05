@@ -55,9 +55,9 @@ export async function resolveOrganizationContext(
   }
 
   const requestedOrgId = String(getHeader(event, 'x-organization-id') || '').trim()
-  const supabase = getSupabaseAdmin()
 
   if (user) {
+    const supabase = getSupabaseAdmin()
     let query = supabase
       .from('organization_memberships')
       .select('organization_id, role, organizations(id, name, slug)')
@@ -97,6 +97,7 @@ export async function resolveOrganizationContext(
   const config = useRuntimeConfig()
   const publicOrgSlug = config.public.defaultOrganizationSlug || ''
   if (!publicOrgSlug) return null
+  const supabase = getSupabaseAdmin()
 
   const { data: org, error: orgError } = await supabase
     .from('organizations')

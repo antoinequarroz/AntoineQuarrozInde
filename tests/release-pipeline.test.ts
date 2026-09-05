@@ -52,7 +52,7 @@ describe('AQ-058 release pipeline', () => {
     const workflow = await readFile(workflowPath, 'utf8')
 
     expect(workflow).toContain("if: github.event_name == 'push' && github.ref == 'refs/heads/main'")
-    expect(workflow).toContain('needs: [quality, database]')
+    expect(workflow).toContain('needs: [quality, database, seo-quality]')
     expect(workflow).toContain('needs: [quality, deploy]')
     expect(workflow).toContain("github.event_name != 'push' || needs.deploy.result == 'success'")
     expect(workflow.indexOf('\n  deploy:')).toBeLessThan(workflow.indexOf('\n  e2e:'))
@@ -60,7 +60,7 @@ describe('AQ-058 release pipeline', () => {
 
   it('keeps the blog SSR proof inside the automatic rollback transaction', async () => {
     const release = await readFile(releaseScript, 'utf8')
-    const proof = 'bash scripts/ops/verify-blog-ssr.sh https://www.antoinequarroz.ch'
+    const proof = 'bash scripts/ops/verify-seo-release.sh "$APP_VERSION"'
     const proofIndex = release.indexOf(proof)
 
     expect(release).toContain(proof)

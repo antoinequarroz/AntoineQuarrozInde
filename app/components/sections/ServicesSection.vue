@@ -8,7 +8,7 @@ type ServiceKey = 'vitrine' | 'mobile' | 'cms'
 const serviceFeatures: Record<string, Record<ServiceKey, string[]>> = {
   fr: {
     vitrine: ['Design sur mesure', '100% responsive', 'Optimisation SEO', 'Performances maximales'],
-    mobile: ['iOS & Android', 'UI/UX soigné', 'Push notifications', 'Hors-ligne ready'],
+    mobile: ['iOS & Android', 'UI/UX soigné', 'Push notifications', 'Disponible hors ligne'],
     cms: ['Interface intuitive', 'Sur mesure', 'Multi-utilisateurs', 'Évolutif'],
   },
   en: {
@@ -28,27 +28,25 @@ const features = computed(() => {
   return serviceFeatures[lang] ?? serviceFeatures.fr!
 })
 
-const services = computed(() => [
-  { key: 'vitrine', icon: 'monitor', gradient: 'from-violet-500 to-purple-600', features: features.value.vitrine ?? [] },
-  { key: 'cms', icon: 'layers', gradient: 'from-indigo-500 to-violet-600', features: features.value.cms ?? [] },
-  { key: 'mobile', icon: 'smartphone', gradient: 'from-purple-500 to-fuchsia-500', features: features.value.mobile ?? [] },
+const services = computed<Array<{ key: ServiceKey, icon: string, gradient: string, features: string[] }>>(() => [
+  { key: 'vitrine', icon: 'monitor', gradient: 'from-violet-500 to-fuchsia-500', features: features.value.vitrine ?? [] },
+  { key: 'cms', icon: 'layers', gradient: 'from-violet-600 to-cyan-500', features: features.value.cms ?? [] },
+  { key: 'mobile', icon: 'smartphone', gradient: 'from-fuchsia-500 to-violet-500', features: features.value.mobile ?? [] },
 ])
-
-const offerMeta = computed(() => {
-  if (locale.value === 'en') {
-    return { left: 'Starter', center: 'Most Requested', right: 'Scale', cta: 'Start project' }
-  }
-  if (locale.value === 'de') {
-    return { left: 'Start', center: 'Meist gefragt', right: 'Scale', cta: 'Projekt starten' }
-  }
-  return { left: 'Starter', center: 'Le plus demandé', right: 'Scale', cta: 'Démarrer le projet' }
-})
 
 const localZones = computed(() => {
   if (locale.value === 'en') return 'Valais, Sion, Sierre, Martigny, Val d’Herens, Val d’Anniviers'
   if (locale.value === 'de') return 'Wallis, Sitten, Siders, Martigny, Val d’Herens, Val d’Anniviers'
   return 'Valais, Sion, Sierre, Martigny, Val d’Herens, Val d’Anniviers'
 })
+
+function selectService(service: { key: ServiceKey }) {
+  const title = t(`services.${service.key}.title`)
+  track('services_cta_click', { service: service.key })
+  window.dispatchEvent(new CustomEvent('aq:service-selected', {
+    detail: { key: service.key, title },
+  }))
+}
 
 </script>
 
@@ -71,6 +69,9 @@ const localZones = computed(() => {
           <span class="block section-heading-gradient">{{ t('services.title').split('\n')[1] }}</span>
         </h2>
         <p class="section-subtitle mx-auto text-center">{{ t('services.subtitle') }}</p>
+        <p class="mt-3 max-w-xl text-center text-sm leading-relaxed text-gray-600 dark:text-white/65">
+          {{ t('services.choice_help') }}
+        </p>
         <p class="mt-3 text-xs text-gray-500 dark:text-white/55 text-center">
           {{ t('services.areas') }}: {{ localZones }}
         </p>
@@ -92,29 +93,36 @@ const localZones = computed(() => {
             v-for="(service, index) in services"
             :key="service.key"
             v-motion
-            :initial="{ opacity: 0, y: 48, rotate: index === 0 ? -2 : (index === 2 ? 2 : 0) }"
-            :visible="{ opacity: 1, y: index === 1 ? -14 : 0, rotate: index === 0 ? -2 : (index === 2 ? 2 : 0), transition: { delay: index * 110, duration: 760 } }"
-            class="service-card relative group flex min-h-[20.5rem] max-[430px]:min-h-[19.25rem] md:min-h-[31rem] flex-col rounded-3xl border backdrop-blur-md transition-transform duration-500 hover:scale-[1.025]"
-            :class="index === 1
-              ? 'z-20 scale-[1.03] border-violet-500/25 bg-white/90 shadow-2xl shadow-violet-500/15 dark:border-violet-300/35 dark:bg-gradient-to-b dark:from-[#2a1f57] dark:via-[#1d173b] dark:to-[#1a2448] dark:shadow-[0_25px_80px_rgba(76,29,149,0.42)]'
-              : 'z-10 border-violet-500/15 bg-white/78 shadow-xl shadow-violet-500/10 dark:border-white/10 dark:bg-white/[0.045] dark:shadow-black/25'"
+            data-service-motion
+            :initial="{ opacity: 0, y: 36 }"
+            :visible="{ opacity: 1, y: index === 1 ? -14 : 0, transition: { delay: index * 90, duration: 520 } }"
+            class="relative"
           >
-            <div class="absolute -top-3 left-6">
-              <span
-                class="px-3 py-1 rounded-full text-xs font-bold tracking-[0.14em] uppercase border"
-                :class="index === 1
-                  ? 'bg-violet-600 text-white border-violet-400/40'
-                  : 'bg-white text-violet-700 border-violet-300/50 dark:bg-[#191d35] dark:text-violet-200 dark:border-violet-300/25'"
-              >
-                {{ index === 0 ? offerMeta.left : index === 1 ? offerMeta.center : offerMeta.right }}
-              </span>
-            </div>
+            <article
+              data-service-card
+              class="service-card group relative flex min-h-[20.5rem] max-[430px]:min-h-[19.25rem] md:min-h-[31rem] flex-col rounded-3xl border backdrop-blur-md transition-[transform,box-shadow,border-color] duration-500 ease-out md:origin-bottom"
+              :class="index === 1
+                ? 'z-20 md:scale-[1.03] md:hover:scale-[1.045] border-violet-500/25 bg-white/90 shadow-2xl shadow-violet-500/15 dark:border-violet-300/35 dark:bg-gradient-to-b dark:from-[#2a1f57] dark:via-[#1d173b] dark:to-[#1a2448] dark:shadow-[0_25px_80px_rgba(76,29,149,0.42)]'
+                : index === 0
+                  ? 'z-10 md:translate-y-4 md:-rotate-[1.75deg] md:hover:-translate-y-1 md:hover:-rotate-[0.35deg] md:hover:scale-[1.015] border-violet-500/15 bg-white/78 shadow-xl shadow-violet-500/10 dark:border-white/10 dark:bg-white/[0.045] dark:shadow-black/25'
+                  : 'z-10 md:translate-y-4 md:rotate-[1.75deg] md:hover:-translate-y-1 md:hover:rotate-[0.35deg] md:hover:scale-[1.015] border-violet-500/15 bg-white/78 shadow-xl shadow-violet-500/10 dark:border-white/10 dark:bg-white/[0.045] dark:shadow-black/25'"
+            >
+              <div class="absolute -top-3 left-6">
+                <span
+                  class="px-3 py-1 rounded-full text-xs font-bold tracking-[0.14em] uppercase border"
+                  :class="index === 1
+                    ? 'bg-violet-600 text-white border-violet-400/40'
+                    : 'bg-white text-violet-700 border-violet-300/50 dark:bg-[#191d35] dark:text-violet-200 dark:border-violet-300/25'"
+                >
+                  {{ t(`services.${service.key}.intent`) }}
+                </span>
+              </div>
 
-            <div class="flex h-full flex-col p-4.5 max-[390px]:p-4 md:p-8 md:pt-9">
-              <div
-                class="w-14 h-14 rounded-2xl flex items-center justify-center mb-6 shadow-glow-sm transition-shadow duration-500"
-                :class="`bg-gradient-to-br ${service.gradient} ${index === 1 ? 'group-hover:shadow-glow' : ''}`"
-              >
+              <div class="flex h-full flex-col p-4.5 max-[390px]:p-4 md:p-8 md:pt-9">
+                <div
+                  class="w-14 h-14 rounded-2xl flex items-center justify-center mb-6 shadow-glow-sm transition-shadow duration-300"
+                  :class="`bg-gradient-to-br ${service.gradient} ${index === 1 ? 'group-hover:shadow-glow' : ''}`"
+                >
                 <svg v-if="service.icon === 'monitor'" class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
                   <line x1="8" y1="21" x2="16" y2="21" />
@@ -138,6 +146,11 @@ const localZones = computed(() => {
                 {{ t(`services.${service.key}.description`) }}
               </p>
 
+              <p class="mb-5 rounded-xl bg-violet-500/[0.07] px-3 py-2.5 text-xs leading-relaxed text-violet-900 dark:bg-white/[0.055] dark:text-violet-100">
+                <span class="font-bold">{{ t('services.best_for') }}</span>
+                {{ t(`services.${service.key}.best_for`) }}
+              </p>
+
               <ul class="mb-5 space-y-1.5">
                 <li
                   v-for="(feature, featureIndex) in service.features"
@@ -153,50 +166,23 @@ const localZones = computed(() => {
               </ul>
 
               <a
-                :href="`${localePath('/')}#contact`"
-                class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all group/link"
+                :href="`${localePath('/')}#contact-form`"
+                class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-[background-color,border-color,color,transform] active:scale-[0.96] group/link"
                 :class="index === 1
                   ? 'bg-violet-600 text-white hover:bg-violet-500'
                   : 'border border-violet-500/25 text-violet-700 hover:bg-violet-500/10 dark:border-violet-300/30 dark:text-violet-200 dark:hover:bg-violet-500/15'"
-                @click="track('services_cta_click', { service: service.key })"
+                @click="selectService(service)"
               >
-                {{ offerMeta.cta }}
+                {{ t('services.choose') }}
                 <svg class="w-4 h-4 transition-transform group-hover/link:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
                 </svg>
-              </a>
-            </div>
+                </a>
+              </div>
+            </article>
           </div>
         </div>
       </div>
     </div>
   </section>
 </template>
-
-<style scoped>
-.service-card {
-  animation: serviceFloat 7s ease-in-out infinite;
-}
-
-.service-card:nth-child(2) {
-  animation-delay: -1.4s;
-}
-
-.service-card:nth-child(3) {
-  animation-delay: -2.8s;
-}
-
-@keyframes serviceFloat {
-  0%,
-  100% {
-    translate: 0 0;
-  }
-  50% {
-    translate: 0 -8px;
-  }
-}
-
-.service-card:hover {
-  animation-play-state: paused;
-}
-</style>

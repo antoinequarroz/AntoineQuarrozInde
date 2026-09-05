@@ -4,6 +4,7 @@ definePageMeta({ layout: 'admin', middleware: 'admin' })
 type TrendPoint = { date: string, visitors: number, pageviews: number }
 type SourcePoint = { source: string, visitors: number, visits: number }
 type AttributionPoint = { source: string, leads: number, activeClients: number, acceptedQuotes: number, acceptedQuoteCents: number, collectedRevenueCents: number, leadToQuoteRate: number }
+type ChannelPoint = Omit<AttributionPoint, 'source'> & { channel: string }
 
 const auth = useAuthStore()
 const data = ref<any>(null)
@@ -81,6 +82,18 @@ const attributionRows = computed(() => {
     revenueWidth: row.collectedRevenueCents ? Math.max(3, row.collectedRevenueCents / maxRevenue * 100) : 0,
   }))
 })
+
+const channelLabels: Record<string, string> = {
+  organic_search: 'Recherche organique',
+  generative_ai: 'Moteurs IA générative',
+  direct: 'Accès direct',
+  campaign: 'Campagnes identifiées',
+  unknown_referral: 'Référents inconnus',
+}
+const channelRows = computed(() => ((data.value?.channelAttribution || []) as ChannelPoint[]).map(row => ({
+  ...row,
+  label: channelLabels[row.channel] || 'Non attribué',
+})))
 
 const hasTrendData = computed(() => Boolean(plausible.value?.trend?.length >= 2 && (plausible.value?.totals?.visitors || plausible.value?.totals?.pageviews)))
 const hasExperimentData = computed(() => Boolean(data.value?.variants?.some((variant: any) => variant.views > 0)))
@@ -308,6 +321,21 @@ onMounted(loadAnalytics)
         <div v-else class="m-5 grid min-h-40 place-items-center rounded-lg border border-dashed border-gray-200 p-6 text-center dark:border-white/[0.1]">
           <div><p class="font-medium">Aucune attribution commerciale</p><p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Les sources apparaîtront dès qu’un contact sera enregistré dans le CRM.</p></div>
         </div>
+      </section>
+
+      <section class="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.08] dark:bg-[#111118]" aria-labelledby="channel-attribution-title">
+        <div class="border-b border-gray-100 px-5 py-4 dark:border-white/[0.06]">
+          <h2 id="channel-attribution-title" class="font-display text-lg font-semibold">Contacts par canal d’acquisition</h2>
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Recherche classique, moteurs génératifs, accès direct, campagnes et référents non classés restent distincts.</p>
+        </div>
+        <div v-if="channelRows.length" class="overflow-x-auto p-5">
+          <table class="w-full min-w-[560px] text-left text-sm">
+            <caption class="sr-only">Résultats commerciaux agrégés par canal d’acquisition</caption>
+            <thead class="border-b border-gray-200 text-xs text-gray-500 dark:border-white/[0.1] dark:text-gray-400"><tr><th class="pb-3 font-medium">Canal</th><th class="pb-3 text-right font-medium">Contacts</th><th class="pb-3 text-right font-medium">Devis acceptés</th><th class="pb-3 text-right font-medium">Encaissé</th></tr></thead>
+            <tbody><tr v-for="row in channelRows" :key="row.channel" class="border-b border-gray-100 last:border-0 dark:border-white/[0.06]"><th scope="row" class="py-3 font-semibold">{{ row.label }}</th><td class="py-3 text-right">{{ row.leads }}</td><td class="py-3 text-right">{{ row.acceptedQuotes }}</td><td class="py-3 text-right font-semibold">{{ formatMoney(row.collectedRevenueCents) }}</td></tr></tbody>
+          </table>
+        </div>
+        <p v-else class="m-5 rounded-lg border border-dashed border-gray-200 p-5 text-center text-sm text-gray-500 dark:border-white/[0.1] dark:text-gray-400">Aucun canal attribué pour le moment.</p>
       </section>
 
       <section class="grid gap-5 lg:grid-cols-2">

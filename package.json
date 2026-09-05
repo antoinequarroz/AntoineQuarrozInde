@@ -17,6 +17,8 @@
     "test:e2e:install": "playwright install chromium",
     "typecheck": "nuxi typecheck",
     "quality:budgets": "node scripts/check-bundle-budget.mjs",
+    "quality:seo:lab": "node scripts/seo/measure-lab.mjs",
+    "quality:seo:field": "node scripts/seo/collect-field-data.mjs",
     "postinstall": "nuxt prepare",
     "typst:qr:demo": "typst compile --root . typst/examples/swiss-qr-bill-demo.typ typst/examples/swiss-qr-bill-demo.pdf",
     "typst:billing:demo": "typst compile --root . --input data=../examples/billing-document-demo.json typst/templates/billing-document.typ typst/examples/billing-document-demo.pdf"
