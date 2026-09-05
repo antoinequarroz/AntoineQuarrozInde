@@ -12,10 +12,23 @@ validate_caddy_config() {
 }
 
 reload_caddy_config() {
+  local attempt
+
   # Git may replace the bind-mounted Caddyfile inode during checkout. Recreate
   # the container so it mounts the release file before asking Caddy to reload.
   docker compose up -d --no-deps --force-recreate caddy
-  docker compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile
+
+  # Container startup and the admin API do not become ready atomically. Retry
+  # the reload briefly instead of rolling back an otherwise healthy release.
+  for ((attempt = 1; attempt <= 15; attempt += 1)); do
+    if docker compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile; then
+      return 0
+    fi
+    sleep 1
+  done
+
+  echo "Caddy did not accept its configuration after recreation." >&2
+  return 1
 }
 
 wait_for_health() {
