@@ -31,7 +31,7 @@ const localSeoLinks = [
 </script>
 
 <template>
-  <footer data-site-footer class="relative -mt-px overflow-hidden bg-[#f7f8ff] pb-6 pt-10 dark:bg-[#06060e] md:pb-8 md:pt-16">
+  <footer data-site-footer class="relative -mt-px overflow-hidden bg-surface-light-secondary pb-6 pt-10 dark:bg-surface-dark-secondary md:pb-8 md:pt-16">
     <!-- The shared grid and restrained glow visually continue the contact section. -->
     <div class="pointer-events-none absolute inset-0 select-none">
       <div data-footer-transition class="absolute inset-x-0 top-0 h-44 bg-[radial-gradient(circle_at_1px_1px,rgba(20,24,38,0.08)_1px,transparent_0)] bg-[size:34px_34px] opacity-35 [mask-image:linear-gradient(to_bottom,black,transparent)] dark:bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.06)_1px,transparent_0)] dark:opacity-20" />
@@ -53,7 +53,7 @@ const localSeoLinks = [
 
           <!-- ─── Brand + tagline + socials ─── -->
           <div>
-            <NuxtLink :to="localePath('/')" class="flex w-fit items-center gap-2.5">
+            <NuxtLink :to="localePath('/')" class="flex min-h-11 w-fit items-center gap-2.5">
               <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-fuchsia-500 shadow-glow-sm">
                 <span class="font-display text-sm font-bold text-white">AQ</span>
               </div>
@@ -73,7 +73,7 @@ const localSeoLinks = [
                 target="_blank"
                 rel="noopener noreferrer"
                 :aria-label="social.name"
-                class="flex h-9 w-9 items-center justify-center rounded-xl border border-violet-500/20 bg-violet-50 text-violet-600 transition-all duration-200 hover:border-violet-500/40 hover:bg-violet-100 hover:shadow-sm dark:border-white/10 dark:bg-white/[0.04] dark:text-white/60 dark:hover:border-violet-400/30 dark:hover:text-violet-400"
+                class="flex h-11 w-11 items-center justify-center rounded-xl border border-violet-500/20 bg-violet-50 text-violet-600 transition-[background-color,border-color,color,box-shadow] duration-200 hover:border-violet-500/40 hover:bg-violet-100 hover:shadow-sm dark:border-white/10 dark:bg-white/[0.04] dark:text-white/60 dark:hover:border-violet-400/30 dark:hover:text-violet-400"
               >
                 <!-- GitHub -->
                 <svg v-if="social.icon === 'github'" class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
@@ -99,7 +99,7 @@ const localSeoLinks = [
                 <li v-for="link in navLinks" :key="link.key">
                   <a
                     :href="link.href"
-                    class="text-sm text-gray-600 transition-colors hover:text-violet-600 dark:text-white/60 dark:hover:text-violet-400"
+                    class="inline-flex min-h-11 min-w-11 items-center text-sm text-gray-600 transition-colors hover:text-violet-600 dark:text-white/60 dark:hover:text-violet-400"
                   >
                     {{ t(`nav.${link.key}`) }}
                   </a>
@@ -132,7 +132,7 @@ const localSeoLinks = [
                 <li v-for="item in localSeoLinks" :key="item.href">
                   <NuxtLink
                     :to="item.href"
-                    class="text-sm text-gray-600 transition-colors hover:text-violet-600 dark:text-white/60 dark:hover:text-violet-400"
+                    class="inline-flex min-h-11 min-w-11 items-center text-sm text-gray-600 transition-colors hover:text-violet-600 dark:text-white/60 dark:hover:text-violet-400"
                   >
                     {{ item.label }}
                   </NuxtLink>
@@ -180,8 +180,8 @@ const localSeoLinks = [
           <span>© {{ year }} Antoine Quarroz · {{ t('footer.rights') }}</span>
           <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
             <NuxtLink :to="localePath('/mentions-legales')" class="inline-flex min-h-11 items-center transition-colors hover:text-violet-600 focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:hover:text-violet-300">{{ t('footer.legal') }}</NuxtLink>
-            <NuxtLink :to="localePath('/confidentialite')" class="inline-flex min-h-11 items-center transition-colors hover:text-violet-600 focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:hover:text-violet-300">{{ t('footer.privacy') }}</NuxtLink>
-            <NuxtLink :to="localePath('/conditions-utilisation')" class="inline-flex min-h-11 items-center transition-colors hover:text-violet-600 focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:hover:text-violet-300">{{ t('footer.terms') }}</NuxtLink>
+            <NuxtLink :to="localePath('/confidentialite')" class="inline-flex min-h-11 min-w-11 items-center justify-center transition-colors hover:text-violet-600 focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:hover:text-violet-300">{{ t('footer.privacy') }}</NuxtLink>
+            <NuxtLink :to="localePath('/conditions-utilisation')" class="inline-flex min-h-11 min-w-11 items-center justify-center transition-colors hover:text-violet-600 focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:hover:text-violet-300">{{ t('footer.terms') }}</NuxtLink>
             <span>{{ t('footer.made_with') }}</span>
           </div>
         </div>

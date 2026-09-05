@@ -1,4 +1,4 @@
-export type SplineFallbackReason = 'motion' | 'network' | 'unsupported'
+export type SplineFallbackReason = 'mobile' | 'motion' | 'network' | 'unsupported'
 
 export type SplineLoadDecision =
   | { load: true }
@@ -6,11 +6,13 @@ export type SplineLoadDecision =
 
 export function decideSplineLoading(input: {
   reducedMotion: boolean
+  smallViewport?: boolean
   saveData?: boolean
   effectiveType?: string
   webglSupported: boolean
 }): SplineLoadDecision {
   if (input.reducedMotion) return { load: false, reason: 'motion' }
+  if (input.smallViewport) return { load: false, reason: 'mobile' }
   if (input.saveData || /(^|-)2g$/i.test(input.effectiveType || '')) {
     return { load: false, reason: 'network' }
   }

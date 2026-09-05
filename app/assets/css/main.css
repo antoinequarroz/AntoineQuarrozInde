@@ -6,6 +6,8 @@
   :root {
     --color-brand: 124 58 237;
     --color-brand-light: 167 139 250;
+    --color-surface: 255 255 255;
+    --color-cyan-light: 165 243 252;
     --scroll-behavior: smooth;
   }
 
@@ -60,7 +62,7 @@
   }
 
   .section-surface {
-    @apply relative overflow-hidden bg-[#f7f8ff] dark:bg-[#06060e];
+    @apply relative overflow-hidden bg-surface-light-secondary dark:bg-surface-dark-secondary;
   }
 
   .section-background {
@@ -184,6 +186,10 @@
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
+  }
+
+  :where(a, button, input, select, textarea, summary, [role="button"]) {
+    transition-duration: 120ms !important;
   }
 }
 

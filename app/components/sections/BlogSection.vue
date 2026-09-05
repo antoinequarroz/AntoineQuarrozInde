@@ -75,7 +75,7 @@ const { dialogRef, handleDialogKeydown } = useAccessibleDialog(
           <span class="block section-heading-gradient">{{ t('blog.title').split('\n')[1] }}</span>
         </h2>
         <p class="section-subtitle mx-auto max-[430px]:max-w-[32ch]">{{ t('blog.subtitle') }}</p>
-        <NuxtLink to="/blog" class="btn-secondary mt-5 text-xs md:text-sm px-4 md:px-5 py-2 md:py-2.5">
+        <NuxtLink to="/blog" class="btn-secondary mt-5 min-h-11 px-4 py-2 text-xs md:px-5 md:py-2.5 md:text-sm">
           {{ t('blog.view_all') }}
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />

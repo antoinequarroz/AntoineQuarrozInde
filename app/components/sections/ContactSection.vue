@@ -377,7 +377,7 @@ const contactInfo = computed(() => [
             </button>
             <p class="text-xs text-gray-500 dark:text-white/50 text-center">
               {{ t('contact.quick_reply_at') }}
-              <a :href="`mailto:${EMAIL}`" class="text-violet-600 dark:text-violet-300 underline" @click="track('contact_email_click')">{{ EMAIL }}</a>
+              <a :href="`mailto:${EMAIL}`" class="inline-flex min-h-11 items-center text-violet-600 underline dark:text-violet-300" @click="track('contact_email_click')">{{ EMAIL }}</a>
             </p>
           </form>
         </div>

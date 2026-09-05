@@ -122,7 +122,12 @@ onMounted(() => track('hero_view'))
 
 <style scoped>
 .modern-gradient {
-    background: linear-gradient(90deg, #d8b4fe 0%, #ffffff 45%, #a5f3fc 100%);
+    background: linear-gradient(
+        90deg,
+        rgb(var(--color-brand-light)) 0%,
+        rgb(var(--color-surface)) 45%,
+        rgb(var(--color-cyan-light)) 100%
+    );
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;

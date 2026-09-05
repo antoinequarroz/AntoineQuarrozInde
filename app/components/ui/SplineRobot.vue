@@ -13,9 +13,11 @@ const props = withDefaults(defineProps<Props>(), {
   opacityClass: 'opacity-100',
 })
 
+const VIEWER_SCRIPT_URL = 'https://unpkg.com/@splinetool/viewer@1.12.98/build/spline-viewer.js'
+
 const viewerReady = ref(false)
 const motionReduced = ref(false)
-type SplineState = 'fallback-ssr' | 'loading' | 'ready' | 'fallback-motion' | 'fallback-network' | 'fallback-unsupported' | 'fallback-error'
+type SplineState = 'fallback-ssr' | 'loading' | 'ready' | 'fallback-mobile' | 'fallback-motion' | 'fallback-network' | 'fallback-unsupported' | 'fallback-error'
 const state = ref<SplineState>('fallback-ssr')
 let frameId: number | null = null
 let idleId: number | null = null
@@ -45,7 +47,47 @@ function startSceneTimer() {
 
 async function loadViewer() {
   try {
-    await import('@splinetool/viewer')
+    if (!customElements.get('spline-viewer')) {
+      await new Promise<void>((resolve, reject) => {
+        const existing = document.querySelector<HTMLScriptElement>('script[data-aq-spline-viewer]')
+        const script = existing ?? document.createElement('script')
+        let settled = false
+
+        const finish = () => {
+          if (settled) return
+          customElements.whenDefined('spline-viewer').then(() => {
+            if (settled) return
+            settled = true
+            clearTimeout(timeout)
+            resolve()
+          }, fail)
+        }
+        const fail = () => {
+          if (settled) return
+          settled = true
+          clearTimeout(timeout)
+          reject(new Error('Spline viewer failed to load'))
+        }
+        const timeout = window.setTimeout(fail, 8_000)
+
+        script.addEventListener('load', finish, { once: true })
+        script.addEventListener('error', fail, { once: true })
+
+        if (existing) {
+          if (existing.dataset.aqSplineViewer === 'ready') finish()
+          return
+        }
+
+        script.type = 'module'
+        script.src = VIEWER_SCRIPT_URL
+        script.crossOrigin = 'anonymous'
+        script.dataset.aqSplineViewer = 'loading'
+        script.addEventListener('load', () => {
+          script.dataset.aqSplineViewer = 'ready'
+        }, { once: true })
+        document.head.appendChild(script)
+      })
+    }
     if (!disposed && state.value === 'loading') {
       viewerReady.value = true
       startSceneTimer()
@@ -62,6 +104,7 @@ function scheduleViewer() {
   }).connection
   const decision = decideSplineLoading({
     reducedMotion: motionReduced.value,
+    smallViewport: isSmallViewport.value,
     saveData: connection?.saveData,
     effectiveType: connection?.effectiveType,
     webglSupported: supportsWebGL(),
@@ -71,19 +114,18 @@ function scheduleViewer() {
     return
   }
   state.value = 'loading'
-  const activationDelay = isSmallViewport.value ? 1_200 : 0
   fallbackTimer = setTimeout(() => {
     frameId = window.requestAnimationFrame(() => {
       const activate = () => { void loadViewer() }
 
       if ('requestIdleCallback' in window) {
-        idleId = window.requestIdleCallback(activate, { timeout: isSmallViewport.value ? 1_800 : 650 })
+        idleId = window.requestIdleCallback(activate, { timeout: 650 })
       }
       else {
         activate()
       }
     })
-  }, activationDelay)
+  }, 0)
 }
 
 function handleMotionChange(event: MediaQueryListEvent) {
@@ -112,7 +154,18 @@ onBeforeUnmount(() => {
 <template>
   <ClientOnly>
     <div :class="['spline-shell overflow-hidden bg-black', props.className, props.opacityClass]" :data-spline-state="state" aria-hidden="true">
-      <div class="spline-static absolute inset-0 bg-black" />
+      <div class="spline-static absolute inset-0 bg-black">
+        <img
+          v-if="isSmallViewport"
+          src="/hero-robot-mobile.png"
+          alt=""
+          width="390"
+          height="354"
+          decoding="async"
+          fetchpriority="high"
+          class="h-full w-full object-cover object-center"
+        >
+      </div>
       <spline-viewer
         v-if="viewerReady && (state === 'loading' || state === 'ready')"
         :url="props.sceneUrl"

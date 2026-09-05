@@ -26,6 +26,39 @@ test('hero remains usable without JavaScript and with reduced motion', async ({ 
   await expect(primary).toBeFocused()
   await expect(primary).toBeInViewport()
   await reducedContext.close()
+
+  const mobileContext = await browser.newContext({ viewport: { width: 390, height: 844 } })
+  const mobilePage = await mobileContext.newPage()
+  await mobilePage.goto('/')
+  await expect(mobilePage.locator('[data-spline-state="fallback-mobile"]')).toBeVisible()
+  await expect(mobilePage.locator('img[src="/hero-robot-mobile.png"]')).toBeVisible()
+  const splineRuntimeLoaded = await mobilePage.evaluate(() => performance
+    .getEntriesByType('resource')
+    .some(entry => entry.name.includes('@splinetool/viewer')))
+  expect(splineRuntimeLoaded).toBeFalsy()
+  await mobileContext.close()
+})
+
+test('mobile landing keeps every visible interactive target touch friendly', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/')
+
+  const smallTargets = await page.locator('a, button, input, select, textarea').evaluateAll(elements => (
+    elements
+      .map((element) => {
+        const rect = element.getBoundingClientRect()
+        const style = getComputedStyle(element)
+        return {
+          label: (element.getAttribute('aria-label') || element.textContent || '').trim().slice(0, 60),
+          width: rect.width,
+          height: rect.height,
+          visible: style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0,
+        }
+      })
+      .filter(target => target.visible && (target.width < 44 || target.height < 44))
+  ))
+
+  expect(smallTargets).toEqual([])
 })
 
 test('analytics failure never blocks the primary contact path', async ({ page }) => {
