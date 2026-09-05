@@ -23,7 +23,8 @@
     "open_menu": "Open menu",
     "close_menu": "Close menu",
     "mobile_menu": "Main menu",
-    "change_language": "Change language"
+    "change_language": "Change language",
+    "skip_to_content": "Skip to content"
   },
   "hero": {
     "badge": "Available for new projects",
@@ -67,9 +68,14 @@
     "badge": "Services",
     "title": "What I can\ndo for you.",
     "subtitle": "Complete digital solutions, from design to deployment.",
+    "choice_help": "Choose the outcome you need — I’ll help you define the right scope next.",
+    "best_for": "Best for:",
+    "choose": "Choose this service",
     "vitrine": {
       "title": "Showcase Websites",
       "description": "Modern, fast, SEO-optimized websites that perfectly reflect your brand and convert your visitors.",
+      "intent": "Build visibility",
+      "best_for": "independent professionals, SMEs and organizations that need to present their offer and generate enquiries.",
       "features": [
         "Custom design",
         "100% responsive",
@@ -80,6 +86,8 @@
     "mobile": {
       "title": "Mobile Applications",
       "description": "Native or cross-platform iOS and Android apps, intuitive and performant, delivering an exceptional user experience.",
+      "intent": "Create a product",
+      "best_for": "frequently used services, business workflows or app ideas that need validation.",
       "features": [
         "iOS & Android",
         "Polished UI/UX",
@@ -90,6 +98,8 @@
     "cms": {
       "title": "CMS Solutions",
       "description": "Custom content management systems designed to let you manage your business with complete autonomy.",
+      "intent": "Gain autonomy",
+      "best_for": "teams that publish often or manage content, clients and day-to-day operations.",
       "features": [
         "Intuitive interface",
         "Fully custom",
@@ -115,7 +125,11 @@
     "live_available": "Live project available",
     "source_available": "Source code available",
     "read_case_study": "Read the case study",
-    "selection_count": "{count} project(s) in this selection. Scroll to rotate them before moving to the next section.",
+    "selection_count_one": "{count} project in this selection. Scroll to explore it.",
+    "selection_count_many": "{count} projects in this selection. Scroll to explore them.",
+    "browse_hint": "Drag to explore",
+    "project_position": "Project {current} of {total}",
+    "mobile_carousel_label": "Portfolio projects",
     "case_study": "Case study",
     "context": "Context",
     "impact": "Impact",
@@ -201,7 +215,10 @@
       "send": "Send message",
       "sending": "Sending...",
       "success": "Message sent! I'll reply within 24 hours.",
-      "error": "Error sending message. Please try again or contact me directly."
+      "error": "Error sending message. Please try again or contact me directly.",
+      "project_prefix": "Project:",
+      "selected_service": "Selected service:",
+      "captcha_error": "The anti-spam check is not ready yet. Please wait a moment or contact me by email."
     },
     "info": {
       "email": "contact-email",

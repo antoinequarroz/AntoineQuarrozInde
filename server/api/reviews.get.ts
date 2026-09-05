@@ -1,11 +1,12 @@
 export default defineEventHandler(async (event) => {
   const org = await resolveOrganizationContext(event)
+  if (!org?.id) return []
   const supabase = getSupabaseAdmin()
-  let query = supabase
+  const query = supabase
     .from('reviews')
     .select('*')
+    .eq('organization_id', org.id)
     .order('created_at', { ascending: false })
-  if (org?.id) query = query.eq('organization_id', org.id)
   const { data, error } = await query
 
   if (error) {

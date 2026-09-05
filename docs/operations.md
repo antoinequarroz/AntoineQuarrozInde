@@ -1,5 +1,42 @@
 # Exploitation et reprise après incident
 
+## Porte SEO et baseline de performance
+
+`AQ-SEO-014` définit les pages critiques et les budgets dans
+`scripts/seo/release-quality.config.mjs`. Chaque pull request et push construit
+le candidat puis conserve une baseline mobile reproductible : viewport fixe,
+mouvement réduit et scène Spline neutralisée pour mesurer le contenu critique
+indépendamment du réseau 3D. Le rapport JSON distingue les erreurs de mesure des
+dépassements et n'invente jamais un INP laboratoire.
+
+Après déploiement, la même baseline est mesurée sur le domaine public. La preuve
+`scripts/ops/verify-seo-release.sh` regroupe les contrôles HTTP, canonicals,
+robots, `hreflang`, sitemap, HTML SSR et données structurées existants. Elle est
+exécutée sur le VPS avant de désarmer le rollback : tout échec remet l'image
+`previous` en service.
+
+Les données terrain LCP, INP et CLS au 75e percentile sont interrogées via
+Chrome UX Report lorsque `CRUX_API_KEY` est disponible dans l'environnement
+GitHub Production. Le rapport utilise les états `available`,
+`insufficient-data`, `not-configured` ou `error`; une absence n'est jamais
+affichée comme zéro. Les budgets sont LCP ≤ 2,5 s, INP ≤ 200 ms et CLS ≤ 0,1.
+Les artefacts `seo-lab-*` et `seo-quality-*` sont conservés 30 jours sans clé ni
+session utilisateur.
+
+Contrôle local sur un serveur Portly existant :
+
+```bash
+npm run quality:seo:lab -- http://127.0.0.1:3104
+```
+
+Une dérogation à une régression critique doit être documentée dans le document
+de release concerné avec le contrôle, le SHA, le motif, l'auteur et une date
+d'expiration. Copier `docs/releases/seo-quality-waiver.example.json` vers
+`docs/releases/seo-quality-waiver.json`; la dérogation est refusée si elle est
+incomplète, expirée ou valable plus de quatorze jours. Elle n'est jamais
+implicite et ne modifie pas les seuils globaux. Supprimer le fichier dès que la
+correction est livrée.
+
 ## Déploiement et retour arrière
 
 `scripts/deploy-vps.ps1` met à jour le dépôt puis délègue la mise en ligne à

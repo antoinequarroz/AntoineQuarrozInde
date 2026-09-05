@@ -31,12 +31,13 @@ const localSeoLinks = [
 </script>
 
 <template>
-  <footer class="relative overflow-hidden pb-6 pt-10 md:pb-8 md:pt-16">
-    <!-- Glow blobs -->
+  <footer data-site-footer class="relative -mt-px overflow-hidden bg-[#f7f8ff] pb-6 pt-10 dark:bg-[#06060e] md:pb-8 md:pt-16">
+    <!-- The shared grid and restrained glow visually continue the contact section. -->
     <div class="pointer-events-none absolute inset-0 select-none">
-      <div class="absolute -top-32 left-1/4 h-80 w-80 rounded-full bg-violet-600/20 blur-3xl" />
-      <div class="absolute -bottom-24 right-1/4 h-80 w-80 rounded-full bg-fuchsia-600/15 blur-3xl" />
-      <div class="absolute bottom-0 left-1/2 h-48 w-48 -translate-x-1/2 rounded-full bg-cyan-500/10 blur-3xl" />
+      <div data-footer-transition class="absolute inset-x-0 top-0 h-44 bg-[radial-gradient(circle_at_1px_1px,rgba(20,24,38,0.08)_1px,transparent_0)] bg-[size:34px_34px] opacity-35 [mask-image:linear-gradient(to_bottom,black,transparent)] dark:bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.06)_1px,transparent_0)] dark:opacity-20" />
+      <div class="absolute -top-20 left-1/4 h-72 w-72 rounded-full bg-violet-600/10 blur-3xl dark:bg-violet-600/18" />
+      <div class="absolute -bottom-24 right-1/4 h-80 w-80 rounded-full bg-fuchsia-600/10 blur-3xl dark:bg-fuchsia-600/15" />
+      <div class="absolute bottom-0 left-1/2 h-48 w-48 -translate-x-1/2 rounded-full bg-cyan-500/[0.07] blur-3xl dark:bg-cyan-500/10" />
     </div>
 
     <div class="section-container relative">

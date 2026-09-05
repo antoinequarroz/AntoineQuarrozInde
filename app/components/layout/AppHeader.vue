@@ -3,8 +3,10 @@ const { t, locale } = useI18n()
 const localePath = useLocalePath()
 const scrollY = useWindowScroll().y
 const isScrolled = computed(() => scrollY.value > 70)
+const activeSection = ref('hero')
 
 const isMenuOpen = ref(false)
+let activeSectionFrame = 0
 
 const menuLabels = computed(() => ({
   open: t('nav.open_menu'),
@@ -25,6 +27,25 @@ function closeMenu() {
   isMenuOpen.value = false
 }
 
+function updateActiveSection() {
+  activeSectionFrame = 0
+  const marker = window.innerHeight * 0.3
+  let current = navLinks.value[0]?.key ?? 'hero'
+  for (const link of navLinks.value) {
+    const section = document.getElementById(link.key)
+    if (!section) continue
+    const rect = section.getBoundingClientRect()
+    if (rect.top <= marker) current = link.key
+    if (rect.top <= marker && rect.bottom > marker) break
+  }
+  activeSection.value = current
+}
+
+function scheduleActiveSectionUpdate() {
+  if (activeSectionFrame) return
+  activeSectionFrame = window.requestAnimationFrame(updateActiveSection)
+}
+
 const { dialogRef, handleDialogKeydown } = useAccessibleDialog(
   isMenuOpen,
   closeMenu,
@@ -35,8 +56,17 @@ watch(isMenuOpen, (open) => {
   document.body.style.overflow = open ? 'hidden' : ''
 })
 
+onMounted(() => {
+  scheduleActiveSectionUpdate()
+  window.addEventListener('scroll', scheduleActiveSectionUpdate, { passive: true })
+  window.addEventListener('resize', scheduleActiveSectionUpdate, { passive: true })
+})
+
 onBeforeUnmount(() => {
   document.body.style.overflow = ''
+  window.removeEventListener('scroll', scheduleActiveSectionUpdate)
+  window.removeEventListener('resize', scheduleActiveSectionUpdate)
+  if (activeSectionFrame) window.cancelAnimationFrame(activeSectionFrame)
 })
 </script>
 
@@ -54,7 +84,7 @@ onBeforeUnmount(() => {
       >
         <!-- Left -->
         <div class="flex items-center gap-2.5">
-          <NuxtLink :to="localePath('/')" :aria-label="`${t('nav.home')} — Antoine Quarroz`" class="h-11 w-11 rounded-xl bg-gradient-brand flex items-center justify-center shadow-glow-sm">
+          <NuxtLink :to="localePath('/')" :aria-label="`AQ — ${t('nav.home')}, Antoine Quarroz`" class="h-11 w-11 rounded-xl bg-gradient-brand flex items-center justify-center shadow-glow-sm">
             <span class="font-display font-bold text-white text-xs">AQ</span>
           </NuxtLink>
           <span
@@ -71,8 +101,16 @@ onBeforeUnmount(() => {
             v-for="link in navLinks"
             :key="link.href"
             :href="link.href"
-            class="text-sm font-medium transition-colors"
-            :class="isScrolled ? 'text-gray-600 dark:text-gray-300 hover:text-violet-600 dark:hover:text-violet-400' : 'text-white/90 hover:text-white'"
+            :aria-current="activeSection === link.key ? 'location' : undefined"
+            class="relative text-sm font-medium transition-colors after:absolute after:-bottom-2 after:left-1/2 after:h-1 after:w-1 after:-translate-x-1/2 after:rounded-full after:bg-cyan-300 after:transition-[opacity,scale] after:duration-200"
+            :class="[
+              isScrolled ? 'hover:text-violet-600 dark:hover:text-violet-300' : 'hover:text-white',
+              activeSection === link.key
+                ? 'text-violet-700 after:scale-100 after:opacity-100 dark:text-white'
+                : isScrolled
+                  ? 'text-gray-600 after:scale-50 after:opacity-0 dark:text-gray-300'
+                  : 'text-white/75 after:scale-50 after:opacity-0',
+            ]"
           >
             {{ t(`nav.${link.key}`) }}
           </a>
@@ -156,8 +194,10 @@ onBeforeUnmount(() => {
               v-for="(link, idx) in navLinks"
               :key="link.href"
               :href="link.href"
+              :aria-current="activeSection === link.key ? 'location' : undefined"
               class="px-4 py-3.5 rounded-xl text-xl max-[390px]:text-lg font-display font-semibold
                      transition-[background-color,color,transform] duration-200 text-white/90 hover:bg-white/10 hover:text-white"
+              :class="activeSection === link.key ? 'bg-white/10 text-white' : ''"
               :data-menu-first="idx === 0 ? '' : undefined"
               :style="{ transitionDelay: `${idx * 40}ms` }"
               @click="closeMenu"

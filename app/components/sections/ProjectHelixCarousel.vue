@@ -14,21 +14,22 @@ const { track } = useMarketing()
 const rootRef = ref<HTMLElement | null>(null)
 const progressBarRef = ref<HTMLElement | null>(null)
 const navListRef = ref<HTMLElement | null>(null)
+const mobileListRef = ref<HTMLElement | null>(null)
 const activeSourceIndex = ref(0)
+const mobileActiveIndex = ref(0)
 const desktopReady = ref(false)
 const prefersReducedMotion = ref(false)
 
 let cards: HTMLElement[] = []
-let cardSurfaces: HTMLElement[] = []
-let cardImages: Array<HTMLElement | null> = []
-let cardContents: HTMLElement[] = []
-let cardDepthVeils: HTMLElement[] = []
-let cardSheens: HTMLElement[] = []
 let scrollFrame = 0
 let resizeFrame = 0
+let mobileScrollFrame = 0
 let lastScrollY = 0
 let lastScrollSample = 0
+let lastRenderSample = 0
 let scrollVelocity = 0
+let visualProgress = 0
+let visualProgressReady = false
 let observer: IntersectionObserver | null = null
 let sectionIsNear = false
 let motionQuery: MediaQueryList | null = null
@@ -45,9 +46,11 @@ let metrics = {
 
 const sourceTotal = computed(() => Math.max(1, props.projects.length))
 const maxSourceStep = computed(() => Math.max(0, props.projects.length - 1))
-const desktopTrackStyle = computed(() => ({
-  height: `${Math.max(380, sourceTotal.value * 105)}vh`,
-}))
+const desktopTrackStyle = computed(() => {
+  const projectSteps = Math.max(0, sourceTotal.value - 1)
+  const trackHeight = projectSteps ? Math.max(420, 180 + projectSteps * 48) : 120
+  return { height: `${trackHeight}vh` }
+})
 
 const activeProject = computed(() => props.projects[activeSourceIndex.value] ?? props.projects[0])
 const activeCategoryLabel = computed(() => categoryLabel(props.activeCategory ?? 'all'))
@@ -65,6 +68,10 @@ const activeProofs = computed(() => {
     activeProject.value.codeUrl ? t('portfolio.source_available') : '',
   ].filter(Boolean)
 })
+const selectionCountLabel = computed(() => t(
+  props.projects.length === 1 ? 'portfolio.selection_count_one' : 'portfolio.selection_count_many',
+  { count: props.projects.length },
+))
 
 function categoryLabel(category: PortfolioCategory) {
   return t(`portfolio.${category}`)
@@ -86,11 +93,6 @@ function collectCards() {
   cards = rootRef.value
     ? Array.from(rootRef.value.querySelectorAll<HTMLElement>('[data-helix-card]'))
     : []
-  cardSurfaces = cards.map(card => card.querySelector<HTMLElement>('[data-helix-surface]') ?? card)
-  cardImages = cards.map(card => card.querySelector<HTMLElement>('[data-helix-image]'))
-  cardContents = cards.map(card => card.querySelector<HTMLElement>('[data-helix-content]') ?? card)
-  cardDepthVeils = cards.map(card => card.querySelector<HTMLElement>('[data-helix-depth]') ?? card)
-  cardSheens = cards.map(card => card.querySelector<HTMLElement>('[data-helix-sheen]') ?? card)
 }
 
 function measure() {
@@ -117,9 +119,26 @@ function renderHelix() {
   scrollFrame = 0
   if (!cards.length || metrics.viewportWidth < 768) return
 
-  const progress = currentProgress()
+  const now = performance.now()
+  const frameDuration = lastRenderSample ? Math.min(34, now - lastRenderSample) : 16.67
+  lastRenderSample = now
   const velocityEnergy = Math.min(1, Math.abs(scrollVelocity) / 2.4)
   const velocityDirection = Math.sign(scrollVelocity)
+  const targetProgress = currentProgress()
+  const progressDistance = targetProgress - visualProgress
+
+  if (!visualProgressReady || prefersReducedMotion.value || Math.abs(progressDistance) > 0.12) {
+    visualProgress = targetProgress
+    visualProgressReady = true
+  }
+  else {
+    const frameRatio = frameDuration / 16.67
+    const followStrength = 1 - Math.pow(0.72, frameRatio)
+    visualProgress += progressDistance * followStrength
+    if (Math.abs(targetProgress - visualProgress) < 0.00008) visualProgress = targetProgress
+  }
+
+  const progress = visualProgress
   const total = Math.max(1, props.projects.length)
   const step = progress * Math.max(0, total - 1)
   const spin = total > 1 ? step * (360 / total) : 0
@@ -152,53 +171,22 @@ function renderHelix() {
     const deformationDirection = Math.sign(normalized)
     const frontWeight = Math.max(0, 1 - absoluteAngle / 96)
     const materialDeformation = Math.min(1.18, deformation + velocityEnergy * frontWeight * 0.45)
-    const materialDirection = velocityEnergy > 0.08 && velocityDirection
-      ? -velocityDirection
-      : deformationDirection
-    const kineticLag = -velocityDirection * velocityEnergy * frontWeight * 9
-    const sheenTravel = Math.max(-78, Math.min(78, (normalized / 64) * 72 + velocityDirection * velocityEnergy * 12))
+    const velocityBlend = velocityEnergy * frontWeight
+    const materialDirection = deformationDirection * (1 - velocityBlend) - velocityDirection * velocityBlend
     const passageTilt = materialDirection * materialDeformation * 2.8
     const passageWarp = materialDirection * materialDeformation * -2.4
-    const passageCompression = 1 - materialDeformation * 0.04
-    const depthFactor = Math.min(1, Math.max(0, (absoluteAngle - 48) / 96))
+    const wholeCardRotateY = rotateY + materialDirection * materialDeformation * 8
+    const wholeCardCompression = 1 - materialDeformation * 0.085
+    const wholeCardStretch = 1 + materialDeformation * 0.028
     const opacity = total > 1
-      ? Math.max(0.1, 1 - absoluteAngle / 158)
+      ? Math.max(0, 1 - absoluteAngle / 158)
       : 1
 
     card.style.opacity = String(opacity)
-    card.style.filter = `blur(${depthFactor * 1.25}px) saturate(${1 - depthFactor * 0.16}) brightness(${1 - depthFactor * 0.12})`
     card.style.zIndex = String(1000 - Math.round(absoluteAngle))
     card.style.pointerEvents = absoluteAngle < 28 ? 'auto' : 'none'
-    card.style.transform = `translate(-50%, -50%) translate3d(${x}px, ${y}px, ${z}px) rotateX(${rotateX - deformation * 1.4}deg) rotateY(${rotateY}deg) rotateZ(${rotateZ + passageTilt}deg) skewY(${skewY + passageWarp}deg) scale3d(${scale * scaleX * passageCompression}, ${scale * scaleY * (1 + deformation * 0.012)}, 1)`
-
-    const surface = cardSurfaces[index]
-    if (surface) {
-      surface.style.transformOrigin = materialDirection < 0 ? 'right center' : 'left center'
-      surface.style.transform = `perspective(900px) rotateY(${materialDirection * materialDeformation * 9.5}deg) skewY(${materialDirection * materialDeformation * -3.4}deg) scaleX(${1 - materialDeformation * 0.09}) scaleY(${1 + materialDeformation * 0.028})`
-    }
-
-    const image = cardImages[index]
-    if (image) {
-      image.style.transform = `translate3d(${materialDirection * materialDeformation * -20 + kineticLag}px, ${materialDeformation * -2}px, 0) rotateZ(${materialDirection * materialDeformation * -0.9}deg) scale(${1 + materialDeformation * 0.06})`
-      image.style.filter = `brightness(${1 - materialDeformation * 0.08}) saturate(${1 + materialDeformation * 0.16}) contrast(${1 + materialDeformation * 0.05})`
-    }
-
-    const content = cardContents[index]
-    if (content) {
-      content.style.transform = `translate3d(${materialDirection * materialDeformation * 7 - kineticLag * 0.24}px, ${materialDeformation}px, 0) skewY(${materialDirection * materialDeformation * -0.75}deg)`
-    }
-
-    const depthVeil = cardDepthVeils[index]
-    if (depthVeil) {
-      depthVeil.style.opacity = String(materialDeformation * 0.46)
-      depthVeil.style.transform = `scaleX(${materialDirection || 1})`
-    }
-
-    const sheen = cardSheens[index]
-    if (sheen) {
-      sheen.style.opacity = String(materialDeformation * (0.36 + velocityEnergy * 0.08))
-      sheen.style.transform = `translate3d(${sheenTravel}%, 0, 0) skewX(${materialDirection * materialDeformation * -7.5}deg) scaleX(${1 + materialDeformation * 0.16})`
-    }
+    card.style.transformOrigin = 'center center'
+    card.style.transform = `translate(-50%, -50%) translate3d(${x}px, ${y}px, ${z}px) rotateX(${rotateX - materialDeformation * 1.4}deg) rotateY(${wholeCardRotateY}deg) rotateZ(${rotateZ + passageTilt}deg) skewY(${skewY + passageWarp}deg) scale3d(${scale * scaleX * wholeCardCompression}, ${scale * scaleY * wholeCardStretch}, 1)`
   })
 
   if (progressBarRef.value) {
@@ -208,8 +196,9 @@ function renderHelix() {
   const nextIndex = Math.min(total - 1, Math.max(0, Math.round(step)))
   if (nextIndex !== activeSourceIndex.value) activeSourceIndex.value = nextIndex
 
-  scrollVelocity *= 0.82
-  if (sectionIsNear && Math.abs(scrollVelocity) > 0.015 && !scrollFrame) {
+  scrollVelocity *= Math.pow(0.82, frameDuration / 16.67)
+  const progressIsSettling = Math.abs(targetProgress - visualProgress) > 0.00008
+  if (sectionIsNear && (Math.abs(scrollVelocity) > 0.015 || progressIsSettling) && !scrollFrame) {
     scrollFrame = window.requestAnimationFrame(renderHelix)
   }
 }
@@ -233,6 +222,31 @@ function scheduleMeasure() {
   resizeFrame = window.requestAnimationFrame(() => {
     resizeFrame = 0
     measure()
+  })
+}
+
+function scheduleMobileIndex() {
+  if (mobileScrollFrame) return
+  mobileScrollFrame = window.requestAnimationFrame(() => {
+    mobileScrollFrame = 0
+    const list = mobileListRef.value
+    if (!list) return
+
+    const listCenter = list.getBoundingClientRect().left + list.clientWidth / 2
+    const items = Array.from(list.querySelectorAll<HTMLElement>('[data-mobile-project-card]'))
+    let nearestIndex = 0
+    let nearestDistance = Number.POSITIVE_INFINITY
+
+    items.forEach((item, index) => {
+      const rect = item.getBoundingClientRect()
+      const distance = Math.abs(rect.left + rect.width / 2 - listCenter)
+      if (distance < nearestDistance) {
+        nearestDistance = distance
+        nearestIndex = index
+      }
+    })
+
+    mobileActiveIndex.value = nearestIndex
   })
 }
 
@@ -280,6 +294,8 @@ function trackProject(event: 'project_case_study_click' | 'project_live_click' |
 async function refreshProjects() {
   await nextTick()
   activeSourceIndex.value = 0
+  mobileActiveIndex.value = 0
+  mobileListRef.value?.scrollTo({ left: 0, behavior: 'auto' })
   collectCards()
   measure()
 }
@@ -297,20 +313,9 @@ onMounted(async () => {
 
   observer = new IntersectionObserver(([entry]) => {
     sectionIsNear = Boolean(entry?.isIntersecting)
+    if (!sectionIsNear) lastRenderSample = 0
     cards.forEach((card) => {
-      card.style.willChange = sectionIsNear ? 'transform, opacity, filter' : 'auto'
-    })
-    cardSurfaces.forEach((surface) => {
-      surface.style.willChange = sectionIsNear ? 'transform' : 'auto'
-    })
-    cardImages.forEach((image) => {
-      if (image) image.style.willChange = sectionIsNear ? 'transform, filter' : 'auto'
-    })
-    cardDepthVeils.forEach((veil) => {
-      veil.style.willChange = sectionIsNear ? 'transform, opacity' : 'auto'
-    })
-    cardSheens.forEach((sheen) => {
-      sheen.style.willChange = sectionIsNear ? 'transform, opacity' : 'auto'
+      card.style.willChange = sectionIsNear ? 'transform, opacity' : 'auto'
     })
     if (progressBarRef.value) {
       progressBarRef.value.style.willChange = sectionIsNear ? 'transform' : 'auto'
@@ -332,6 +337,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', scheduleMeasure)
   if (scrollFrame) window.cancelAnimationFrame(scrollFrame)
   if (resizeFrame) window.cancelAnimationFrame(resizeFrame)
+  if (mobileScrollFrame) window.cancelAnimationFrame(mobileScrollFrame)
   motionQuery?.removeEventListener('change', updateMotionPreference)
 })
 </script>
@@ -344,10 +350,29 @@ onBeforeUnmount(() => {
 
     <div v-else>
       <div :class="{ 'md:hidden': !prefersReducedMotion }">
-        <div class="-mx-2.5 flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-2.5 pb-4 no-scrollbar max-[390px]:-mx-2 max-[390px]:gap-2 max-[390px]:px-2">
+        <div class="mb-2.5 flex items-center justify-between gap-4 px-0.5 text-xs text-gray-500 dark:text-gray-400 md:px-1">
+          <p>{{ t('portfolio.browse_hint') }}</p>
+          <p
+            class="shrink-0 font-display font-semibold tabular-nums text-violet-700 dark:text-violet-200"
+            aria-live="polite"
+            :aria-label="t('portfolio.project_position', { current: mobileActiveIndex + 1, total: projects.length })"
+          >
+            {{ String(mobileActiveIndex + 1).padStart(2, '0') }}/{{ String(projects.length).padStart(2, '0') }}
+          </p>
+        </div>
+        <div
+          ref="mobileListRef"
+          data-mobile-project-carousel
+          role="region"
+          :aria-label="t('portfolio.mobile_carousel_label')"
+          class="-mx-2.5 flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-2.5 pb-4 no-scrollbar max-[390px]:-mx-2 max-[390px]:gap-2 max-[390px]:px-2"
+          @scroll.passive="scheduleMobileIndex"
+        >
           <article
-            v-for="project in projects"
+            v-for="(project, index) in projects"
             :key="project.id"
+            data-mobile-project-card
+            :aria-current="index === mobileActiveIndex ? 'true' : undefined"
             class="min-w-[84vw] snap-center overflow-hidden rounded-[1.35rem] border border-violet-500/15 bg-white/80 shadow-xl shadow-violet-500/10 dark:border-white/10 dark:bg-white/[0.04] max-[430px]:min-w-[88vw] max-[390px]:min-w-[91vw] max-[390px]:rounded-[1.2rem]"
           >
             <div class="relative h-48 overflow-hidden bg-[#10101b] max-[430px]:h-44 max-[390px]:h-40">
@@ -361,9 +386,13 @@ onBeforeUnmount(() => {
             </div>
             <div class="p-3.5 max-[390px]:p-3">
               <p :lang="descriptionLanguage(project)" class="line-clamp-3 text-sm leading-relaxed text-gray-600 dark:text-gray-300">{{ descriptionFor(project) }}</p>
-              <NuxtLink v-if="locale === 'fr' && project.caseStudyPublished" :to="localePath(`/projets/${project.slug}`)" class="mt-3 inline-flex min-h-11 items-center text-sm font-bold text-violet-700 transition-colors hover:text-violet-500 dark:text-violet-200 dark:hover:text-white" @click="trackProject('project_case_study_click', project)">
-                {{ t('portfolio.read_case_study') }} <span class="ml-2" aria-hidden="true">→</span>
-              </NuxtLink>
+              <div v-if="project.liveUrl || project.codeUrl || (locale === 'fr' && project.caseStudyPublished)" class="mt-3 flex flex-wrap gap-2">
+                <NuxtLink v-if="locale === 'fr' && project.caseStudyPublished" :to="localePath(`/projets/${project.slug}`)" class="inline-flex min-h-11 items-center rounded-full bg-violet-600 px-4 text-xs font-bold text-white transition-colors hover:bg-violet-500" @click="trackProject('project_case_study_click', project)">
+                  {{ t('portfolio.read_case_study') }}
+                </NuxtLink>
+                <a v-if="project.liveUrl" :href="project.liveUrl" target="_blank" rel="noopener noreferrer" class="inline-flex min-h-11 items-center rounded-full bg-violet-600 px-4 text-xs font-bold text-white transition-colors hover:bg-violet-500" @click="trackProject('project_live_click', project)">{{ t('portfolio.view') }}</a>
+                <a v-if="project.codeUrl" :href="project.codeUrl" target="_blank" rel="noopener noreferrer" class="inline-flex min-h-11 items-center rounded-full border border-violet-500/25 px-4 text-xs font-bold text-violet-700 transition-colors hover:bg-violet-500/10 dark:text-violet-200" @click="trackProject('project_code_click', project)">{{ t('portfolio.code') }}</a>
+              </div>
             </div>
           </article>
         </div>
@@ -377,7 +406,7 @@ onBeforeUnmount(() => {
       >
         <div class="sticky top-20 flex h-[calc(100vh-5rem)] min-h-[420px] items-center justify-center overflow-hidden xl:top-24 xl:h-[calc(100vh-6rem)]">
           <div class="absolute inset-0 bg-[linear-gradient(180deg,rgba(246,246,251,0.92),rgba(238,242,255,0.76)_45%,rgba(246,246,251,0.94)),radial-gradient(circle_at_50%_47%,rgba(124,58,237,0.18),transparent_36%),radial-gradient(circle_at_54%_42%,rgba(34,211,238,0.14),transparent_26%)] dark:bg-[linear-gradient(180deg,rgba(6,6,14,0.94),rgba(9,9,18,0.82)_45%,rgba(6,6,14,0.96)),radial-gradient(circle_at_50%_47%,rgba(124,58,237,0.22),transparent_36%),radial-gradient(circle_at_54%_42%,rgba(34,211,238,0.16),transparent_26%)]" />
-          <div class="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-[#070710] via-[#070710]/60 to-transparent" />
+          <div data-helix-top-fade class="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-[#f7f8ff] via-[#f7f8ff]/65 to-transparent dark:from-[#070710] dark:via-[#070710]/60" />
           <div class="absolute inset-x-0 top-10 mx-auto h-px max-w-6xl bg-gradient-to-r from-transparent via-violet-400/30 to-transparent" />
           <div class="absolute left-1/2 top-[54%] h-[36rem] w-[17rem] -translate-x-1/2 -translate-y-1/2 rounded-[999px] border border-violet-500/15 dark:border-white/10" />
           <div class="absolute left-1/2 top-[54%] h-[27rem] w-[10rem] -translate-x-1/2 -translate-y-1/2 rounded-[999px] border border-cyan-400/15 dark:border-cyan-300/10" />
@@ -418,7 +447,7 @@ onBeforeUnmount(() => {
             <p class="text-xs font-bold uppercase tracking-[0.18em] text-violet-600 dark:text-violet-300">{{ activeCategoryLabel }}</p>
             <h3 class="mt-3 font-display text-xl font-bold leading-tight text-gray-950 dark:text-white">{{ activeCategoryIntro.title }}</h3>
             <p class="mt-3 leading-relaxed">{{ activeCategoryIntro.text }}</p>
-            <p class="mt-4 text-xs leading-relaxed text-gray-500 dark:text-gray-400">{{ t('portfolio.selection_count', { count: projects.length }) }}</p>
+            <p class="mt-4 text-xs leading-relaxed text-gray-500 dark:text-gray-400">{{ selectionCountLabel }}</p>
             <div class="mt-5 h-1.5 overflow-hidden rounded-full bg-violet-500/10 dark:bg-white/10">
               <div ref="progressBarRef" class="h-full origin-left scale-x-0 rounded-full bg-gradient-brand" />
             </div>
@@ -444,9 +473,9 @@ onBeforeUnmount(() => {
               v-for="(project, index) in projects"
               :key="`${project.id}-${index}`"
               data-helix-card
-              class="absolute left-1/2 top-[54%] h-[20.5rem] w-[16.2rem] overflow-hidden rounded-[1.25rem] border border-white/15 bg-[#11111b] shadow-2xl shadow-black/35 [backface-visibility:hidden] [contain:layout_paint_style] xl:h-[22rem] xl:w-[17.5rem] xl:rounded-[1.4rem]"
+              class="absolute left-1/2 top-[54%] isolate h-[20.5rem] w-[16.2rem] rounded-[1.25rem] shadow-[0_28px_64px_-24px_rgba(76,29,149,0.26)] dark:shadow-[0_28px_64px_-24px_rgba(2,2,8,0.78)] [backface-visibility:hidden] xl:h-[22rem] xl:w-[17.5rem] xl:rounded-[1.4rem]"
             >
-              <div data-helix-surface class="relative h-full w-full">
+              <div data-helix-surface class="relative h-full w-full overflow-hidden rounded-[inherit] border border-violet-500/15 bg-white/95 dark:border-white/15 dark:bg-[#11111b]">
                 <div class="relative h-36 overflow-hidden bg-[#10101b] xl:h-44">
                   <img v-if="project.image" data-helix-image :src="project.image" :alt="project.title" class="h-full w-full object-cover" loading="lazy" decoding="async">
                   <div v-else class="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(139,92,246,0.42),transparent_36%),radial-gradient(circle_at_72%_72%,rgba(34,211,238,0.28),transparent_34%)]" />
@@ -454,14 +483,12 @@ onBeforeUnmount(() => {
                   <span class="absolute left-4 top-4 rounded-full bg-black/45 px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-white">{{ categoryLabel(project.category) }}</span>
                 </div>
                 <div data-helix-content class="p-3 xl:p-3.5">
-                  <h3 class="font-display text-base font-bold leading-tight text-white xl:text-lg">{{ project.title }}</h3>
-                  <p :lang="descriptionLanguage(project)" class="mt-2 line-clamp-2 text-sm leading-relaxed text-white/70">{{ descriptionFor(project) }}</p>
+                  <h3 class="font-display text-base font-bold leading-tight text-gray-950 dark:text-white xl:text-lg">{{ project.title }}</h3>
+                  <p :lang="descriptionLanguage(project)" class="mt-2 line-clamp-2 text-sm leading-relaxed text-gray-600 dark:text-white/70">{{ descriptionFor(project) }}</p>
                   <div class="mt-4 flex flex-wrap gap-1.5">
-                    <span v-for="tag in project.tags.slice(0, 3)" :key="tag" class="rounded-full bg-white/[0.08] px-2.5 py-1 text-xs text-white/70">{{ tag }}</span>
+                    <span v-for="tag in project.tags.slice(0, 3)" :key="tag" class="rounded-full bg-violet-500/[0.08] px-2.5 py-1 text-xs text-violet-700 dark:bg-white/[0.08] dark:text-white/70">{{ tag }}</span>
                   </div>
                 </div>
-                <div data-helix-depth aria-hidden="true" class="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(2,2,8,0.7)_0%,rgba(15,10,35,0.28)_20%,transparent_52%,rgba(167,139,250,0.16)_100%)] opacity-0" />
-                <div data-helix-sheen aria-hidden="true" class="pointer-events-none absolute -inset-x-1/4 inset-y-0 bg-[linear-gradient(105deg,transparent_34%,rgba(255,255,255,0.28)_49%,rgba(125,211,252,0.12)_52%,transparent_68%)] opacity-0 mix-blend-screen" />
               </div>
             </article>
           </div>

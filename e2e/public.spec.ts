@@ -7,6 +7,212 @@ test('landing page exposes the main conversion paths', async ({ page }) => {
   await expect(page.getByRole('link', { name: /contact|parler|projet/i }).first()).toBeVisible()
 })
 
+test('hero remains usable without JavaScript and with reduced motion', async ({ browser }) => {
+  const noScriptContext = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 390, height: 844 } })
+  const noScriptPage = await noScriptContext.newPage()
+  const response = await noScriptPage.goto('/')
+  expect(response?.ok()).toBeTruthy()
+  await expect(noScriptPage.locator('[data-hero-critical-content] h1')).toBeVisible()
+  await expect(noScriptPage.locator('[data-hero-primary-cta]')).toHaveAttribute('href', /^\/(?:en|de)?#contact$/)
+  await expect(noScriptPage.locator('[data-hero-secondary-cta]')).toHaveAttribute('href', /^\/(?:en|de)?#portfolio$/)
+  await noScriptContext.close()
+
+  const reducedContext = await browser.newContext({ reducedMotion: 'reduce', viewport: { width: 390, height: 844 } })
+  const reducedPage = await reducedContext.newPage()
+  await reducedPage.goto('/')
+  await expect(reducedPage.locator('[data-spline-state="fallback-motion"]')).toBeVisible()
+  const primary = reducedPage.locator('[data-hero-primary-cta]')
+  await primary.focus()
+  await expect(primary).toBeFocused()
+  await expect(primary).toBeInViewport()
+  await reducedContext.close()
+})
+
+test('analytics failure never blocks the primary contact path', async ({ page }) => {
+  await page.route('**/api/marketing-event', route => route.abort())
+  await page.goto('/')
+  await page.locator('[data-hero-primary-cta]').click()
+  await expect(page).toHaveURL(/#contact$/)
+  await expect(page.locator('#contact-form')).toBeVisible()
+})
+
+test('mobile portfolio makes horizontal browsing and project actions explicit', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/#portfolio')
+
+  const carousel = page.locator('[data-mobile-project-carousel]')
+  const cards = carousel.locator('[data-mobile-project-card]')
+  await expect(carousel).toBeVisible()
+  await expect(page.getByText(/Faites glisser pour explorer|Drag to explore|Ziehen zum Entdecken/)).toBeVisible()
+  expect(await cards.count()).toBeGreaterThan(1)
+  await expect(cards.first()).toHaveAttribute('aria-current', 'true')
+  await expect(page.getByLabel(/Projet 1 sur \d+|Project 1 of \d+|Projekt 1 von \d+/)).toBeVisible()
+  await expect(carousel.locator('a[target="_blank"]').first()).toBeVisible()
+
+  await carousel.evaluate((element) => {
+    element.scrollTo({ left: element.clientWidth, behavior: 'instant' })
+  })
+  await expect.poll(async () => cards.nth(1).getAttribute('aria-current')).toBe('true')
+  await expect(page.getByLabel(/Projet 2 sur \d+|Project 2 of \d+|Projekt 2 von \d+/)).toBeVisible()
+})
+
+test('front portfolio cards stay separated and navigation follows the active project', async ({ page }) => {
+  for (const viewport of [{ width: 900, height: 820 }, { width: 1440, height: 900 }]) {
+    await page.setViewportSize(viewport)
+    await page.goto('/#portfolio')
+    const cards = page.locator('[data-helix-card]')
+    const navigation = page.locator('[data-project-navigation]')
+    await expect(cards.first()).toBeVisible()
+
+    const track = cards.first().locator('xpath=ancestor::div[contains(@style, "height")][1]')
+    const trackMetrics = await track.evaluate((element) => {
+      const rect = element.getBoundingClientRect()
+      return {
+        top: rect.top + window.scrollY,
+        height: (element as HTMLElement).offsetHeight,
+        viewportHeight: window.innerHeight,
+      }
+    })
+    const stickyTop = viewport.width >= 1280 ? 96 : 80
+    const end = -Math.max(trackMetrics.viewportHeight, trackMetrics.height - trackMetrics.viewportHeight * 1.02)
+    expect(trackMetrics.height / trackMetrics.viewportHeight).toBeLessThanOrEqual(7)
+
+    for (const progress of [0, 0.25, 0.5, 0.75, 1]) {
+      await page.evaluate(({ top, targetProgress, sticky, targetEnd }) => {
+        window.scrollTo({ top: top - sticky + targetProgress * (sticky - targetEnd), behavior: 'instant' })
+      }, { top: trackMetrics.top, targetProgress: progress, sticky: stickyTop, targetEnd: end })
+      await page.waitForTimeout(100)
+
+      const overlap = await cards.evaluateAll((elements) => {
+        const front = elements
+          .map((element) => ({
+            opacity: Number.parseFloat(getComputedStyle(element).opacity),
+            rect: element.getBoundingClientRect(),
+          }))
+          .sort((left, right) => right.opacity - left.opacity)
+          .slice(0, 2)
+        const [left, right] = front
+        if (!left || !right) return { x: 0, y: 0 }
+        return {
+          x: Math.min(left.rect.right, right.rect.right) - Math.max(left.rect.left, right.rect.left),
+          y: Math.min(left.rect.bottom, right.rect.bottom) - Math.max(left.rect.top, right.rect.top),
+        }
+      })
+
+      expect(
+        overlap.x <= 0 || overlap.y <= 0,
+        `front cards overlap at ${viewport.width}px and progress ${progress}: ${Math.round(overlap.x)}px × ${Math.round(overlap.y)}px`,
+      ).toBeTruthy()
+
+      const rearOpacity = await cards.evaluateAll(elements => Math.min(
+        ...elements.map(element => Number.parseFloat(getComputedStyle(element).opacity)),
+      ))
+      expect(rearOpacity).toBeLessThanOrEqual(0.01)
+
+      const cardTransforms = await cards.evaluateAll(elements => (
+        elements.map(element => (element as HTMLElement).style.transform)
+      ))
+      expect(cardTransforms.some(transform => /rotateY\((?!0deg)/.test(transform))).toBeTruthy()
+      const wholeCardDeformationIsIsolated = await cards.evaluateAll(elements => elements.every((element) => {
+        const image = element.querySelector<HTMLElement>('[data-helix-image]')
+        const content = element.querySelector<HTMLElement>('[data-helix-content]')
+        return Boolean(
+          image && !image.style.transform && !image.style.filter
+          && content && !content.style.transform
+          && !element.querySelector('[data-helix-depth]')
+          && !element.querySelector('[data-helix-sheen]')
+          && !element.style.filter
+          && element.style.transformOrigin === 'center center'
+          && getComputedStyle(element).overflow === 'visible'
+          && getComputedStyle(element).boxShadow !== 'none',
+        )
+      }))
+      expect(wholeCardDeformationIsIsolated).toBeTruthy()
+
+      const activeButton = navigation.locator('[aria-current="true"]')
+      await expect(activeButton).toBeVisible()
+      await expect.poll(async () => activeButton.evaluate((button) => {
+        const navigationElement = button.closest('[data-project-navigation]')
+        if (!navigationElement) return false
+        const navigationRect = navigationElement.getBoundingClientRect()
+        const buttonRect = button.getBoundingClientRect()
+        return buttonRect.top >= navigationRect.top - 1 && buttonRect.bottom <= navigationRect.bottom + 1
+      }), { timeout: 2_000 }).toBeTruthy()
+    }
+  }
+})
+
+test('desktop portfolio cards follow the active color mode', async ({ browser }) => {
+  for (const colorScheme of ['light', 'dark'] as const) {
+    const context = await browser.newContext({ colorScheme, viewport: { width: 1440, height: 900 } })
+    const page = await context.newPage()
+    await page.goto('/#portfolio')
+
+    const surface = page.locator('[data-helix-surface]').first()
+    const title = surface.locator('h3')
+    await expect(surface).toBeVisible()
+
+    const colors = await surface.evaluate((element) => {
+      const titleElement = element.querySelector('h3')
+      return {
+        background: getComputedStyle(element).backgroundColor,
+        title: titleElement ? getComputedStyle(titleElement).color : '',
+      }
+    })
+
+    if (colorScheme === 'light') {
+      expect(colors.background).toMatch(/rgba?\((?:24[0-9]|25[0-5]),\s*(?:24[0-9]|25[0-5]),\s*(?:24[0-9]|25[0-5])/)
+      expect(colors.title).toBe('rgb(3, 7, 18)')
+    }
+    else {
+      expect(colors.background).toBe('rgb(17, 17, 27)')
+      expect(colors.title).toBe('rgb(255, 255, 255)')
+    }
+
+    await expect(title).toBeVisible()
+    await context.close()
+  }
+})
+
+test('service cards settle without competing transform animations', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/#services')
+
+  const cards = page.locator('[data-service-card]')
+  await expect(cards).toHaveCount(3)
+  await expect(cards.first()).toBeVisible()
+  await page.waitForTimeout(700)
+
+  const firstSample = await cards.evaluateAll(elements => elements.map((element) => ({
+    animationName: getComputedStyle(element).animationName,
+    transform: getComputedStyle(element).transform,
+  })))
+  await page.waitForTimeout(350)
+  const secondSample = await cards.evaluateAll(elements => elements.map(element => getComputedStyle(element).transform))
+
+  expect(firstSample.every(sample => sample.animationName === 'none')).toBeTruthy()
+  expect(firstSample.map(sample => sample.transform)).toEqual(secondSample)
+  expect(firstSample[0]?.transform).not.toBe('none')
+  expect(firstSample[2]?.transform).not.toBe('none')
+  expect(firstSample[0]?.transform).not.toBe(firstSample[2]?.transform)
+})
+
+test('contact and footer share one continuous surface', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'light' })
+  await page.goto('/#contact')
+
+  const contact = page.locator('#contact')
+  const footer = page.locator('[data-site-footer]')
+  await expect(footer).toBeVisible()
+  await expect(page.locator('[data-footer-transition]')).toBeAttached()
+
+  const [contactBackground, footerBackground] = await Promise.all([
+    contact.evaluate(element => getComputedStyle(element).backgroundColor),
+    footer.evaluate(element => getComputedStyle(element).backgroundColor),
+  ])
+  expect(footerBackground).toBe(contactBackground)
+})
+
 test('health endpoint reports the application status', async ({ request }) => {
   const response = await request.get('/api/health')
   expect(response.ok()).toBeTruthy()

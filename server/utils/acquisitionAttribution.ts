@@ -1,3 +1,5 @@
+import { classifyStoredAcquisitionSource, type AcquisitionChannel } from '../../shared/utils/acquisitionChannel'
+
 export type AttributionClient = {
   id: number
   status: string
@@ -34,6 +36,8 @@ export type AcquisitionAttributionRow = {
   leadToQuoteRate: number
 }
 
+export type AcquisitionChannelRow = Omit<AcquisitionAttributionRow, 'source'> & { channel: AcquisitionChannel }
+
 function normalizeSource(value?: string | null) {
   const source = String(value || '').trim()
   if (!source) return 'Non attribué'
@@ -49,9 +53,11 @@ export function aggregateAcquisitionAttribution(
 ) {
   const rows = new Map<string, AcquisitionAttributionRow>()
   const clientSources = new Map<number, string>()
+  const clientChannels = new Map<number, AcquisitionChannel>()
   const invoiceMeta = new Map<number, { clientId: number, status: string, totalCents: number }>()
   const paymentTotals = new Map<number, number>()
   const convertedClients = new Map<string, Set<number>>()
+  const convertedChannelClients = new Map<AcquisitionChannel, Set<number>>()
 
   const ensureRow = (source: string) => {
     const existing = rows.get(source)
@@ -72,6 +78,7 @@ export function aggregateAcquisitionAttribution(
   for (const client of clients) {
     const source = normalizeSource(client.acquisition_source)
     clientSources.set(Number(client.id), source)
+    clientChannels.set(Number(client.id), classifyStoredAcquisitionSource(source))
     const row = ensureRow(source)
     row.leads += 1
     if (client.status === 'active') row.activeClients += 1
@@ -87,6 +94,12 @@ export function aggregateAcquisitionAttribution(
     const clientsForSource = convertedClients.get(source) || new Set<number>()
     clientsForSource.add(Number(quote.client_id))
     convertedClients.set(source, clientsForSource)
+    const channel = clientChannels.get(Number(quote.client_id))
+    if (channel) {
+      const clientsForChannel = convertedChannelClients.get(channel) || new Set<number>()
+      clientsForChannel.add(Number(quote.client_id))
+      convertedChannelClients.set(channel, clientsForChannel)
+    }
   }
 
   for (const invoice of invoices) {
@@ -120,8 +133,33 @@ export function aggregateAcquisitionAttribution(
     }))
     .sort((a, b) => b.collectedRevenueCents - a.collectedRevenueCents || b.acceptedQuoteCents - a.acceptedQuoteCents || b.leads - a.leads || a.source.localeCompare(b.source, 'fr'))
 
+  const channelRows = new Map<AcquisitionChannel, AcquisitionChannelRow>()
+  for (const row of attribution) {
+    const channel = classifyStoredAcquisitionSource(row.source)
+    const current = channelRows.get(channel) || {
+      channel,
+      leads: 0,
+      activeClients: 0,
+      acceptedQuotes: 0,
+      acceptedQuoteCents: 0,
+      collectedRevenueCents: 0,
+      leadToQuoteRate: 0,
+    }
+    current.leads += row.leads
+    current.activeClients += row.activeClients
+    current.acceptedQuotes += row.acceptedQuotes
+    current.acceptedQuoteCents += row.acceptedQuoteCents
+    current.collectedRevenueCents += row.collectedRevenueCents
+    channelRows.set(channel, current)
+  }
+  const channelAttribution = [...channelRows.values()].map((row) => ({
+    ...row,
+    leadToQuoteRate: row.leads ? Math.round((convertedChannelClients.get(row.channel)?.size || 0) / row.leads * 1_000) / 10 : 0,
+  })).sort((left, right) => right.leads - left.leads || left.channel.localeCompare(right.channel))
+
   return {
     attribution,
+    channelAttribution,
     commercialTotals: attribution.reduce((totals, row) => ({
       leads: totals.leads + row.leads,
       activeClients: totals.activeClients + row.activeClients,

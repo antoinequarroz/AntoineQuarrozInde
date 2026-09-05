@@ -23,7 +23,8 @@
     "open_menu": "Menü öffnen",
     "close_menu": "Menü schließen",
     "mobile_menu": "Hauptmenü",
-    "change_language": "Sprache ändern"
+    "change_language": "Sprache ändern",
+    "skip_to_content": "Zum Inhalt springen"
   },
   "hero": {
     "badge": "Verfügbar für neue Projekte",
@@ -67,9 +68,14 @@
     "badge": "Leistungen",
     "title": "Was ich\nfür Sie tun kann.",
     "subtitle": "Komplette digitale Lösungen, von der Konzeption bis zur Inbetriebnahme.",
+    "choice_help": "Wählen Sie das gewünschte Ergebnis — den passenden Umfang klären wir anschließend gemeinsam.",
+    "best_for": "Ideal für:",
+    "choose": "Diese Leistung wählen",
     "vitrine": {
       "title": "Showcase-Websites",
       "description": "Moderne, schnelle und SEO-optimierte Websites, die Ihre Marke perfekt widerspiegeln und Besucher konvertieren.",
+      "intent": "Sichtbar werden",
+      "best_for": "Selbstständige, KMU und Organisationen, die ihr Angebot präsentieren und Anfragen gewinnen möchten.",
       "features": [
         "Individuelles Design",
         "100% responsive",
@@ -80,6 +86,8 @@
     "mobile": {
       "title": "Mobile Applikationen",
       "description": "Native oder Cross-Platform iOS- und Android-Apps, intuitiv und leistungsstark für ein außergewöhnliches Nutzererlebnis.",
+      "intent": "Produkt entwickeln",
+      "best_for": "regelmäßig genutzte Services, Geschäftsabläufe oder App-Ideen, die validiert werden sollen.",
       "features": [
         "iOS & Android",
         "Durchdachtes UI/UX",
@@ -90,6 +98,8 @@
     "cms": {
       "title": "CMS-Lösungen",
       "description": "Maßgeschneiderte Content-Management-Systeme, die Ihnen ermöglichen, Ihr Business selbstständig zu verwalten.",
+      "intent": "Autonomie gewinnen",
+      "best_for": "Teams, die häufig publizieren oder Inhalte, Kunden und Abläufe verwalten.",
       "features": [
         "Intuitive Oberfläche",
         "Maßgeschneidert",
@@ -115,7 +125,11 @@
     "live_available": "Live-Projekt verfügbar",
     "source_available": "Quellcode verfügbar",
     "read_case_study": "Case Study entdecken",
-    "selection_count": "{count} Projekt(e) in dieser Auswahl. Scrollen Sie, um sie zu drehen, bevor der nächste Abschnitt erscheint.",
+    "selection_count_one": "{count} Projekt in dieser Auswahl. Scrollen Sie, um es zu entdecken.",
+    "selection_count_many": "{count} Projekte in dieser Auswahl. Scrollen Sie, um sie zu entdecken.",
+    "browse_hint": "Ziehen zum Entdecken",
+    "project_position": "Projekt {current} von {total}",
+    "mobile_carousel_label": "Portfolio-Projekte",
     "case_study": "Case Study",
     "context": "Kontext",
     "impact": "Wirkung",
@@ -201,7 +215,10 @@
       "send": "Nachricht senden",
       "sending": "Wird gesendet...",
       "success": "Nachricht gesendet! Ich antworte innerhalb von 24 Stunden.",
-      "error": "Fehler beim Senden. Versuchen Sie es erneut oder kontaktieren Sie mich direkt."
+      "error": "Fehler beim Senden. Versuchen Sie es erneut oder kontaktieren Sie mich direkt.",
+      "project_prefix": "Projekt:",
+      "selected_service": "Gewählte Leistung:",
+      "captcha_error": "Die Anti-Spam-Prüfung ist noch nicht bereit. Warten Sie kurz oder kontaktieren Sie mich per E-Mail."
     },
     "info": {
       "email": "contact-email",

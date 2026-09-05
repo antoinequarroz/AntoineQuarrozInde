@@ -1,3 +1,5 @@
+import { classifyAcquisition } from '../../shared/utils/acquisitionChannel'
+
 const MAX_ATTRIBUTION_LENGTH = 180
 const MAX_LANDING_PATH_LENGTH = 500
 
@@ -17,4 +19,12 @@ export function leadAttributionPayload(value: unknown) {
     utm_content: clean(source.utmContent),
     utm_term: clean(source.utmTerm),
   }
+}
+
+export function leadAcquisitionChannel(value: unknown) {
+  const attribution = leadAttributionPayload(value)
+  return classifyAcquisition({
+    utmSource: attribution.utm_source,
+    referrerHost: attribution.referrer_host,
+  })
 }

@@ -20,10 +20,15 @@ export function captureLeadAttribution(): LeadAttribution {
   const empty: LeadAttribution = { landingPath: null, referrerHost: null, utmSource: null, utmMedium: null, utmCampaign: null, utmContent: null, utmTerm: null }
   if (!import.meta.client) return empty
 
-  const stored = sessionStorage.getItem(STORAGE_KEY)
+  let stored: string | null = null
+  try { stored = sessionStorage.getItem(STORAGE_KEY) }
+  catch { return empty }
   if (stored) {
     try { return { ...empty, ...JSON.parse(stored) } }
-    catch { sessionStorage.removeItem(STORAGE_KEY) }
+    catch {
+      try { sessionStorage.removeItem(STORAGE_KEY) }
+      catch { return empty }
+    }
   }
 
   const params = new URLSearchParams(window.location.search)
@@ -39,6 +44,7 @@ export function captureLeadAttribution(): LeadAttribution {
     utmContent: clipped(params.get(UTM_KEYS[3])),
     utmTerm: clipped(params.get(UTM_KEYS[4])),
   }
-  sessionStorage.setItem(STORAGE_KEY, JSON.stringify(attribution))
+  try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(attribution)) }
+  catch {}
   return attribution
 }

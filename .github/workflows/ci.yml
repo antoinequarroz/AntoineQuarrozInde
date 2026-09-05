@@ -53,6 +53,40 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npx playwright test e2e/accessibility.spec.ts --project=chromium
 
+  seo-quality:
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      HOST: 127.0.0.1
+      PORT: 3100
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22.19.0
+          cache: npm
+      - run: npm ci --legacy-peer-deps
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - name: Start the candidate and capture its laboratory baseline
+        run: |
+          node .output/server/index.mjs > "$RUNNER_TEMP/seo-preview.log" 2>&1 &
+          for attempt in {1..60}; do
+            curl --fail --silent --max-time 2 http://127.0.0.1:3100/ >/dev/null && break
+            if [[ "$attempt" == 60 ]]; then cat "$RUNNER_TEMP/seo-preview.log"; exit 1; fi
+            sleep 1
+          done
+          npm run quality:seo:lab -- http://127.0.0.1:3100
+      - name: Preserve candidate SEO baseline
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: seo-lab-${{ github.sha }}
+          path: .artifacts/seo-quality/lab.json
+          if-no-files-found: warn
+          retention-days: 30
+
   database:
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -67,7 +101,7 @@ jobs:
 
   deploy:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [quality, database]
+    needs: [quality, database, seo-quality]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment:
@@ -162,6 +196,18 @@ jobs:
         run: bash scripts/ops/verify-service-decision-content.sh https://www.antoinequarroz.ch
       - name: Verify approved case studies
         run: bash scripts/ops/verify-approved-case-studies.sh https://www.antoinequarroz.ch
+      - name: Collect Core Web Vitals field evidence when available
+        env:
+          CRUX_API_KEY: ${{ secrets.CRUX_API_KEY }}
+        run: npm run quality:seo:field -- https://www.antoinequarroz.ch
+      - name: Preserve SEO quality evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: seo-quality-${{ github.sha }}
+          path: .artifacts/seo-quality/*.json
+          if-no-files-found: warn
+          retention-days: 30
 
   e2e:
     if: >-
@@ -184,6 +230,8 @@ jobs:
           cache: npm
       - run: npm ci --legacy-peer-deps
       - run: npx playwright install --with-deps chromium
+      - name: Capture the deployed laboratory baseline
+        run: npm run quality:seo:lab -- "$E2E_BASE_URL"
       - name: Verify E2E secrets
         run: test -n "$E2E_ADMIN_EMAIL" && test -n "$E2E_ADMIN_PASSWORD"
       - run: npm run test:e2e
@@ -193,3 +241,11 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+      - name: Preserve deployed SEO baseline
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: seo-lab-production-${{ github.sha }}
+          path: .artifacts/seo-quality/lab.json
+          if-no-files-found: warn
+          retention-days: 30
