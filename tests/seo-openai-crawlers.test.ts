@@ -149,6 +149,13 @@ describe('AQ-SEO-003 OpenAI crawler policy', () => {
     expect(workflow.indexOf(privateProof)).toBeLessThan(workflow.indexOf(openAiProof))
   })
 
+  it('keeps the production proof independent from the containerized Node runtime', async () => {
+    const proof = await readFile('scripts/ops/verify-openai-robots-policy.sh', 'utf8')
+
+    expect(proof).toContain('awk -v expected_sitemap=')
+    expect(proof).not.toMatch(/(^|\s)node(\s|$)/)
+  })
+
   it('documents the approved decision, limits and rollback', async () => {
     const operations = await readFile('docs/operations.md', 'utf8')
 
