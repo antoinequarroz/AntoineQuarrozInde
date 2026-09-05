@@ -78,7 +78,13 @@ export async function buildTypstBillingPdf(data: TypstBillingData) {
   const wingetTypst = process.env.LOCALAPPDATA
     ? resolve(process.env.LOCALAPPDATA, 'Microsoft', 'WinGet', 'Links', 'typst.exe')
     : ''
-  const typstExecutable = process.env.TYPST_BIN || (wingetTypst && existsSync(wingetTypst) ? wingetTypst : 'typst')
+  const macTypst = process.platform === 'darwin'
+    ? ['/opt/homebrew/bin/typst', '/usr/local/bin/typst'].find(candidate => existsSync(candidate)) || ''
+    : ''
+  const typstExecutable = process.env.TYPST_BIN
+    || (wingetTypst && existsSync(wingetTypst) ? wingetTypst : '')
+    || macTypst
+    || 'typst'
 
   try {
     await copyFile(templateSource, templateTarget)

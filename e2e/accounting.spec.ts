@@ -18,7 +18,14 @@ test('admin can inspect accounting and create recurring draft schedules', async 
   test.skip(!email || !password, 'E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD are required')
 
   const createdBodies: unknown[] = []
-  await page.route('**/api/admin/accounting-summary**', route => route.fulfill({ json: accountingSummary }))
+  let delayNextSummary = false
+  await page.route('**/api/admin/accounting-summary**', async (route) => {
+    if (delayNextSummary) {
+      delayNextSummary = false
+      await new Promise(resolve => setTimeout(resolve, 300))
+    }
+    await route.fulfill({ json: accountingSummary })
+  })
   await page.route('**/api/admin/recurring-invoices', async (route) => {
     if (route.request().method() === 'GET') return route.fulfill({ json: [{ id: 1, name: 'Maintenance', cadence: 'monthly', next_issue_date: '2026-09-01', active: true }] })
     createdBodies.push(route.request().postDataJSON())
@@ -39,9 +46,18 @@ test('admin can inspect accounting and create recurring draft schedules', async 
   await expect(page.getByRole('table')).toContainText('8.1 %')
   await expect(page.getByText(/ne remplace pas une déclaration fiscale officielle/i)).toBeVisible()
 
+  delayNextSummary = true
+  await page.getByLabel('Du', { exact: true }).fill('2025-01-01')
+  await page.getByRole('button', { name: 'Actualiser' }).click()
+  await page.getByLabel('Du', { exact: true }).fill('2024-01-01')
+  await expect(page.getByRole('button', { name: 'Actualiser' })).toBeEnabled()
+  await expect(page.getByText(/Période modifiée/i)).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Exporter CSV' })).toBeDisabled()
+  await expect(page.getByText(/Documents CHF émis du .*2025/)).toBeVisible()
+
   await page.getByLabel('Nom').fill('Support mensuel')
   await page.getByLabel('Client').selectOption('12')
-  await page.getByLabel('Montant HT (centimes)').fill('15000')
+  await page.getByLabel('Montant HT (CHF)').fill('150')
   await page.getByRole('button', { name: 'Créer la récurrence' }).click()
   await expect.poll(() => createdBodies.length).toBe(1)
   expect(createdBodies[0]).toMatchObject({ clientId: 12, cadence: 'monthly', items: [{ unitPriceCents: 15_000 }] })

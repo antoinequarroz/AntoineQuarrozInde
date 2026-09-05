@@ -49,35 +49,50 @@ export const useTasksStore = defineStore('tasks', () => {
   const syncing = ref(false)
   const pendingQueue = ref<PendingOperation[]>([])
   const listenerAttached = ref(false)
+  const loadedContext = ref<string | null>(null)
+  const loadingContext = ref<string | null>(null)
+  let requestVersion = 0
+  let activeLoad: Promise<void> | null = null
+
+  function requestContext() {
+    return `authenticated:${auth.userEmail ?? ''}:${auth.currentOrganizationId ?? ''}`
+  }
+
+  function storageKey(base: string) {
+    return `${base}:${auth.userEmail ?? 'anonymous'}:${auth.currentOrganizationId ?? 'default'}`
+  }
 
   function persistCache() {
     if (!import.meta.client) return
-    localStorage.setItem(TASKS_CACHE_KEY, JSON.stringify(tasks.value))
+    localStorage.setItem(storageKey(TASKS_CACHE_KEY), JSON.stringify(tasks.value))
   }
 
   function persistQueue() {
     if (!import.meta.client) return
-    localStorage.setItem(TASKS_QUEUE_KEY, JSON.stringify(pendingQueue.value))
+    localStorage.setItem(storageKey(TASKS_QUEUE_KEY), JSON.stringify(pendingQueue.value))
   }
 
   function loadLocalState() {
     if (!import.meta.client) return
+    tasks.value = []
+    pendingQueue.value = []
     try {
-      const rawTasks = localStorage.getItem(TASKS_CACHE_KEY)
+      const rawTasks = localStorage.getItem(storageKey(TASKS_CACHE_KEY))
       if (rawTasks) tasks.value = JSON.parse(rawTasks)
     } catch {}
     try {
-      const rawQueue = localStorage.getItem(TASKS_QUEUE_KEY)
+      const rawQueue = localStorage.getItem(storageKey(TASKS_QUEUE_KEY))
       if (rawQueue) pendingQueue.value = JSON.parse(rawQueue)
     } catch {}
   }
 
   function nextTempId() {
     if (!import.meta.client) return -Date.now()
-    const raw = localStorage.getItem(TASKS_TEMP_ID_KEY)
+    const key = storageKey(TASKS_TEMP_ID_KEY)
+    const raw = localStorage.getItem(key)
     const current = raw ? Number(raw) : -1
     const next = Number.isFinite(current) && current < 0 ? current - 1 : -1
-    localStorage.setItem(TASKS_TEMP_ID_KEY, String(next))
+    localStorage.setItem(key, String(next))
     return next
   }
 
@@ -94,28 +109,40 @@ export const useTasksStore = defineStore('tasks', () => {
     listenerAttached.value = true
   }
 
-  async function ensureLoaded(force = false) {
-    if (loading.value) return
-    if (loaded.value && !force) return
+  function ensureLoaded(force = false) {
+    const context = requestContext()
+    if (loading.value && loadingContext.value === context && activeLoad) return activeLoad
+    if (loaded.value && loadedContext.value === context && !force) return Promise.resolve()
+    const version = ++requestVersion
     loadLocalState()
     attachOnlineListener()
     loading.value = true
-    try {
+    loadingContext.value = context
+    const load = (async () => {
       if (!isOnline()) {
         loaded.value = tasks.value.length > 0
+        loadedContext.value = context
+        if (!loaded.value) throw new Error('Tâches indisponibles hors ligne : aucun cache local.')
         return
       }
       const rows = await $fetch<TaskRow[]>('/api/tasks', {
         headers: auth.authHeader(),
       })
+      if (version !== requestVersion) return
       tasks.value = rows.map(mapTask)
       loaded.value = true
+      loadedContext.value = context
       persistCache()
       if (pendingQueue.value.length > 0) await flushQueue()
-    }
-    finally {
-      loading.value = false
-    }
+    })().finally(() => {
+      if (version === requestVersion) {
+        loading.value = false
+        loadingContext.value = null
+      }
+      if (activeLoad === load) activeLoad = null
+    })
+    activeLoad = load
+    return load
   }
 
   async function add(task: TaskUpsert) {

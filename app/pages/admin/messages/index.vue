@@ -5,8 +5,10 @@ definePageMeta({ layout: 'admin', middleware: 'admin' })
 
 const auth = useAuthStore()
 const toast = useToast()
+const route = useRoute()
 
 const loading = ref(true)
+const loadError = ref('')
 const sending = ref(false)
 const saving = ref(false)
 const messages = ref<ContactMessage[]>([])
@@ -24,12 +26,13 @@ const filteredMessages = computed(() => {
 const statusMeta: Record<ContactMessage['status'], { label: string, classes: string }> = {
   new: { label: 'Nouveau', classes: 'bg-yellow-50 text-yellow-700 dark:bg-yellow-500/10 dark:text-yellow-300' },
   in_progress: { label: 'En cours', classes: 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300' },
-  replied: { label: 'Repondu', classes: 'bg-green-50 text-green-700 dark:bg-green-500/10 dark:text-green-300' },
-  archived: { label: 'Archive', classes: 'bg-gray-100 text-gray-600 dark:bg-white/[0.08] dark:text-gray-300' },
+  replied: { label: 'Répondu', classes: 'bg-green-50 text-green-700 dark:bg-green-500/10 dark:text-green-300' },
+  archived: { label: 'Archivé', classes: 'bg-gray-100 text-gray-600 dark:bg-white/[0.08] dark:text-gray-300' },
 }
 
 async function loadMessages() {
   loading.value = true
+  loadError.value = ''
   try {
     messages.value = await $fetch<ContactMessage[]>('/api/messages', {
       headers: auth.authHeader(),
@@ -37,11 +40,13 @@ async function loadMessages() {
     if (selected.value) {
       selected.value = messages.value.find(msg => msg.id === selected.value?.id) || null
     }
-    const firstMessage = messages.value.at(0)
+    const requestedId = Number(route.query.messageId || 0)
+    const requestedMessage = messages.value.find(message => message.id === requestedId)
+    const firstMessage = requestedId > 0 ? requestedMessage : messages.value.at(0)
     if (!selected.value && firstMessage) openMessage(firstMessage)
   }
   catch {
-    toast.error('Erreur chargement messages')
+    loadError.value = 'Les messages ne peuvent pas être chargés. Réessaie dans quelques instants.'
   }
   finally {
     loading.value = false
@@ -51,7 +56,7 @@ async function loadMessages() {
 function openMessage(message: ContactMessage) {
   selected.value = message
   replySubject.value = message.subject ? `Re: ${message.subject}` : 'Re: Votre message'
-  replyBody.value = `Bonjour ${message.name},\n\nMerci pour votre message.\n\nBien a vous,\nAntoine Quarroz`
+  replyBody.value = `Bonjour ${message.name},\n\nMerci pour votre message.\n\nBien à vous,\nAntoine Quarroz`
 }
 
 async function saveMeta() {
@@ -70,9 +75,9 @@ async function saveMeta() {
     selected.value = updated
     const idx = messages.value.findIndex(msg => msg.id === updated.id)
     if (idx >= 0) messages.value[idx] = updated
-    toast.success('Message mis a jour')
+    toast.success('Message mis à jour')
   } catch {
-    toast.error('Erreur mise a jour')
+    toast.error('Le message n’a pas pu être mis à jour')
   } finally {
     saving.value = false
   }
@@ -112,11 +117,11 @@ async function sendReply() {
     })
     selected.value.status = 'replied'
     await saveMeta()
-    toast.success('Reponse envoyee')
+    toast.success('Réponse envoyée')
     await loadMessages()
   }
   catch {
-    toast.error('Erreur envoi reponse')
+    toast.error('La réponse n’a pas pu être envoyée')
   }
   finally {
     sending.value = false
@@ -124,6 +129,13 @@ async function sendReply() {
 }
 
 onMounted(loadMessages)
+
+watch(statusFilter, () => {
+  if (selected.value && filteredMessages.value.some(message => message.id === selected.value?.id)) return
+  const next = filteredMessages.value.at(0)
+  selected.value = null
+  if (next) openMessage(next)
+})
 </script>
 
 <template>
@@ -134,25 +146,27 @@ onMounted(loadMessages)
         <div class="min-w-0">
           <span class="rounded-md bg-gradient-brand px-2 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white">Messages CRM</span>
           <h1 class="mt-2 font-display text-2xl font-semibold text-gray-950 dark:text-white sm:text-3xl">Messages CRM</h1>
-          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Inbox, qualification, tags et reponse depuis l'admin.</p>
+          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Boîte de réception, qualification, tags et réponses au même endroit.</p>
         </div>
-        <select v-model="statusFilter" class="input-field w-full sm:w-auto sm:max-w-[180px] text-sm">
+        <label for="message-status-filter" class="sr-only">Filtrer les messages par statut</label>
+        <select id="message-status-filter" v-model="statusFilter" class="input-field w-full text-sm sm:w-auto sm:max-w-[180px]">
           <option value="all">Tous les statuts</option>
           <option value="new">Nouveau</option>
           <option value="in_progress">En cours</option>
-          <option value="replied">Repondu</option>
-          <option value="archived">Archive</option>
+          <option value="replied">Répondu</option>
+          <option value="archived">Archivé</option>
         </select>
       </div>
     </section>
 
     <div class="grid lg:grid-cols-[340px_1fr] gap-4">
       <div class="bg-white dark:bg-[#111118] border border-gray-100 dark:border-white/[0.06] rounded-xl overflow-hidden">
-        <div class="px-4 py-3 border-b border-gray-100 dark:border-white/[0.06] text-xs text-gray-400">
+        <div class="border-b border-gray-100 px-4 py-3 text-xs text-gray-600 dark:border-white/[0.06] dark:text-gray-300">
           {{ filteredMessages.length }} message(s)
         </div>
-        <div v-if="loading" class="p-4 text-sm text-gray-400">Chargement...</div>
-        <div v-else-if="!filteredMessages.length" class="p-4 text-sm text-gray-400">Aucun message pour ce filtre.</div>
+        <div v-if="loading" role="status" class="p-5 text-sm text-gray-500 dark:text-gray-400">Chargement des messages…</div>
+        <div v-else-if="loadError" role="alert" class="p-5 text-sm text-red-800 dark:text-red-200"><p>{{ loadError }}</p><button type="button" class="mt-3 min-h-11 rounded-lg bg-red-700 px-4 font-semibold text-white" @click="loadMessages">Réessayer</button></div>
+        <AdminEmptyState v-else-if="!filteredMessages.length" title="Aucun message pour ce filtre" :body="messages.length ? 'Choisis un autre statut pour retrouver tes messages.' : 'Les nouvelles demandes reçues depuis le site apparaîtront ici.'" />
         <div v-else>
           <div class="sm:hidden max-h-[56vh] overflow-y-auto p-2 space-y-2">
             <button
@@ -203,7 +217,7 @@ onMounted(loadMessages)
       </div>
 
       <div class="bg-white dark:bg-[#111118] border border-gray-100 dark:border-white/[0.06] rounded-xl p-4 sm:p-5">
-        <div v-if="!selected" class="text-sm text-gray-400">Selectionnez un message.</div>
+        <AdminEmptyState v-if="!selected" title="Sélectionne un message" body="Le contenu, le statut, les tags et la réponse apparaîtront ici." />
         <div v-else class="space-y-4">
           <div class="pb-3 border-b border-gray-100 dark:border-white/[0.06]">
             <div class="flex flex-wrap items-start justify-between gap-3">
@@ -212,19 +226,20 @@ onMounted(loadMessages)
                 <p class="text-xs text-gray-400">{{ selected.email }}</p>
                 <p class="text-xs text-gray-400 mt-1">{{ new Date(selected.createdAt).toLocaleString() }}</p>
               </div>
-              <div class="flex items-center gap-2">
-                <select v-model="selected.status" class="input-field !py-1.5 !px-2.5 text-xs min-w-[130px]">
+              <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+                <label for="selected-message-status" class="sr-only">Statut du message</label>
+                <select id="selected-message-status" v-model="selected.status" class="input-field min-h-11 min-w-[130px] !px-3 !py-2 text-sm">
                   <option value="new">Nouveau</option>
                   <option value="in_progress">En cours</option>
-                  <option value="replied">Repondu</option>
-                  <option value="archived">Archive</option>
+                  <option value="replied">Répondu</option>
+                  <option value="archived">Archivé</option>
                 </select>
                 <button
-                  class="px-3 py-1.5 rounded-md text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white disabled:opacity-60"
+                  class="min-h-11 rounded-lg bg-violet-600 px-4 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-60"
                   :disabled="saving"
                   @click="saveMeta"
                 >
-                  {{ saving ? 'Sauvegarde...' : 'Sauver' }}
+                  {{ saving ? 'Sauvegarde…' : 'Enregistrer' }}
                 </button>
               </div>
             </div>
@@ -240,7 +255,7 @@ onMounted(loadMessages)
                 class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded bg-gray-100 text-gray-700 dark:bg-white/[0.08] dark:text-gray-200"
               >
                 #{{ tag }}
-                <button class="text-gray-500 hover:text-red-500" @click="removeTag(tag)">x</button>
+                <button type="button" class="-my-2 -mr-2 grid h-9 w-9 place-items-center rounded-md text-gray-500 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10" :aria-label="`Retirer le tag ${tag}`" @click="removeTag(tag)">×</button>
               </span>
             </div>
             <div class="flex gap-2">
@@ -251,7 +266,7 @@ onMounted(loadMessages)
                 class="input-field"
                 @keydown.enter.prevent="addTag"
               >
-              <button class="px-3 py-2 rounded-lg text-sm bg-gray-100 dark:bg-white/[0.08]" @click="addTag">Ajouter</button>
+              <button type="button" class="min-h-11 rounded-lg bg-gray-100 px-4 text-sm font-semibold dark:bg-white/[0.08]" @click="addTag">Ajouter</button>
             </div>
           </div>
 
@@ -265,11 +280,11 @@ onMounted(loadMessages)
           </div>
           <div class="admin-sticky-actions sticky bottom-0 bg-white dark:bg-[#111118] pt-2 flex justify-end">
             <button
-              class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold bg-violet-600 hover:bg-violet-700 text-white transition-colors disabled:opacity-60"
+              class="inline-flex min-h-11 items-center gap-2 rounded-lg bg-violet-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-violet-700 disabled:opacity-60"
               :disabled="sending"
               @click="sendReply"
             >
-              {{ sending ? 'Envoi...' : 'Envoyer la reponse' }}
+              {{ sending ? 'Envoi…' : 'Envoyer la réponse' }}
             </button>
           </div>
         </div>

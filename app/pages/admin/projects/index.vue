@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Project, ProjectResult } from '~/types'
 import { caseStudyPublicationBlockers } from '~~/shared/utils/projectCaseStudyApproval'
+import AdminAdminIcon from '~/components/admin/AdminIcon.vue'
 
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 
@@ -9,6 +10,7 @@ const clients = useClientsStore()
 const auth = useAuthStore()
 const route = useRoute()
 const toast = useToast()
+const loadError = ref('')
 
 const showForm = ref(route.query.new === '1')
 const closeForm = () => { showForm.value = false }
@@ -107,9 +109,26 @@ function openEdit(project: Project) {
   showForm.value = true
 }
 
-onMounted(() => {
-  store.ensureLoaded()
-  clients.ensureLoaded()
+async function loadProjects(force = false) {
+  loadError.value = ''
+  try {
+    await Promise.all([store.ensureLoaded(force), clients.ensureLoaded(force)])
+    return true
+  }
+  catch {
+    loadError.value = 'Les projets ne peuvent pas être chargés pour le moment. Vérifie ta connexion, puis réessaie.'
+    return false
+  }
+}
+
+onMounted(async () => {
+  if (!await loadProjects()) return
+  const projectId = Number(route.query.editId || 0)
+  const project = store.projects.find(item => item.id === projectId)
+  if (project) {
+    openEdit(project)
+    return
+  }
   const clientId = Number(route.query.clientId || 0)
   if (clientId) form.clientId = clientId
 })
@@ -214,36 +233,45 @@ const catColors: Record<string, string> = {
   mobile: 'text-pink-600 bg-pink-50 dark:text-pink-400 dark:bg-pink-500/10',
   cms: 'text-indigo-600 bg-indigo-50 dark:text-indigo-400 dark:bg-indigo-500/10',
 }
+function portfolioTone(project: Project) {
+  return project.portfolioVisible
+    ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300'
+    : 'bg-gray-100 text-gray-600 dark:bg-white/[0.06] dark:text-gray-300'
+}
+function caseStudyTone(project: Project) {
+  if (project.caseStudyPublished && project.caseStudyApprovedAt) return 'bg-cyan-50 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300'
+  if (project.caseStudyPublished) return 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'
+  return 'bg-gray-100 text-gray-600 dark:bg-white/[0.06] dark:text-gray-300'
+}
 </script>
 
 <template>
   <div class="space-y-5">
 
-    <!-- Header -->
-    <div class="flex items-center justify-between gap-4">
-      <div>
-        <h1 class="font-display font-semibold text-xl text-gray-900 dark:text-white">Projets</h1>
-        <p class="text-sm text-gray-400 mt-0.5">{{ store.projects.length }} projet(s) · {{ store.portfolio.length }} dans le portfolio · {{ store.projects.filter(project => project.caseStudyPublished && project.caseStudyApprovedAt).length }} étude(s) publique(s)</p>
-      </div>
+    <section class="relative overflow-hidden rounded-xl border border-gray-200 bg-white px-4 py-4 shadow-sm dark:border-white/[0.08] dark:bg-[#111118] sm:px-5">
+      <div class="pointer-events-none absolute -top-16 right-[8%] h-48 w-48 rounded-full bg-violet-500/10 blur-3xl" />
+      <div class="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 class="font-display text-2xl font-semibold text-gray-950 dark:text-white sm:text-3xl">Projets</h1>
+          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ store.projects.length }} {{ store.projects.length === 1 ? 'projet' : 'projets' }} · {{ store.portfolio.length }} dans le portfolio · {{ store.projects.filter(project => project.caseStudyPublished && project.caseStudyApprovedAt).length }} {{ store.projects.filter(project => project.caseStudyPublished && project.caseStudyApprovedAt).length === 1 ? 'étude publique' : 'études publiques' }}</p>
+        </div>
       <button
-        class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold
-               bg-violet-600 hover:bg-violet-700 text-white transition-colors"
+        class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-violet-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-violet-700"
         @click="openNew"
       >
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
-        </svg>
+        <AdminAdminIcon icon="plus" class="h-4 w-4" />
         Nouveau
       </button>
-    </div>
+      </div>
+    </section>
 
     <!-- Form modal -->
     <Transition name="modal">
-      <div v-if="showForm" ref="dialogRef" class="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="project-form-title" tabindex="-1" @keydown="handleDialogKeydown">
+      <div v-if="showForm" ref="dialogRef" class="fixed inset-0 z-50 flex items-start justify-center overflow-hidden p-2 sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-labelledby="project-form-title" tabindex="-1" @keydown="handleDialogKeydown">
         <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="showForm = false" />
-        <div class="admin-modal-panel relative w-full max-w-4xl bg-white dark:bg-[#111118] rounded-2xl shadow-2xl border border-gray-100 dark:border-white/[0.08] my-4 overflow-y-auto">
+        <div class="admin-modal-panel relative flex max-h-[calc(100dvh-1rem)] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl dark:border-white/[0.08] dark:bg-[#111118] sm:max-h-[92vh]">
 
-          <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-white/[0.06]">
+          <div class="flex shrink-0 items-center justify-between border-b border-gray-100 px-4 py-3 dark:border-white/[0.06] sm:px-6 sm:py-4">
             <h2 id="project-form-title" class="font-display font-semibold text-base text-gray-900 dark:text-white">
               {{ editingProject ? 'Modifier le projet' : 'Nouveau projet' }}
             </h2>
@@ -254,7 +282,8 @@ const catColors: Record<string, string> = {
             </button>
           </div>
 
-          <form class="px-6 py-5 space-y-4" @submit.prevent="handleSubmit">
+          <form class="flex min-h-0 flex-1 flex-col" @submit.prevent="handleSubmit">
+            <div class="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
             <div>
               <label for="project-client" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Client associé</label>
               <select id="project-client" v-model.number="form.clientId" class="input-field">
@@ -329,12 +358,13 @@ const catColors: Record<string, string> = {
                 <span class="mt-1 block text-xs text-gray-500 dark:text-gray-400">Place le projet avant les autres cartes visibles, sans changer sa publication.</span>
               </span>
             </label>
+            </div>
 
-            <div class="admin-sticky-actions sticky bottom-0 bg-white dark:bg-[#111118] flex gap-3 pt-2 border-t border-gray-100 dark:border-white/[0.06]">
-              <button type="submit" class="flex-1 py-2.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold transition-colors">
+            <div class="admin-sticky-actions flex shrink-0 gap-3 border-t border-gray-100 bg-white px-4 py-3 dark:border-white/[0.06] dark:bg-[#111118] sm:px-6">
+              <button type="submit" class="min-h-11 flex-1 rounded-lg bg-violet-600 text-sm font-semibold text-white transition-colors hover:bg-violet-700">
                 {{ editingProject ? 'Enregistrer' : 'Créer' }}
               </button>
-              <button type="button" class="px-5 py-2.5 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-50 dark:hover:bg-white/[0.04] border border-gray-200 dark:border-white/[0.08] transition-all" @click="showForm = false">
+              <button type="button" class="min-h-11 rounded-lg border border-gray-200 px-5 text-sm font-medium text-gray-600 transition-all hover:bg-gray-50 dark:border-white/[0.08] dark:text-gray-300 dark:hover:bg-white/[0.04]" @click="showForm = false">
                 Annuler
               </button>
             </div>
@@ -343,8 +373,18 @@ const catColors: Record<string, string> = {
       </div>
     </Transition>
 
+    <div v-if="store.loading" role="status" aria-live="polite" class="space-y-3">
+      <span class="sr-only">Chargement des projets</span>
+      <div class="h-24 animate-pulse rounded-xl bg-gray-200/70 dark:bg-white/[0.06]" />
+      <div class="h-56 animate-pulse rounded-xl bg-gray-200/70 dark:bg-white/[0.06]" />
+    </div>
+    <div v-else-if="loadError" role="alert" class="flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-red-900 dark:border-red-400/20 dark:bg-red-400/10 dark:text-red-100 sm:flex-row sm:items-center sm:justify-between">
+      <div><p class="font-semibold">Chargement impossible</p><p class="mt-1 text-sm">{{ loadError }}</p></div>
+      <button class="min-h-11 shrink-0 rounded-lg bg-red-700 px-4 text-sm font-semibold text-white hover:bg-red-800" @click="loadProjects(true)">Réessayer</button>
+    </div>
+
     <!-- Mobile cards -->
-    <div class="sm:hidden space-y-2">
+    <div v-if="!store.loading && !loadError" class="sm:hidden space-y-2">
       <div
         v-for="project in store.projects"
         :key="`mobile-${project.id}`"
@@ -361,35 +401,35 @@ const catColors: Record<string, string> = {
           </div>
           <div class="min-w-0">
             <p class="text-sm font-medium text-gray-800 dark:text-gray-200">{{ project.title }}</p>
-            <p class="text-xs text-gray-400 line-clamp-1">{{ project.description }}</p>
+            <p class="line-clamp-1 text-xs text-gray-600 dark:text-gray-300">{{ project.description }}</p>
           </div>
         </div>
         <div class="mt-2 flex items-center gap-2 flex-wrap">
           <span class="text-xs font-semibold px-2 py-1 rounded-lg" :class="catColors[project.category]">{{ project.category }}</span>
-          <span v-if="project.featured" class="text-xs font-semibold px-2 py-1 rounded-lg bg-yellow-50 text-yellow-600 dark:bg-yellow-500/10 dark:text-yellow-400">★</span>
-          <span class="rounded-lg px-2 py-1 text-xs font-semibold" :class="project.portfolioVisible ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' : 'bg-gray-100 text-gray-600 dark:bg-white/[0.06] dark:text-gray-300'">Portfolio {{ project.portfolioVisible ? 'visible' : 'masqué' }}</span>
-          <span class="rounded-lg px-2 py-1 text-xs font-semibold" :class="project.caseStudyPublished && project.caseStudyApprovedAt ? 'bg-cyan-50 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300' : project.caseStudyPublished ? 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300' : 'bg-gray-100 text-gray-600 dark:bg-white/[0.06] dark:text-gray-300'">Étude {{ project.caseStudyPublished && project.caseStudyApprovedAt ? 'publiée' : project.caseStudyPublished ? 'à approuver' : 'brouillon' }}</span>
+          <span v-if="project.featured" class="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300" aria-label="Projet mis en avant"><AdminAdminIcon icon="star" class="h-3.5 w-3.5" /></span>
+          <span class="rounded-lg px-2 py-1 text-xs font-semibold" :class="portfolioTone(project)">Portfolio {{ project.portfolioVisible ? 'visible' : 'masqué' }}</span>
+          <span class="rounded-lg px-2 py-1 text-xs font-semibold" :class="caseStudyTone(project)">Étude {{ project.caseStudyPublished && project.caseStudyApprovedAt ? 'publiée' : project.caseStudyPublished ? 'à approuver' : 'brouillon' }}</span>
           <span v-for="tag in project.tags.slice(0, 2)" :key="`m-${project.id}-${tag}`" class="text-xs bg-gray-50 dark:bg-white/[0.04] text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded-md">{{ tag }}</span>
         </div>
-        <div class="mt-3 flex items-center gap-3">
-          <NuxtLink :to="`/admin/projects/${project.id}`" class="text-xs font-semibold text-violet-600">Piloter</NuxtLink>
+        <div class="mt-3 flex flex-wrap items-center gap-1.5">
+          <NuxtLink :to="`/admin/projects/${project.id}`" class="inline-flex min-h-10 items-center rounded-lg px-2 text-xs font-semibold text-violet-700 hover:bg-violet-50 dark:text-violet-300 dark:hover:bg-violet-500/10">Piloter</NuxtLink>
           <NuxtLink v-if="project.caseStudyPublished && project.caseStudyApprovedAt" :to="`/projets/${project.slug}`" target="_blank" class="text-xs font-semibold text-cyan-700 dark:text-cyan-300">Voir l’étude</NuxtLink>
-          <button class="text-xs text-violet-600" @click="openEdit(project)">Editer</button>
-          <button class="text-xs text-red-500" @click="handleDelete(project.id)">Supprimer</button>
+          <button class="min-h-10 rounded-lg px-2 text-xs text-violet-700 hover:bg-violet-50 dark:text-violet-300 dark:hover:bg-violet-500/10" @click="openEdit(project)">Éditer</button>
+          <button class="min-h-10 rounded-lg px-2 text-xs text-red-600 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-500/10" @click="handleDelete(project.id)">Supprimer</button>
         </div>
       </div>
     </div>
 
     <!-- Table -->
-    <div class="admin-table-wrap hidden sm:block bg-white dark:bg-[#111118] border border-gray-100 dark:border-white/[0.06] rounded-xl overflow-hidden">
+    <div v-if="!store.loading && !loadError" class="admin-table-wrap hidden sm:block bg-white dark:bg-[#111118] border border-gray-100 dark:border-white/[0.06] rounded-xl overflow-hidden">
       <table class="admin-table w-full">
         <thead>
           <tr class="border-b border-gray-100 dark:border-white/[0.06]">
-            <th class="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Projet</th>
-            <th class="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide hidden sm:table-cell">Catégorie</th>
-            <th class="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Publication</th>
-            <th class="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide hidden md:table-cell">Technologies</th>
-            <th class="text-right px-5 py-3.5 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Actions</th>
+            <th class="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Projet</th>
+            <th class="hidden px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300 sm:table-cell">Catégorie</th>
+            <th class="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Publication</th>
+            <th class="hidden px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300 md:table-cell">Technologies</th>
+            <th class="px-5 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -410,18 +450,18 @@ const catColors: Record<string, string> = {
                 </div>
                 <div>
                   <p class="text-sm font-medium text-gray-800 dark:text-gray-200 leading-tight">{{ project.title }}</p>
-                  <p class="text-xs text-gray-400 mt-0.5 line-clamp-1 max-w-52">{{ project.description }}</p>
+                  <p class="mt-0.5 line-clamp-1 max-w-52 text-xs text-gray-600 dark:text-gray-300">{{ project.description }}</p>
                 </div>
               </div>
             </td>
             <td class="px-5 py-3.5 hidden sm:table-cell">
               <span class="text-xs font-semibold px-2.5 py-1 rounded-lg" :class="catColors[project.category]">{{ project.category }}</span>
-              <span v-if="project.featured" class="ml-1.5 text-xs font-semibold px-2 py-1 rounded-lg bg-yellow-50 text-yellow-600 dark:bg-yellow-500/10 dark:text-yellow-400">★</span>
+              <span v-if="project.featured" class="ml-1.5 inline-flex h-7 w-7 items-center justify-center rounded-lg bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300" aria-label="Projet mis en avant"><AdminAdminIcon icon="star" class="h-3.5 w-3.5" /></span>
             </td>
             <td class="px-5 py-3.5">
               <div class="flex flex-col items-start gap-1">
-                <span class="rounded-lg px-2 py-1 text-xs font-semibold" :class="project.portfolioVisible ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' : 'bg-gray-100 text-gray-600 dark:bg-white/[0.06] dark:text-gray-300'">Portfolio {{ project.portfolioVisible ? 'visible' : 'masqué' }}</span>
-                <span class="rounded-lg px-2 py-1 text-xs font-semibold" :class="project.caseStudyPublished && project.caseStudyApprovedAt ? 'bg-cyan-50 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300' : project.caseStudyPublished ? 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300' : 'bg-gray-100 text-gray-600 dark:bg-white/[0.06] dark:text-gray-300'">Étude {{ project.caseStudyPublished && project.caseStudyApprovedAt ? 'publiée' : project.caseStudyPublished ? 'à approuver' : 'brouillon' }}</span>
+                <span class="rounded-lg px-2 py-1 text-xs font-semibold" :class="portfolioTone(project)">Portfolio {{ project.portfolioVisible ? 'visible' : 'masqué' }}</span>
+                <span class="rounded-lg px-2 py-1 text-xs font-semibold" :class="caseStudyTone(project)">Étude {{ project.caseStudyPublished && project.caseStudyApprovedAt ? 'publiée' : project.caseStudyPublished ? 'à approuver' : 'brouillon' }}</span>
               </div>
             </td>
             <td class="px-5 py-3.5 hidden md:table-cell">
@@ -466,7 +506,7 @@ const catColors: Record<string, string> = {
       </table>
 
       <div v-if="!store.projects.length" class="py-16 text-center">
-        <p class="text-sm text-gray-400 mb-3">Aucun projet pour l'instant</p>
+        <p class="mb-3 text-sm text-gray-600 dark:text-gray-300">Aucun projet pour l'instant</p>
         <button class="text-sm font-medium text-violet-600 hover:text-violet-700 transition-colors" @click="openNew">+ Créer le premier</button>
       </div>
     </div>

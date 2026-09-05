@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { computeTotals, normalizeBillingItems } from '../server/utils/billing'
-import { normalizeInvoicePaymentState } from '../server/utils/invoiceState'
+import { assertInvoiceStatusTransition, normalizeInvoicePaymentState } from '../server/utils/invoiceState'
 
 beforeAll(() => {
   vi.stubGlobal('createError', (input: { statusCode: number, message: string }) => Object.assign(new Error(input.message), input))
@@ -89,7 +89,7 @@ describe('parcours client vers paiement', () => {
     expect(computeTotals(invoiceItems).totalCents).toBe(605_360)
   })
 
-  it('horodate automatiquement le paiement et efface la date si la facture est rouverte', () => {
+  it('normalise la date de paiement selon le statut demandé', () => {
     const now = new Date('2026-08-05T17:00:00.000Z')
     expect(normalizeInvoicePaymentState('paid', null, now)).toEqual({
       status: 'paid',
@@ -104,5 +104,14 @@ describe('parcours client vers paiement', () => {
   it('refuse un statut ou une date de paiement invalides', () => {
     expect(() => normalizeInvoicePaymentState('unknown', null)).toThrow('Invalid invoice status')
     expect(() => normalizeInvoicePaymentState('paid', 'not-a-date')).toThrow('Invalid payment date')
+  })
+
+  it('bloque la réouverture des factures payées ou annulées', () => {
+    expect(() => assertInvoiceStatusTransition('paid', 'sent')).toThrow('n’est pas autorisée')
+    expect(() => assertInvoiceStatusTransition('cancelled', 'paid')).toThrow('n’est pas autorisée')
+    expect(() => assertInvoiceStatusTransition('draft', 'paid')).toThrow('n’est pas autorisée')
+    expect(() => assertInvoiceStatusTransition('sent', 'paid')).toThrow('n’est pas autorisée')
+    expect(() => assertInvoiceStatusTransition('sent', 'overdue')).not.toThrow()
+    expect(() => assertInvoiceStatusTransition('overdue', 'cancelled')).not.toThrow()
   })
 })

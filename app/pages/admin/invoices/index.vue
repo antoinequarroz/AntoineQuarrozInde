@@ -18,6 +18,8 @@ const showBillingProfile = ref(false)
 const savingBillingProfile = ref(false)
 const savingInvoice = ref(false)
 const runningAction = ref<string | null>(null)
+const loadingData = ref(true)
+const loadError = ref('')
 const showPdfPreview = ref(false)
 const pdfPreviewUrl = ref<string | null>(null)
 const pdfPreviewTitle = ref('')
@@ -93,6 +95,10 @@ async function saveBillingProfile() {
 }
 const form = reactive({ number: '', clientId: null as number | null, quoteId: null as number | null, projectId: null as number | null, amountCents: 0, currency: 'CHF', status: 'draft' as Invoice['status'], issuedAt: '', dueAt: '', paidAt: '', notes: '', documentType: 'invoice' as Invoice['documentType'], creditedInvoiceId: null as number | null, paymentReferenceType: 'NON' as Invoice['paymentReferenceType'], paymentReference: '' })
 const paymentForm = reactive({ invoiceId: 0, amountCents: 0, method: 'bank_transfer' as NonNullable<Invoice['payments']>[number]['method'], paidAt: new Date().toISOString().slice(0, 10), reference: '', notes: '' })
+const paymentAmount = computed({
+  get: () => paymentForm.amountCents / 100,
+  set: value => { paymentForm.amountCents = Math.round(Number(value || 0) * 100) },
+})
 const canUseQrr = computed(() => isQrIban(billingProfile.billingIban))
 const canUseScor = computed(() => isValidSwissIban(billingProfile.billingIban) && !canUseQrr.value)
 const qrReferenceError = computed(() => getQrReferenceError(
@@ -115,6 +121,8 @@ const viewMode = ref<'table' | 'kanban'>('table')
 const search = ref('')
 const statusFilter = ref<'all' | Invoice['status']>('all')
 const selectedInvoice = computed(() => store.invoices.find(i => i.id === selectedId.value) ?? null)
+const canRecordPayment = (invoice: Invoice) => invoice.documentType === 'invoice' && invoice.status !== 'paid' && invoice.status !== 'cancelled'
+const canMarkSent = (invoice: Invoice) => invoice.status === 'draft'
 const invoiceStatuses: Array<Invoice['status']> = ['draft', 'sent', 'overdue', 'paid', 'cancelled']
 const kanbanInvoices = computed(() =>
   invoiceStatuses.map(status => ({
@@ -158,17 +166,31 @@ function generateInvoiceScorReference() {
   form.paymentReferenceType = 'SCOR'
   form.paymentReference = generateScorReference(form.number || Date.now())
 }
+function todayInZurich() {
+  const parts = new Intl.DateTimeFormat('en', {
+    timeZone: 'Europe/Zurich',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date())
+  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find(item => item.type === type)?.value || ''
+  return `${part('year')}-${part('month')}-${part('day')}`
+}
 async function nextNumber(kind: 'invoice' | 'credit_note' = 'invoice') { try { return (await $fetch<{ number: string }>('/api/admin/billing/next-number', { query: { kind }, headers: auth.authHeader() })).number } catch { return '' } }
-async function openNew() { editing.value = null; Object.assign(form, { number: await nextNumber(), clientId: null, quoteId: null, projectId: null, amountCents: 0, currency: 'CHF', status: 'draft', issuedAt: new Date().toISOString().slice(0, 10), dueAt: '', paidAt: '', notes: '', documentType: 'invoice', creditedInvoiceId: null, paymentReferenceType: 'NON', paymentReference: '' }); formItems.value = [{ label: 'Prestation', description: null, quantity: 1, unitPriceCents: 0, taxRate: 8.1 }]; showForm.value = true }
+async function openNew() { editing.value = null; Object.assign(form, { number: await nextNumber(), clientId: null, quoteId: null, projectId: null, amountCents: 0, currency: 'CHF', status: 'draft', issuedAt: todayInZurich(), dueAt: '', paidAt: '', notes: '', documentType: 'invoice', creditedInvoiceId: null, paymentReferenceType: 'NON', paymentReference: '' }); formItems.value = [{ label: 'Prestation', description: null, quantity: 1, unitPriceCents: 0, taxRate: 8.1 }]; showForm.value = true }
 function openEdit(x: Invoice) { if (x.lockedAt || x.status !== 'draft') { toast.error('Ce document est verrouillé. Duplique-le ou crée un avoir pour le corriger.'); return }; editing.value = x; Object.assign(form, x); formItems.value = (x.items?.length ? x.items.map(i => ({ label: i.label, description: i.description, quantity: i.quantity, unitPriceCents: i.unitPriceCents, taxRate: i.taxRate })) : [{ label: 'Prestation', description: null, quantity: 1, unitPriceCents: 0, taxRate: 8.1 }]); showForm.value = true }
-async function duplicateInvoice(i: Invoice) { editing.value = null; Object.assign(form, { ...i, number: await nextNumber(), quoteId: null, status: 'draft', issuedAt: new Date().toISOString().slice(0, 10), dueAt: '', paidAt: '', documentType: 'invoice', creditedInvoiceId: null, paymentReferenceType: 'NON', paymentReference: '' }); formItems.value = (i.items?.length ? i.items.map(item => ({ label: item.label, description: item.description, quantity: item.quantity, unitPriceCents: item.unitPriceCents, taxRate: item.taxRate })) : [{ label: 'Prestation', description: null, quantity: 1, unitPriceCents: 0, taxRate: 8.1 }]); showForm.value = true }
-async function createCreditNote(i: Invoice) { editing.value = null; Object.assign(form, { ...i, number: await nextNumber('credit_note'), quoteId: null, status: 'draft', issuedAt: new Date().toISOString().slice(0, 10), dueAt: '', paidAt: '', notes: `Avoir relatif à la facture ${i.number}`, documentType: 'credit_note', creditedInvoiceId: i.id, paymentReferenceType: 'NON', paymentReference: '' }); formItems.value = (i.items?.length ? i.items.map(item => ({ label: item.label, description: item.description, quantity: item.quantity, unitPriceCents: item.unitPriceCents, taxRate: item.taxRate })) : [{ label: 'Correction', description: null, quantity: 1, unitPriceCents: i.totalCents ?? i.amountCents, taxRate: 0 }]); showForm.value = true }
+async function duplicateInvoice(i: Invoice) { editing.value = null; Object.assign(form, { ...i, number: await nextNumber(), quoteId: null, status: 'draft', issuedAt: todayInZurich(), dueAt: '', paidAt: '', documentType: 'invoice', creditedInvoiceId: null, paymentReferenceType: 'NON', paymentReference: '' }); formItems.value = (i.items?.length ? i.items.map(item => ({ label: item.label, description: item.description, quantity: item.quantity, unitPriceCents: item.unitPriceCents, taxRate: item.taxRate })) : [{ label: 'Prestation', description: null, quantity: 1, unitPriceCents: 0, taxRate: 8.1 }]); showForm.value = true }
+async function createCreditNote(i: Invoice) { editing.value = null; Object.assign(form, { ...i, number: await nextNumber('credit_note'), quoteId: null, status: 'draft', issuedAt: todayInZurich(), dueAt: '', paidAt: '', notes: `Avoir relatif à la facture ${i.number}`, documentType: 'credit_note', creditedInvoiceId: i.id, paymentReferenceType: 'NON', paymentReference: '' }); formItems.value = (i.items?.length ? i.items.map(item => ({ label: item.label, description: item.description, quantity: item.quantity, unitPriceCents: item.unitPriceCents, taxRate: item.taxRate })) : [{ label: 'Correction', description: null, quantity: 1, unitPriceCents: i.totalCents ?? i.amountCents, taxRate: 0 }]); showForm.value = true }
 async function sendInvoiceEmail(i: Invoice) { runningAction.value = `send-${i.id}`; try { await $fetch('/api/invoices/send', { method: 'POST', body: { id: i.id }, headers: auth.authHeader() }); await store.ensureLoaded(true); const label = i.documentType === 'credit_note' ? 'Avoir' : 'Facture'; toast.success(`${label} ${i.number} envoyé${label === 'Facture' ? 'e' : ''} avec son PDF`) } catch (error: any) { toast.error(error?.data?.message || 'Impossible d’envoyer le document') } finally { runningAction.value = null } }
 async function toggleReminders(i: Invoice) { await $fetch('/api/admin/invoice-reminders', { method: 'PUT', headers: auth.authHeader(), body: { id: i.id, paused: !i.remindersPaused } }); await store.ensureLoaded(true); toast.success(i.remindersPaused ? 'Relances reprises' : 'Relances suspendues') }
 function computeFormTotals(items: Array<{ quantity: number, unitPriceCents: number, taxRate: number }>) { const subtotalCents = items.reduce((acc, item) => acc + Math.round((Number(item.quantity) || 0) * (Number(item.unitPriceCents) || 0)), 0); const totalCents = items.reduce((acc, item) => { const line = Math.round((Number(item.quantity) || 0) * (Number(item.unitPriceCents) || 0)); return acc + Math.round(line * (1 + (Number(item.taxRate) || 0) / 100)) }, 0); return { subtotalCents, taxCents: Math.max(0, totalCents - subtotalCents), totalCents } }
 const draftTotals = computed(() => computeFormTotals(formItems.value))
 function addItem() { formItems.value.push({ label: '', description: null, quantity: 1, unitPriceCents: 0, taxRate: 8.1 }) }
 function removeItem(idx: number) { formItems.value.splice(idx, 1) }
+function itemUnitPrice(item: { unitPriceCents: number }) { return item.unitPriceCents / 100 }
+function setItemUnitPrice(item: { unitPriceCents: number }, event: Event) {
+  item.unitPriceCents = Math.round(Number((event.target as HTMLInputElement).value || 0) * 100)
+}
 async function submit() {
   if (qrReferenceError.value) {
     toast.error(qrReferenceError.value)
@@ -193,26 +215,36 @@ async function submit() {
     savingInvoice.value = false
   }
 }
-async function del(id: number) { if (!confirm('Supprimer ?')) return; try { await store.remove(id); if (selectedId.value === id) selectedId.value = store.invoices[0]?.id ?? null; toast.success('Supprime') } catch { toast.error('Erreur') } }
+async function del(id: number) { if (!confirm('Supprimer cette facture ?')) return; try { await store.remove(id); if (selectedId.value === id) selectedId.value = store.invoices[0]?.id ?? null; toast.success('Facture supprimée') } catch { toast.error('La facture n’a pas pu être supprimée') } }
 async function quickSetStatus(id: number, status: Invoice['status']) {
   try {
     const invoice = store.invoices.find(i => i.id === id)
+    if (!invoice) return
+    if (status === 'sent' && !canMarkSent(invoice)) {
+      toast.error('Seul un brouillon peut être marqué comme envoyé.')
+      return
+    }
     if (status === 'paid' && invoice) {
+      if (!canRecordPayment(invoice)) {
+        toast.error('Aucun paiement ne peut être ajouté à ce document.')
+        return
+      }
       openPaymentForm(invoice)
       return
     }
     const patch: Record<string, any> = { status }
-    if (status === 'paid' && !store.invoices.find(i => i.id === id)?.paidAt) patch.paidAt = new Date().toISOString().slice(0, 10)
+    if (status === 'paid' && !store.invoices.find(i => i.id === id)?.paidAt) patch.paidAt = todayInZurich()
     await store.update(id, patch as any)
-    toast.success(`Statut: ${status}`)
+    toast.success(`Statut : ${statusLabel(status)}`)
   } catch {
     toast.error('Erreur statut')
   }
 }
 function openPaymentForm(invoice: Invoice) {
+  if (!canRecordPayment(invoice)) { toast.error('Aucun paiement ne peut être ajouté à ce document.'); return }
   const remaining = Math.max(0, (invoice.totalCents ?? invoice.amountCents) - invoice.paidAmountCents)
   if (!remaining) { toast.error('Ce document est déjà entièrement réglé.'); return }
-  Object.assign(paymentForm, { invoiceId: invoice.id, amountCents: remaining, method: 'bank_transfer', paidAt: new Date().toISOString().slice(0, 10), reference: '', notes: '' })
+  Object.assign(paymentForm, { invoiceId: invoice.id, amountCents: remaining, method: 'bank_transfer', paidAt: todayInZurich(), reference: '', notes: '' })
   showPaymentForm.value = true
 }
 async function recordPayment() {
@@ -256,7 +288,8 @@ async function markInvoiceEvent(i: Invoice, event: 'sent_at' | 'viewed_at' | 'pa
 function formatAmount(amountCents: number, currency: string) { return `${(amountCents / 100).toFixed(2)} ${currency}` }
 function escapeCsv(value: string | number | null | undefined) { const str = value == null ? '' : String(value); return `"${str.replace(/"/g, '""')}"` }
 function exportCsv() {
-  const header = ['Numero', 'Client', 'Devis', 'Montant', 'Devise', 'Statut', 'Emission', 'Echeance', 'PayeLe', 'Notes']
+  if (loadingData.value || loadError.value) return
+  const header = ['Numéro', 'Client', 'Devis', 'Montant', 'Devise', 'Statut', 'Émission', 'Échéance', 'Payée le', 'Notes']
   const rows = store.invoices.map(i => [
     i.number,
     i.clientId ? (clientsById.value.get(i.clientId)?.name || '') : '',
@@ -279,22 +312,22 @@ function exportCsv() {
   URL.revokeObjectURL(url)
 }
 function printSelected() {
-  if (!selectedInvoice.value) { toast.error('Selectionne une facture'); return }
+  if (loadingData.value || loadError.value || !selectedInvoice.value) { toast.error('Sélectionne une facture'); return }
   const i = selectedInvoice.value
   const documentLabel = i.documentType === 'credit_note' ? 'Avoir' : 'Facture'
   const client = i.clientId ? (clientsById.value.get(i.clientId)?.name || '-') : '-'
   const quote = i.quoteId ? (quotesById.value.get(i.quoteId)?.number || '-') : '-'
   const html = `
     <html><head><title>${documentLabel} ${i.number}</title></head>
-    <body style="font-family: Inter, system-ui, sans-serif; padding: 24px; color: #111827;">
+    <body style="font-family: ui-sans-serif, system-ui, sans-serif; padding: 24px; color: #111827;">
       <h1 style="margin:0 0 16px;">${documentLabel} ${i.number}</h1>
       <p><strong>Client:</strong> ${client}</p>
       <p><strong>Devis:</strong> ${quote}</p>
       <p><strong>Montant:</strong> ${formatAmount(i.amountCents, i.currency)}</p>
       <p><strong>Statut:</strong> ${i.status}</p>
       <p><strong>Emission:</strong> ${i.issuedAt || '-'}</p>
-      <p><strong>Echeance:</strong> ${i.dueAt || '-'}</p>
-      <p><strong>Paye le:</strong> ${i.paidAt || '-'}</p>
+      <p><strong>Échéance :</strong> ${i.dueAt || '-'}</p>
+      <p><strong>Payée le :</strong> ${i.paidAt || '-'}</p>
       <p><strong>Notes:</strong><br/>${(i.notes || '-').replace(/\n/g, '<br/>')}</p>
     </body></html>`
   const win = window.open('', '_blank')
@@ -352,8 +385,24 @@ async function downloadPdf(invoice = selectedInvoice.value) {
     downloadingPdf.value = false
   }
 }
+async function loadInvoicesPage(force = false) {
+  loadingData.value = true
+  loadError.value = ''
+  try {
+    await Promise.all([store.ensureLoaded(force), clients.ensureLoaded(force), quotes.ensureLoaded(force), projects.ensureLoaded(force), loadBillingProfile()])
+    return true
+  }
+  catch {
+    loadError.value = 'Les factures ne peuvent pas être chargées pour le moment. Vérifie ta connexion, puis réessaie.'
+    return false
+  }
+  finally {
+    loadingData.value = false
+  }
+}
+
 onMounted(async () => {
-  await Promise.all([store.ensureLoaded(), clients.ensureLoaded(), quotes.ensureLoaded(), projects.ensureLoaded(), loadBillingProfile()])
+  if (!await loadInvoicesPage()) return
   if (route.query.new === '1') {
     await openNew()
     const id = Number(route.query.clientId || 0)
@@ -372,7 +421,7 @@ onMounted(async () => {
   const qInvoiceId = Number(route.query.invoiceId || 0)
   selectedId.value = store.invoices.some(invoice => invoice.id === qInvoiceId)
     ? qInvoiceId
-    : store.invoices.at(0)?.id ?? null
+    : (qInvoiceId > 0 ? null : (store.invoices.at(0)?.id ?? null))
 })
 onBeforeUnmount(releasePdfPreview)
 </script>
@@ -382,16 +431,15 @@ onBeforeUnmount(releasePdfPreview)
       <div class="pointer-events-none absolute -top-16 right-[8%] h-48 w-48 rounded-full bg-violet-500/10 blur-3xl" />
       <div class="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div class="min-w-0">
-          <span class="rounded-md bg-gradient-brand px-2 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white">Facturation</span>
-          <h1 class="mt-2 font-display text-2xl font-semibold text-gray-950 dark:text-white sm:text-3xl">Factures</h1>
-          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Emets, encaisse et relance tes factures clients.</p>
+          <h1 class="font-display text-2xl font-semibold text-gray-950 dark:text-white sm:text-3xl">Factures</h1>
+          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Émets, encaisse et relance tes factures clients.</p>
         </div>
         <div class="admin-page-actions flex flex-wrap items-center gap-2">
-          <button class="inline-flex h-10 items-center justify-center rounded-lg border border-gray-200 px-3 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-white/[0.12] dark:text-gray-200 dark:hover:bg-white/[0.04]" @click="exportCsv">Exporter CSV</button>
-          <button class="inline-flex h-10 items-center justify-center rounded-lg border border-gray-200 px-3 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-white/[0.12] dark:text-gray-200 dark:hover:bg-white/[0.04]" @click="printSelected">Imprimer</button>
-          <button class="inline-flex h-10 items-center justify-center rounded-lg border border-gray-200 px-3 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/[0.12] dark:text-gray-200 dark:hover:bg-white/[0.04]" :disabled="!selectedInvoice || loadingPdf" @click="previewPdf()">{{ loadingPdf ? 'Génération…' : 'Aperçu PDF' }}</button>
-          <button class="inline-flex h-10 items-center justify-center rounded-lg border px-3 text-xs font-semibold transition" :class="billingProfileComplete ? 'border-emerald-300 text-emerald-700 dark:border-emerald-500/30 dark:text-emerald-300' : 'border-amber-300 text-amber-700 dark:border-amber-500/30 dark:text-amber-300'" @click="showBillingProfile = !showBillingProfile">Coordonnées &amp; IBAN</button>
-          <button class="inline-flex h-10 items-center justify-center rounded-lg bg-gradient-brand px-4 text-xs font-semibold text-white shadow-glow-sm transition hover:opacity-90" @click="openNew">Nouvelle</button>
+          <button :disabled="loadingData || Boolean(loadError)" class="inline-flex min-h-11 items-center justify-center rounded-lg border border-gray-200 px-3 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/[0.12] dark:text-gray-200 dark:hover:bg-white/[0.04]" @click="exportCsv">Exporter CSV</button>
+          <button :disabled="loadingData || Boolean(loadError) || !selectedInvoice" class="inline-flex min-h-11 items-center justify-center rounded-lg border border-gray-200 px-3 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/[0.12] dark:text-gray-200 dark:hover:bg-white/[0.04]" @click="printSelected">Imprimer</button>
+          <button class="inline-flex min-h-11 items-center justify-center rounded-lg border border-gray-200 px-3 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/[0.12] dark:text-gray-200 dark:hover:bg-white/[0.04]" :disabled="loadingData || Boolean(loadError) || !selectedInvoice || loadingPdf" @click="previewPdf()">{{ loadingPdf ? 'Génération…' : 'Aperçu PDF' }}</button>
+          <button class="inline-flex min-h-11 items-center justify-center rounded-lg border px-3 text-xs font-semibold transition" :class="billingProfileComplete ? 'border-emerald-300 text-emerald-700 dark:border-emerald-500/30 dark:text-emerald-300' : 'border-amber-300 text-amber-700 dark:border-amber-500/30 dark:text-amber-300'" @click="showBillingProfile = !showBillingProfile">Coordonnées &amp; IBAN</button>
+          <button class="inline-flex min-h-11 items-center justify-center rounded-lg bg-gradient-brand px-4 text-sm font-semibold text-white shadow-glow-sm transition hover:opacity-90" @click="openNew">Nouvelle facture</button>
         </div>
       </div>
     </section>
@@ -418,13 +466,28 @@ onBeforeUnmount(releasePdfPreview)
         <label class="space-y-1 text-xs text-gray-500">IDE / TVA<input v-model="billingProfile.billingUid" class="input-field"></label>
         <label class="space-y-1 text-xs text-gray-500">Conditions<input v-model="billingProfile.billingTerms" class="input-field"></label>
       </div>
-      <div class="mt-4 flex flex-wrap items-center justify-between gap-3"><p class="text-xs text-gray-500 dark:text-gray-400">Le statut « Complet » s’active lorsque l’identité, l’adresse et l’IBAN sont renseignés.</p><div class="flex gap-2"><button type="button" class="min-h-11 px-4 text-sm" @click="showBillingProfile = false">Annuler</button><button class="min-h-11 rounded-lg bg-violet-600 px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60" :disabled="savingBillingProfile || Boolean(billingIbanError)">{{ savingBillingProfile ? 'Enregistrement…' : 'Enregistrer' }}</button></div></div>
+      <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+        <p class="text-xs text-gray-500 dark:text-gray-400">Le statut « Complet » s’active lorsque l’identité, l’adresse et l’IBAN sont renseignés.</p>
+        <div class="flex gap-2">
+          <button type="button" class="min-h-11 px-4 text-sm" @click="showBillingProfile = false">Annuler</button>
+          <button class="min-h-11 rounded-lg bg-violet-600 px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60" :disabled="savingBillingProfile || Boolean(billingIbanError)">{{ savingBillingProfile ? 'Enregistrement…' : 'Enregistrer' }}</button>
+        </div>
+      </div>
     </form>
-    <div v-if="!isValidSwissIban(billingProfile.billingIban) && !showBillingProfile" class="flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-950 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-100 sm:flex-row sm:items-center sm:justify-between" role="status">
+    <div v-if="!loadingData && !loadError && !isValidSwissIban(billingProfile.billingIban) && !showBillingProfile" class="flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-950 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-100 sm:flex-row sm:items-center sm:justify-between" role="status">
       <div><p class="text-sm font-semibold">IBAN non configuré</p><p class="mt-1 text-xs text-amber-800 dark:text-amber-200/80">Ajoute ton IBAN pour générer une QR-facture suisse. Tu peux déjà créer et prévisualiser un PDF classique sans IBAN.</p></div>
       <button type="button" class="min-h-10 shrink-0 rounded-lg bg-amber-900 px-4 text-xs font-semibold text-white transition hover:bg-amber-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 dark:bg-amber-300 dark:text-amber-950 dark:hover:bg-amber-200" @click="showBillingProfile = true">Ajouter mon IBAN</button>
     </div>
-    <div class="rounded-xl border border-gray-100 dark:border-white/[0.06] bg-white dark:bg-[#111118] p-3 grid grid-cols-1 sm:grid-cols-[1fr_170px] gap-2">
+    <div v-if="loadingData" role="status" aria-live="polite" class="space-y-3">
+      <span class="sr-only">Chargement des factures</span>
+      <div class="h-20 animate-pulse rounded-xl bg-gray-200/70 dark:bg-white/[0.06]" />
+      <div class="h-64 animate-pulse rounded-xl bg-gray-200/70 dark:bg-white/[0.06]" />
+    </div>
+    <div v-else-if="loadError" role="alert" class="flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-red-900 dark:border-red-400/20 dark:bg-red-400/10 dark:text-red-100 sm:flex-row sm:items-center sm:justify-between">
+      <div><p class="font-semibold">Chargement impossible</p><p class="mt-1 text-sm">{{ loadError }}</p></div>
+      <button class="min-h-11 shrink-0 rounded-lg bg-red-700 px-4 text-sm font-semibold text-white hover:bg-red-800" @click="loadInvoicesPage(true)">Réessayer</button>
+    </div>
+    <div v-if="!loadingData && !loadError" class="rounded-xl border border-gray-100 dark:border-white/[0.06] bg-white dark:bg-[#111118] p-3 grid grid-cols-1 sm:grid-cols-[1fr_170px] gap-2">
       <input v-model="search" class="input-field" placeholder="Rechercher facture...">
       <select v-model="statusFilter" class="input-field">
         <option value="all">Tous statuts</option>
@@ -438,56 +501,90 @@ onBeforeUnmount(releasePdfPreview)
         <button class="px-3 py-1.5 text-xs rounded-lg border" :class="viewMode==='kanban' ? 'bg-violet-600 text-white border-violet-600' : 'border-gray-200 dark:border-white/[0.12]'" @click="viewMode='kanban'">Kanban</button>
       </div>
     </div>
-    <div class="grid lg:grid-cols-[1fr_320px] gap-4">
+    <div v-if="!loadingData && !loadError" class="grid gap-4 lg:grid-cols-[1fr_320px]">
     <div class="space-y-3">
       <div v-if="viewMode==='kanban'" class="grid grid-cols-1 xl:grid-cols-5 gap-3">
         <div v-for="col in kanbanInvoices" :key="`i-col-${col.status}`" class="rounded-xl border border-gray-100 dark:border-white/[0.06] bg-white dark:bg-[#111118] p-3 space-y-2">
           <p class="text-xs uppercase text-gray-400">{{ statusLabel(col.status) }} ({{ col.items.length }})</p>
-          <button
+          <article
             v-for="i in col.items"
             :key="`kanban-${i.id}`"
-            class="w-full rounded-lg border border-gray-100 dark:border-white/[0.08] p-2.5 text-left"
-            @click="selectedId = i.id"
+            class="rounded-lg border border-gray-100 p-2.5 dark:border-white/[0.08]"
           >
-            <p class="text-sm font-semibold">{{ i.documentType === 'credit_note' ? 'Avoir' : 'Facture' }} {{ i.number }}</p>
-            <p class="text-xs text-gray-500 line-clamp-1">{{ i.clientId ? clientsById.get(i.clientId)?.name || '-' : '-' }}</p>
-            <p class="text-xs mt-1">{{ formatAmount(i.amountCents, i.currency) }}</p>
+            <button type="button" class="w-full text-left" @click="selectedId = i.id">
+              <p class="text-sm font-semibold">{{ i.documentType === 'credit_note' ? 'Avoir' : 'Facture' }} {{ i.number }}</p>
+              <p class="line-clamp-1 text-xs text-gray-500">{{ i.clientId ? clientsById.get(i.clientId)?.name || '-' : '-' }}</p>
+              <p class="mt-1 text-xs">{{ formatAmount(i.amountCents, i.currency) }}</p>
+            </button>
             <div class="mt-2 flex flex-wrap gap-2">
-              <button v-if="i.status!=='sent'" class="text-xs text-amber-600" @click.stop="quickSetStatus(i.id,'sent')">Envoyer</button>
-              <button v-if="i.status!=='paid'" class="text-xs text-emerald-600" @click.stop="quickSetStatus(i.id,'paid')">Payer</button>
-              <button v-if="i.status === 'draft'" class="text-xs text-violet-600" @click.stop="openEdit(i)">Éditer</button>
+              <button v-if="canMarkSent(i)" class="min-h-10 rounded-lg px-2 text-xs text-amber-700" @click="quickSetStatus(i.id, 'sent')">Envoyer</button>
+              <button v-if="canRecordPayment(i)" class="min-h-10 rounded-lg px-2 text-xs text-emerald-700" @click="quickSetStatus(i.id, 'paid')">Paiement</button>
+              <button v-if="i.status === 'draft'" class="min-h-10 rounded-lg px-2 text-xs text-violet-700" @click="openEdit(i)">Éditer</button>
             </div>
-          </button>
+          </article>
         </div>
       </div>
 
-      <div class="sm:hidden space-y-2">
-        <button
+      <div v-if="viewMode === 'table'" class="space-y-2 sm:hidden">
+        <article
           v-for="q in filteredInvoices"
           :key="`mobile-${q.id}`"
-          class="w-full rounded-xl border p-3 text-left bg-white dark:bg-[#111118] border-gray-100 dark:border-white/[0.06]"
+          class="w-full rounded-xl border border-gray-100 bg-white p-3 text-left dark:border-white/[0.06] dark:bg-[#111118]"
           :class="selectedId === q.id ? 'ring-1 ring-violet-500/60' : ''"
-          @click="selectedId = q.id"
         >
-          <div class="flex items-start justify-between gap-2">
-            <p class="text-sm font-semibold">{{ q.documentType === 'credit_note' ? 'Avoir' : 'Facture' }} {{ q.number }}</p>
-            <span class="text-xs uppercase text-gray-400">{{ statusLabel(q.status) }}</span>
+          <button type="button" class="w-full text-left" :aria-expanded="selectedId === q.id" @click="selectedId = selectedId === q.id ? null : q.id">
+            <div class="flex items-start justify-between gap-2">
+              <p class="text-sm font-semibold">{{ q.documentType === 'credit_note' ? 'Avoir' : 'Facture' }} {{ q.number }}</p>
+              <span class="text-xs font-medium text-gray-500">{{ statusLabel(q.status) }}</span>
+            </div>
+            <p class="mt-1 text-xs text-gray-500">{{ q.clientId ? clientsById.get(q.clientId)?.name || 'Client inconnu' : 'Aucun client' }}</p>
+            <p class="mt-1 text-xs text-gray-500">Échéance : {{ q.dueAt || 'Non définie' }}</p>
+            <p class="mt-2 text-sm font-semibold">{{ formatAmount(q.amountCents, q.currency) }}</p>
+          </button>
+          <div class="mt-3 flex flex-wrap items-center gap-1 border-t border-gray-100 pt-2 dark:border-white/[0.06]">
+            <button v-if="canRecordPayment(q)" class="min-h-10 rounded-lg px-2 text-xs font-medium text-emerald-700 hover:bg-emerald-50 dark:text-emerald-300 dark:hover:bg-emerald-500/10" @click="quickSetStatus(q.id, 'paid')">Enregistrer un paiement</button>
+            <button v-if="q.status === 'draft'" class="min-h-10 rounded-lg px-2 text-xs text-violet-700 hover:bg-violet-50 dark:text-violet-300 dark:hover:bg-violet-500/10" @click="openEdit(q)">Éditer</button>
+            <button v-if="q.status === 'draft'" class="min-h-10 rounded-lg px-2 text-xs text-red-600 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-500/10" @click="del(q.id)">Supprimer</button>
           </div>
-          <p class="mt-1 text-xs text-gray-500">{{ q.clientId ? clientsById.get(q.clientId)?.name || '-' : '-' }}</p>
-          <p class="mt-1 text-xs text-gray-500">Echeance: {{ q.dueAt || '-' }}</p>
-          <p class="mt-2 text-sm font-medium">{{ formatAmount(q.amountCents, q.currency) }}</p>
-          <div class="mt-3 flex items-center gap-3">
-            <button class="text-xs text-emerald-600" @click.stop="quickSetStatus(q.id, 'paid')">Paye</button>
-            <button v-if="q.status === 'draft'" class="text-xs text-violet-600" @click.stop="openEdit(q)">Éditer</button>
-            <button v-if="q.status === 'draft'" class="text-xs text-red-500" @click.stop="del(q.id)">Supprimer</button>
+          <div v-if="selectedId === q.id" class="mt-2 grid grid-cols-2 gap-2 rounded-lg bg-gray-50 p-2 dark:bg-white/[0.04]" :aria-label="`Actions pour ${q.number}`">
+            <button class="min-h-10 rounded-lg border border-violet-200 px-2 text-xs font-semibold text-violet-700 dark:border-violet-500/30 dark:text-violet-300" :disabled="loadingPdf" @click="previewPdf(q)">Voir le PDF</button>
+            <button class="min-h-10 rounded-lg border border-gray-200 px-2 text-xs font-semibold dark:border-white/[0.12]" :disabled="downloadingPdf" @click="downloadPdf(q)">Télécharger</button>
+            <button class="col-span-2 min-h-10 rounded-lg bg-violet-600 px-2 text-xs font-semibold text-white" :disabled="runningAction === `send-${q.id}`" @click="sendInvoiceEmail(q)">{{ runningAction === `send-${q.id}` ? 'Envoi…' : 'Envoyer avec le PDF' }}</button>
+            <button class="col-span-2 min-h-10 rounded-lg border border-gray-200 px-2 text-xs font-semibold dark:border-white/[0.12]" @click="duplicateInvoice(q)">Dupliquer la facture</button>
+            <button v-if="q.documentType === 'invoice' && q.status !== 'draft'" class="col-span-2 min-h-10 rounded-lg border border-cyan-300/60 px-2 text-xs font-semibold text-cyan-700 dark:text-cyan-300" @click="createCreditNote(q)">Créer un avoir</button>
+            <button v-if="q.documentType === 'invoice' && ['sent', 'overdue'].includes(q.status)" class="col-span-2 min-h-10 rounded-lg border border-gray-200 px-2 text-xs font-semibold dark:border-white/[0.12]" @click="toggleReminders(q)">{{ q.remindersPaused ? 'Reprendre les relances' : 'Suspendre les relances' }}</button>
+            <div v-if="q.payments?.length" class="col-span-2 mt-1 border-t border-gray-200 pt-2 dark:border-white/[0.08]">
+              <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Historique des paiements</p>
+              <div v-for="payment in q.payments" :key="payment.id" class="mt-2 rounded-lg border border-gray-200 bg-white p-2 text-xs dark:border-white/[0.08] dark:bg-[#111118]" :class="payment.voidedAt ? 'opacity-50' : ''">
+                <div class="flex items-center justify-between gap-2"><span>{{ payment.paidAt }} · {{ payment.method }}</span><strong>{{ formatAmount(payment.amountCents, payment.currency) }}</strong></div>
+                <p v-if="payment.reference" class="mt-1 text-gray-500">Réf. {{ payment.reference }}</p>
+                <p v-if="payment.voidedAt" class="mt-1 text-red-500">Annulé : {{ payment.voidReason }}</p>
+                <button v-else class="mt-1 min-h-10 rounded-lg px-2 text-red-600 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-500/10" @click="voidPayment(payment.id)">Annuler cette écriture</button>
+              </div>
+            </div>
           </div>
-        </button>
+        </article>
+        <div v-if="!filteredInvoices.length" class="rounded-xl border border-dashed border-gray-200 bg-white p-6 text-center dark:border-white/[0.1] dark:bg-[#111118]">
+          <p class="font-semibold text-gray-900 dark:text-white">Aucune facture trouvée</p>
+          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Modifie la recherche ou crée une nouvelle facture.</p>
+        </div>
       </div>
 
     <div v-if="viewMode==='table'" class="admin-table-wrap hidden sm:block bg-white dark:bg-[#111118] border border-gray-100 dark:border-white/[0.06] rounded-xl overflow-hidden">
       <table class="admin-table w-full">
-        <thead><tr class="border-b border-gray-100 dark:border-white/[0.06]"><th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Numero</th><th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Client</th><th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Devis</th><th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Montant</th><th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Echeance</th><th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Statut</th><th class="text-right px-4 py-3 text-xs uppercase text-gray-400">Actions</th></tr></thead>
-        <tbody><tr v-for="q in filteredInvoices" :key="q.id" class="border-b border-gray-50 dark:border-white/[0.03] cursor-pointer" :class="selectedId === q.id ? 'bg-violet-50/60 dark:bg-violet-500/10' : ''" @click="selectedId = q.id"><td class="px-4 py-3 text-sm"><span v-if="q.documentType === 'credit_note'" class="mr-1 rounded bg-cyan-500/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-cyan-700 dark:text-cyan-300">Avoir</span>{{ q.number }}</td><td class="px-4 py-3 text-sm">{{ q.clientId ? clientsById.get(q.clientId)?.name || '-' : '-' }}</td><td class="px-4 py-3 text-sm">{{ q.quoteId ? quotesById.get(q.quoteId)?.number || '-' : '-' }}</td><td class="px-4 py-3 text-sm">{{ formatAmount(q.amountCents, q.currency) }}</td><td class="px-4 py-3 text-sm">{{ q.dueAt || '-' }}</td><td class="px-4 py-3 text-sm">{{ statusLabel(q.status) }}</td><td class="px-4 py-3 text-right space-x-2"><button v-if="q.status !== 'paid' && q.status !== 'cancelled'" class="text-xs text-emerald-600" @click.stop="quickSetStatus(q.id, 'paid')">Paiement</button><button v-if="q.status === 'draft'" class="text-xs text-amber-600" @click.stop="quickSetStatus(q.id, 'sent')">Envoyée</button><button v-if="q.status === 'draft'" class="text-xs text-violet-600" @click.stop="openEdit(q)">Éditer</button><button v-if="q.status === 'draft'" class="text-xs text-red-500" @click.stop="del(q.id)">Supprimer</button></td></tr></tbody>
+        <thead><tr class="border-b border-gray-100 dark:border-white/[0.06]"><th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Numéro</th><th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Client</th><th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Devis</th><th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Montant</th><th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Échéance</th><th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Statut</th><th class="text-right px-4 py-3 text-xs uppercase text-gray-400">Actions</th></tr></thead>
+        <tbody>
+          <tr v-for="q in filteredInvoices" :key="q.id" class="cursor-pointer border-b border-gray-50 dark:border-white/[0.03]" :class="selectedId === q.id ? 'bg-violet-50/60 dark:bg-violet-500/10' : ''" @click="selectedId = q.id">
+            <td class="px-4 py-3 text-sm"><span v-if="q.documentType === 'credit_note'" class="mr-1 rounded bg-cyan-500/10 px-1.5 py-0.5 text-xs font-semibold uppercase text-cyan-700 dark:text-cyan-300">Avoir</span>{{ q.number }}</td>
+            <td class="px-4 py-3 text-sm">{{ q.clientId ? clientsById.get(q.clientId)?.name || '-' : '-' }}</td>
+            <td class="px-4 py-3 text-sm">{{ q.quoteId ? quotesById.get(q.quoteId)?.number || '-' : '-' }}</td>
+            <td class="px-4 py-3 text-sm">{{ formatAmount(q.amountCents, q.currency) }}</td>
+            <td class="px-4 py-3 text-sm">{{ q.dueAt || '-' }}</td>
+            <td class="px-4 py-3 text-sm">{{ statusLabel(q.status) }}</td>
+            <td class="space-x-2 px-4 py-3 text-right"><button v-if="canRecordPayment(q)" class="text-xs text-emerald-600" @click.stop="quickSetStatus(q.id, 'paid')">Paiement</button><button v-if="canMarkSent(q)" class="text-xs text-amber-600" @click.stop="quickSetStatus(q.id, 'sent')">Envoyée</button><button v-if="q.status === 'draft'" class="text-xs text-violet-600" @click.stop="openEdit(q)">Éditer</button><button v-if="q.status === 'draft'" class="text-xs text-red-500" @click.stop="del(q.id)">Supprimer</button></td>
+          </tr>
+          <tr v-if="!filteredInvoices.length"><td colspan="7" class="p-8 text-center text-sm text-gray-500 dark:text-gray-400">Aucune facture trouvée. Modifie la recherche ou crée une nouvelle facture.</td></tr>
+        </tbody>
       </table>
     </div>
     </div>
@@ -496,25 +593,25 @@ onBeforeUnmount(releasePdfPreview)
         <p class="text-xs uppercase text-gray-400">{{ selectedInvoice.documentType === 'credit_note' ? 'Avoir' : 'Facture' }} · {{ selectedInvoice.lockedAt ? 'Verrouillé' : 'Brouillon modifiable' }}</p>
         <h2 class="text-lg font-semibold mt-1">{{ selectedInvoice.number }}</h2>
         <div class="mt-4 space-y-2 text-sm">
-          <p><span class="text-gray-400">Client:</span> {{ selectedInvoice.clientId ? clientsById.get(selectedInvoice.clientId)?.name || '-' : '-' }}</p>
-          <p><span class="text-gray-400">Devis:</span> {{ selectedInvoice.quoteId ? quotesById.get(selectedInvoice.quoteId)?.number || '-' : '-' }}</p>
-          <p><span class="text-gray-400">Montant:</span> {{ formatAmount(selectedInvoice.totalCents ?? selectedInvoice.amountCents, selectedInvoice.currency) }}</p>
-          <p><span class="text-gray-400">Sous-total:</span> {{ formatAmount(selectedInvoice.subtotalCents ?? selectedInvoice.amountCents, selectedInvoice.currency) }}</p>
-          <p><span class="text-gray-400">TVA:</span> {{ formatAmount(selectedInvoice.taxCents ?? 0, selectedInvoice.currency) }}</p>
-          <p><span class="text-gray-400">Statut:</span> {{ statusLabel(selectedInvoice.status) }}</p>
-          <p><span class="text-gray-400">Emission:</span> {{ selectedInvoice.issuedAt || '-' }}</p>
-          <p><span class="text-gray-400">Echeance:</span> {{ selectedInvoice.dueAt || '-' }}</p>
-          <p><span class="text-gray-400">Paye le:</span> {{ selectedInvoice.paidAt || '-' }}</p>
-          <p><span class="text-gray-400">Encaissé:</span> {{ formatAmount(selectedInvoice.paidAmountCents, selectedInvoice.currency) }}</p>
-          <p><span class="text-gray-400">Solde:</span> {{ formatAmount(Math.max(0, (selectedInvoice.totalCents ?? selectedInvoice.amountCents) - selectedInvoice.paidAmountCents), selectedInvoice.currency) }}</p>
+          <p><span class="text-gray-400">Client :</span> {{ selectedInvoice.clientId ? clientsById.get(selectedInvoice.clientId)?.name || '-' : '-' }}</p>
+          <p><span class="text-gray-400">Devis :</span> {{ selectedInvoice.quoteId ? quotesById.get(selectedInvoice.quoteId)?.number || '-' : '-' }}</p>
+          <p><span class="text-gray-400">Montant :</span> {{ formatAmount(selectedInvoice.totalCents ?? selectedInvoice.amountCents, selectedInvoice.currency) }}</p>
+          <p><span class="text-gray-400">Sous-total :</span> {{ formatAmount(selectedInvoice.subtotalCents ?? selectedInvoice.amountCents, selectedInvoice.currency) }}</p>
+          <p><span class="text-gray-400">TVA :</span> {{ formatAmount(selectedInvoice.taxCents ?? 0, selectedInvoice.currency) }}</p>
+          <p><span class="text-gray-400">Statut :</span> {{ statusLabel(selectedInvoice.status) }}</p>
+          <p><span class="text-gray-400">Émission :</span> {{ selectedInvoice.issuedAt || '-' }}</p>
+          <p><span class="text-gray-400">Échéance :</span> {{ selectedInvoice.dueAt || '-' }}</p>
+          <p><span class="text-gray-400">Payée le :</span> {{ selectedInvoice.paidAt || '-' }}</p>
+          <p><span class="text-gray-400">Encaissé :</span> {{ formatAmount(selectedInvoice.paidAmountCents, selectedInvoice.currency) }}</p>
+          <p><span class="text-gray-400">Solde :</span> {{ formatAmount(Math.max(0, (selectedInvoice.totalCents ?? selectedInvoice.amountCents) - selectedInvoice.paidAmountCents), selectedInvoice.currency) }}</p>
         </div>
         <div class="mt-4 grid grid-cols-2 gap-2">
           <button class="min-h-10 rounded-lg border border-violet-200 px-3 text-xs font-semibold text-violet-700 disabled:cursor-not-allowed disabled:opacity-50 dark:border-violet-500/30 dark:text-violet-300" :disabled="loadingPdf" @click="previewPdf(selectedInvoice)">{{ loadingPdf ? 'Génération…' : 'Voir le PDF' }}</button>
           <button class="min-h-10 rounded-lg border border-gray-200 px-3 text-xs font-semibold text-gray-700 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/[0.12] dark:text-gray-200" :disabled="downloadingPdf" @click="downloadPdf(selectedInvoice)">{{ downloadingPdf ? 'Téléchargement…' : 'Télécharger' }}</button>
           <button class="col-span-2 min-h-10 rounded-lg bg-violet-600 px-3 text-xs font-semibold text-white disabled:opacity-50" :disabled="runningAction === `send-${selectedInvoice.id}`" @click="sendInvoiceEmail(selectedInvoice)">{{ runningAction === `send-${selectedInvoice.id}` ? 'Envoi…' : 'Envoyer avec le PDF' }}</button>
-          <button class="px-2 py-1.5 rounded-lg border border-gray-200 dark:border-white/[0.12] text-xs" @click="markInvoiceEvent(selectedInvoice, 'sent_at')">Marquer envoyee</button>
+          <button class="px-2 py-1.5 rounded-lg border border-gray-200 dark:border-white/[0.12] text-xs" @click="markInvoiceEvent(selectedInvoice, 'sent_at')">Marquer envoyée</button>
           <button class="px-2 py-1.5 rounded-lg border border-gray-200 dark:border-white/[0.12] text-xs" @click="markInvoiceEvent(selectedInvoice, 'viewed_at')">Marquer vue</button>
-          <button v-if="selectedInvoice.status !== 'paid' && selectedInvoice.status !== 'cancelled'" class="px-2 py-1.5 rounded-lg border border-emerald-300/60 text-emerald-600 text-xs col-span-2" @click="openPaymentForm(selectedInvoice)">Enregistrer un paiement</button>
+          <button v-if="canRecordPayment(selectedInvoice)" class="col-span-2 min-h-10 rounded-lg border border-emerald-300/60 px-2 text-xs text-emerald-600" @click="openPaymentForm(selectedInvoice)">Enregistrer un paiement</button>
           <button class="col-span-2 px-2 py-1.5 rounded-lg border border-gray-200 dark:border-white/[0.12] text-xs" @click="duplicateInvoice(selectedInvoice)">Dupliquer la facture</button>
           <button v-if="selectedInvoice.documentType === 'invoice' && selectedInvoice.status !== 'draft'" class="col-span-2 px-2 py-1.5 rounded-lg border border-cyan-300/60 text-cyan-700 dark:text-cyan-300 text-xs" @click="createCreditNote(selectedInvoice)">Créer un avoir</button>
           <button v-if="selectedInvoice.documentType === 'invoice' && ['sent', 'overdue'].includes(selectedInvoice.status)" class="col-span-2 min-h-10 rounded-lg border border-gray-200 px-3 text-xs font-semibold dark:border-white/[0.12]" @click="toggleReminders(selectedInvoice)">{{ selectedInvoice.remindersPaused ? 'Reprendre les relances' : 'Suspendre les relances' }}</button>
@@ -530,25 +627,31 @@ onBeforeUnmount(releasePdfPreview)
         </div>
         <p class="text-xs text-gray-500 mt-4 whitespace-pre-wrap">{{ selectedInvoice.notes || 'Aucune note' }}</p>
       </template>
-      <p v-else class="text-sm text-gray-400">Selectionne une facture.</p>
+      <p v-else class="text-sm text-gray-400">Sélectionne une facture.</p>
     </div>
     </div>
     <Transition name="fade">
-      <div v-if="showForm" ref="dialogRef" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4" role="dialog" aria-modal="true" aria-labelledby="invoice-form-title" tabindex="-1" @keydown="handleDialogKeydown">
+      <div v-if="showForm" ref="dialogRef" class="fixed inset-0 z-50 flex items-start justify-center overflow-hidden p-2 sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-labelledby="invoice-form-title" tabindex="-1" @keydown="handleDialogKeydown">
         <div class="absolute inset-0 bg-black/40" @click="showForm=false" />
-        <form class="admin-modal-panel relative w-full max-w-4xl max-h-[92vh] overflow-y-auto overflow-x-hidden bg-white dark:bg-[#111118] rounded-xl p-4 sm:p-5 space-y-3" @submit.prevent="submit">
-          <h2 id="invoice-form-title" class="font-semibold text-gray-900 dark:text-white">{{ form.documentType === 'credit_note' ? 'Nouvel avoir' : editing ? 'Modifier la facture' : 'Nouvelle facture' }}</h2>
+        <form class="admin-modal-panel relative flex max-h-[calc(100dvh-1rem)] w-full max-w-4xl flex-col overflow-hidden rounded-xl bg-white dark:bg-[#111118] sm:max-h-[92vh]" @submit.prevent="submit">
+          <div class="flex shrink-0 items-center justify-between border-b border-gray-100 px-4 py-4 dark:border-white/[0.06] sm:px-5">
+            <h2 id="invoice-form-title" class="font-semibold text-gray-900 dark:text-white">{{ form.documentType === 'credit_note' ? 'Nouvel avoir' : editing ? 'Modifier la facture' : 'Nouvelle facture' }}</h2>
+            <button type="button" class="min-h-10 rounded-lg px-3 text-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-white/[0.06]" @click="showForm = false">Fermer</button>
+          </div>
+          <div class="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-4 sm:px-5">
           <p v-if="form.documentType === 'credit_note'" class="rounded-lg bg-cyan-50 p-3 text-sm text-cyan-900 dark:bg-cyan-500/10 dark:text-cyan-100">Cet avoir corrigera la facture {{ store.invoices.find(i => i.id === form.creditedInvoiceId)?.number }}. Il ne contiendra pas de QR de paiement.</p>
-          <input v-model="form.number" class="input-field" placeholder="Numero" required>
+          <label class="block space-y-1 text-xs font-medium text-gray-600 dark:text-gray-300">Numéro
+            <input v-model="form.number" class="input-field" required>
+          </label>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <select v-model.number="form.clientId" class="input-field" :disabled="!!form.quoteId">
+            <label class="space-y-1 text-xs font-medium text-gray-600 dark:text-gray-300">Client<select v-model.number="form.clientId" class="input-field" :disabled="!!form.quoteId">
               <option :value="null">Aucun client</option>
               <option v-for="c in clients.clients" :key="c.id" :value="c.id">{{ c.name }}</option>
-            </select>
-            <select v-model.number="form.quoteId" class="input-field">
+            </select></label>
+            <label class="space-y-1 text-xs font-medium text-gray-600 dark:text-gray-300">Devis lié<select v-model.number="form.quoteId" class="input-field">
               <option :value="null">Aucun devis</option>
               <option v-for="q in filteredQuotes" :key="q.id" :value="q.id">{{ q.number }} - {{ q.title }}</option>
-            </select>
+            </select></label>
           </div>
           <label class="block space-y-1 text-xs text-gray-500 dark:text-gray-400">Projet
             <select v-model.number="form.projectId" class="input-field">
@@ -565,12 +668,12 @@ onBeforeUnmount(releasePdfPreview)
               <button type="button" class="text-xs text-violet-600" @click="addItem">Ajouter</button>
             </div>
             <div v-for="(item, idx) in formItems" :key="idx" class="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center min-w-0">
-              <input v-model="item.label" class="input-field sm:col-span-4" placeholder="Libelle">
-              <input v-model.number="item.quantity" type="number" step="0.1" min="0" class="input-field sm:col-span-2" placeholder="Qt">
-              <input v-model.number="item.unitPriceCents" type="number" min="0" class="input-field sm:col-span-3" placeholder="Prix (cts)">
-              <input v-model.number="item.taxRate" type="number" step="0.1" min="0" class="input-field sm:col-span-2" placeholder="TVA %">
+              <label class="space-y-1 text-xs text-gray-500 sm:col-span-4">Libellé<input v-model="item.label" class="input-field" required></label>
+              <label class="space-y-1 text-xs text-gray-500 sm:col-span-2">Quantité<input v-model.number="item.quantity" type="number" step="0.1" min="0" class="input-field" inputmode="decimal"></label>
+              <label class="space-y-1 text-xs text-gray-500 sm:col-span-3">Prix unitaire ({{ form.currency }})<input :value="itemUnitPrice(item)" type="number" min="0" step="0.01" class="input-field" inputmode="decimal" @input="setItemUnitPrice(item, $event)"></label>
+              <label class="space-y-1 text-xs text-gray-500 sm:col-span-2">TVA (%)<input v-model.number="item.taxRate" type="number" step="0.1" min="0" class="input-field" inputmode="decimal"></label>
               <button type="button" class="text-xs text-red-500 sm:col-span-1 h-10 rounded-lg border border-red-200/70 dark:border-red-400/25 w-full" @click="removeItem(idx)">Supprimer</button>
-              <input v-model="item.description" class="input-field sm:col-span-12" placeholder="Description (optionnel)">
+              <label class="space-y-1 text-xs text-gray-500 sm:col-span-12">Description facultative<input v-model="item.description" class="input-field"></label>
             </div>
             <div class="pt-2 text-xs text-gray-500 space-y-1">
               <p>Sous-total: {{ formatAmount(draftTotals.subtotalCents, form.currency) }}</p>
@@ -578,19 +681,12 @@ onBeforeUnmount(releasePdfPreview)
               <p class="font-semibold">Total: {{ formatAmount(draftTotals.totalCents, form.currency) }}</p>
             </div>
           </div>
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <input v-model="form.issuedAt" type="date" class="input-field">
-            <input v-model="form.dueAt" type="date" class="input-field">
-            <input v-model="form.paidAt" type="date" class="input-field">
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <label class="space-y-1 text-xs text-gray-500">Date d’émission<input v-model="form.issuedAt" type="date" class="input-field"></label>
+            <label class="space-y-1 text-xs text-gray-500">Date d’échéance<input v-model="form.dueAt" type="date" class="input-field"></label>
           </div>
-          <select v-model="form.status" class="input-field">
-            <option value="draft">{{ statusLabel('draft') }}</option>
-            <option value="sent">{{ statusLabel('sent') }}</option>
-            <option value="paid">{{ statusLabel('paid') }}</option>
-            <option value="overdue">{{ statusLabel('overdue') }}</option>
-            <option value="cancelled">{{ statusLabel('cancelled') }}</option>
-          </select>
-          <textarea v-model="form.notes" rows="3" class="input-field" placeholder="Notes" />
+          <p class="rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-xs leading-5 text-violet-900 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-100">Le document sera enregistré comme brouillon. Utilise ensuite « Envoyer avec le PDF », puis « Enregistrer un paiement » pour conserver un historique comptable fiable.</p>
+          <label class="block space-y-1 text-xs text-gray-500">Notes internes<textarea v-model="form.notes" rows="3" class="input-field" placeholder="Informations utiles pour le suivi" /></label>
           <fieldset v-if="form.documentType !== 'credit_note'" class="space-y-3 rounded-lg border border-gray-200 p-3 dark:border-white/[0.08]">
             <legend class="px-1 text-xs font-semibold uppercase text-gray-500">QR-facture suisse</legend>
             <div v-if="canUseScor" class="rounded-lg bg-violet-50 px-3 py-2 text-xs text-violet-900 dark:bg-violet-500/10 dark:text-violet-100">
@@ -618,9 +714,10 @@ onBeforeUnmount(releasePdfPreview)
             <p v-if="qrReferenceError" id="invoice-reference-help" role="alert" class="text-xs font-medium text-red-600 dark:text-red-400">{{ qrReferenceError }}</p>
             <p v-else id="invoice-reference-help" class="text-xs text-gray-500">Le QR code sera intégré au PDF dès que tes coordonnées de facturation sont complètes. Si l’adresse du client manque, la zone « Payable par » restera à compléter sur le bulletin.</p>
           </fieldset>
-          <div class="admin-sticky-actions sticky bottom-0 bg-white dark:bg-[#111118] pt-2 flex justify-end gap-2">
-            <button type="button" class="px-3 py-2 text-sm" @click="showForm=false">Annuler</button>
-            <button class="px-4 py-2 rounded-lg bg-violet-600 text-white text-sm disabled:cursor-not-allowed disabled:opacity-50" :disabled="Boolean(qrReferenceError) || savingInvoice">{{ savingInvoice ? 'Génération du PDF…' : 'Enregistrer et prévisualiser' }}</button>
+          </div>
+          <div class="admin-sticky-actions flex shrink-0 justify-end gap-2 border-t border-gray-100 bg-white px-4 py-3 dark:border-white/[0.06] dark:bg-[#111118] sm:px-5">
+            <button type="button" class="min-h-11 rounded-lg px-3 text-sm" @click="showForm=false">Annuler</button>
+            <button class="min-h-11 rounded-lg bg-violet-600 px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50" :disabled="Boolean(qrReferenceError) || savingInvoice">{{ savingInvoice ? 'Génération du PDF…' : 'Enregistrer et prévisualiser' }}</button>
           </div>
         </form>
       </div>
@@ -633,8 +730,8 @@ onBeforeUnmount(releasePdfPreview)
             <h2 id="invoice-payment-title" class="font-semibold text-gray-950 dark:text-white">Enregistrer un paiement</h2>
             <p class="mt-1 text-sm text-gray-500">L’écriture restera dans l’historique. Une erreur sera annulée avec un motif, jamais supprimée.</p>
           </div>
-          <label class="block space-y-1 text-xs text-gray-500">Montant en centimes
-            <input v-model.number="paymentForm.amountCents" class="input-field" type="number" min="1" required>
+          <label class="block space-y-1 text-xs text-gray-500">Montant ({{ selectedInvoice?.currency || 'CHF' }})
+            <input v-model.number="paymentAmount" class="input-field" type="number" min="0.01" step="0.01" inputmode="decimal" required>
           </label>
           <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <label class="block space-y-1 text-xs text-gray-500">Mode
@@ -657,8 +754,8 @@ onBeforeUnmount(releasePdfPreview)
             <textarea v-model="paymentForm.notes" class="input-field" rows="2" placeholder="Information interne facultative" />
           </label>
           <div class="flex justify-end gap-2">
-            <button type="button" class="min-h-10 px-3 text-sm" @click="closePaymentForm">Annuler</button>
-            <button class="min-h-10 rounded-lg bg-emerald-600 px-4 text-sm font-semibold text-white disabled:opacity-50" :disabled="savingPayment">{{ savingPayment ? 'Enregistrement…' : 'Enregistrer' }}</button>
+            <button type="button" class="min-h-11 px-3 text-sm" @click="closePaymentForm">Annuler</button>
+            <button class="min-h-11 rounded-lg bg-emerald-600 px-4 text-sm font-semibold text-white disabled:opacity-50" :disabled="savingPayment">{{ savingPayment ? 'Enregistrement…' : 'Enregistrer le paiement' }}</button>
           </div>
         </form>
       </div>
@@ -669,7 +766,10 @@ onBeforeUnmount(releasePdfPreview)
         <section class="relative flex h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-xl border border-white/10 bg-white shadow-2xl dark:bg-[#111118]">
           <header class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 px-4 py-3 dark:border-white/[0.08]">
             <div class="min-w-0"><h2 id="invoice-pdf-preview-title" class="truncate font-semibold text-gray-950 dark:text-white">{{ pdfPreviewTitle }}</h2><p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{{ pdfPreviewHasQr ? 'Bulletin QR affiché sur la page 2. La facture détaillée se trouve sur la page 1.' : 'Aperçu du document qui sera envoyé au client.' }}</p></div>
-            <div class="flex items-center gap-2"><button type="button" class="min-h-10 rounded-lg border border-gray-200 px-3 text-xs font-semibold text-gray-700 disabled:opacity-50 dark:border-white/[0.12] dark:text-gray-200" :disabled="downloadingPdf" @click="downloadPdf()">Télécharger</button><button type="button" class="min-h-10 rounded-lg bg-violet-600 px-4 text-xs font-semibold text-white" @click="closePdfPreview">Fermer</button></div>
+            <div class="flex items-center gap-2">
+              <button type="button" class="min-h-10 rounded-lg border border-gray-200 px-3 text-xs font-semibold text-gray-700 disabled:opacity-50 dark:border-white/[0.12] dark:text-gray-200" :disabled="downloadingPdf" @click="downloadPdf()">Télécharger</button>
+              <button type="button" class="min-h-10 rounded-lg bg-violet-600 px-4 text-xs font-semibold text-white" @click="closePdfPreview">Fermer</button>
+            </div>
           </header>
           <iframe v-if="pdfPreviewDisplayUrl" :src="pdfPreviewDisplayUrl" :title="`Aperçu PDF de ${pdfPreviewTitle}`" class="min-h-0 flex-1 bg-gray-100" />
           <div v-else class="flex flex-1 items-center justify-center text-sm text-gray-500">Génération de l’aperçu…</div>

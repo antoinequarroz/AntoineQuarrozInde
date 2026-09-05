@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import * as THREE from 'three'
 
-const canvasRef = ref<HTMLCanvasElement | null>(null)
+const canvasRef = shallowRef<HTMLCanvasElement | null>(null)
 
 let renderer: THREE.WebGLRenderer | null = null
 let scene: THREE.Scene | null = null

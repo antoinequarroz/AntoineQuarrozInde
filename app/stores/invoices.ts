@@ -106,17 +106,35 @@ export const useInvoicesStore = defineStore('invoices', () => {
   const invoices = ref<Invoice[]>([])
   const loaded = ref(false)
   const loading = ref(false)
-  async function ensureLoaded(force = false) {
-    if (loading.value) return
-    if (loaded.value && !force) return
+  const loadedContext = ref<string | null>(null)
+  const loadingContext = ref<string | null>(null)
+  let requestVersion = 0
+  let activeLoad: Promise<void> | null = null
+  function requestContext() {
+    return `authenticated:${auth.userEmail ?? ''}:${auth.currentOrganizationId ?? ''}`
+  }
+  function ensureLoaded(force = false) {
+    const context = requestContext()
+    if (loading.value && loadingContext.value === context && activeLoad) return activeLoad
+    if (loaded.value && loadedContext.value === context && !force) return Promise.resolve()
+    const version = ++requestVersion
     loading.value = true
-    try {
+    loadingContext.value = context
+    const load = (async () => {
       const rows = await $fetch<InvoiceRow[]>('/api/invoices', { headers: auth.authHeader() })
+      if (version !== requestVersion) return
       invoices.value = rows.map(mapInvoice)
       loaded.value = true
-    } finally {
-      loading.value = false
-    }
+      loadedContext.value = context
+    })().finally(() => {
+      if (version === requestVersion) {
+        loading.value = false
+        loadingContext.value = null
+      }
+      if (activeLoad === load) activeLoad = null
+    })
+    activeLoad = load
+    return load
   }
   async function add(payload: Omit<Invoice, 'id' | 'createdAt'>) {
     const row = await $fetch<InvoiceRow>('/api/invoices', { method: 'POST', body: payload, headers: auth.authHeader() })

@@ -13,6 +13,22 @@ export const useAuthStore = defineStore('auth', () => {
   const currentOrganizationId = ref<string | null>(null)
   const loading = ref(false)
 
+  function organizationStorageKey() {
+    return `aq_current_organization:${userEmail.value ?? 'anonymous'}`
+  }
+
+  function persistedOrganizationId() {
+    if (!import.meta.client) return null
+    return localStorage.getItem(organizationStorageKey())
+  }
+
+  function persistOrganizationId(id: string | null) {
+    if (!import.meta.client) return
+    const key = organizationStorageKey()
+    if (id) localStorage.setItem(key, id)
+    else localStorage.removeItem(key)
+  }
+
   async function loadOrganizations() {
     if (!accessToken.value) return
     const rows = await $fetch<OrganizationMembership[]>('/api/admin/organizations', {
@@ -21,10 +37,14 @@ export const useAuthStore = defineStore('auth', () => {
     organizations.value = rows
 
     if (rows.length > 0) {
-      const validCurrent = rows.some(o => o.id === currentOrganizationId.value)
-      if (!validCurrent) currentOrganizationId.value = rows.at(0)?.id ?? null
+      const preferredId = currentOrganizationId.value ?? persistedOrganizationId()
+      currentOrganizationId.value = rows.some(o => o.id === preferredId)
+        ? preferredId
+        : (rows.at(0)?.id ?? null)
+      persistOrganizationId(currentOrganizationId.value)
     } else {
       currentOrganizationId.value = null
+      persistOrganizationId(null)
     }
   }
 
@@ -93,7 +113,9 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   function setCurrentOrganization(id: string) {
+    if (!organizations.value.some(organization => organization.id === id)) return
     currentOrganizationId.value = id
+    persistOrganizationId(id)
   }
 
   return {

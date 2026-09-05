@@ -24,6 +24,9 @@ const props = defineProps<{
   <svg v-else-if="props.icon === 'star'" :class="props.class || 'w-4 h-4'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
     <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
   </svg>
+  <svg v-else-if="props.icon === 'plus'" :class="props.class || 'w-4 h-4'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+    <path d="M12 5v14M5 12h14" stroke-linecap="round" />
+  </svg>
   <svg v-else-if="props.icon === 'map-pin'" :class="props.class || 'w-4 h-4'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
     <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
     <circle cx="12" cy="10" r="3" />
@@ -71,12 +74,36 @@ const props = defineProps<{
     <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
     <polyline points="17 6 23 6 23 12" />
   </svg>
+  <svg v-else-if="props.icon === 'calculator'" :class="props.class || 'w-4 h-4'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+    <rect x="4" y="2" width="16" height="20" rx="2" />
+    <rect x="7" y="5" width="10" height="4" rx="1" />
+    <path d="M8 13h.01M12 13h.01M16 13h.01M8 17h.01M12 17h.01M16 17h.01" stroke-linecap="round" stroke-width="2.5" />
+  </svg>
+  <svg v-else-if="props.icon === 'alert-triangle'" :class="props.class || 'w-4 h-4'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+    <path d="M10.3 3.8 2.4 17.2A2 2 0 0 0 4.1 20h15.8a2 2 0 0 0 1.7-2.8L13.7 3.8a2 2 0 0 0-3.4 0Z" />
+    <path d="M12 9v4M12 17h.01" stroke-linecap="round" />
+  </svg>
   <svg v-else-if="props.icon === 'zap'" :class="props.class || 'w-4 h-4'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
     <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
   </svg>
   <svg v-else-if="props.icon === 'book-open'" :class="props.class || 'w-4 h-4'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
     <path d="M2 4h6a4 4 0 0 1 4 4v12a3 3 0 0 0-3-3H2z" />
     <path d="M22 4h-6a4 4 0 0 0-4 4v12a3 3 0 0 1 3-3h7z" />
+  </svg>
+  <svg v-else-if="props.icon === 'settings'" :class="props.class || 'w-4 h-4'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+    <circle cx="12" cy="12" r="3" />
+    <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3A1.7 1.7 0 0 0 10 3V2.8h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z" />
+  </svg>
+  <svg v-else-if="props.icon === 'help-circle'" :class="props.class || 'w-4 h-4'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+    <circle cx="12" cy="12" r="9" />
+    <path d="M9.7 9a2.5 2.5 0 1 1 4.6 1.4c-.8 1-2.3 1.2-2.3 2.8M12 17h.01" stroke-linecap="round" />
+  </svg>
+  <svg v-else-if="props.icon === 'activity'" :class="props.class || 'w-4 h-4'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+    <path d="M3 12h4l2.5-7 5 14 2.5-7h4" stroke-linecap="round" stroke-linejoin="round" />
+  </svg>
+  <svg v-else-if="props.icon === 'refresh-cw'" :class="props.class || 'w-4 h-4'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+    <path d="M20 7v5h-5M4 17v-5h5" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M6.1 8a7 7 0 0 1 11.5-1L20 12M4 12l2.4 5a7 7 0 0 0 11.5-1" stroke-linecap="round" stroke-linejoin="round" />
   </svg>
   <svg v-else-if="props.icon === 'phone'" :class="props.class || 'w-4 h-4'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
     <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" />

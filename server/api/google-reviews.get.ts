@@ -58,12 +58,12 @@ export default defineEventHandler(async (event) => {
     })
   }
   catch {
-    throw createError({ statusCode: 502, message: 'Google Reviews is temporarily unavailable' })
+    return { configured: true, unavailable: true, reviews: [] }
   }
 
   if (!response.ok) {
     console.error('Google Places request failed', response.status, await response.text())
-    throw createError({ statusCode: 502, message: 'Google Reviews configuration could not be validated' })
+    return { configured: true, unavailable: true, reviews: [] }
   }
 
   const place = await response.json() as GooglePlaceResponse

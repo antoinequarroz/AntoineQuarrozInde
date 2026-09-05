@@ -17,6 +17,8 @@ const search = ref('')
 const viewMode = ref<'cards' | 'table'>('cards')
 const statusFilter = ref<'all' | Client['status']>('all')
 const sortBy = ref<'recent' | 'name'>('recent')
+const loading = ref(true)
+const loadError = ref('')
 
 const AVATAR_TONES = [
   'bg-violet-500',
@@ -192,21 +194,23 @@ function formatPipelineDate(value: string | null) {
 async function markStatus(client: Client, status: Client['status']) {
   try {
     await store.update(client.id, { status })
-    toast.success(`${client.name} marque comme ${STATUS_LABEL[status].toLowerCase()}`)
+    toast.success(`${client.name} marqué comme ${STATUS_LABEL[status].toLowerCase()}`)
   } catch {
-    toast.error('Erreur de mise a jour')
+    toast.error('Le statut du contact n’a pas pu être mis à jour')
   }
 }
 
-onMounted(async () => {
-  await Promise.all([
-    store.ensureLoaded(),
-    projectsStore.ensureLoaded(),
-    quotesStore.ensureLoaded(),
-    invoicesStore.ensureLoaded(),
-    tasksStore.ensureLoaded(),
-  ])
-})
+async function loadCrm(force = false) {
+  loading.value = true
+  loadError.value = ''
+  try {
+    await Promise.all([store.ensureLoaded(force), projectsStore.ensureLoaded(force), quotesStore.ensureLoaded(force), invoicesStore.ensureLoaded(force), tasksStore.ensureLoaded(force)])
+  }
+  catch { loadError.value = 'Le pipeline CRM ne peut pas être chargé. Réessaie dans quelques instants.' }
+  finally { loading.value = false }
+}
+
+onMounted(() => { void loadCrm() })
 </script>
 
 <template>
@@ -219,20 +223,23 @@ onMounted(async () => {
             CRM
           </span>
           <h1 class="mt-2 font-display text-2xl font-semibold text-gray-950 dark:text-white sm:text-3xl">
-            Carnet d'adresses & prospection
+            Carnet d’adresses & prospection
           </h1>
           <p class="mt-1 max-w-2xl text-sm leading-6 text-gray-500 dark:text-gray-400">
-            Tout ton reseau au meme endroit : contacts, clients actifs et prospects a transformer.
+            Tout ton réseau au même endroit : contacts, clients actifs et prospects à transformer.
           </p>
         </div>
-        <NuxtLink to="/admin/clients" class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-gray-200 px-3 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-white/[0.12] dark:text-gray-200 dark:hover:bg-white/[0.04]">
+        <NuxtLink to="/admin/clients" class="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-lg border border-gray-200 px-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-white/[0.12] dark:text-gray-200 dark:hover:bg-white/[0.04]">
           <AdminAdminIcon icon="users" class="h-4 w-4" />
           Vue kanban clients
         </NuxtLink>
       </div>
     </section>
 
-    <section class="grid grid-cols-2 gap-2.5 xl:grid-cols-4">
+    <div v-if="loading" role="status" class="grid min-h-48 place-items-center rounded-xl border border-gray-200 bg-white dark:border-white/[0.08] dark:bg-[#111118]"><div class="text-center"><div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-violet-200 border-t-violet-600" /><p class="mt-3 text-sm text-gray-500 dark:text-gray-400">Chargement du CRM…</p></div></div>
+    <div v-else-if="loadError" role="alert" class="rounded-xl border border-red-200 bg-red-50 p-5 text-red-900 dark:border-red-400/20 dark:bg-red-400/10 dark:text-red-100"><p class="font-semibold">Le CRM est indisponible</p><p class="mt-1 text-sm">{{ loadError }}</p><button type="button" class="mt-4 min-h-11 rounded-lg bg-red-700 px-4 text-sm font-semibold text-white" @click="loadCrm(true)">Réessayer</button></div>
+
+    <section v-if="!loading && !loadError" class="grid grid-cols-2 gap-2.5 xl:grid-cols-4">
       <div class="relative overflow-hidden rounded-lg border border-gray-200 bg-white p-3 shadow-sm dark:border-white/[0.08] dark:bg-[#111118] sm:p-4">
         <span class="absolute inset-x-0 top-0 h-1 bg-violet-500" />
         <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Contacts</p>
@@ -255,25 +262,28 @@ onMounted(async () => {
       </div>
     </section>
 
-    <section class="rounded-lg border border-gray-200 bg-white p-3 shadow-sm dark:border-white/[0.08] dark:bg-[#111118] sm:p-3.5">
+    <section v-if="!loading && !loadError" class="rounded-lg border border-gray-200 bg-white p-3 shadow-sm dark:border-white/[0.08] dark:bg-[#111118] sm:p-3.5">
       <div class="flex flex-wrap items-center gap-2.5">
         <div class="inline-flex shrink-0 rounded-lg bg-gray-100 p-1 dark:bg-white/[0.06]">
           <button
-            class="rounded-md px-3 py-1.5 text-xs font-semibold transition"
+            class="min-h-11 rounded-md px-3 text-xs font-semibold transition"
+            :aria-pressed="tab === 'pipeline'"
             :class="tab === 'pipeline' ? 'bg-gradient-brand text-white shadow-glow-sm' : 'text-gray-500 dark:text-gray-400'"
             @click="tab = 'pipeline'"
           >
             Pipeline
           </button>
           <button
-            class="rounded-md px-3 py-1.5 text-xs font-semibold transition"
+            class="min-h-11 rounded-md px-3 text-xs font-semibold transition"
+            :aria-pressed="tab === 'contacts'"
             :class="tab === 'contacts' ? 'bg-gradient-brand text-white shadow-glow-sm' : 'text-gray-500 dark:text-gray-400'"
             @click="tab = 'contacts'"
           >
-            Carnet d'adresses
+            Carnet d’adresses
           </button>
           <button
-            class="rounded-md px-3 py-1.5 text-xs font-semibold transition"
+            class="min-h-11 rounded-md px-3 text-xs font-semibold transition"
+            :aria-pressed="tab === 'prospects'"
             :class="tab === 'prospects' ? 'bg-gradient-brand text-white shadow-glow-sm' : 'text-gray-500 dark:text-gray-400'"
             @click="tab = 'prospects'"
           >
@@ -283,23 +293,27 @@ onMounted(async () => {
 
         <div class="hidden h-6 w-px shrink-0 bg-gray-200 dark:bg-white/[0.08] sm:block" />
 
+        <label v-if="tab !== 'pipeline'" for="crm-search" class="sr-only">Rechercher un contact</label>
         <input
           v-if="tab !== 'pipeline'"
+          id="crm-search"
           v-model="search"
           type="text"
           class="input-field min-w-[180px] flex-1 sm:max-w-xs"
-          placeholder="Rechercher nom, societe, email..."
+          placeholder="Rechercher nom, société, email…"
         >
 
-        <select v-if="tab === 'contacts'" v-model="statusFilter" class="input-field w-auto shrink-0">
-          <option value="all">Tous statuts</option>
+        <label v-if="tab === 'contacts'" for="crm-status" class="sr-only">Filtrer par statut</label>
+        <select v-if="tab === 'contacts'" id="crm-status" v-model="statusFilter" class="input-field w-auto shrink-0">
+          <option value="all">Tous les statuts</option>
           <option value="lead">Prospect</option>
           <option value="active">Client actif</option>
           <option value="inactive">Inactif</option>
         </select>
 
-        <select v-if="tab !== 'pipeline'" v-model="sortBy" class="input-field w-auto shrink-0">
-          <option value="recent">Plus recents</option>
+        <label v-if="tab !== 'pipeline'" for="crm-sort" class="sr-only">Trier les contacts</label>
+        <select v-if="tab !== 'pipeline'" id="crm-sort" v-model="sortBy" class="input-field w-auto shrink-0">
+          <option value="recent">Plus récents</option>
           <option value="name">Nom (A-Z)</option>
         </select>
 
@@ -324,7 +338,7 @@ onMounted(async () => {
       </div>
     </section>
 
-    <section v-if="tab === 'pipeline'" aria-labelledby="pipeline-title">
+    <section v-if="!loading && !loadError && tab === 'pipeline'" aria-labelledby="pipeline-title">
       <div class="mb-3 flex flex-wrap items-end justify-between gap-2">
         <div>
           <h2 id="pipeline-title" class="font-display text-xl font-semibold text-gray-950 dark:text-white">Du premier contact au paiement</h2>
@@ -361,21 +375,17 @@ onMounted(async () => {
       </div>
     </section>
 
-    <section v-if="tab === 'contacts' && viewMode === 'cards'" class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-      <NuxtLink
+    <section v-if="!loading && !loadError && tab === 'contacts' && viewMode === 'cards'" class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      <article
         v-for="client in filteredContacts"
         :key="client.id"
-        :to="`/admin/clients/${client.id}`"
         class="group rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-violet-200 hover:shadow-md dark:border-white/[0.08] dark:bg-[#111118] dark:hover:border-violet-500/30"
       >
         <div class="flex items-start gap-3">
           <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full font-display text-sm font-semibold text-white" :class="avatarTone(client.name)">
             {{ initials(client.name) }}
           </span>
-          <div class="min-w-0 flex-1">
-            <p class="truncate text-sm font-semibold text-gray-950 dark:text-white">{{ client.name }}</p>
-            <p class="truncate text-xs text-gray-400">{{ client.company || 'Independant' }}</p>
-          </div>
+          <NuxtLink :to="`/admin/clients/${client.id}`" class="min-w-0 flex-1 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"><span class="block truncate text-sm font-semibold text-gray-950 dark:text-white">{{ client.name }}</span><span class="block truncate text-xs text-gray-400">{{ client.company || 'Indépendant' }}</span></NuxtLink>
           <span class="shrink-0 rounded-md px-2 py-0.5 text-xs font-semibold" :class="STATUS_TONE[client.status]">
             {{ STATUS_LABEL[client.status] }}
           </span>
@@ -391,7 +401,7 @@ onMounted(async () => {
           </a>
         </div>
         <p v-if="client.notes" class="mt-2 line-clamp-2 text-xs text-gray-400">{{ client.notes }}</p>
-      </NuxtLink>
+      </article>
 
       <AdminAdminEmptyState
         v-if="!filteredContacts.length"
@@ -401,7 +411,7 @@ onMounted(async () => {
       />
     </section>
 
-    <div v-if="tab === 'contacts' && viewMode === 'table'" class="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm dark:border-white/[0.08] dark:bg-[#111118]">
+    <div v-if="!loading && !loadError && tab === 'contacts' && viewMode === 'table'" class="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm dark:border-white/[0.08] dark:bg-[#111118]">
       <table class="w-full">
         <thead class="border-b border-gray-100 dark:border-white/[0.06]">
           <tr>
@@ -456,7 +466,7 @@ onMounted(async () => {
       />
     </div>
 
-    <section v-if="tab === 'prospects' && viewMode === 'cards'" class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+    <section v-if="!loading && !loadError && tab === 'prospects' && viewMode === 'cards'" class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
       <div
         v-for="client in prospects"
         :key="client.id"
@@ -468,7 +478,7 @@ onMounted(async () => {
           </span>
           <div class="min-w-0 flex-1">
             <p class="truncate text-sm font-semibold text-gray-950 dark:text-white">{{ client.name }}</p>
-            <p class="truncate text-xs text-gray-400">{{ client.company || 'Independant' }}</p>
+            <p class="truncate text-xs text-gray-400">{{ client.company || 'Indépendant' }}</p>
           </div>
           <span class="shrink-0 rounded-md px-2 py-0.5 text-xs font-semibold" :class="scorePriority(leadScore(client)).chip">
             {{ scorePriority(leadScore(client)).label }}
@@ -487,13 +497,13 @@ onMounted(async () => {
         <p v-if="client.notes" class="mt-2 line-clamp-2 text-xs text-gray-500 dark:text-gray-400">{{ client.notes }}</p>
         <div class="mt-3 flex items-center gap-2">
           <button
-            class="inline-flex h-8 flex-1 items-center justify-center gap-1.5 rounded-lg bg-emerald-600 text-xs font-semibold text-white transition hover:bg-emerald-700"
+            class="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-lg bg-emerald-600 text-xs font-semibold text-white transition hover:bg-emerald-700"
             @click="markStatus(client, 'active')"
           >
             <AdminAdminIcon icon="check-square" class="h-3.5 w-3.5" />
             Convertir en client
           </button>
-          <NuxtLink :to="`/admin/clients/${client.id}`" class="inline-flex h-8 shrink-0 items-center justify-center rounded-lg border border-gray-200 px-2.5 text-xs font-semibold text-gray-600 transition hover:bg-white dark:border-white/[0.12] dark:text-gray-300 dark:hover:bg-white/[0.04]">
+          <NuxtLink :to="`/admin/clients/${client.id}`" class="inline-flex min-h-11 shrink-0 items-center justify-center rounded-lg border border-gray-200 px-3 text-xs font-semibold text-gray-600 transition hover:bg-white dark:border-white/[0.12] dark:text-gray-300 dark:hover:bg-white/[0.04]">
             Fiche
           </NuxtLink>
         </div>
@@ -502,12 +512,12 @@ onMounted(async () => {
       <AdminAdminEmptyState
         v-if="!prospects.length"
         title="Aucun prospect"
-        body="Les nouveaux leads qualifies depuis les messages apparaitront ici."
+        body="Les nouveaux prospects qualifiés depuis les messages apparaîtront ici."
         class="sm:col-span-2 xl:col-span-3"
       />
     </section>
 
-    <div v-if="tab === 'prospects' && viewMode === 'table'" class="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm dark:border-white/[0.08] dark:bg-[#111118]">
+    <div v-if="!loading && !loadError && tab === 'prospects' && viewMode === 'table'" class="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm dark:border-white/[0.08] dark:bg-[#111118]">
       <table class="w-full">
         <thead class="border-b border-gray-100 dark:border-white/[0.06]">
           <tr>

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { buildPipelineReminderPlan } from '../server/utils/pipelineReminderPlan'
+import { confirmationMatchesCandidate, selectPipelineReminderCandidates } from '../server/utils/pipelineReminders'
 
 const clients = [{ id: 1, name: 'Client Test', email: 'client@example.com' }]
 
@@ -48,5 +49,39 @@ describe('pipeline reminder plan', () => {
     })
     expect(result.candidates).toEqual([])
     expect(result.skipped.paused).toBe(1)
+  })
+
+  it('sends only the reminders explicitly confirmed in the dashboard', () => {
+    const plan = buildPipelineReminderPlan({
+      today: '2026-08-10',
+      clients,
+      quotes: [{ id: 10, number: 'DEV-10', client_id: 1, valid_until: '2026-08-10', status: 'sent' }],
+      invoices: [{ id: 20, number: 'FAC-20', client_id: 1, due_at: '2026-08-10', status: 'sent', balance_cents: 1000 }],
+    })
+
+    expect(selectPipelineReminderCandidates(plan.candidates, ['invoice:20:echeance']).map(candidate => candidate.reminderKey)).toEqual([
+      'invoice:20:echeance',
+    ])
+    expect(selectPipelineReminderCandidates(plan.candidates, [])).toEqual([])
+  })
+
+  it('rejects a reminder when the confirmed recipient or message became stale', () => {
+    const plan = buildPipelineReminderPlan({
+      today: '2026-08-10',
+      clients,
+      quotes: [{ id: 10, number: 'DEV-10', title: 'Site', client_id: 1, valid_until: '2026-08-10', status: 'sent' }],
+      invoices: [],
+    })
+    const candidate = plan.candidates[0]!
+    const confirmation = {
+      reminderKey: candidate.reminderKey,
+      email: candidate.email,
+      subject: 'Dernier rappel pour le devis DEV-10',
+      bodyText: 'Bonjour Client Test,\n\nJe reviens vers vous concernant le devis DEV-10 (Site), valable jusqu’au 2026-08-10.\n\nSi vous souhaitez avancer ou ajuster un point, je reste disponible pour organiser la suite.\n\nAntoine Quarroz\ninfo@antoinequarroz.ch',
+    }
+
+    expect(confirmationMatchesCandidate(candidate, confirmation)).toBe(true)
+    expect(confirmationMatchesCandidate(candidate, { ...confirmation, email: 'nouvelle-adresse@example.com' })).toBe(false)
+    expect(confirmationMatchesCandidate(candidate, { ...confirmation, bodyText: `${confirmation.bodyText}\nTexte modifié` })).toBe(false)
   })
 })

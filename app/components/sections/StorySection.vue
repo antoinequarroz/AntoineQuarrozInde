@@ -219,7 +219,7 @@ const fillScale = computed(() => {
   return Math.max(vw.value / deviceW.value, vh.value / deviceH.value)
 })
 
-const deviceZoneRef = ref<HTMLElement | null>(null)
+const deviceZoneRef = shallowRef<HTMLElement | null>(null)
 const { top: zoneTop, height: zoneHeight } = useElementBounding(deviceZoneRef)
 
 const zoomProgress = computed(() => {

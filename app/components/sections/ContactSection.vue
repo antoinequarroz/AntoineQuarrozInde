@@ -13,7 +13,7 @@ const isLocalhost = isClient
 const shouldUseTurnstile = !!turnstileSiteKey && !isLocalhost
 const turnstileReady = ref(false)
 const turnstileShouldLoad = ref(false)
-const sectionRef = ref<HTMLElement | null>(null)
+const sectionRef = shallowRef<HTMLElement | null>(null)
 const selectedService = ref('')
 const errorMessage = ref('')
 

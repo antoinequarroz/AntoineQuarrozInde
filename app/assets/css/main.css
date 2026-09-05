@@ -162,11 +162,11 @@
   }
 
   .admin-empty-title {
-    @apply text-sm font-medium text-gray-500 dark:text-gray-300;
+    @apply text-sm font-medium text-gray-700 dark:text-gray-200;
   }
 
   .admin-empty-body {
-    @apply text-xs text-gray-400 dark:text-gray-500;
+    @apply text-xs text-gray-600 dark:text-gray-300;
   }
 
   .admin-stat {
@@ -194,6 +194,11 @@
 }
 
 @media (max-width: 430px) {
+  .admin-shell .input-field {
+    font-size: 1rem;
+    line-height: 1.5rem;
+  }
+
   section[id],
   form[id] {
     scroll-margin-top: 5rem;

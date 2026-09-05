@@ -7,6 +7,7 @@ const toast = useToast()
 const loadingBackfill = ref(false)
 const loadingCleanup = ref(false)
 const loadingRuns = ref(false)
+const loadError = ref('')
 
 const lastBackfillResult = ref<{
   clientsInserted: number
@@ -26,6 +27,7 @@ const runs = ref<Array<{
 
 async function loadRuns() {
   loadingRuns.value = true
+  loadError.value = ''
   try {
     const data = await $fetch('/api/admin/audit/runs', {
       headers: auth.authHeader(),
@@ -33,6 +35,7 @@ async function loadRuns() {
     runs.value = (data as any[]) || []
   } catch {
     runs.value = []
+    loadError.value = 'L’historique de maintenance ne peut pas être chargé.'
   } finally {
     loadingRuns.value = false
   }
@@ -47,16 +50,16 @@ async function runBackfill() {
     })
     lastBackfillResult.value = result as any
     await loadRuns()
-    toast.success('Backfill termine')
+    toast.success('Backfill terminé')
   } catch {
-    toast.error('Erreur pendant le backfill')
+    toast.error('Le backfill n’a pas pu être exécuté')
   } finally {
     loadingBackfill.value = false
   }
 }
 
 async function runCleanup() {
-  if (!confirm('Supprimer toutes les entrees backfill de cette organisation ?')) return
+  if (!confirm('Supprimer toutes les entrées générées par le backfill pour cette organisation ? Cette action est irréversible.')) return
   loadingCleanup.value = true
   try {
     const result = await $fetch('/api/admin/audit/cleanup', {
@@ -65,9 +68,9 @@ async function runCleanup() {
     })
     lastCleanupResult.value = result as any
     await loadRuns()
-    toast.success('Nettoyage termine')
+    toast.success('Nettoyage terminé')
   } catch {
-    toast.error('Erreur pendant le nettoyage')
+    toast.error('Le nettoyage n’a pas pu être exécuté')
   } finally {
     loadingCleanup.value = false
   }
@@ -89,47 +92,47 @@ onMounted(() => {
       <div class="relative min-w-0">
         <span class="rounded-md bg-gradient-brand px-2 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white">Maintenance</span>
         <h1 class="mt-2 font-display text-2xl font-semibold text-gray-950 dark:text-white sm:text-3xl">Maintenance audit</h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Backfill historique et nettoyage des entrees generees automatiquement.</p>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Reconstitution de l’historique et nettoyage des entrées générées automatiquement.</p>
       </div>
     </section>
 
     <div class="bg-white dark:bg-[#111118] border border-gray-100 dark:border-white/[0.06] rounded-xl p-5 space-y-4">
       <div class="flex flex-wrap items-center gap-3">
         <button
-          class="px-4 py-2 rounded-lg text-sm font-semibold bg-violet-600 hover:bg-violet-700 text-white disabled:opacity-60"
+          class="min-h-11 rounded-lg bg-violet-600 px-4 text-sm font-semibold text-white hover:bg-violet-700 disabled:cursor-wait disabled:opacity-60"
           :disabled="loadingBackfill || loadingCleanup"
           @click="runBackfill"
         >
-          {{ loadingBackfill ? 'Backfill en cours...' : 'Relancer backfill' }}
+          {{ loadingBackfill ? 'Backfill en cours…' : 'Relancer le backfill' }}
         </button>
 
         <button
-          class="px-4 py-2 rounded-lg text-sm font-semibold bg-red-600 hover:bg-red-700 text-white disabled:opacity-60"
+          class="min-h-11 rounded-lg border border-red-200 bg-white px-4 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:cursor-wait disabled:opacity-60 dark:border-red-400/30 dark:bg-transparent dark:text-red-300 dark:hover:bg-red-500/10"
           :disabled="loadingBackfill || loadingCleanup"
           @click="runCleanup"
         >
-          {{ loadingCleanup ? 'Nettoyage en cours...' : 'Nettoyer backfill' }}
+          {{ loadingCleanup ? 'Nettoyage en cours…' : 'Nettoyer les données générées' }}
         </button>
       </div>
 
       <p class="text-xs text-gray-500 dark:text-gray-400">
-        Les actions sont journalisees dans l'audit avec date/acteur/resultat.
+        Chaque action est journalisée avec sa date, son auteur et son résultat. Le nettoyage supprime uniquement les données créées par le backfill.
       </p>
 
-      <div v-if="lastBackfillResult" class="rounded-lg border border-violet-200/50 dark:border-violet-500/20 p-4">
-        <p class="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-2">Dernier resultat backfill</p>
+      <div v-if="lastBackfillResult" role="status" class="rounded-lg border border-violet-200/50 p-4 dark:border-violet-500/20">
+        <p class="mb-2 text-sm font-semibold text-gray-800 dark:text-gray-100">Dernier résultat du backfill</p>
         <ul class="text-sm text-gray-600 dark:text-gray-300 space-y-1">
           <li>Clients: {{ lastBackfillResult.clientsInserted }}</li>
-          <li>Taches: {{ lastBackfillResult.tasksInserted }}</li>
+          <li>Tâches : {{ lastBackfillResult.tasksInserted }}</li>
           <li>Devis: {{ lastBackfillResult.quotesInserted }}</li>
           <li>Factures: {{ lastBackfillResult.invoicesInserted }}</li>
-          <li>Rendez-vous: {{ lastBackfillResult.appointmentsInserted }}</li>
+          <li>Rendez-vous : {{ lastBackfillResult.appointmentsInserted }}</li>
         </ul>
       </div>
 
-      <div v-if="lastCleanupResult" class="rounded-lg border border-red-200/50 dark:border-red-500/20 p-4">
+      <div v-if="lastCleanupResult" role="status" class="rounded-lg border border-red-200/50 p-4 dark:border-red-500/20">
         <p class="text-sm text-gray-700 dark:text-gray-200">
-          Entrees supprimees: <strong>{{ lastCleanupResult.deleted }}</strong>
+          Entrées supprimées : <strong>{{ lastCleanupResult.deleted }}</strong>
         </p>
       </div>
     </div>
@@ -138,15 +141,17 @@ onMounted(() => {
       <div class="flex items-center justify-between mb-3">
         <h2 class="text-sm font-semibold text-gray-800 dark:text-gray-100">Historique maintenance</h2>
         <button
-          class="px-2.5 py-1.5 rounded-md text-xs font-semibold bg-gray-100 dark:bg-white/[0.06] text-gray-700 dark:text-gray-200"
+          class="min-h-11 rounded-lg bg-gray-100 px-3 text-xs font-semibold text-gray-700 dark:bg-white/[0.06] dark:text-gray-200"
           :disabled="loadingRuns"
           @click="loadRuns"
         >
-          {{ loadingRuns ? 'Chargement...' : 'Rafraichir' }}
+          {{ loadingRuns ? 'Chargement…' : 'Rafraîchir' }}
         </button>
       </div>
 
-      <div v-if="runs.length" class="space-y-2">
+      <div v-if="loadingRuns && !runs.length" role="status" class="py-8 text-center text-sm text-gray-500 dark:text-gray-400">Chargement de l’historique…</div>
+      <div v-else-if="loadError" role="alert" class="rounded-lg bg-red-50 p-4 text-sm text-red-800 dark:bg-red-500/10 dark:text-red-200"><p>{{ loadError }}</p><button type="button" class="mt-2 min-h-11 font-semibold underline underline-offset-2" @click="loadRuns">Réessayer</button></div>
+      <div v-else-if="runs.length" class="space-y-2">
         <div
           v-for="run in runs"
           :key="run.id"
@@ -156,14 +161,14 @@ onMounted(() => {
             <p class="text-sm font-medium text-gray-800 dark:text-gray-100">
               {{ formatRunLabel(run.action) }}
             </p>
-            <p class="text-xs text-gray-500">{{ new Date(run.created_at).toLocaleString() }}</p>
+            <time class="text-xs text-gray-500" :datetime="run.created_at">{{ new Date(run.created_at).toLocaleString('fr-CH') }}</time>
           </div>
           <p class="text-xs text-gray-500 mt-1">
-            Lance par: {{ run.payload?.actorEmail || 'Inconnu' }}
+            Lancé par : {{ run.payload?.actorEmail || 'Inconnu' }}
           </p>
           <div class="text-xs text-gray-600 dark:text-gray-300 mt-2">
             <span v-if="run.action === 'audit_backfill_cleanup'">
-              Supprime: <strong>{{ run.payload?.deleted || 0 }}</strong>
+              Supprimées : <strong>{{ run.payload?.deleted || 0 }}</strong>
             </span>
             <span v-else>
               C: <strong>{{ run.payload?.clientsInserted || 0 }}</strong> ·
@@ -176,7 +181,7 @@ onMounted(() => {
         </div>
       </div>
 
-      <p v-else class="text-sm text-gray-500">Aucun run de maintenance pour le moment.</p>
+      <AdminEmptyState v-else title="Aucune opération de maintenance" body="Les prochains backfills et nettoyages apparaîtront ici." />
     </div>
   </div>
 </template>

@@ -16,6 +16,7 @@ export interface GoogleReview {
 
 type GoogleReviewsResponse = {
   configured: boolean
+  unavailable?: boolean
   placeName?: string
   rating?: number
   userRatingCount?: number
@@ -28,6 +29,7 @@ export const useGoogleReviewsStore = defineStore('google-reviews', () => {
   const { locale } = useI18n()
   const configured = ref(false)
   const loading = ref(false)
+  const unavailable = ref(false)
   const loadedLocale = ref('')
   const placeName = ref('')
   const rating = ref(0)
@@ -45,6 +47,7 @@ export const useGoogleReviewsStore = defineStore('google-reviews', () => {
         query: { locale: locale.value },
       })
       configured.value = response.configured
+      unavailable.value = Boolean(response.unavailable)
       placeName.value = response.placeName || ''
       rating.value = response.rating || 0
       userRatingCount.value = response.userRatingCount || 0
@@ -55,6 +58,7 @@ export const useGoogleReviewsStore = defineStore('google-reviews', () => {
     }
     catch {
       configured.value = false
+      unavailable.value = true
       reviews.value = []
     }
     finally {
@@ -66,6 +70,7 @@ export const useGoogleReviewsStore = defineStore('google-reviews', () => {
 
   return {
     configured,
+    unavailable,
     loading,
     placeName,
     rating,

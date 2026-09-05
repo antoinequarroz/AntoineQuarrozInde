@@ -79,31 +79,31 @@ export default defineEventHandler(async (event) => {
       key: `task-${item.id}`,
       label: item.title,
       sub: `Tache · ${item.status}`,
-      to: '/admin/tasks',
+      to: `/admin/tasks?taskId=${item.id}`,
     }))),
     ...((quotesRes.data || []).map(item => ({
       key: `quote-${item.id}`,
       label: `${item.number} · ${item.title}`,
       sub: `Devis · ${item.status}`,
-      to: '/admin/quotes',
+      to: `/admin/quotes?quoteId=${item.id}`,
     }))),
     ...((invoicesRes.data || []).map(item => ({
       key: `invoice-${item.id}`,
       label: item.number,
       sub: `Facture · ${item.status}`,
-      to: '/admin/invoices',
+      to: `/admin/invoices?invoiceId=${item.id}`,
     }))),
     ...((projectsRes.data || []).map(item => ({
       key: `project-${item.id}`,
       label: item.title,
       sub: `Projet · ${item.category}`,
-      to: '/admin/projects',
+      to: `/admin/projects?editId=${item.id}`,
     }))),
     ...((articlesRes.data || []).map(item => ({
       key: `article-${item.id}`,
       label: item.title,
       sub: `Article · ${item.published ? 'publie' : 'brouillon'}`,
-      to: '/admin/articles',
+      to: `/admin/articles?editId=${item.id}`,
     }))),
   ]
 

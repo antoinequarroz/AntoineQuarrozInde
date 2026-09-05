@@ -1,3 +1,4 @@
+import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
 
 const email = process.env.E2E_ADMIN_EMAIL
@@ -21,6 +22,28 @@ async function login(page: Page) {
     }
     throw new Error('Supabase access token not found after login')
   })
+}
+
+async function selectSandboxOrganization(page: Page) {
+  const organizationSelect = page.getByRole('combobox', { name: 'Organisation active' })
+  const sandboxOption = organizationSelect.locator('option', { hasText: 'AQ E2E Sandbox' })
+  const sandboxId = await sandboxOption.first().getAttribute('value') || ''
+  if (await organizationSelect.inputValue() !== sandboxId) {
+    await Promise.all([
+      page.waitForNavigation(),
+      organizationSelect.selectOption(sandboxId),
+    ])
+  }
+  await page.reload()
+  await expect(organizationSelect).toHaveValue(sandboxId)
+}
+
+async function expectAccessibleDetailPage(page: Page) {
+  const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()
+  const blocking = results.violations.filter(violation => violation.impact === 'critical' || violation.impact === 'serious')
+  expect(blocking, blocking.map(violation => `${violation.id}: ${violation.help}`).join('\n')).toEqual([])
+  const hasHorizontalOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1)
+  expect(hasHorizontalOverflow).toBe(false)
 }
 
 test('sandbox covers client to paid invoice and cleans up business data', async ({ page, request }) => {
@@ -105,6 +128,14 @@ test('sandbox covers client to paid invoice and cleans up business data', async 
     })
     expect(projectResponse.ok()).toBeTruthy()
     ids.project = (await projectResponse.json()).id
+
+    await selectSandboxOrganization(page)
+    await page.goto(`/admin/clients/${ids.client}`)
+    await expect(page.getByRole('heading', { level: 1, name: `Client E2E ${runId}` })).toBeVisible()
+    await expectAccessibleDetailPage(page)
+    await page.goto(`/admin/projects/${ids.project}`)
+    await expect(page.getByRole('heading', { level: 1, name: `Projet E2E ${runId}` })).toBeVisible()
+    await expectAccessibleDetailPage(page)
 
     const numberResponse = await request.get('/api/admin/billing/next-number?kind=quote', { headers })
     expect(numberResponse.ok()).toBeTruthy()

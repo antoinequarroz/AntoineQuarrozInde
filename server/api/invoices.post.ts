@@ -1,5 +1,5 @@
 import { computeTotals, normalizeBillingCurrency, normalizeBillingItems } from '../utils/billing'
-import { normalizeInvoicePaymentState } from '../utils/invoiceState'
+import { assertInvoiceStatusTransition, normalizeInvoicePaymentState } from '../utils/invoiceState'
 import { getQrReferenceError, isSwissQrReferenceType, normalizeIban, validateQrReference } from '../../shared/utils/swissQr'
 
 export default defineEventHandler(async (event) => {
@@ -31,6 +31,7 @@ export default defineEventHandler(async (event) => {
   }
   let paymentState
   try {
+    assertInvoiceStatusTransition('draft', body.status ?? 'draft')
     paymentState = normalizeInvoicePaymentState(body.status, body.paidAt)
   }
   catch (error) {

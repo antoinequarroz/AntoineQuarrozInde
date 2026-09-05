@@ -190,8 +190,10 @@ onMounted(loadAnalytics)
       </div>
     </section>
 
-    <div v-if="loadError" role="alert" class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-200">
-      {{ loadError }}
+    <div v-if="loadError" role="alert" class="rounded-xl border border-red-200 bg-red-50 p-5 text-red-900 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-100">
+      <p class="font-semibold">Les statistiques sont indisponibles</p>
+      <p class="mt-1 text-sm">{{ loadError }}</p>
+      <button type="button" class="mt-4 min-h-11 rounded-lg bg-red-700 px-4 text-sm font-semibold text-white" @click="loadAnalytics">Réessayer</button>
     </div>
 
     <div v-if="pending && !data" class="grid min-h-72 place-items-center rounded-xl border border-gray-200 bg-white dark:border-white/[0.08] dark:bg-[#111118]">

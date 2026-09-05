@@ -11,7 +11,7 @@ const props = defineProps<{
 const { t, locale } = useI18n()
 const localePath = useLocalePath()
 const { track } = useMarketing()
-const rootRef = ref<HTMLElement | null>(null)
+const rootRef = shallowRef<HTMLElement | null>(null)
 const progressBarRef = ref<HTMLElement | null>(null)
 const navListRef = ref<HTMLElement | null>(null)
 const mobileListRef = ref<HTMLElement | null>(null)
@@ -151,7 +151,7 @@ function renderHelix() {
     const normalized = ((angle + 540) % 360) - 180
     const absoluteAngle = Math.abs(normalized)
     const radians = normalized * (Math.PI / 180)
-    const frontSeparationDistance = metrics.viewportWidth >= 1280 ? 195 : 165
+    const frontSeparationDistance = metrics.viewportWidth >= 1280 ? 195 : 190
     const frontSeparation = absoluteAngle < 80
       ? Math.sin((absoluteAngle / 80) * Math.PI) * frontSeparationDistance
       : 0

@@ -51,35 +51,50 @@ export const useAppointmentsStore = defineStore('appointments', () => {
   const syncing = ref(false)
   const pendingQueue = ref<PendingOperation[]>([])
   const listenerAttached = ref(false)
+  const loadedContext = ref<string | null>(null)
+  const loadingContext = ref<string | null>(null)
+  let requestVersion = 0
+  let activeLoad: Promise<void> | null = null
+
+  function requestContext() {
+    return `authenticated:${auth.userEmail ?? ''}:${auth.currentOrganizationId ?? ''}`
+  }
+
+  function storageKey(base: string) {
+    return `${base}:${auth.userEmail ?? 'anonymous'}:${auth.currentOrganizationId ?? 'default'}`
+  }
 
   function persistCache() {
     if (!import.meta.client) return
-    localStorage.setItem(APPOINTMENTS_CACHE_KEY, JSON.stringify(appointments.value))
+    localStorage.setItem(storageKey(APPOINTMENTS_CACHE_KEY), JSON.stringify(appointments.value))
   }
 
   function persistQueue() {
     if (!import.meta.client) return
-    localStorage.setItem(APPOINTMENTS_QUEUE_KEY, JSON.stringify(pendingQueue.value))
+    localStorage.setItem(storageKey(APPOINTMENTS_QUEUE_KEY), JSON.stringify(pendingQueue.value))
   }
 
   function loadLocalState() {
     if (!import.meta.client) return
+    appointments.value = []
+    pendingQueue.value = []
     try {
-      const rawAppointments = localStorage.getItem(APPOINTMENTS_CACHE_KEY)
+      const rawAppointments = localStorage.getItem(storageKey(APPOINTMENTS_CACHE_KEY))
       if (rawAppointments) appointments.value = JSON.parse(rawAppointments)
     } catch {}
     try {
-      const rawQueue = localStorage.getItem(APPOINTMENTS_QUEUE_KEY)
+      const rawQueue = localStorage.getItem(storageKey(APPOINTMENTS_QUEUE_KEY))
       if (rawQueue) pendingQueue.value = JSON.parse(rawQueue)
     } catch {}
   }
 
   function nextTempId() {
     if (!import.meta.client) return -Date.now()
-    const raw = localStorage.getItem(APPOINTMENTS_TEMP_ID_KEY)
+    const key = storageKey(APPOINTMENTS_TEMP_ID_KEY)
+    const raw = localStorage.getItem(key)
     const current = raw ? Number(raw) : -1
     const next = Number.isFinite(current) && current < 0 ? current - 1 : -1
-    localStorage.setItem(APPOINTMENTS_TEMP_ID_KEY, String(next))
+    localStorage.setItem(key, String(next))
     return next
   }
 
@@ -96,25 +111,38 @@ export const useAppointmentsStore = defineStore('appointments', () => {
     listenerAttached.value = true
   }
 
-  async function ensureLoaded(force = false) {
-    if (loading.value) return
-    if (loaded.value && !force) return
+  function ensureLoaded(force = false) {
+    const context = requestContext()
+    if (loading.value && loadingContext.value === context && activeLoad) return activeLoad
+    if (loaded.value && loadedContext.value === context && !force) return Promise.resolve()
+    const version = ++requestVersion
     loadLocalState()
     attachOnlineListener()
     loading.value = true
-    try {
+    loadingContext.value = context
+    const load = (async () => {
       if (!isOnline()) {
         loaded.value = appointments.value.length > 0
+        loadedContext.value = context
+        if (!loaded.value) throw new Error('Agenda indisponible hors ligne : aucun cache local.')
         return
       }
       const rows = await $fetch<AppointmentRow[]>('/api/appointments', { headers: auth.authHeader() })
+      if (version !== requestVersion) return
       appointments.value = rows.map(mapAppointment)
       loaded.value = true
+      loadedContext.value = context
       persistCache()
       if (pendingQueue.value.length > 0) await flushQueue()
-    } finally {
-      loading.value = false
-    }
+    })().finally(() => {
+      if (version === requestVersion) {
+        loading.value = false
+        loadingContext.value = null
+      }
+      if (activeLoad === load) activeLoad = null
+    })
+    activeLoad = load
+    return load
   }
 
   async function add(payload: AppointmentUpsert) {

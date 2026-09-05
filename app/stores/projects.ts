@@ -115,6 +115,7 @@ export const useProjectsStore = defineStore('projects', () => {
   const loadedContext = ref<string | null>(null)
   const loadingContext = ref<string | null>(null)
   let requestVersion = 0
+  let activeLoad: Promise<void> | null = null
 
   function requestContext() {
     return auth.accessToken
@@ -122,27 +123,29 @@ export const useProjectsStore = defineStore('projects', () => {
       : 'public'
   }
 
-  async function ensureLoaded(force = false) {
+  function ensureLoaded(force = false) {
     const context = requestContext()
-    if (loading.value && loadingContext.value === context) return
-    if (loaded.value && loadedContext.value === context && !force) return
+    if (loading.value && loadingContext.value === context && activeLoad) return activeLoad
+    if (loaded.value && loadedContext.value === context && !force) return Promise.resolve()
 
     const version = ++requestVersion
     loading.value = true
     loadingContext.value = context
-    try {
+    const load = (async () => {
       const rows = await $fetch<ProjectRow[]>('/api/projects', { headers: auth.authHeader() })
       if (version !== requestVersion) return
       projects.value = rows.map(mapProject)
       loaded.value = true
       loadedContext.value = context
-    }
-    finally {
+    })().finally(() => {
       if (version === requestVersion) {
         loading.value = false
         loadingContext.value = null
       }
-    }
+      if (activeLoad === load) activeLoad = null
+    })
+    activeLoad = load
+    return load
   }
 
   async function add(project: Omit<Project, 'id' | 'createdAt' | 'caseStudyApprovedAt' | 'caseStudyApprovedBy'> & { caseStudyApprovalConfirmed?: boolean }) {

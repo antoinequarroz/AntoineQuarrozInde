@@ -1,5 +1,5 @@
 import { computeTotals, normalizeBillingCurrency, normalizeBillingItems } from '../utils/billing'
-import { normalizeInvoicePaymentState } from '../utils/invoiceState'
+import { assertInvoiceStatusTransition, normalizeInvoicePaymentState } from '../utils/invoiceState'
 import { getQrReferenceError, isSwissQrReferenceType, normalizeIban, validateQrReference } from '../../shared/utils/swissQr'
 import { hasLockedInvoiceContentMutation, isInvoiceLocked } from '../utils/invoiceLock'
 
@@ -28,6 +28,7 @@ export default defineEventHandler(async (event) => {
 
   let paymentState
   try {
+    assertInvoiceStatusTransition(existing.status, body.status ?? existing.status)
     paymentState = normalizeInvoicePaymentState(body.status ?? existing.status, body.paidAt ?? existing.paid_at)
   }
   catch (error) {

@@ -2,6 +2,13 @@ import { Resend } from 'resend'
 import { logAudit } from './audit'
 import { buildPipelineReminderPlan, type PipelineReminderCandidate } from './pipelineReminderPlan'
 
+export type PipelineReminderConfirmation = {
+  reminderKey: string
+  email: string
+  subject: string
+  bodyText: string
+}
+
 function todayInZurich() {
   return new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Europe/Zurich',
@@ -27,6 +34,7 @@ function reminderEmail(candidate: PipelineReminderCandidate) {
   if (candidate.targetType === 'quote') {
     return {
       subject: candidate.urgency === 'due' ? `Dernier rappel pour le devis ${candidate.number}` : `Le devis ${candidate.number} arrive à échéance`,
+      text: `Bonjour ${candidate.clientName},\n\nJe reviens vers vous concernant le devis ${candidate.number}${candidate.title ? ` (${candidate.title})` : ''}, valable jusqu’au ${candidate.dueDate}.\n\nSi vous souhaitez avancer ou ajuster un point, je reste disponible pour organiser la suite.\n\nAntoine Quarroz\ninfo@antoinequarroz.ch`,
       html: `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#111827;line-height:1.6"><p>Bonjour ${name},</p><p>Je reviens vers vous concernant le devis <strong>${number}</strong>${candidate.title ? ` (${escapeHtml(candidate.title)})` : ''}, valable jusqu’au <strong>${dueDate}</strong>.</p><p>Si vous souhaitez avancer ou ajuster un point, je reste disponible pour organiser la suite.</p><p style="margin-top:24px">Antoine Quarroz<br>info@antoinequarroz.ch</p></div>`,
     }
   }
@@ -35,8 +43,17 @@ function reminderEmail(candidate: PipelineReminderCandidate) {
   const balance = new Intl.NumberFormat('fr-CH', { style: 'currency', currency: candidate.currency || 'CHF' }).format(Number(candidate.balanceCents || 0) / 100)
   return {
     subject: overdue ? `Facture ${candidate.number} en attente de règlement` : `Rappel facture ${candidate.number}`,
+    text: `Bonjour ${candidate.clientName},\n\n${overdue ? 'Sauf erreur de ma part, la facture' : 'Petit rappel concernant la facture'} ${candidate.number}, avec échéance au ${candidate.dueDate}${overdue ? ', reste en attente de règlement.' : '.'}\n\nSolde restant : ${balance}.\n\nVous pouvez consulter la facture et ses moyens de paiement depuis votre espace client : https://www.antoinequarroz.ch/portal#factures\n\nN’hésitez pas à me contacter si un point doit être clarifié.\n\nAntoine Quarroz\ninfo@antoinequarroz.ch`,
     html: `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#111827;line-height:1.6"><p>Bonjour ${name},</p><p>${overdue ? 'Sauf erreur de ma part, la facture' : 'Petit rappel concernant la facture'} <strong>${number}</strong>, avec échéance au <strong>${dueDate}</strong>${overdue ? ', reste en attente de règlement.' : '.'}</p><p>Solde restant : <strong>${escapeHtml(balance)}</strong>.</p><p>Vous pouvez consulter la facture et ses moyens de paiement depuis votre espace client : <a href="https://www.antoinequarroz.ch/portal#factures">ouvrir mes factures</a>.</p><p>N’hésitez pas à me contacter si un point doit être clarifié.</p><p style="margin-top:24px">Antoine Quarroz<br>info@antoinequarroz.ch</p></div>`,
   }
+}
+
+export function confirmationMatchesCandidate(candidate: PipelineReminderCandidate, confirmation: PipelineReminderConfirmation) {
+  const message = reminderEmail(candidate)
+  return confirmation.reminderKey === candidate.reminderKey
+    && confirmation.email === candidate.email
+    && confirmation.subject === message.subject
+    && confirmation.bodyText === message.text
 }
 
 async function loadReminderPlan(organizationId: string) {
@@ -67,24 +84,36 @@ async function loadReminderPlan(organizationId: string) {
   })
 }
 
+export function selectPipelineReminderCandidates(candidates: PipelineReminderCandidate[], reminderKeys?: string[]) {
+  if (!reminderKeys) return candidates
+  const requestedKeys = new Set(reminderKeys)
+  return candidates.filter(candidate => requestedKeys.has(candidate.reminderKey))
+}
+
 export async function previewPipelineReminders(organizationId: string) {
   const plan = await loadReminderPlan(organizationId)
   return {
     automationEnabled: Boolean(process.env.PIPELINE_AUTOMATION_SECRET),
     generatedAt: new Date().toISOString(),
-    candidates: plan.candidates.map(candidate => ({
-      reminderKey: candidate.reminderKey,
-      targetType: candidate.targetType,
-      targetId: candidate.targetId,
-      clientId: candidate.clientId,
-      clientName: candidate.clientName,
-      number: candidate.number,
-      dueDate: candidate.dueDate,
-      milestone: candidate.milestone,
-      urgency: candidate.urgency,
-      balanceCents: candidate.balanceCents,
-      currency: candidate.currency,
-    })),
+    candidates: plan.candidates.map((candidate) => {
+      const message = reminderEmail(candidate)
+      return {
+        reminderKey: candidate.reminderKey,
+        targetType: candidate.targetType,
+        targetId: candidate.targetId,
+        clientId: candidate.clientId,
+        clientName: candidate.clientName,
+        email: candidate.email,
+        subject: message.subject,
+        bodyText: message.text,
+        number: candidate.number,
+        dueDate: candidate.dueDate,
+        milestone: candidate.milestone,
+        urgency: candidate.urgency,
+        balanceCents: candidate.balanceCents,
+        currency: candidate.currency,
+      }
+    }),
     skipped: plan.skipped,
   }
 }
@@ -94,34 +123,58 @@ export async function runPipelineReminders(input: {
   actorUserId?: string | null
   actorEmail?: string | null
   trigger: 'manual' | 'scheduled'
+  reminderKeys?: string[]
+  confirmedReminders?: PipelineReminderConfirmation[]
 }) {
   const config = useRuntimeConfig()
   if (!config.resendApiKey) throw createError({ statusCode: 500, message: 'RESEND_API_KEY manquante' })
 
   const supabase = getSupabaseAdmin()
   const today = todayInZurich()
-  const { data: newlyOverdue, error: overdueError } = await supabase
-    .from('invoices')
-    .update({ status: 'overdue' })
-    .eq('organization_id', input.organizationId)
-    .eq('status', 'sent')
-    .lt('due_at', today)
-    .select('id')
-  if (overdueError) throw createError({ statusCode: 500, message: overdueError.message })
+  let newlyOverdue: Array<{ id: number }> = []
+  if (input.trigger === 'scheduled') {
+    const { data, error: overdueError } = await supabase
+      .from('invoices')
+      .update({ status: 'overdue' })
+      .eq('organization_id', input.organizationId)
+      .eq('status', 'sent')
+      .lt('due_at', today)
+      .select('id')
+    if (overdueError) throw createError({ statusCode: 500, message: overdueError.message })
+    newlyOverdue = data || []
+  }
 
   const plan = await loadReminderPlan(input.organizationId)
+  const confirmedByKey = new Map((input.confirmedReminders || []).map(item => [item.reminderKey, item]))
+  const requestedKeys = input.confirmedReminders?.map(item => item.reminderKey) ?? input.reminderKeys
+  const candidates = selectPipelineReminderCandidates(plan.candidates, requestedKeys)
+  if (input.trigger === 'manual') {
+    if (!input.confirmedReminders || candidates.length !== confirmedByKey.size) {
+      throw createError({ statusCode: 409, message: 'La prévisualisation a changé. Vérifie de nouveau les relances.' })
+    }
+    for (const candidate of candidates) {
+      const confirmation = confirmedByKey.get(candidate.reminderKey)
+      if (!confirmation || !confirmationMatchesCandidate(candidate, confirmation)) {
+        throw createError({ statusCode: 409, message: 'Un destinataire ou un message a changé. Vérifie de nouveau les relances.' })
+      }
+    }
+  }
   const resend = new Resend(config.resendApiKey)
   let sentCount = 0
   let failedCount = 0
 
-  for (const candidate of plan.candidates) {
+  for (const candidate of candidates) {
     const email = reminderEmail(candidate)
-    const { error } = await resend.emails.send({
-      from: 'Antoine Quarroz <info@antoinequarroz.ch>',
-      to: candidate.email,
-      subject: email.subject,
-      html: email.html,
-    })
+    const { error } = await resend.emails.send(
+      {
+        from: 'Antoine Quarroz <info@antoinequarroz.ch>',
+        to: candidate.email,
+        subject: email.subject,
+        text: email.text,
+        html: email.html,
+      },
+      { idempotencyKey: `${input.organizationId}:${candidate.reminderKey}` },
+    )
     if (error) {
       failedCount += 1
       continue
@@ -150,7 +203,7 @@ export async function runPipelineReminders(input: {
     sentCount,
     failedCount,
     skippedCount,
-    candidateCount: plan.candidates.length,
+    candidateCount: candidates.length,
     overdueMarkedCount: newlyOverdue?.length || 0,
     trigger: input.trigger,
   }

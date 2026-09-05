@@ -96,6 +96,7 @@ const pageData = ref<{ items: Client[], total: number, page: number, pageSize: n
   pageSize: 20,
 })
 const loading = ref(false)
+const loadError = ref('')
 const savingClient = ref(false)
 const inviteAfterCreate = ref(false)
 const showPortalAccess = ref(false)
@@ -272,6 +273,7 @@ async function removeView(name: string) {
 
 async function loadClients() {
   loading.value = true
+  loadError.value = ''
   try {
     pageData.value = await $fetch('/api/clients', {
       query: {
@@ -286,6 +288,8 @@ async function loadClients() {
       },
       headers: auth.authHeader(),
     })
+  } catch {
+    loadError.value = 'Les clients ne peuvent pas être chargés pour le moment. Vérifie ta connexion, puis réessaie.'
   } finally {
     loading.value = false
   }
@@ -405,7 +409,7 @@ async function moveClientToStatus(status: Client['status']) {
   if (!id) return
   try {
     await store.update(id, { status })
-    toast.success(`Client passe en ${status}`)
+    toast.success(`Client passé en ${status === 'active' ? 'actif' : 'inactif'}`)
     await loadClients()
   } catch {
     toast.error('Erreur déplacement')
@@ -425,6 +429,7 @@ watch(() => auth.currentOrganizationId, async () => {
 
 onMounted(async () => {
   await Promise.all([loadViews(), loadClients()])
+  if (route.query.new === '1') openNew()
 })
 </script>
 
@@ -434,23 +439,22 @@ onMounted(async () => {
       <div class="pointer-events-none absolute -top-16 right-[8%] h-48 w-48 rounded-full bg-violet-500/10 blur-3xl" />
       <div class="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div class="min-w-0">
-          <span class="rounded-md bg-gradient-brand px-2 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white">Clients</span>
-          <h1 class="mt-2 font-display text-2xl font-semibold text-gray-950 dark:text-white sm:text-3xl">Clients</h1>
-          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ pageData.total }} client(s)</p>
+          <h1 class="font-display text-2xl font-semibold text-gray-950 dark:text-white sm:text-3xl">Clients</h1>
+          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ pageData.total }} {{ pageData.total === 1 ? 'client' : 'clients' }}</p>
         </div>
-        <button class="inline-flex h-10 shrink-0 items-center justify-center rounded-lg bg-gradient-brand px-4 text-xs font-semibold text-white shadow-glow-sm transition hover:opacity-90" @click="openNew">Nouveau</button>
+        <button class="inline-flex min-h-11 shrink-0 items-center justify-center rounded-lg bg-gradient-brand px-4 text-sm font-semibold text-white shadow-glow-sm transition hover:opacity-90" @click="openNew">Nouveau client</button>
       </div>
     </section>
 
     <AdminAdminToolbar>
       <div class="grid grid-cols-1 sm:grid-cols-[1fr_160px_160px] gap-2">
-        <input :value="queryState.q" class="input-field" placeholder="Rechercher client, société, email..." @input="updateFilters({ q: ($event.target as HTMLInputElement).value })">
-        <select :value="queryState.status" class="input-field" @change="updateFilters({ status: ($event.target as HTMLSelectElement).value })">
+        <input :value="queryState.q" aria-label="Rechercher un client" class="input-field" placeholder="Rechercher client, société, email..." @input="updateFilters({ q: ($event.target as HTMLInputElement).value })">
+        <select :value="queryState.status" aria-label="Filtrer les clients par statut" class="input-field" @change="updateFilters({ status: ($event.target as HTMLSelectElement).value })">
           <option value="all">Tous statuts</option>
           <option value="active">Actif</option>
           <option value="inactive">Inactif</option>
         </select>
-        <select :value="queryState.pageSize" class="input-field" @change="updateFilters({ pageSize: ($event.target as HTMLSelectElement).value })">
+        <select :value="queryState.pageSize" aria-label="Nombre de clients par page" class="input-field" @change="updateFilters({ pageSize: ($event.target as HTMLSelectElement).value })">
           <option value="10">10 / page</option>
           <option value="20">20 / page</option>
           <option value="50">50 / page</option>
@@ -463,9 +467,9 @@ onMounted(async () => {
           <button class="px-2.5 py-1.5 text-xs" :class="queryState.view === 'table' ? 'bg-violet-600 text-white' : 'bg-transparent'" @click="replaceQuery({ view: 'table' })">Table</button>
           <button class="px-2.5 py-1.5 text-xs" :class="queryState.view === 'kanban' ? 'bg-violet-600 text-white' : 'bg-transparent'" @click="replaceQuery({ view: 'kanban' })">Kanban</button>
         </div>
-        <input v-model="viewName" class="input-field !h-9 !py-1.5 !text-xs max-w-[220px]" placeholder="Nom de vue">
+        <input v-model="viewName" aria-label="Nom de la vue enregistrée" class="input-field !min-h-11 !py-1.5 !text-xs max-w-[220px]" placeholder="Nom de vue">
         <button class="px-2.5 py-1.5 rounded-lg text-xs border border-gray-200 dark:border-white/[0.12]" @click="saveCurrentView">Sauver la vue</button>
-        <button class="px-2.5 py-1.5 rounded-lg text-xs border border-gray-200 dark:border-white/[0.12]" @click="router.replace({ query: { view: queryState.view } })">Reset</button>
+        <button class="min-h-10 rounded-lg border border-gray-200 px-2.5 text-xs dark:border-white/[0.12]" @click="router.replace({ query: { view: queryState.view } })">Réinitialiser</button>
       </div>
 
       <div v-if="savedViews.length" class="mt-3 flex flex-wrap gap-2">
@@ -475,7 +479,7 @@ onMounted(async () => {
           class="inline-flex items-center gap-1 rounded-lg border border-gray-200 dark:border-white/[0.12] px-2 py-1"
         >
           <button class="text-xs" @click="applyView(view)">{{ view.name }}</button>
-          <button class="text-xs text-red-500" @click="removeView(view.name)">x</button>
+          <button class="min-h-9 rounded-md px-2 text-xs text-red-600 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-500/10" :aria-label="`Supprimer la vue ${view.name}`" @click="removeView(view.name)">Supprimer</button>
         </div>
       </div>
     </AdminAdminToolbar>
@@ -489,7 +493,12 @@ onMounted(async () => {
       </div>
     </div>
 
-    <div v-if="queryState.view === 'table'" class="space-y-3">
+    <div v-if="loadError" role="alert" class="flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-red-900 dark:border-red-400/20 dark:bg-red-400/10 dark:text-red-100 sm:flex-row sm:items-center sm:justify-between">
+      <div><p class="font-semibold">Chargement impossible</p><p class="mt-1 text-sm">{{ loadError }}</p></div>
+      <button class="min-h-11 shrink-0 rounded-lg bg-red-700 px-4 text-sm font-semibold text-white hover:bg-red-800" @click="loadClients">Réessayer</button>
+    </div>
+
+    <div v-else-if="queryState.view === 'table'" class="space-y-3">
       <AdminAdminCard v-if="loading">
         <AdminAdminEmptyState title="Chargement..." />
       </AdminAdminCard>
@@ -498,7 +507,7 @@ onMounted(async () => {
         <AdminAdminCard v-for="client in pageData.items" :key="`mobile-${client.id}`">
           <label class="mb-2 flex items-center gap-2 text-xs text-gray-500">
             <input :checked="selectedIds.includes(client.id)" type="checkbox" @change="toggleOne(client.id)">
-            Selectionner
+            Sélectionner
           </label>
           <div class="flex items-start justify-between gap-2">
             <div class="flex items-center gap-2.5">
@@ -510,18 +519,18 @@ onMounted(async () => {
                 <p class="text-xs text-gray-400">{{ client.company || 'Indépendant' }}</p>
               </div>
             </div>
-            <span v-if="client.status === 'active'" class="rounded-md bg-green-50 px-2 py-1 text-xs text-green-700 dark:bg-green-500/10 dark:text-green-300">{{ client.status }}</span>
-            <span v-else class="rounded-md bg-gray-100 px-2 py-1 text-xs text-gray-500 dark:bg-white/[0.06] dark:text-gray-400">{{ client.status }}</span>
+            <span v-if="client.status === 'active'" class="rounded-md bg-green-50 px-2 py-1 text-xs text-green-700 dark:bg-green-500/10 dark:text-green-300">Actif</span>
+            <span v-else class="rounded-md bg-gray-100 px-2 py-1 text-xs text-gray-600 dark:bg-white/[0.06] dark:text-gray-300">Inactif</span>
           </div>
           <p class="mt-2 text-xs text-gray-500">{{ client.email }}</p>
           <p class="text-xs text-gray-400">{{ client.phone || '-' }}</p>
           <span class="mt-2 inline-flex rounded-md px-2 py-1 text-xs font-semibold" :class="portalAccessTone(client)">{{ portalAccessLabels[portalAccessStatus(client)] }}</span>
           <p class="mt-2 text-xs font-medium text-cyan-700 dark:text-cyan-300">{{ client.acquisitionSource || 'Source non attribuée' }}</p>
-          <div class="mt-3 flex items-center gap-3">
-            <NuxtLink :to="`/admin/clients/${client.id}`" class="text-xs text-sky-600">Voir</NuxtLink>
-            <button class="text-xs text-violet-600" @click="openEdit(client)">Éditer</button>
-            <button class="text-xs font-semibold text-cyan-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 dark:text-cyan-300" @click="openPortalAccess(client)">Gérer l’accès</button>
-            <button class="text-xs text-red-500" @click="handleDelete(client.id)">Supprimer</button>
+          <div class="mt-3 flex flex-wrap items-center gap-1">
+            <NuxtLink :to="`/admin/clients/${client.id}`" class="inline-flex min-h-10 items-center rounded-lg px-2 text-xs text-sky-700 hover:bg-sky-50 dark:text-sky-300 dark:hover:bg-sky-500/10">Voir</NuxtLink>
+            <button class="min-h-10 rounded-lg px-2 text-xs text-violet-700 hover:bg-violet-50 dark:text-violet-300 dark:hover:bg-violet-500/10" @click="openEdit(client)">Éditer</button>
+            <button class="min-h-10 rounded-lg px-2 text-xs font-semibold text-cyan-700 hover:bg-cyan-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 dark:text-cyan-300 dark:hover:bg-cyan-500/10" @click="openPortalAccess(client)">Gérer l’accès</button>
+            <button class="min-h-10 rounded-lg px-2 text-xs text-red-600 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-500/10" @click="handleDelete(client.id)">Supprimer</button>
           </div>
         </AdminAdminCard>
         <AdminAdminEmptyState v-if="!pageData.items.length" title="Aucun client" body="Ajuste les filtres ou crée un nouveau client." />
@@ -532,27 +541,27 @@ onMounted(async () => {
           <thead class="border-b border-gray-100 dark:border-white/[0.06]">
             <tr>
               <th class="px-5 py-3 text-left text-xs uppercase text-gray-400">
-                <input :checked="allSelected" type="checkbox" @change="toggleAll">
+                <input :checked="allSelected" type="checkbox" aria-label="Sélectionner tous les clients" @change="toggleAll">
               </th>
-              <th class="px-5 py-3 text-left text-xs uppercase text-gray-400">
+              <th class="px-5 py-3 text-left text-xs uppercase text-gray-600 dark:text-gray-300">
                 <button class="inline-flex items-center gap-1" @click="toggleSort('name')">Nom</button>
               </th>
-              <th class="px-5 py-3 text-left text-xs uppercase text-gray-400">
+              <th class="px-5 py-3 text-left text-xs uppercase text-gray-600 dark:text-gray-300">
                 <button class="inline-flex items-center gap-1" @click="toggleSort('email')">Contact</button>
               </th>
-              <th class="px-5 py-3 text-left text-xs uppercase text-gray-400">
+              <th class="px-5 py-3 text-left text-xs uppercase text-gray-600 dark:text-gray-300">
                 <button class="inline-flex items-center gap-1" @click="toggleSort('status')">Statut</button>
               </th>
-              <th class="px-5 py-3 text-left text-xs uppercase text-gray-400">
+              <th class="px-5 py-3 text-left text-xs uppercase text-gray-600 dark:text-gray-300">
                 <button class="inline-flex items-center gap-1" @click="toggleSort('created_at')">Création</button>
               </th>
-              <th class="px-5 py-3 text-right text-xs uppercase text-gray-400">Actions</th>
+              <th class="px-5 py-3 text-right text-xs uppercase text-gray-600 dark:text-gray-300">Actions</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="client in pageData.items" :key="client.id" class="border-b border-gray-50 dark:border-white/[0.03] last:border-0">
               <td class="px-5 py-3">
-                <input :checked="selectedIds.includes(client.id)" type="checkbox" @change="toggleOne(client.id)">
+                <input :checked="selectedIds.includes(client.id)" type="checkbox" :aria-label="`Sélectionner ${client.name}`" @change="toggleOne(client.id)">
               </td>
               <td class="px-5 py-3">
                 <div class="flex items-center gap-2.5">
@@ -572,8 +581,8 @@ onMounted(async () => {
                 <span class="mt-1.5 inline-flex rounded-md px-2 py-1 text-xs font-semibold" :class="portalAccessTone(client)">{{ portalAccessLabels[portalAccessStatus(client)] }}</span>
               </td>
               <td class="px-5 py-3">
-                <span v-if="client.status === 'active'" class="rounded-md bg-green-50 px-2 py-1 text-xs text-green-700 dark:bg-green-500/10 dark:text-green-300">{{ client.status }}</span>
-                <span v-else class="rounded-md bg-gray-100 px-2 py-1 text-xs text-gray-500 dark:bg-white/[0.06] dark:text-gray-400">{{ client.status }}</span>
+                <span v-if="client.status === 'active'" class="rounded-md bg-green-50 px-2 py-1 text-xs text-green-700 dark:bg-green-500/10 dark:text-green-300">Actif</span>
+                <span v-else class="rounded-md bg-gray-100 px-2 py-1 text-xs text-gray-600 dark:bg-white/[0.06] dark:text-gray-300">Inactif</span>
               </td>
               <td class="px-5 py-3 text-xs text-gray-400">{{ client.createdAt }}</td>
               <td class="px-5 py-3 text-right space-x-2">
@@ -622,31 +631,32 @@ onMounted(async () => {
       </AdminAdminCard>
     </div>
 
-    <div class="flex items-center justify-between gap-3 rounded-xl border border-gray-100 bg-white p-3 shadow-sm dark:border-white/[0.06] dark:bg-[#111118]">
-      <p class="text-xs text-gray-500">Page {{ pageData.page }} / {{ totalPages }} · {{ pageData.total }} resultat(s)</p>
+    <div v-if="!loadError" class="flex items-center justify-between gap-3 rounded-xl border border-gray-100 bg-white p-3 shadow-sm dark:border-white/[0.06] dark:bg-[#111118]">
+      <p class="text-xs text-gray-500">Page {{ pageData.page }} / {{ totalPages }} · {{ pageData.total }} {{ pageData.total === 1 ? 'résultat' : 'résultats' }}</p>
       <div class="flex items-center gap-2">
-        <button class="rounded-lg border border-gray-200 px-3 py-1.5 text-xs disabled:opacity-50 dark:border-white/[0.12]" :disabled="pageData.page <= 1" @click="replaceQuery({ page: String(pageData.page - 1) })">Precedent</button>
-        <button class="rounded-lg border border-gray-200 px-3 py-1.5 text-xs disabled:opacity-50 dark:border-white/[0.12]" :disabled="pageData.page >= totalPages" @click="replaceQuery({ page: String(pageData.page + 1) })">Suivant</button>
+        <button class="min-h-10 rounded-lg border border-gray-200 px-3 text-xs disabled:opacity-50 dark:border-white/[0.12]" :disabled="pageData.page <= 1" @click="replaceQuery({ page: String(pageData.page - 1) })">Précédent</button>
+        <button class="min-h-10 rounded-lg border border-gray-200 px-3 text-xs disabled:opacity-50 dark:border-white/[0.12]" :disabled="pageData.page >= totalPages" @click="replaceQuery({ page: String(pageData.page + 1) })">Suivant</button>
       </div>
     </div>
 
     <Transition name="fade">
-      <div v-if="showForm" ref="dialogRef" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4" role="dialog" aria-modal="true" aria-labelledby="client-form-title" tabindex="-1" @keydown="handleDialogKeydown">
+      <div v-if="showForm" ref="dialogRef" class="fixed inset-0 z-50 flex items-start justify-center overflow-hidden p-2 sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-labelledby="client-form-title" tabindex="-1" @keydown="handleDialogKeydown">
         <div class="absolute inset-0 bg-black/40" @click="showForm = false" />
-        <form class="admin-modal-panel relative w-full max-w-2xl max-h-[92vh] overflow-y-auto bg-white dark:bg-[#111118] rounded-xl p-4 sm:p-5 space-y-3" :aria-busy="savingClient" @submit.prevent="handleSubmit">
-          <h2 id="client-form-title" class="font-semibold text-gray-900 dark:text-white">{{ editing ? 'Modifier client' : 'Nouveau client' }}</h2>
+        <form class="admin-modal-panel relative flex max-h-[calc(100dvh-1rem)] w-full max-w-2xl flex-col overflow-hidden rounded-xl bg-white dark:bg-[#111118] sm:max-h-[92vh]" :aria-busy="savingClient" @submit.prevent="handleSubmit">
+          <h2 id="client-form-title" class="shrink-0 border-b border-gray-100 px-4 py-4 font-semibold text-gray-900 dark:border-white/[0.06] dark:text-white sm:px-5">{{ editing ? 'Modifier le client' : 'Nouveau client' }}</h2>
+          <div class="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-4 sm:px-5">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <input v-model="form.name" class="input-field" placeholder="Nom" required>
-            <input v-model="form.company" class="input-field" placeholder="Société">
+            <label class="space-y-1 text-xs font-medium text-gray-600 dark:text-gray-300">Nom<input v-model="form.name" class="input-field" autocomplete="name" required></label>
+            <label class="space-y-1 text-xs font-medium text-gray-600 dark:text-gray-300">Société<input v-model="form.company" class="input-field" autocomplete="organization"></label>
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <input v-model="form.email" type="email" class="input-field" placeholder="Email" required>
-            <input v-model="form.phone" class="input-field" placeholder="Telephone">
+            <label class="space-y-1 text-xs font-medium text-gray-600 dark:text-gray-300">E-mail<input v-model="form.email" type="email" class="input-field" autocomplete="email" required></label>
+            <label class="space-y-1 text-xs font-medium text-gray-600 dark:text-gray-300">Téléphone<input v-model="form.phone" type="tel" class="input-field" autocomplete="tel"></label>
           </div>
-          <select v-model="form.status" class="input-field">
+          <label class="block space-y-1 text-xs font-medium text-gray-600 dark:text-gray-300">Statut<select v-model="form.status" class="input-field">
             <option value="active">Actif</option>
             <option value="inactive">Inactif</option>
-          </select>
+          </select></label>
           <label v-if="!editing" class="flex items-start gap-3 rounded-lg border border-violet-200/70 bg-violet-50/60 p-3 text-sm dark:border-violet-500/20 dark:bg-violet-500/[0.08]">
             <input v-model="inviteAfterCreate" type="checkbox" class="mt-0.5 h-4 w-4 rounded border-gray-300 text-violet-600 focus:ring-violet-500">
             <span><strong class="block text-gray-900 dark:text-white">Inviter ce client après sa création</strong><span class="mt-0.5 block text-xs leading-5 text-gray-600 dark:text-gray-300">Il recevra un lien personnel pour choisir son mot de passe et ouvrir son espace sécurisé.</span></span>
@@ -674,7 +684,7 @@ onMounted(async () => {
               <option value="Réseau professionnel" />
             </datalist>
           </fieldset>
-          <textarea v-model="form.notes" rows="3" class="input-field" placeholder="Notes" />
+          <label class="block space-y-1 text-xs font-medium text-gray-600 dark:text-gray-300">Notes internes<textarea v-model="form.notes" rows="3" class="input-field" placeholder="Informations utiles pour le suivi" /></label>
           <fieldset class="space-y-3 rounded-lg border border-gray-200 p-3 dark:border-white/[0.08]">
             <legend class="px-1 text-xs font-semibold uppercase text-gray-500">Adresse de facturation</legend>
             <div class="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_120px]">
@@ -687,9 +697,10 @@ onMounted(async () => {
               <label class="space-y-1 text-xs text-gray-500">Pays<input v-model="form.billingCountry" maxlength="2" class="input-field" autocomplete="country"></label>
             </div>
           </fieldset>
-          <div class="sticky bottom-0 bg-white dark:bg-[#111118] pt-2 flex justify-end gap-2">
-            <button type="button" class="px-3 py-2 text-sm" @click="showForm = false">Annuler</button>
-            <button type="submit" class="rounded-lg bg-violet-600 px-4 py-2 text-sm text-white disabled:cursor-wait disabled:opacity-60" :disabled="savingClient">{{ savingClient ? 'Enregistrement…' : 'Enregistrer' }}</button>
+          </div>
+          <div class="flex shrink-0 justify-end gap-2 border-t border-gray-100 bg-white px-4 py-3 dark:border-white/[0.06] dark:bg-[#111118] sm:px-5">
+            <button type="button" class="min-h-11 rounded-lg px-3 text-sm" @click="showForm = false">Annuler</button>
+            <button type="submit" class="min-h-11 rounded-lg bg-violet-600 px-4 text-sm font-semibold text-white disabled:cursor-wait disabled:opacity-60" :disabled="savingClient">{{ savingClient ? 'Enregistrement…' : 'Enregistrer' }}</button>
           </div>
         </form>
       </div>

@@ -133,19 +133,19 @@ onMounted(async () => {
   <div class="space-y-6 admin-main-safe">
     <div v-if="client" class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4 min-w-0">
       <div class="min-w-0">
-        <NuxtLink to="/admin/clients" class="text-xs text-gray-400 hover:text-gray-600">← Retour clients</NuxtLink>
+        <NuxtLink to="/admin/clients" class="text-xs text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">← Retour clients</NuxtLink>
         <h1 class="font-display font-semibold text-2xl text-gray-900 dark:text-white mt-1">{{ client.name }}</h1>
-        <p class="text-sm text-gray-400 admin-text-wrap">{{ client.company || 'Indépendant' }} · {{ client.email }}</p>
+        <p class="admin-text-wrap text-sm text-gray-600 dark:text-gray-300">{{ client.company || 'Indépendant' }} · {{ client.email }}</p>
         <div class="mt-2 flex flex-wrap items-center gap-2 text-xs">
           <span class="rounded-full bg-cyan-50 px-2.5 py-1 font-semibold text-cyan-800 dark:bg-cyan-500/10 dark:text-cyan-200">{{ client.acquisitionSource || 'Source non attribuée' }}</span>
           <span v-if="client.acquisitionMedium" class="text-gray-500 dark:text-gray-400">{{ client.acquisitionMedium }}</span>
-          <span v-if="client.acquisitionCampaign" class="text-gray-400">· {{ client.acquisitionCampaign }}</span>
+          <span v-if="client.acquisitionCampaign" class="text-gray-600 dark:text-gray-300">· {{ client.acquisitionCampaign }}</span>
         </div>
       </div>
       <div class="grid grid-cols-1 sm:flex items-stretch sm:items-center gap-2 w-full sm:w-auto">
         <NuxtLink :to="`/admin/quotes?new=1&clientId=${client.id}`" class="px-3 py-2 rounded-lg bg-violet-600 text-white text-xs font-semibold text-center">Nouveau devis</NuxtLink>
-        <NuxtLink :to="`/admin/invoices?new=1&clientId=${client.id}`" class="px-3 py-2 rounded-lg bg-sky-600 text-white text-xs font-semibold text-center">Nouvelle facture</NuxtLink>
-        <NuxtLink :to="`/admin/appointments?new=1&clientId=${client.id}`" class="px-3 py-2 rounded-lg bg-emerald-600 text-white text-xs font-semibold text-center">Nouveau RDV</NuxtLink>
+        <NuxtLink :to="`/admin/invoices?new=1&clientId=${client.id}`" class="inline-flex min-h-11 items-center justify-center rounded-lg bg-sky-700 px-3 py-2 text-center text-xs font-semibold text-white">Nouvelle facture</NuxtLink>
+        <NuxtLink :to="`/admin/appointments?new=1&clientId=${client.id}`" class="inline-flex min-h-11 items-center justify-center rounded-lg bg-emerald-700 px-3 py-2 text-center text-xs font-semibold text-white">Nouveau RDV</NuxtLink>
       </div>
     </div>
 
@@ -157,39 +157,39 @@ onMounted(async () => {
       <section class="rounded-xl border border-gray-100 bg-white p-4 dark:border-white/10 dark:bg-[#111118]">
         <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
           <div class="min-w-0 flex-1">
-            <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Parcours client</p>
+            <p class="text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Parcours client</p>
             <ol class="mt-3 grid grid-cols-5 gap-1.5" aria-label="Progression du client">
               <li v-for="(stage, index) in pipelineStages" :key="stage.label" class="min-w-0">
                 <div class="h-1.5 rounded-full" :class="stage.done ? 'bg-violet-600' : index === pipelineIndex ? 'bg-cyan-400' : 'bg-gray-200 dark:bg-white/10'" />
-                <p class="mt-1 truncate text-xs" :class="stage.done || index === pipelineIndex ? 'font-semibold text-gray-800 dark:text-gray-100' : 'text-gray-400'">{{ stage.label }}</p>
+                <p class="mt-1 truncate text-xs" :class="stage.done || index === pipelineIndex ? 'font-semibold text-gray-800 dark:text-gray-100' : 'text-gray-600 dark:text-gray-300'">{{ stage.label }}</p>
               </li>
             </ol>
           </div>
           <div class="grid gap-2 sm:grid-cols-2 xl:w-[430px]">
             <div class="rounded-lg bg-violet-50 p-3 dark:bg-violet-500/10"><p class="text-xs text-violet-600 dark:text-violet-300">Prochaine action</p><NuxtLink v-if="nextAction" :to="nextAction.to" class="mt-1 block text-sm font-semibold text-violet-950 hover:text-violet-700 dark:text-violet-100 dark:hover:text-violet-300">{{ nextAction.label }} →</NuxtLink></div>
-            <div class="rounded-lg bg-gray-50 p-3 dark:bg-white/[0.04]"><p class="text-xs text-gray-400">Prochaine échéance</p><p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">{{ nextDeadline ? nextDeadline.date : 'Aucune' }}</p><p v-if="nextDeadline" class="truncate text-xs text-gray-500">{{ nextDeadline.label }}</p></div>
+            <div class="rounded-lg bg-gray-50 p-3 dark:bg-white/[0.04]"><p class="text-xs text-gray-600 dark:text-gray-300">Prochaine échéance</p><p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">{{ nextDeadline ? nextDeadline.date : 'Aucune' }}</p><p v-if="nextDeadline" class="truncate text-xs text-gray-500">{{ nextDeadline.label }}</p></div>
           </div>
         </div>
       </section>
 
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="rounded-xl border border-gray-100 dark:border-white/10 bg-white dark:bg-[#111118] p-4">
-          <p class="text-xs text-gray-400 uppercase">Devis</p>
+          <p class="text-xs uppercase text-gray-600 dark:text-gray-300">Devis</p>
           <p class="font-display font-bold text-xl mt-1">{{ clientQuotes.length }}</p>
           <p class="text-xs text-gray-500 mt-1">{{ (totalQuotes / 100).toFixed(2) }} CHF</p>
         </div>
         <div class="rounded-xl border border-gray-100 dark:border-white/10 bg-white dark:bg-[#111118] p-4">
-          <p class="text-xs text-gray-400 uppercase">Factures</p>
+          <p class="text-xs uppercase text-gray-600 dark:text-gray-300">Factures</p>
           <p class="font-display font-bold text-xl mt-1">{{ clientInvoices.length }}</p>
           <p class="text-xs text-gray-500 mt-1">{{ (totalInvoices / 100).toFixed(2) }} CHF</p>
         </div>
         <div class="rounded-xl border border-gray-100 dark:border-white/10 bg-white dark:bg-[#111118] p-4">
-          <p class="text-xs text-gray-400 uppercase">Impayées</p>
+          <p class="text-xs uppercase text-gray-600 dark:text-gray-300">Impayées</p>
           <p class="font-display font-bold text-xl mt-1">{{ overdueInvoices.length }}</p>
           <p class="text-xs text-gray-500 mt-1">statut overdue</p>
         </div>
         <div class="rounded-xl border border-gray-100 dark:border-white/10 bg-white dark:bg-[#111118] p-4">
-          <p class="text-xs text-gray-400 uppercase">Prochain RDV</p>
+          <p class="text-xs uppercase text-gray-600 dark:text-gray-300">Prochain RDV</p>
           <p class="font-display font-bold text-sm mt-2 text-gray-800 dark:text-gray-100">
             {{ nextAppointment ? new Date(nextAppointment.startsAt).toLocaleString('fr-CH') : 'Aucun' }}
           </p>
@@ -201,7 +201,7 @@ onMounted(async () => {
           <h2 class="text-sm font-semibold mb-3">Projets liés</h2>
           <div v-if="clientProjects.length" class="space-y-2">
             <div v-for="project in clientProjects.slice(0, 5)" :key="project.id" class="flex items-center justify-between gap-3 text-sm min-w-0">
-              <span class="truncate">{{ project.title }}</span><span class="text-xs uppercase text-gray-400">{{ project.category }}</span>
+              <span class="truncate">{{ project.title }}</span><span class="text-xs uppercase text-gray-600 dark:text-gray-300">{{ project.category }}</span>
             </div>
           </div>
           <NuxtLink v-else :to="`/admin/projects?new=1&clientId=${client.id}`" class="text-xs font-semibold text-violet-600">Créer le premier projet</NuxtLink>
@@ -211,10 +211,10 @@ onMounted(async () => {
           <div v-if="clientQuotes.length" class="space-y-2">
             <div v-for="q in clientQuotes.slice(0, 5)" :key="q.id" class="flex items-center justify-between gap-3 text-sm min-w-0">
               <span class="truncate">{{ q.number }} · {{ q.title }}</span>
-              <span class="text-gray-400 whitespace-nowrap">{{ (q.amountCents / 100).toFixed(2) }} {{ q.currency }}</span>
+              <span class="whitespace-nowrap text-gray-600 dark:text-gray-300">{{ (q.amountCents / 100).toFixed(2) }} {{ q.currency }}</span>
             </div>
           </div>
-          <p v-else class="text-xs text-gray-400">Aucun devis</p>
+          <p v-else class="text-xs text-gray-600 dark:text-gray-300">Aucun devis</p>
         </div>
 
         <div class="rounded-xl border border-gray-100 dark:border-white/10 bg-white dark:bg-[#111118] p-4">
@@ -222,10 +222,10 @@ onMounted(async () => {
           <div v-if="clientInvoices.length" class="space-y-2">
             <div v-for="i in clientInvoices.slice(0, 5)" :key="i.id" class="flex items-center justify-between gap-3 text-sm min-w-0">
               <span class="truncate">{{ i.number }} · {{ statusLabel(i.status) }}</span>
-              <span class="text-gray-400 whitespace-nowrap">{{ (i.amountCents / 100).toFixed(2) }} {{ i.currency }}</span>
+              <span class="whitespace-nowrap text-gray-600 dark:text-gray-300">{{ (i.amountCents / 100).toFixed(2) }} {{ i.currency }}</span>
             </div>
           </div>
-          <p v-else class="text-xs text-gray-400">Aucune facture</p>
+          <p v-else class="text-xs text-gray-600 dark:text-gray-300">Aucune facture</p>
         </div>
 
         <div class="rounded-xl border border-gray-100 dark:border-white/10 bg-white dark:bg-[#111118] p-4">
@@ -233,10 +233,10 @@ onMounted(async () => {
           <div v-if="clientTasks.length" class="space-y-2">
             <div v-for="t in clientTasks.slice(0, 6)" :key="t.id" class="flex items-center justify-between gap-3 text-sm min-w-0">
               <span class="truncate">{{ t.title }}</span>
-              <span class="text-gray-400 whitespace-nowrap">{{ statusLabel(t.status) }}</span>
+              <span class="whitespace-nowrap text-gray-600 dark:text-gray-300">{{ statusLabel(t.status) }}</span>
             </div>
           </div>
-          <p v-else class="text-xs text-gray-400">Aucune tâche</p>
+          <p v-else class="text-xs text-gray-600 dark:text-gray-300">Aucune tâche</p>
         </div>
 
         <div class="rounded-xl border border-gray-100 dark:border-white/10 bg-white dark:bg-[#111118] p-4">
@@ -244,10 +244,10 @@ onMounted(async () => {
           <div v-if="clientAppointments.length" class="space-y-2">
             <div v-for="a in clientAppointments.slice(0, 6)" :key="a.id" class="flex items-center justify-between gap-3 text-sm min-w-0">
               <span class="truncate">{{ a.title }}</span>
-              <span class="text-gray-400 whitespace-nowrap">{{ new Date(a.startsAt).toLocaleDateString('fr-CH') }}</span>
+              <span class="whitespace-nowrap text-gray-600 dark:text-gray-300">{{ new Date(a.startsAt).toLocaleDateString('fr-CH') }}</span>
             </div>
           </div>
-          <p v-else class="text-xs text-gray-400">Aucun rendez-vous</p>
+          <p v-else class="text-xs text-gray-600 dark:text-gray-300">Aucun rendez-vous</p>
         </div>
       </div>
 
@@ -257,12 +257,12 @@ onMounted(async () => {
           <div v-for="message in relatedMessages.slice(0, 6)" :key="message.id" class="flex items-start justify-between gap-3 border-b border-gray-100 dark:border-white/5 pb-2 last:border-0">
             <div class="min-w-0">
               <p class="text-sm text-gray-800 dark:text-gray-100 truncate">{{ message.subject || 'Nouveau message' }}</p>
-              <p class="text-xs text-gray-400 admin-text-wrap">{{ message.message }}</p>
+              <p class="admin-text-wrap text-xs text-gray-600 dark:text-gray-300">{{ message.message }}</p>
             </div>
-            <span class="text-xs text-gray-400 whitespace-nowrap">{{ message.createdAt?.slice(0, 10) }}</span>
+            <span class="whitespace-nowrap text-xs text-gray-600 dark:text-gray-300">{{ message.createdAt?.slice(0, 10) }}</span>
           </div>
         </div>
-        <p v-else class="text-xs text-gray-400">Aucun message lié pour cet email</p>
+        <p v-else class="text-xs text-gray-600 dark:text-gray-300">Aucun message lié pour cet email</p>
       </div>
 
       <div class="rounded-xl border border-gray-100 dark:border-white/10 bg-white dark:bg-[#111118] p-4 min-w-0">
@@ -271,12 +271,12 @@ onMounted(async () => {
           <div v-for="event in timeline.slice(0, 12)" :key="event.key" class="flex items-start justify-between gap-3 border-b border-gray-100 dark:border-white/5 pb-2 last:border-0">
             <div class="min-w-0">
               <p class="text-sm text-gray-800 dark:text-gray-100 truncate">{{ event.title }}</p>
-              <p class="text-xs text-gray-400 admin-text-wrap">{{ event.meta }}</p>
+              <p class="admin-text-wrap text-xs text-gray-600 dark:text-gray-300">{{ event.meta }}</p>
             </div>
-            <span class="text-xs text-gray-400 whitespace-nowrap">{{ event.date }}</span>
+            <span class="whitespace-nowrap text-xs text-gray-600 dark:text-gray-300">{{ event.date }}</span>
           </div>
         </div>
-        <p v-else class="text-xs text-gray-400">Aucune activité pour ce client</p>
+        <p v-else class="text-xs text-gray-600 dark:text-gray-300">Aucune activité pour ce client</p>
       </div>
     </template>
   </div>
