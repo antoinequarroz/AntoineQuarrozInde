@@ -17,6 +17,7 @@ const navListRef = ref<HTMLElement | null>(null)
 const mobileListRef = ref<HTMLElement | null>(null)
 const activeSourceIndex = ref(0)
 const mobileActiveIndex = ref(0)
+const mobileReady = ref(false)
 const desktopReady = ref(false)
 const prefersReducedMotion = ref(false)
 
@@ -151,7 +152,8 @@ function renderHelix() {
     const normalized = ((angle + 540) % 360) - 180
     const absoluteAngle = Math.abs(normalized)
     const radians = normalized * (Math.PI / 180)
-    const frontSeparationDistance = metrics.viewportWidth >= 1280 ? 195 : 190
+    const densityBoost = Math.max(0, total - 10) * 10
+    const frontSeparationDistance = (metrics.viewportWidth >= 1280 ? 195 : 190) + densityBoost
     const frontSeparation = absoluteAngle < 80
       ? Math.sin((absoluteAngle / 80) * Math.PI) * frontSeparationDistance
       : 0
@@ -225,28 +227,32 @@ function scheduleMeasure() {
   })
 }
 
+function updateMobileIndex() {
+  const list = mobileListRef.value
+  if (!list) return
+
+  const listCenter = list.scrollLeft + list.clientWidth / 2
+  const items = Array.from(list.querySelectorAll<HTMLElement>('[data-mobile-project-card]'))
+  let nearestIndex = 0
+  let nearestDistance = Number.POSITIVE_INFINITY
+
+  items.forEach((item, index) => {
+    const itemCenter = item.offsetLeft + item.offsetWidth / 2
+    const distance = Math.abs(itemCenter - listCenter)
+    if (distance < nearestDistance) {
+      nearestDistance = distance
+      nearestIndex = index
+    }
+  })
+
+  mobileActiveIndex.value = nearestIndex
+}
+
 function scheduleMobileIndex() {
   if (mobileScrollFrame) return
   mobileScrollFrame = window.requestAnimationFrame(() => {
     mobileScrollFrame = 0
-    const list = mobileListRef.value
-    if (!list) return
-
-    const listCenter = list.getBoundingClientRect().left + list.clientWidth / 2
-    const items = Array.from(list.querySelectorAll<HTMLElement>('[data-mobile-project-card]'))
-    let nearestIndex = 0
-    let nearestDistance = Number.POSITIVE_INFINITY
-
-    items.forEach((item, index) => {
-      const rect = item.getBoundingClientRect()
-      const distance = Math.abs(rect.left + rect.width / 2 - listCenter)
-      if (distance < nearestDistance) {
-        nearestDistance = distance
-        nearestIndex = index
-      }
-    })
-
-    mobileActiveIndex.value = nearestIndex
+    updateMobileIndex()
   })
 }
 
@@ -309,6 +315,8 @@ onMounted(async () => {
   measure()
   lastScrollY = window.scrollY
   lastScrollSample = performance.now()
+  mobileReady.value = true
+  scheduleMobileIndex()
   desktopReady.value = true
 
   observer = new IntersectionObserver(([entry]) => {
@@ -363,10 +371,12 @@ onBeforeUnmount(() => {
         <div
           ref="mobileListRef"
           data-mobile-project-carousel
+          :data-carousel-ready="mobileReady ? 'true' : undefined"
           role="region"
           :aria-label="t('portfolio.mobile_carousel_label')"
           class="-mx-2.5 flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-2.5 pb-4 no-scrollbar max-[390px]:-mx-2 max-[390px]:gap-2 max-[390px]:px-2"
           @scroll.passive="scheduleMobileIndex"
+          @scrollend.passive="scheduleMobileIndex"
         >
           <article
             v-for="(project, index) in projects"

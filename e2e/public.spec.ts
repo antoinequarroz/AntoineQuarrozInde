@@ -76,6 +76,7 @@ test('mobile portfolio makes horizontal browsing and project actions explicit', 
   const carousel = page.locator('[data-mobile-project-carousel]')
   const cards = carousel.locator('[data-mobile-project-card]')
   await expect(carousel).toBeVisible()
+  await expect(carousel).toHaveAttribute('data-carousel-ready', 'true')
   await expect(page.getByText(/Faites glisser pour explorer|Drag to explore|Ziehen zum Entdecken/)).toBeVisible()
   expect(await cards.count()).toBeGreaterThan(1)
   await expect(cards.first()).toHaveAttribute('aria-current', 'true')
