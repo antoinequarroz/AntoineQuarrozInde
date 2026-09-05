@@ -48,7 +48,7 @@ const sourceTotal = computed(() => Math.max(1, props.projects.length))
 const maxSourceStep = computed(() => Math.max(0, props.projects.length - 1))
 const desktopTrackStyle = computed(() => {
   const projectSteps = Math.max(0, sourceTotal.value - 1)
-  const trackHeight = projectSteps ? Math.max(420, 180 + projectSteps * 48) : 120
+  const trackHeight = projectSteps ? Math.min(700, Math.max(420, 180 + projectSteps * 48)) : 120
   return { height: `${trackHeight}vh` }
 })
 
