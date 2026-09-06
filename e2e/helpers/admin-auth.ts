@@ -1,11 +1,39 @@
 import { createHmac } from 'node:crypto'
-import { expect, type Page } from '@playwright/test'
+import { existsSync, readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+import { expect, type BrowserContext, type Page } from '@playwright/test'
 
 const adminEmail = process.env.E2E_ADMIN_EMAIL
 const adminPassword = process.env.E2E_ADMIN_PASSWORD
 const adminTotpSecret = process.env.E2E_ADMIN_TOTP_SECRET
+export const adminStorageStatePath = resolve(process.cwd(), 'playwright/.auth/admin.json')
 
 export const adminCredentialsConfigured = Boolean(adminEmail && adminPassword)
+
+type StoredBrowserState = Awaited<ReturnType<BrowserContext['storageState']>>
+
+async function restoreAdminStorageState(page: Page) {
+  if (!existsSync(adminStorageStatePath)) return false
+
+  const state = JSON.parse(readFileSync(adminStorageStatePath, 'utf8')) as StoredBrowserState
+  if (Array.isArray(state.cookies) && state.cookies.length > 0) {
+    await page.context().addCookies(state.cookies)
+  }
+
+  const origins = Array.isArray(state.origins) ? state.origins : []
+  await page.addInitScript((savedOrigins) => {
+    const savedOrigin = savedOrigins.find(candidate => candidate.origin === window.location.origin)
+    for (const entry of savedOrigin?.localStorage ?? []) localStorage.setItem(entry.name, entry.value)
+  }, origins)
+
+  await page.goto('/admin')
+  const dashboardHeading = page.getByRole('heading', { name: 'Tableau de bord', exact: true })
+  await Promise.race([
+    dashboardHeading.waitFor({ state: 'visible', timeout: 10_000 }),
+    page.waitForURL(url => /^\/admin\/(?:security|login)\/?$/.test(url.pathname), { timeout: 10_000 }),
+  ])
+  return new URL(page.url()).pathname.replace(/\/$/, '') === '/admin' && await dashboardHeading.isVisible()
+}
 
 function decodeBase32(value: string) {
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'
@@ -43,6 +71,8 @@ export async function loginAdmin(page: Page) {
   if (!adminEmail || !adminPassword) {
     throw new Error('E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD are required.')
   }
+
+  if (await restoreAdminStorageState(page)) return
 
   await page.goto('/admin/login')
   await page.getByLabel(/email/i).fill(adminEmail)
