@@ -1,5 +1,22 @@
 # Exploitation et reprise après incident
 
+## Surveillance indépendante
+
+Le timer systemd `antoinequarroz-monitor.timer` contrôle le site, Supabase, TLS,
+les conteneurs, le disque et les sauvegardes toutes les cinq minutes depuis le
+VPS. Il envoie un e-mail après trois échecs consécutifs et un message de
+rétablissement. Les erreurs navigateur et serveur sont également conservées
+dans `application_errors` et consultables depuis `/admin/errors`.
+
+Comme un moniteur hébergé sur le VPS ne peut rien signaler lorsque toute la
+machine est indisponible, `.github/workflows/uptime.yml` exécute en complément
+un contrôle externe toutes les quinze minutes. Il exige un `/api/health`
+entièrement vert et une version de production immuable valide. Après trois
+échecs, il ouvre un seul incident GitHub intitulé
+`[Monitoring] Production indisponible`; les contrôles suivants ne créent aucun
+doublon. Dès le rétablissement, le workflow commente puis ferme cet incident.
+Ce contrôle n'utilise aucun secret de production.
+
 ## Porte SEO et baseline de performance
 
 `AQ-SEO-014` définit les pages critiques et les budgets dans

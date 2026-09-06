@@ -1,0 +1,48 @@
+name: External uptime
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: production-uptime
+  cancel-in-progress: true
+
+jobs:
+  uptime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Check production outside the VPS
+        id: production
+        continue-on-error: true
+        run: bash scripts/ops/external-monitor.sh
+      - name: Open one incident when production is unavailable
+        if: steps.production.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INCIDENT_TITLE: '[Monitoring] Production indisponible'
+        run: |
+          issue_number="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --limit 100 --json number,title --jq '.[] | select(.title == "[Monitoring] Production indisponible") | .number' | head -n 1)"
+          if [ -z "$issue_number" ]; then
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$INCIDENT_TITLE" --body "Le contrôle externe de https://www.antoinequarroz.ch a échoué après trois tentatives. Workflow : $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          fi
+      - name: Close the incident after recovery
+        if: steps.production.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          issue_number="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --limit 100 --json number,title --jq '.[] | select(.title == "[Monitoring] Production indisponible") | .number' | head -n 1)"
+          if [ -n "$issue_number" ]; then
+            gh issue comment "$issue_number" --repo "$GITHUB_REPOSITORY" --body "Production rétablie et contrôles de santé à nouveau conformes. Workflow : $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            gh issue close "$issue_number" --repo "$GITHUB_REPOSITORY" --reason completed
+          fi
+      - name: Keep the workflow red while the incident is active
+        if: steps.production.outcome == 'failure'
+        run: exit 1
