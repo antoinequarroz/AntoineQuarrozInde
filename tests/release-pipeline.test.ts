@@ -10,6 +10,8 @@ const verifyScript = 'scripts/ops/verify-production-release.sh'
 const deployScript = 'scripts/ops/deploy-from-ci.sh'
 const sshGateScript = 'scripts/ops/ci-ssh-gate.sh'
 const releaseScript = 'scripts/ops/deploy-release.sh'
+const externalMonitorScript = 'scripts/ops/external-monitor.sh'
+const uptimeWorkflowPath = '.github/workflows/uptime.yml'
 const legacyShipScript = 'scripts/ship.ps1'
 const servers: ReturnType<typeof createServer>[] = []
 const unixIt = process.platform === 'win32' ? it.skip : it
@@ -24,7 +26,7 @@ async function serveRelease(version: string, healthy = true) {
   const server = createServer((request, response) => {
     response.setHeader('Content-Type', 'application/json')
     if (request.url === '/api/version') {
-      response.end(JSON.stringify({ version }))
+      response.end(JSON.stringify({ version, environment: 'production' }))
       return
     }
     if (request.url === '/api/health') {
@@ -167,6 +169,49 @@ describe('AQ-058 release pipeline', () => {
     const monitor = await readFile('scripts/ops/monitor.sh', 'utf8')
 
     expect(monitor.indexOf('issues=()')).toBeLessThan(monitor.indexOf('if [[ "$REQUIRE_RESTORE_DRILL" == "true" ]]'))
+  })
+
+  it('runs an independent secret-free uptime monitor and manages one incident', async () => {
+    const [workflow, monitor] = await Promise.all([
+      readFile(uptimeWorkflowPath, 'utf8'),
+      readFile(externalMonitorScript, 'utf8'),
+    ])
+
+    expect(workflow).toContain("cron: '*/15 * * * *'")
+    expect(workflow).toContain('issues: write')
+    expect(workflow).toContain("INCIDENT_TITLE: '[Monitoring] Production indisponible'")
+    expect(workflow).toContain("steps.production.outcome == 'failure'")
+    expect(workflow).toContain("steps.production.outcome == 'success'")
+    expect(workflow).not.toContain('secrets.')
+    expect(monitor).toContain('.checks.application == "ok"')
+    expect(monitor).toContain('.checks.database == "ok"')
+    expect(monitor).toContain('.environment == "production"')
+  })
+
+  unixIt('accepts a healthy external release and rejects a degraded one', async () => {
+    const version = 'a'.repeat(40)
+    const healthyOrigin = await serveRelease(version)
+    const healthy = await execFileAsync('bash', [externalMonitorScript], {
+      env: {
+        ...process.env,
+        HEALTH_URL: `${healthyOrigin}/api/health`,
+        VERSION_URL: `${healthyOrigin}/api/version`,
+        MONITOR_ATTEMPTS: '1',
+        MONITOR_RETRY_SECONDS: '0',
+      },
+    })
+    expect(healthy.stdout).toContain('checks passed')
+
+    const degradedOrigin = await serveRelease(version, false)
+    await expect(execFileAsync('bash', [externalMonitorScript], {
+      env: {
+        ...process.env,
+        HEALTH_URL: `${degradedOrigin}/api/health`,
+        VERSION_URL: `${degradedOrigin}/api/version`,
+        MONITOR_ATTEMPTS: '1',
+        MONITOR_RETRY_SECONDS: '0',
+      },
+    })).rejects.toMatchObject({ code: 1 })
   })
 
   it('requires a dedicated key and strict host verification', async () => {
