@@ -69,7 +69,7 @@ test('analytics failure never blocks the primary contact path', async ({ page })
   await expect(page.locator('#contact-form')).toBeVisible()
 })
 
-test('mobile portfolio makes horizontal browsing and project actions explicit', async ({ page }) => {
+test('mobile portfolio makes horizontal browsing and project actions explicit', { tag: '@live-data' }, async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/#portfolio')
 
@@ -90,7 +90,7 @@ test('mobile portfolio makes horizontal browsing and project actions explicit', 
   await expect(page.getByLabel(/Projet 2 sur \d+|Project 2 of \d+|Projekt 2 von \d+/)).toBeVisible()
 })
 
-test('front portfolio cards stay separated and navigation follows the active project', async ({ page }) => {
+test('front portfolio cards stay separated and navigation follows the active project', { tag: '@live-data' }, async ({ page }) => {
   for (const viewport of [{ width: 900, height: 820 }, { width: 1440, height: 900 }]) {
     await page.setViewportSize(viewport)
     await page.goto('/#portfolio')
@@ -176,7 +176,7 @@ test('front portfolio cards stay separated and navigation follows the active pro
   }
 })
 
-test('desktop portfolio cards follow the active color mode', async ({ browser }) => {
+test('desktop portfolio cards follow the active color mode', { tag: '@live-data' }, async ({ browser }) => {
   for (const colorScheme of ['light', 'dark'] as const) {
     const context = await browser.newContext({ colorScheme, viewport: { width: 1440, height: 900 } })
     const page = await context.newPage()
@@ -247,7 +247,7 @@ test('contact and footer share one continuous surface', async ({ page }) => {
   expect(footerBackground).toBe(contactBackground)
 })
 
-test('health endpoint reports the application status', async ({ request }) => {
+test('health endpoint reports the application status', { tag: '@live-data' }, async ({ request }) => {
   const response = await request.get('/api/health')
   expect(response.ok()).toBeTruthy()
   const body = await response.json()
@@ -256,13 +256,13 @@ test('health endpoint reports the application status', async ({ request }) => {
   expect(body.checks?.database).toBe('ok')
 })
 
-test('admin routes remain protected', async ({ page }) => {
+test('admin routes remain protected', { tag: '@live-data' }, async ({ page }) => {
   await page.goto('/admin/crm')
   await expect(page).toHaveURL(/\/admin\/login/)
   await expect(page.getByRole('button', { name: /se connecter/i })).toBeVisible()
 })
 
-test('blog articles and links are available without JavaScript', async ({ browser, request }) => {
+test('blog articles and links are available without JavaScript', { tag: '@live-data' }, async ({ browser, request }) => {
   const response = await request.get('/api/public/articles')
   expect(response.ok()).toBeTruthy()
   const articles = await response.json() as Array<{
@@ -299,7 +299,7 @@ test('blog articles and links are available without JavaScript', async ({ browse
   await context.close()
 })
 
-test('blog hydration keeps the server-rendered article list stable', async ({ page, request }) => {
+test('blog hydration keeps the server-rendered article list stable', { tag: '@live-data' }, async ({ page, request }) => {
   const hydrationMessages: string[] = []
   const pageErrors: string[] = []
   page.on('console', (message) => {
@@ -328,7 +328,7 @@ test('blog hydration keeps the server-rendered article list stable', async ({ pa
   expect(pageErrors).toEqual([])
 })
 
-test('approved case studies stay complete and private-field free without JavaScript', async ({ browser, request }) => {
+test('approved case studies stay complete and private-field free without JavaScript', { tag: '@live-data' }, async ({ browser, request }) => {
   const response = await request.get('/api/projects')
   expect(response.ok()).toBeTruthy()
   const projects = await response.json() as Array<Record<string, unknown>>

@@ -61,10 +61,11 @@ describe('AQ-058 release pipeline', () => {
 
   it('runs public browser flows against the candidate before production', async () => {
     const workflow = await readFile(workflowPath, 'utf8')
-    const candidateE2e = 'E2E_BASE_URL=http://127.0.0.1:3100 npm run test:e2e -- e2e/public.spec.ts --project=chromium'
+    const candidateE2e = 'E2E_BASE_URL=http://127.0.0.1:3100 npm run test:e2e -- e2e/public.spec.ts --project=chromium --grep-invert @live-data'
 
     expect(workflow).toContain(candidateE2e)
     expect(workflow.indexOf(candidateE2e)).toBeLessThan(workflow.indexOf('\n  deploy:'))
+    expect(workflow).not.toContain('SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}')
   })
 
   it('passes an optional TOTP secret only to post-production E2E', async () => {

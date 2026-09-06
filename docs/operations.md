@@ -71,7 +71,7 @@ qualité et d'accessibilité. Après fusion dans `main`, le workflow suit cet or
 strict :
 
 1. tests, TypeScript, build, budgets et préflight PostgreSQL local ;
-2. démarrage du candidat en CI et E2E publics sans identifiants avant toute production ;
+2. démarrage du candidat en CI et E2E publics hermétiques (scénarios sans `@live-data`) sans identifiants avant toute production ;
 3. approbation humaine de l'environnement GitHub `Production` ;
 4. détection, sauvegarde chiffrée et promotion des migrations en attente ;
 5. déploiement du SHA exact sur le VPS avec `scripts/ops/deploy-from-ci.sh` ;
