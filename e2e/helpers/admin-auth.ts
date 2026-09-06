@@ -21,10 +21,13 @@ async function restoreAdminStorageState(page: Page) {
   }
 
   const origins = Array.isArray(state.origins) ? state.origins : []
-  await page.addInitScript((savedOrigins) => {
-    const savedOrigin = savedOrigins.find(candidate => candidate.origin === window.location.origin)
-    for (const entry of savedOrigin?.localStorage ?? []) localStorage.setItem(entry.name, entry.value)
-  }, origins)
+  await page.goto('/')
+  const savedOrigin = origins.find(candidate => candidate.origin === new URL(page.url()).origin)
+  if (savedOrigin?.localStorage?.length) {
+    await page.evaluate((entries) => {
+      for (const entry of entries) localStorage.setItem(entry.name, entry.value)
+    }, savedOrigin.localStorage)
+  }
 
   await page.goto('/admin')
   const dashboardHeading = page.getByRole('heading', { name: 'Tableau de bord', exact: true })

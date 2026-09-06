@@ -20,6 +20,24 @@ export default async function globalSetup(config: FullConfig) {
     const context = await browser.newContext({ baseURL })
     const page = await context.newPage()
     await loginAdmin(page)
+    await page.waitForFunction(() => {
+      for (let index = 0; index < localStorage.length; index += 1) {
+        const key = localStorage.key(index)
+        if (!key?.startsWith('sb-') || !key.endsWith('-auth-token')) continue
+        const stored = localStorage.getItem(key)
+        if (!stored) continue
+        try {
+          const session = JSON.parse(stored)
+          const encodedPayload = String(session?.access_token || '').split('.')[1]
+          if (!encodedPayload) continue
+          const base64 = encodedPayload.replace(/-/g, '+').replace(/_/g, '/')
+            .padEnd(Math.ceil(encodedPayload.length / 4) * 4, '=')
+          if (JSON.parse(atob(base64)).aal === 'aal2') return true
+        }
+        catch {}
+      }
+      return false
+    }, undefined, { timeout: 10_000 })
     await context.storageState({ path: adminStorageStatePath })
   }
   catch (error) {

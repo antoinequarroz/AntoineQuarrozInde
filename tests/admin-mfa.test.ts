@@ -203,9 +203,12 @@ describe('admin MFA interface wiring', () => {
   it('authenticates the E2E suite once and removes the reusable AAL2 state afterwards', () => {
     expect(playwrightConfig).toContain("globalSetup: './e2e/global-setup.ts'")
     expect(globalSetup).toContain('await loginAdmin(page)')
+    expect(globalSetup).toContain(".aal === 'aal2'")
     expect(globalSetup).toContain('await context.storageState({ path: adminStorageStatePath })')
     expect(globalSetup).toContain('return cleanup')
     expect(adminAuth).toContain('restoreAdminStorageState(page)')
+    expect(adminAuth).toContain("await page.goto('/')")
+    expect(adminAuth).not.toContain('page.addInitScript')
     expect(adminAuth).toContain("resolve(process.cwd(), 'playwright/.auth/admin.json')")
   })
 })
