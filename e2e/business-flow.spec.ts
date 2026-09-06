@@ -2,7 +2,7 @@ import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
 import { adminCredentialsConfigured, loginAdmin } from './helpers/admin-auth'
 
-async function accessToken(page: Page) {
+async function getAccessToken(page: Page) {
   await loginAdmin(page)
   return page.evaluate(() => {
     for (let index = 0; index < localStorage.length; index += 1) {
@@ -42,7 +42,7 @@ async function expectAccessibleDetailPage(page: Page) {
 test('sandbox covers client to paid invoice and cleans up business data', async ({ page, request }) => {
   test.skip(!adminCredentialsConfigured, 'E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD are required')
 
-  const accessToken = await accessToken(page)
+  const accessToken = await getAccessToken(page)
   const baseHeaders = { authorization: `Bearer ${accessToken}` }
   const organizationsResponse = await request.get('/api/admin/organizations', { headers: baseHeaders })
   expect(organizationsResponse.ok()).toBeTruthy()
