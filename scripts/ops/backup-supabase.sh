@@ -40,21 +40,53 @@ TABLES=(
   project_milestones project_time_entries project_notes project_deliverables
   recurring_invoice_profiles recurring_invoice_runs
 )
+REST_PAGE_SIZE="${BACKUP_REST_PAGE_SIZE:-1000}"
+
+if [[ ! "$REST_PAGE_SIZE" =~ ^[1-9][0-9]*$ ]]; then
+  echo "BACKUP_REST_PAGE_SIZE must be a positive integer" >&2
+  exit 1
+fi
 
 for table in "${TABLES[@]}"; do
-  headers="$WORK_DIR/$table.headers"
-  curl --fail --silent --show-error \
-    "$SUPABASE_URL/rest/v1/$table?select=*&limit=100000" \
-    -H "apikey: $SERVICE_KEY" \
-    -H "Authorization: Bearer $SERVICE_KEY" \
-    -H "Accept: application/json" \
-    -H "Prefer: count=exact" \
-    -D "$headers" \
-    > "$WORK_DIR/$table.json"
+  table_output="$WORK_DIR/$table.json"
+  printf '[]' > "$table_output"
+  expected_rows=''
+  returned_rows=0
 
-  returned_rows="$(jq 'length' "$WORK_DIR/$table.json")"
-  expected_rows="$(awk 'tolower($0) ~ /^content-range:/ { sub(/\r$/, ""); sub(/^.*\//, ""); print; exit }' "$headers")"
-  rm -f "$headers"
+  while [[ -z "$expected_rows" || "$returned_rows" -lt "$expected_rows" ]]; do
+    headers="$WORK_DIR/$table-$returned_rows.headers"
+    page_output="$WORK_DIR/$table-$returned_rows.page.json"
+    curl --fail --silent --show-error \
+      "$SUPABASE_URL/rest/v1/$table?select=*&order=id.asc&limit=$REST_PAGE_SIZE&offset=$returned_rows" \
+      -H "apikey: $SERVICE_KEY" \
+      -H "Authorization: Bearer $SERVICE_KEY" \
+      -H "Accept: application/json" \
+      -H "Prefer: count=exact" \
+      -D "$headers" \
+      > "$page_output"
+
+    page_rows="$(jq 'length' "$page_output")"
+    page_total="$(awk 'tolower($0) ~ /^content-range:/ { sub(/\r$/, ""); sub(/^.*\//, ""); print; exit }' "$headers")"
+    if [[ ! "$page_total" =~ ^[0-9]+$ ]]; then
+      echo "Missing exact row count for $table" >&2
+      exit 1
+    fi
+    if [[ -n "$expected_rows" && "$page_total" -ne "$expected_rows" ]]; then
+      echo "Row count changed while backing up $table: expected $expected_rows, now $page_total" >&2
+      exit 1
+    fi
+    expected_rows="$page_total"
+    if [[ "$page_rows" -eq 0 && "$returned_rows" -lt "$expected_rows" ]]; then
+      echo "Pagination stopped early for $table after $returned_rows of $expected_rows rows" >&2
+      exit 1
+    fi
+
+    jq -s '.[0] + .[1]' "$table_output" "$page_output" > "$table_output.next"
+    mv "$table_output.next" "$table_output"
+    returned_rows=$((returned_rows + page_rows))
+    rm -f "$headers" "$page_output"
+  done
+
   if [[ ! "$expected_rows" =~ ^[0-9]+$ || "$returned_rows" -ne "$expected_rows" ]]; then
     echo "Incomplete backup for $table: received $returned_rows of ${expected_rows:-unknown} rows" >&2
     exit 1
