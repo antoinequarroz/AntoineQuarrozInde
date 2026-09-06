@@ -8,16 +8,31 @@ services:
         APP_BUILD_TIME: ${APP_BUILD_TIME:-unknown}
     container_name: antoinequarroz-web
     restart: unless-stopped
+    init: true
     env_file:
       - .env
     environment:
       NITRO_HOST: 0.0.0.0
       NITRO_PORT: 3000
-      # Nuxt only applies runtimeConfig overrides from NUXT_* variables.
-      # Keep the operator-facing STRIPE_* names in .env and map them here.
+      # Nuxt runtimeConfig is overridden only by NUXT_* variables at runtime.
+      # Map operator-facing .env names explicitly so private values are never
+      # required (or captured) during the image build.
       NUXT_RESEND_API_KEY: ${RESEND_API_KEY:-}
+      NUXT_CONTACT_EMAIL: ${CONTACT_EMAIL:-}
+      NUXT_MONITORING_ALERT_EMAIL: ${MONITORING_ALERT_EMAIL:-}
+      NUXT_TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-}
+      NUXT_GOOGLE_PLACES_API_KEY: ${GOOGLE_PLACES_API_KEY:-}
+      NUXT_GOOGLE_PLACE_ID: ${GOOGLE_PLACE_ID:-}
       NUXT_STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
       NUXT_STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      NUXT_SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
+      NUXT_ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      NUXT_PUBLIC_DEFAULT_ORGANIZATION_SLUG: ${DEFAULT_ORGANIZATION_SLUG:-}
+      NUXT_PUBLIC_TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:-}
+      NUXT_PUBLIC_SUPABASE_URL: ${SUPABASE_URL:-}
+      NUXT_PUBLIC_SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:-}
+      NUXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${SUPABASE_PUBLISHABLE_KEY:-}
+      NUXT_PUBLIC_ADMIN_MFA_MODE: ${ADMIN_MFA_MODE:-optional}
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
       interval: 30s
@@ -28,7 +43,7 @@ services:
       - appnet
 
   caddy:
-    image: caddy:2-alpine
+    image: caddy:2.10.2-alpine@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d
     container_name: antoinequarroz-caddy
     restart: unless-stopped
     depends_on:

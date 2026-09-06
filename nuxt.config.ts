@@ -219,6 +219,7 @@ export default defineNuxtConfig({
       supabaseUrl: process.env.SUPABASE_URL || '',
       supabaseAnonKey: process.env.SUPABASE_ANON_KEY || '',
       supabasePublishableKey: process.env.SUPABASE_PUBLISHABLE_KEY || '',
+      adminMfaMode: process.env.NUXT_PUBLIC_ADMIN_MFA_MODE || process.env.ADMIN_MFA_MODE || 'optional',
     },
   },
 

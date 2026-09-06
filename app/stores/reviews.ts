@@ -47,7 +47,9 @@ export const useReviewsStore = defineStore('reviews', () => {
     if (loaded.value && !force) return
     loading.value = true
     try {
-      const rows = await $fetch<ReviewRow[]>('/api/reviews')
+      const rows = await $fetch<ReviewRow[]>('/api/reviews', {
+        headers: auth.authHeader(),
+      })
       reviews.value = rows.map(mapReview)
       loaded.value = true
     }

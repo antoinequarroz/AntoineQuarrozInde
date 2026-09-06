@@ -23,12 +23,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 22.19.0
           cache: npm
       - run: npm ci --legacy-peer-deps
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
       - run: bash -n scripts/ops/*.sh
       - run: npm test
       - run: npm run typecheck
@@ -44,8 +46,8 @@ jobs:
       SUPABASE_ANON_KEY: local-accessibility-placeholder
       SUPABASE_PUBLISHABLE_KEY: local-accessibility-placeholder
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 22.19.0
           cache: npm
@@ -61,8 +63,8 @@ jobs:
       HOST: 127.0.0.1
       PORT: 3100
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 22.19.0
           cache: npm
@@ -77,10 +79,14 @@ jobs:
             if [[ "$attempt" == 60 ]]; then cat "$RUNNER_TEMP/seo-preview.log"; exit 1; fi
             sleep 1
           done
+          # Data-backed scenarios run after deployment against the real isolated
+          # E2E account. The candidate gate stays hermetic and receives no
+          # production database credential.
+          E2E_BASE_URL=http://127.0.0.1:3100 npm run test:e2e -- e2e/public.spec.ts --project=chromium --grep-invert @live-data
           npm run quality:seo:lab -- http://127.0.0.1:3100
       - name: Preserve candidate SEO baseline
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: seo-lab-${{ github.sha }}
           path: .artifacts/seo-quality/lab.json
@@ -91,8 +97,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 22.19.0
           cache: npm
@@ -109,57 +115,57 @@ jobs:
       url: https://www.antoinequarroz.ch
     env:
       EXPECTED_SHA: ${{ github.sha }}
-      VPS_HOST: ${{ secrets.VPS_HOST }}
-      VPS_USER: ${{ secrets.VPS_USER }}
-      VPS_PROJECT_DIR: ${{ secrets.VPS_PROJECT_DIR }}
-      VPS_SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
-      VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
-      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
-      SUPABASE_BACKUP_AGE_RECIPIENT: ${{ secrets.SUPABASE_BACKUP_AGE_RECIPIENT }}
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 22.19.0
           cache: npm
       - run: npm ci --legacy-peer-deps
       - name: Install encrypted backup tooling
         run: sudo apt-get update -qq && sudo apt-get install -y -qq age
-      - name: Verify deployment secrets
+      - name: Promote verified Supabase migrations
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          SUPABASE_BACKUP_AGE_RECIPIENT: ${{ secrets.SUPABASE_BACKUP_AGE_RECIPIENT }}
+        run: |
+          test -n "$SUPABASE_ACCESS_TOKEN"
+          test -n "$SUPABASE_PROJECT_REF"
+          test -n "$SUPABASE_BACKUP_AGE_RECIPIENT"
+          [[ "$SUPABASE_PROJECT_REF" =~ ^[a-z0-9]{20}$ ]]
+          [[ "$SUPABASE_BACKUP_AGE_RECIPIENT" =~ ^age1[0-9a-z]{20,}$ ]]
+          bash scripts/ops/promote-supabase-migrations.sh "$RUNNER_TEMP/aq060-migration-artifacts"
+      - name: Preserve encrypted pre-migration recovery artifact
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: supabase-pre-migration-${{ github.sha }}
+          path: ${{ runner.temp }}/aq060-migration-artifacts/*
+          if-no-files-found: ignore
+          retention-days: 30
+      - name: Deploy the exact main commit
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PROJECT_DIR: ${{ secrets.VPS_PROJECT_DIR }}
+          VPS_SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
         run: |
           test -n "$VPS_HOST"
           test -n "$VPS_USER"
           test -n "$VPS_PROJECT_DIR"
           test -n "$VPS_SSH_PRIVATE_KEY"
           test -n "$VPS_KNOWN_HOSTS"
-          test -n "$SUPABASE_ACCESS_TOKEN"
-          test -n "$SUPABASE_PROJECT_REF"
-          test -n "$SUPABASE_BACKUP_AGE_RECIPIENT"
           [[ "$VPS_HOST" =~ ^[A-Za-z0-9.-]+$ ]]
           [[ "$VPS_USER" =~ ^[a-z_][a-z0-9_-]*$ ]]
           [[ "$VPS_PROJECT_DIR" =~ ^/[A-Za-z0-9._/-]+$ ]]
-          [[ "$SUPABASE_PROJECT_REF" =~ ^[a-z0-9]{20}$ ]]
-          [[ "$SUPABASE_BACKUP_AGE_RECIPIENT" =~ ^age1[0-9a-z]{20,}$ ]]
-      - name: Promote verified Supabase migrations
-        run: bash scripts/ops/promote-supabase-migrations.sh "$RUNNER_TEMP/aq060-migration-artifacts"
-      - name: Preserve encrypted pre-migration recovery artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: supabase-pre-migration-${{ github.sha }}
-          path: ${{ runner.temp }}/aq060-migration-artifacts/*
-          if-no-files-found: ignore
-          retention-days: 30
-      - name: Configure dedicated SSH identity
-        run: |
           install -d -m 700 "$HOME/.ssh"
           install -m 600 /dev/null "$RUNNER_TEMP/vps_deploy_key"
+          trap 'rm -f "$RUNNER_TEMP/vps_deploy_key"' EXIT
           printf '%s\n' "$VPS_SSH_PRIVATE_KEY" > "$RUNNER_TEMP/vps_deploy_key"
           printf '%s\n' "$VPS_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
           chmod 600 "$HOME/.ssh/known_hosts"
-      - name: Deploy the exact main commit
-        run: |
           ssh \
             -i "$RUNNER_TEMP/vps_deploy_key" \
             -o BatchMode=yes \
@@ -202,7 +208,7 @@ jobs:
         run: npm run quality:seo:field -- https://www.antoinequarroz.ch
       - name: Preserve SEO quality evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: seo-quality-${{ github.sha }}
           path: .artifacts/seo-quality/*.json
@@ -220,11 +226,9 @@ jobs:
     timeout-minutes: 20
     env:
       E2E_BASE_URL: https://www.antoinequarroz.ch
-      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
-      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 22.19.0
           cache: npm
@@ -232,18 +236,23 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - name: Capture the deployed laboratory baseline
         run: npm run quality:seo:lab -- "$E2E_BASE_URL"
-      - name: Verify E2E secrets
-        run: test -n "$E2E_ADMIN_EMAIL" && test -n "$E2E_ADMIN_PASSWORD"
-      - run: npm run test:e2e
+      - name: Verify credentials and run E2E
+        env:
+          E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+          E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+          E2E_ADMIN_TOTP_SECRET: ${{ secrets.E2E_ADMIN_TOTP_SECRET }}
+        run: |
+          test -n "$E2E_ADMIN_EMAIL" && test -n "$E2E_ADMIN_PASSWORD"
+          npm run test:e2e
       - if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
       - name: Preserve deployed SEO baseline
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: seo-lab-production-${{ github.sha }}
           path: .artifacts/seo-quality/lab.json

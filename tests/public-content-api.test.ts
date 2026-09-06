@@ -54,6 +54,7 @@ async function callRoute(
   vi.stubGlobal('defineEventHandler', (handler: unknown) => handler)
   vi.stubGlobal('resolveOrganizationContext', vi.fn().mockResolvedValue({ id: organizationId, role }))
   vi.stubGlobal('getSupabaseAdmin', () => ({ from }))
+  vi.stubGlobal('requireAdminMfa', vi.fn().mockResolvedValue(undefined))
   vi.stubGlobal('isPublicContentRole', (value: string | null | undefined) => !value || value === 'client')
   vi.stubGlobal('PUBLIC_ARTICLE_COLUMNS', PUBLIC_ARTICLE_COLUMNS)
   vi.stubGlobal('PUBLIC_PROJECT_COLUMNS', PUBLIC_PROJECT_COLUMNS)

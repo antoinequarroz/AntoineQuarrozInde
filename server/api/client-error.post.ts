@@ -1,16 +1,13 @@
 import { reportApplicationError } from '../utils/errorReporting'
 
-const requests = new Map<string, { count: number, resetAt: number }>()
+const requests = createBoundedRateLimiter({ windowMs: 60_000, maxRequests: 10, maxKeys: 1_000 })
+const MAX_ERROR_REPORT_REQUEST_BYTES = 32 * 1024
 
 export default defineEventHandler(async (event) => {
   const ip = getRequestIP(event, { xForwardedFor: true }) || 'unknown'
-  const now = Date.now()
-  const entry = requests.get(ip)
+  if (!requests.isAllowed(ip)) throw createError({ statusCode: 429, message: 'Too many reports' })
 
-  if (!entry || entry.resetAt < now) requests.set(ip, { count: 1, resetAt: now + 60_000 })
-  else if (++entry.count > 10) throw createError({ statusCode: 429, message: 'Too many reports' })
-
-  const body = await readBody<Record<string, unknown>>(event)
+  const body = await readJsonBodyLimited(event, MAX_ERROR_REPORT_REQUEST_BYTES)
   const message = typeof body.message === 'string' ? body.message.trim() : ''
   if (!message || message.length > 2_000) throw createError({ statusCode: 400, message: 'Invalid report' })
 
@@ -18,8 +15,8 @@ export default defineEventHandler(async (event) => {
     source: 'client',
     severity: body.severity === 'warning' ? 'warning' : 'error',
     message,
-    stack: typeof body.stack === 'string' ? body.stack : null,
-    path: typeof body.path === 'string' ? body.path : null,
+    stack: typeof body.stack === 'string' ? body.stack.slice(0, 24_000) : null,
+    path: typeof body.path === 'string' ? body.path.slice(0, 1_000) : null,
     metadata: { userAgent: getHeader(event, 'user-agent')?.slice(0, 300) },
   })
 

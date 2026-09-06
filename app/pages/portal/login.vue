@@ -1,6 +1,7 @@
 <script setup lang="ts">
 definePageMeta({ layout: false })
 const auth = useAuthStore()
+const route = useRoute()
 const email = ref('')
 const password = ref('')
 const errorMessage = ref('')
@@ -9,7 +10,12 @@ const sendingRecovery = ref(false)
 
 async function submit() {
   errorMessage.value = ''
-  if (await auth.login(email.value, password.value)) await navigateTo('/portal')
+  if (await auth.login(email.value, password.value, { deferOrganizationsUntilMfaChallenge: true })) {
+    const redirect = safePortalRedirect(route.query.redirect)
+    await navigateTo(auth.requiresMfaChallenge
+      ? { path: '/admin/security', query: { redirect } }
+      : redirect, { replace: true })
+  }
   else errorMessage.value = 'E-mail ou mot de passe incorrect.'
 }
 

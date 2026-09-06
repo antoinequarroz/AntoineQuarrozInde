@@ -54,6 +54,21 @@ wait_for_health() {
   return 1
 }
 
+install_next_ci_deploy_command() {
+  local source target target_dir temporary
+  source="$PWD/scripts/ops/deploy-from-ci.sh"
+  target="${AQ_CI_DEPLOY_COMMAND:-$HOME/.local/bin/antoinequarroz-ci-deploy}"
+  target_dir="$(dirname "$target")"
+
+  install -d -m 700 "$target_dir"
+  temporary="$(mktemp "$target_dir/.antoinequarroz-ci-deploy.XXXXXX")"
+  if ! install -m 700 "$source" "$temporary" || ! mv -f "$temporary" "$target"; then
+    rm -f "$temporary"
+    echo "The next CI deployment command could not be installed atomically." >&2
+    return 1
+  fi
+}
+
 previous_image="$(docker inspect --format '{{.Image}}' "$container_name" 2>/dev/null || true)"
 if [[ -n "$previous_image" ]]; then
   docker image tag "$previous_image" "$image_name:$previous_tag"
@@ -86,7 +101,16 @@ export APP_IMAGE_TAG="$candidate_tag"
 validate_caddy_config
 
 trap rollback ERR
-docker compose build web
+# Feed Docker the committed tree itself. This makes the image independent from
+# ignored files (including .env) and any other filesystem state on the VPS.
+git archive --format=tar HEAD \
+  | docker build \
+      --pull \
+      --no-cache \
+      --build-arg "APP_VERSION=$APP_VERSION" \
+      --build-arg "APP_BUILD_TIME=$APP_BUILD_TIME" \
+      --tag "$image_name:$candidate_tag" \
+      -
 docker compose up -d --no-build --remove-orphans
 wait_for_health
 reload_caddy_config
@@ -99,8 +123,9 @@ if ! command -v node >/dev/null 2>&1; then
 fi
 
 bash scripts/ops/verify-seo-release.sh "$APP_VERSION" https://www.antoinequarroz.ch https://antoinequarroz.ch
+docker compose ps
+install_next_ci_deploy_command
 trap - ERR
 
-docker compose ps
 echo "DEPLOYED_VERSION=$APP_VERSION"
 echo "DEPLOYED_AT=$APP_BUILD_TIME"

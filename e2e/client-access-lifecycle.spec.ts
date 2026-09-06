@@ -1,11 +1,9 @@
 import { expect, test } from '@playwright/test'
-
-const email = process.env.E2E_ADMIN_EMAIL
-const password = process.env.E2E_ADMIN_PASSWORD
+import { adminCredentialsConfigured, loginAdmin } from './helpers/admin-auth'
 
 test('admin invites, suspends and restores a client portal access', async ({ page }, testInfo) => {
   test.setTimeout(60_000)
-  test.skip(!email || !password, 'E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD are required')
+  test.skip(!adminCredentialsConfigured, 'E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD are required')
 
   let portalState: 'not_invited' | 'invited' | 'active' | 'disabled' = 'not_invited'
   const client = () => ({
@@ -31,11 +29,7 @@ test('admin invites, suspends and restores a client portal access', async ({ pag
     createdAt: '2026-08-01',
   })
 
-  await page.goto('/admin/login')
-  await page.getByLabel(/email/i).fill(email!)
-  await page.getByLabel(/mot de passe/i).fill(password!)
-  await page.getByRole('button', { name: /se connecter/i }).click()
-  await expect(page).toHaveURL(/\/admin(?:\/)?$/)
+  await loginAdmin(page)
 
   await page.route('**/api/admin/clients/views**', route => route.fulfill({ status: 200, contentType: 'application/json', body: '[]' }))
   await page.route('**/api/clients**', route => route.fulfill({

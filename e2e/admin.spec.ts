@@ -1,7 +1,5 @@
 import { expect, test } from '@playwright/test'
-
-const email = process.env.E2E_ADMIN_EMAIL
-const password = process.env.E2E_ADMIN_PASSWORD
+import { adminCredentialsConfigured, loginAdmin } from './helpers/admin-auth'
 
 async function selectSandboxOrganization(page: import('@playwright/test').Page) {
   const organizationSelect = page.getByRole('combobox', { name: 'Organisation active' })
@@ -21,12 +19,8 @@ async function selectSandboxOrganization(page: import('@playwright/test').Page) 
 }
 
 test('authenticated admin can reach CRM, quotes and invoices', async ({ page }) => {
-  test.skip(!email || !password, 'E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD are required')
-  await page.goto('/admin/login')
-  await page.getByLabel(/email/i).fill(email!)
-  await page.getByLabel(/mot de passe/i).fill(password!)
-  await page.getByRole('button', { name: /se connecter/i }).click()
-  await expect(page).toHaveURL(/\/admin(?:\/)?$/)
+  test.skip(!adminCredentialsConfigured, 'E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD are required')
+  await loginAdmin(page)
   await selectSandboxOrganization(page)
 
   await page.goto('/admin/crm')
@@ -61,12 +55,8 @@ test('authenticated admin can reach CRM, quotes and invoices', async ({ page }) 
 })
 
 test('admin dashboard preferences, help and diagnostics remain usable', async ({ page }) => {
-  test.skip(!email || !password, 'E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD are required')
-  await page.goto('/admin/login')
-  await page.getByLabel(/email/i).fill(email!)
-  await page.getByLabel(/mot de passe/i).fill(password!)
-  await page.getByRole('button', { name: /se connecter/i }).click()
-  await expect(page).toHaveURL(/\/admin(?:\/)?$/)
+  test.skip(!adminCredentialsConfigured, 'E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD are required')
+  await loginAdmin(page)
   await selectSandboxOrganization(page)
   await expect(page.getByText(/Données à jour/)).toBeVisible()
 
@@ -105,7 +95,7 @@ test('admin dashboard preferences, help and diagnostics remain usable', async ({
 })
 
 test('admin dashboard remains actionable and responsive on mobile', async ({ page }) => {
-  test.skip(!email || !password, 'E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD are required')
+  test.skip(!adminCredentialsConfigured, 'E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD are required')
   const pageErrors: string[] = []
   const hydrationWarnings: string[] = []
   page.on('pageerror', error => pageErrors.push(error.message))
@@ -113,11 +103,7 @@ test('admin dashboard remains actionable and responsive on mobile', async ({ pag
     if (/hydration.*mismatch/i.test(message.text())) hydrationWarnings.push(message.text())
   })
   await page.setViewportSize({ width: 390, height: 844 })
-  await page.goto('/admin/login')
-  await page.getByLabel(/email/i).fill(email!)
-  await page.getByLabel(/mot de passe/i).fill(password!)
-  await page.getByRole('button', { name: /se connecter/i }).click()
-  await expect(page).toHaveURL(/\/admin(?:\/)?$/)
+  await loginAdmin(page)
 
   await selectSandboxOrganization(page)
 
@@ -165,15 +151,11 @@ test('admin dashboard remains actionable and responsive on mobile', async ({ pag
 })
 
 test('admin operational forms remain usable on mobile', async ({ page }) => {
-  test.skip(!email || !password, 'E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD are required')
+  test.skip(!adminCredentialsConfigured, 'E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD are required')
   const pageErrors: string[] = []
   page.on('pageerror', error => pageErrors.push(error.message))
   await page.setViewportSize({ width: 390, height: 844 })
-  await page.goto('/admin/login')
-  await page.getByLabel(/email/i).fill(email!)
-  await page.getByLabel(/mot de passe/i).fill(password!)
-  await page.getByRole('button', { name: /se connecter/i }).click()
-  await expect(page).toHaveURL(/\/admin(?:\/)?$/)
+  await loginAdmin(page)
   await selectSandboxOrganization(page)
 
   await page.goto('/admin/accounting')
@@ -221,7 +203,7 @@ test('admin operational forms remain usable on mobile', async ({ page }) => {
 })
 
 test('secondary admin pages remain complete and responsive on mobile', async ({ page }) => {
-  test.skip(!email || !password, 'E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD are required')
+  test.skip(!adminCredentialsConfigured, 'E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD are required')
   test.setTimeout(120_000)
 
   const pageErrors: string[] = []
@@ -232,11 +214,7 @@ test('secondary admin pages remain complete and responsive on mobile', async ({ 
   })
 
   await page.setViewportSize({ width: 390, height: 844 })
-  await page.goto('/admin/login')
-  await page.getByLabel(/email/i).fill(email!)
-  await page.getByLabel(/mot de passe/i).fill(password!)
-  await page.getByRole('button', { name: /se connecter/i }).click()
-  await expect(page).toHaveURL(/\/admin(?:\/)?$/)
+  await loginAdmin(page)
   await selectSandboxOrganization(page)
 
   const routes = [

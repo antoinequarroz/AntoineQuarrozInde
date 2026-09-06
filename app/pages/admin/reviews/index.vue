@@ -43,7 +43,9 @@ async function loadReviews(force = false) {
 }
 
 onMounted(() => {
-  void loadReviews()
+  // Refresh with the authenticated header even if the public landing already
+  // primed this shared store in the same browser session.
+  void loadReviews(true)
   void googleStore.ensureLoaded()
 })
 

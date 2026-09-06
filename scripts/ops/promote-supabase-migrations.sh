@@ -120,6 +120,16 @@ run_supabase "data backup" db dump --linked \
   --data-only --use-copy \
   --file "$clear_backup/public-data.sql" \
   --workdir "$project_root" >/dev/null
+# Storage object bytes are covered by the independent offsite backup job. Keep
+# the managed bucket metadata here as well so a migration that changes bucket
+# visibility or limits has an immediately restorable pre-change snapshot.
+run_supabase "storage metadata backup" db dump --linked \
+  --schema storage \
+  --data-only --use-copy \
+  --exclude storage.objects \
+  --exclude storage.migrations \
+  --file "$clear_backup/storage-metadata.sql" \
+  --workdir "$project_root" >/dev/null
 install -m 600 "$manifest" "$clear_backup/manifest.json"
 
 readonly backup_name="supabase-pre-migration-${expected_sha}.tar.gz.age"

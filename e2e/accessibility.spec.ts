@@ -1,8 +1,6 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
-
-const email = process.env.E2E_ADMIN_EMAIL
-const password = process.env.E2E_ADMIN_PASSWORD
+import { adminCredentialsConfigured, loginAdmin } from './helpers/admin-auth'
 
 async function expectNoSeriousAccessibilityViolations(page: Page) {
   const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()
@@ -47,14 +45,10 @@ test('landing and admin login remain accessible without credentials', async ({ p
 })
 
 test('all admin workspaces have no serious accessibility violations', async ({ page }) => {
-  test.skip(!email || !password, 'E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD are required')
+  test.skip(!adminCredentialsConfigured, 'E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD are required')
   test.setTimeout(180_000)
 
-  await page.goto('/admin/login')
-  await page.getByLabel(/email/i).fill(email!)
-  await page.getByLabel(/mot de passe/i).fill(password!)
-  await page.getByRole('button', { name: /se connecter/i }).click()
-  await expect(page).toHaveURL(/\/admin(?:\/)?$/)
+  await loginAdmin(page)
   await selectSandboxOrganization(page)
 
   const routes = [

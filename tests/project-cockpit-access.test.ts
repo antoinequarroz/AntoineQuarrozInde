@@ -9,6 +9,7 @@ const viewerMiddleware = readFileSync(new URL('../app/middleware/project-viewer.
 describe('project cockpit access', () => {
   it('allows organization viewers to read the cockpit', () => {
     expect(cockpitReadRoute).toContain("requireAuth: true, minRole: 'viewer'")
+    expect(cockpitReadRoute).toContain('requireAdminMfa(event, event.context.user)')
     expect(cockpitReadRoute).not.toContain('requireAdmin(event)')
   })
 

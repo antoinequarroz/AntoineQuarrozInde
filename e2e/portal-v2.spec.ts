@@ -1,7 +1,5 @@
 import { expect, test } from '@playwright/test'
-
-const email = process.env.E2E_ADMIN_EMAIL
-const password = process.env.E2E_ADMIN_PASSWORD
+import { adminCredentialsConfigured, loginAdmin } from './helpers/admin-auth'
 
 const overview = {
   organization: { name: 'AQ E2E Sandbox' },
@@ -37,13 +35,9 @@ const overview = {
 }
 
 test('client portal V2 exposes projects, decisions, deliverables and payments', async ({ page }, testInfo) => {
-  test.skip(!email || !password, 'E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD are required')
+  test.skip(!adminCredentialsConfigured, 'E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD are required')
 
-  await page.goto('/admin/login')
-  await page.getByLabel(/email/i).fill(email!)
-  await page.getByLabel(/mot de passe/i).fill(password!)
-  await page.getByRole('button', { name: /se connecter/i }).click()
-  await expect(page).toHaveURL(/\/admin(?:\/)?$/)
+  await loginAdmin(page)
 
   await page.route('**/api/portal/overview', route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(overview) }))
   await page.route('**/api/portal/quotes/accept', async (route) => {

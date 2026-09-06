@@ -9,6 +9,7 @@ import {
   serializeJsonLd,
 } from '~~/shared/utils/publicSeoIdentity'
 import { resolvePublicBreadcrumbTrail } from '~~/shared/utils/publicStructuredData'
+import { renderSafeMarkdown } from '~~/shared/utils/safeMarkdown'
 
 const route = useRoute()
 const { t } = useI18n()
@@ -103,19 +104,6 @@ useHead(() => ({
   }],
 }))
 
-// Simple markdown renderer (headings, bold, paragraphs)
-function renderMarkdown(md: string): string {
-  if (!md) return ''
-  return md
-    .replace(/^### (.+)$/gm, '<h3 class="font-display font-bold text-xl mt-6 mb-3 text-gray-900 dark:text-white">$1</h3>')
-    .replace(/^## (.+)$/gm, '<h2 class="font-display font-bold text-2xl mt-8 mb-4 text-gray-900 dark:text-white">$1</h2>')
-    .replace(/^# (.+)$/gm, '<h1 class="font-display font-bold text-3xl mt-4 mb-6 text-gray-900 dark:text-white">$1</h1>')
-    .replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold text-gray-900 dark:text-white">$1</strong>')
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/`(.+?)`/g, '<code class="px-1.5 py-0.5 rounded bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400 text-sm font-mono">$1</code>')
-    .replace(/\n\n/g, '</p><p class="mb-4 text-gray-600 dark:text-gray-300 leading-relaxed">')
-    .replace(/^(?!<[h1-6]|<\/p>)(.+)$/, '<p class="mb-4 text-gray-600 dark:text-gray-300 leading-relaxed">$1</p>')
-}
 </script>
 
 <template>
@@ -186,7 +174,7 @@ function renderMarkdown(md: string): string {
             {{ article.excerpt }}
           </p>
           <!-- eslint-disable vue/no-v-html -->
-          <div class="text-gray-600 dark:text-gray-300" v-html="renderMarkdown(article.content)" />
+          <div class="text-gray-600 dark:text-gray-300" v-html="renderSafeMarkdown(article.content)" />
         </div>
 
         <!-- Footer -->

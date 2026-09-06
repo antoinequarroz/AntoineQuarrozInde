@@ -10,6 +10,7 @@ const verifyScript = 'scripts/ops/verify-production-release.sh'
 const deployScript = 'scripts/ops/deploy-from-ci.sh'
 const sshGateScript = 'scripts/ops/ci-ssh-gate.sh'
 const releaseScript = 'scripts/ops/deploy-release.sh'
+const legacyShipScript = 'scripts/ship.ps1'
 const servers: ReturnType<typeof createServer>[] = []
 const unixIt = process.platform === 'win32' ? it.skip : it
 
@@ -58,6 +59,22 @@ describe('AQ-058 release pipeline', () => {
     expect(workflow.indexOf('\n  deploy:')).toBeLessThan(workflow.indexOf('\n  e2e:'))
   })
 
+  it('runs public browser flows against the candidate before production', async () => {
+    const workflow = await readFile(workflowPath, 'utf8')
+    const candidateE2e = 'E2E_BASE_URL=http://127.0.0.1:3100 npm run test:e2e -- e2e/public.spec.ts --project=chromium --grep-invert @live-data'
+
+    expect(workflow).toContain(candidateE2e)
+    expect(workflow.indexOf(candidateE2e)).toBeLessThan(workflow.indexOf('\n  deploy:'))
+    expect(workflow).not.toContain('SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}')
+  })
+
+  it('passes an optional TOTP secret only to post-production E2E', async () => {
+    const workflow = await readFile(workflowPath, 'utf8')
+
+    expect(workflow).toContain('E2E_ADMIN_TOTP_SECRET: ${{ secrets.E2E_ADMIN_TOTP_SECRET }}')
+    expect(workflow).not.toContain('test -n "$E2E_ADMIN_TOTP_SECRET"')
+  })
+
   it('keeps the blog SSR proof inside the automatic rollback transaction', async () => {
     const release = await readFile(releaseScript, 'utf8')
     const proof = 'bash scripts/ops/verify-seo-release.sh "$APP_VERSION"'
@@ -78,8 +95,76 @@ describe('AQ-058 release pipeline', () => {
     expect(release).toContain('export PATH="$PWD/scripts/ops/node-proof-bin:$PATH"')
     expect(nodeShim).toContain('antoinequarroz-web:candidate')
     expect(nodeShim).toContain('docker run --rm -i')
-    expect(release.indexOf('docker compose build web')).toBeLessThan(release.indexOf('export PATH='))
+    expect(release.indexOf('git archive --format=tar HEAD')).toBeLessThan(release.indexOf('export PATH='))
     expect(release.indexOf('export PATH=')).toBeLessThan(release.indexOf('bash scripts/ops/verify-seo-release.sh'))
+  })
+
+  it('atomically refreshes the forced CI deploy command after a verified release', async () => {
+    const release = await readFile(releaseScript, 'utf8')
+    const proofIndex = release.indexOf('bash scripts/ops/verify-seo-release.sh')
+    const installIndex = release.indexOf('install_next_ci_deploy_command', proofIndex)
+
+    expect(release).toContain('temporary="$(mktemp "$target_dir/.antoinequarroz-ci-deploy.XXXXXX")"')
+    expect(release).toContain('install -m 700 "$source" "$temporary"')
+    expect(release).toContain('mv -f "$temporary" "$target"')
+    expect(installIndex).toBeGreaterThan(proofIndex)
+    expect(release.indexOf('trap - ERR', proofIndex)).toBeGreaterThan(installIndex)
+  })
+
+  it('keeps the legacy shipping shortcut disarmed', async () => {
+    const ship = await readFile(legacyShipScript, 'utf8')
+
+    expect(ship).toContain('PR -> merge -> approbation Production')
+    expect(ship).not.toMatch(/git\s+(?:add|commit|push)/)
+    expect(ship).not.toContain('deploy-vps.ps1')
+  })
+
+  it('builds only the exact clean commit and keeps runtime secrets out of the image', async () => {
+    const [deploy, release, dockerignore, dockerfile, compose] = await Promise.all([
+      readFile(deployScript, 'utf8'),
+      readFile(releaseScript, 'utf8'),
+      readFile('.dockerignore', 'utf8'),
+      readFile('Dockerfile', 'utf8'),
+      readFile('docker-compose.yml', 'utf8'),
+    ])
+
+    expect(deploy).toContain('git status --porcelain=v1 --untracked-files=all')
+    expect(deploy.match(/assert_clean_checkout/g)?.length).toBeGreaterThanOrEqual(3)
+    expect(release).toContain('git archive --format=tar HEAD')
+    expect(release).toContain('--no-cache')
+    expect(release).not.toContain('docker compose build web')
+    expect(dockerignore).toMatch(/^\.env$/m)
+    expect(dockerignore).toMatch(/^\.env\.\*$/m)
+    expect(dockerfile).toContain('USER node')
+    expect(dockerfile).toMatch(/FROM node:22\.19-alpine@sha256:[0-9a-f]{64}/)
+    expect(compose).toMatch(/image: caddy:2\.10\.2-alpine@sha256:[0-9a-f]{64}/)
+    expect(compose).toContain('NUXT_SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}')
+    expect(compose).toContain('NUXT_TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-}')
+    expect(compose).toContain('NUXT_GOOGLE_PLACES_API_KEY: ${GOOGLE_PLACES_API_KEY:-}')
+  })
+
+  it('pins third-party Actions and limits credentials to the steps that consume them', async () => {
+    const workflow = await readFile(workflowPath, 'utf8')
+
+    expect(workflow).not.toMatch(/uses: actions\/(?:checkout|setup-node|upload-artifact)@v\d+/)
+    expect(workflow).toContain('npm audit --omit=dev --audit-level=high')
+    expect(workflow).not.toContain('    env:\n      EXPECTED_SHA: ${{ github.sha }}\n      VPS_HOST:')
+    expect(workflow).not.toContain('      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}\n      E2E_ADMIN_PASSWORD:')
+  })
+
+  it('backs up storage bucket metadata before promoting migrations', async () => {
+    const migrationPromotion = await readFile('scripts/ops/promote-supabase-migrations.sh', 'utf8')
+
+    expect(migrationPromotion).toContain('--schema storage')
+    expect(migrationPromotion).toContain('--exclude storage.objects')
+    expect(migrationPromotion).toContain('storage-metadata.sql')
+    expect(migrationPromotion.indexOf('storage metadata backup')).toBeLessThan(migrationPromotion.indexOf('migration push'))
+  })
+
+  it('initializes monitoring findings before optional checks append to them', async () => {
+    const monitor = await readFile('scripts/ops/monitor.sh', 'utf8')
+
+    expect(monitor.indexOf('issues=()')).toBeLessThan(monitor.indexOf('if [[ "$REQUIRE_RESTORE_DRILL" == "true" ]]'))
   })
 
   it('requires a dedicated key and strict host verification', async () => {

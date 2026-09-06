@@ -48,6 +48,7 @@ const navGroups = [
   {
     label: 'Administrer',
     items: [
+      { label: 'Sécurité', icon: 'shield', href: '/admin/security' },
       { label: 'Journal d’audit', icon: 'shield', href: '/admin/audit' },
       { label: 'Erreurs', icon: 'alert-triangle', href: '/admin/errors' },
     ],

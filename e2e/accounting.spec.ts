@@ -1,7 +1,5 @@
 import { expect, test } from '@playwright/test'
-
-const email = process.env.E2E_ADMIN_EMAIL
-const password = process.env.E2E_ADMIN_PASSWORD
+import { adminCredentialsConfigured, loginAdmin } from './helpers/admin-auth'
 
 const accountingSummary = {
   from: '2026-01-01',
@@ -15,7 +13,7 @@ const accountingSummary = {
 
 test('admin can inspect accounting and create recurring draft schedules', async ({ page }, testInfo) => {
   test.setTimeout(180_000)
-  test.skip(!email || !password, 'E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD are required')
+  test.skip(!adminCredentialsConfigured, 'E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD are required')
 
   const createdBodies: unknown[] = []
   let delayNextSummary = false
@@ -34,11 +32,7 @@ test('admin can inspect accounting and create recurring draft schedules', async 
   await page.route('**/api/admin/recurring-invoices/run', route => route.fulfill({ json: { generatedCount: 1, skippedCount: 0 } }))
   await page.route('**/api/clients', route => route.fulfill({ json: [{ id: 12, name: 'Client pilote' }] }))
 
-  await page.goto('/admin/login')
-  await page.getByLabel(/email/i).fill(email!)
-  await page.getByLabel(/mot de passe/i).fill(password!)
-  await page.getByRole('button', { name: /se connecter/i }).click()
-  await expect(page).toHaveURL(/\/admin(?:\/)?$/)
+  await loginAdmin(page)
   await page.goto('/admin/accounting')
 
   await expect(page.getByRole('heading', { name: 'Comptabilité' })).toBeVisible()

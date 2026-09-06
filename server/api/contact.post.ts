@@ -6,7 +6,14 @@ const MIN_FORM_FILL_MS = 1200
 const MAX_NAME_LENGTH = 120
 const MAX_SUBJECT_LENGTH = 180
 const MAX_MESSAGE_LENGTH = 10_000
-const ipHits = new Map<string, number[]>()
+// A JavaScript character may occupy up to four UTF-8 bytes. Keep enough room
+// for the documented 10,000-character message plus the remaining JSON fields.
+const MAX_CONTACT_REQUEST_BYTES = 48 * 1024
+const contactRequests = createBoundedRateLimiter({
+  windowMs: RATE_WINDOW_MS,
+  maxRequests: RATE_LIMIT_MAX,
+  maxKeys: 500,
+})
 
 function escapeHtml(input: string) {
   return input
@@ -18,22 +25,13 @@ function escapeHtml(input: string) {
 }
 
 export default defineEventHandler(async (event) => {
-  const org = await resolveOrganizationContext(event)
   const ip = getRequestIP(event, { xForwardedFor: true }) || 'unknown'
   const now = Date.now()
-  const hits = (ipHits.get(ip) || []).filter((ts) => now - ts < RATE_WINDOW_MS)
-  if (ipHits.size > 500) {
-    for (const [knownIp, timestamps] of ipHits) {
-      if (!timestamps.some(timestamp => now - timestamp < RATE_WINDOW_MS)) ipHits.delete(knownIp)
-    }
-  }
-  if (hits.length >= RATE_LIMIT_MAX) {
+  if (!contactRequests.isAllowed(ip, now)) {
     throw createError({ statusCode: 429, message: 'Trop de requetes, reessayez plus tard.' })
   }
-  hits.push(now)
-  ipHits.set(ip, hits)
 
-  const body = await readBody(event)
+  const body = await readJsonBodyLimited(event, MAX_CONTACT_REQUEST_BYTES)
   const { name, email, subject, message, website, startedAt, turnstileToken, attribution } = body
 
   if (!name || !email || !message) {
@@ -92,6 +90,7 @@ export default defineEventHandler(async (event) => {
     return { success: true, acquisitionChannel }
   }
 
+  const org = await resolveOrganizationContext(event)
   const resend = new Resend(config.resendApiKey)
   const supabase = getSupabaseAdmin()
 
