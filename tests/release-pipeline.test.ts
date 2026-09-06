@@ -73,6 +73,8 @@ describe('AQ-058 release pipeline', () => {
 
     expect(workflow).toContain('E2E_ADMIN_TOTP_SECRET: ${{ secrets.E2E_ADMIN_TOTP_SECRET }}')
     expect(workflow).not.toContain('test -n "$E2E_ADMIN_TOTP_SECRET"')
+    expect(workflow).toContain('name: playwright-test-results-${{ github.run_attempt }}')
+    expect(workflow).toContain('path: test-results/')
   })
 
   it('keeps the blog SSR proof inside the automatic rollback transaction', async () => {

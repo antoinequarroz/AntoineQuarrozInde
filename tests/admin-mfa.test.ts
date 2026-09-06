@@ -154,6 +154,9 @@ describe('admin MFA interface wiring', () => {
   const portalLoginPage = readFileSync(new URL('../app/pages/portal/login.vue', import.meta.url), 'utf8')
   const config = readFileSync(new URL('../nuxt.config.ts', import.meta.url), 'utf8')
   const compose = readFileSync(new URL('../docker-compose.yml', import.meta.url), 'utf8')
+  const playwrightConfig = readFileSync(new URL('../playwright.config.ts', import.meta.url), 'utf8')
+  const globalSetup = readFileSync(new URL('../e2e/global-setup.ts', import.meta.url), 'utf8')
+  const adminAuth = readFileSync(new URL('../e2e/helpers/admin-auth.ts', import.meta.url), 'utf8')
 
   it('offers the complete TOTP lifecycle with accessible verification controls', () => {
     expect(securityPage).toContain("client.auth.mfa.enroll")
@@ -195,5 +198,14 @@ describe('admin MFA interface wiring', () => {
     expect(adminLayout).toContain("{ label: 'Sécurité', icon: 'shield', href: '/admin/security' }")
     expect(config).toContain("adminMfaMode: process.env.NUXT_PUBLIC_ADMIN_MFA_MODE || process.env.ADMIN_MFA_MODE || 'optional'")
     expect(compose).toContain('NUXT_PUBLIC_ADMIN_MFA_MODE: ${ADMIN_MFA_MODE:-optional}')
+  })
+
+  it('authenticates the E2E suite once and removes the reusable AAL2 state afterwards', () => {
+    expect(playwrightConfig).toContain("globalSetup: './e2e/global-setup.ts'")
+    expect(globalSetup).toContain('await loginAdmin(page)')
+    expect(globalSetup).toContain('await context.storageState({ path: adminStorageStatePath })')
+    expect(globalSetup).toContain('return cleanup')
+    expect(adminAuth).toContain('restoreAdminStorageState(page)')
+    expect(adminAuth).toContain("resolve(process.cwd(), 'playwright/.auth/admin.json')")
   })
 })
