@@ -48,6 +48,10 @@ describe('verified backup recovery', () => {
   it('records exact row counts and keeps checksums portable', async () => {
     const backup = await readFile(join(projectDir, 'scripts/ops/backup-supabase.sh'), 'utf8')
     expect(backup).toContain('Prefer: count=exact')
+    expect(backup).toContain('order=id.asc')
+    expect(backup).toContain('offset=$returned_rows')
+    expect(backup).toContain('returned_rows=$((returned_rows + page_rows))')
+    expect(backup).not.toContain('limit=100000')
     expect(backup).toContain('Incomplete backup for $table')
     expect(backup).toContain('format:3')
     expect(backup).toContain('table_rows:$table_rows')
