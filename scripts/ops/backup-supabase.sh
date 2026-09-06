@@ -42,12 +42,23 @@ TABLES=(
 )
 
 for table in "${TABLES[@]}"; do
+  headers="$WORK_DIR/$table.headers"
   curl --fail --silent --show-error \
     "$SUPABASE_URL/rest/v1/$table?select=*&limit=100000" \
     -H "apikey: $SERVICE_KEY" \
     -H "Authorization: Bearer $SERVICE_KEY" \
     -H "Accept: application/json" \
+    -H "Prefer: count=exact" \
+    -D "$headers" \
     > "$WORK_DIR/$table.json"
+
+  returned_rows="$(jq 'length' "$WORK_DIR/$table.json")"
+  expected_rows="$(awk 'tolower($0) ~ /^content-range:/ { sub(/\r$/, ""); sub(/^.*\//, ""); print; exit }' "$headers")"
+  rm -f "$headers"
+  if [[ ! "$expected_rows" =~ ^[0-9]+$ || "$returned_rows" -ne "$expected_rows" ]]; then
+    echo "Incomplete backup for $table: received $returned_rows of ${expected_rows:-unknown} rows" >&2
+    exit 1
+  fi
 done
 
 # Supabase Auth inventory for disaster recovery planning. Password hashes,
@@ -86,14 +97,26 @@ jq -r '.[] | select(.metadata != null) | .name' "$WORK_DIR/storage/media-index.j
 done
 
 GIT_REVISION="$(git -c safe.directory="$PROJECT_DIR" -C "$PROJECT_DIR" rev-parse HEAD 2>/dev/null || printf 'unknown')"
-cat > "$WORK_DIR/manifest.json" <<EOF
-{"created_at":"$(date -u +%Y-%m-%dT%H:%M:%SZ)","git_revision":"$GIT_REVISION","format":2,"tables":${#TABLES[@]},"auth_inventory":true}
-EOF
+TABLE_ROWS='{}'
+for table in "${TABLES[@]}"; do
+  row_count="$(jq 'length' "$WORK_DIR/$table.json")"
+  TABLE_ROWS="$(jq -c --arg table "$table" --argjson count "$row_count" '. + {($table): $count}' <<<"$TABLE_ROWS")"
+done
+AUTH_USERS="$(jq 'length' "$WORK_DIR/auth-users.json")"
+STORAGE_OBJECTS="$(jq '[.[] | select(.metadata != null)] | length' "$WORK_DIR/storage/media-index.json")"
+jq -n \
+  --arg created_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+  --arg git_revision "$GIT_REVISION" \
+  --argjson table_rows "$TABLE_ROWS" \
+  --argjson auth_users "$AUTH_USERS" \
+  --argjson storage_objects "$STORAGE_OBJECTS" \
+  '{created_at:$created_at,git_revision:$git_revision,format:3,tables:($table_rows|length),table_rows:$table_rows,auth_inventory:true,auth_users:$auth_users,storage_objects:$storage_objects}' \
+  > "$WORK_DIR/manifest.json"
 
 tar -C "$WORK_DIR" -czf "$ARCHIVE" .
 chmod 600 "$ARCHIVE"
 "$PROJECT_DIR/scripts/ops/verify-backup.sh" "$ARCHIVE"
-sha256sum "$ARCHIVE" > "$ARCHIVE.sha256"
+(cd "$BACKUP_ROOT" && sha256sum "$(basename "$ARCHIVE")") > "$ARCHIVE.sha256"
 chmod 600 "$ARCHIVE.sha256"
 
 # Keep an off-VPS copy in a private Supabase Storage bucket.
@@ -140,7 +163,7 @@ if [[ -n "$OFFSITE_REMOTE" || -n "$AGE_RECIPIENT" ]]; then
 
   ENCRYPTED="$WORK_DIR/$(basename "$ARCHIVE").age"
   age --recipient "$AGE_RECIPIENT" --output "$ENCRYPTED" "$ARCHIVE"
-  sha256sum "$ENCRYPTED" > "$ENCRYPTED.sha256"
+  (cd "$(dirname "$ENCRYPTED")" && sha256sum "$(basename "$ENCRYPTED")") > "$ENCRYPTED.sha256"
   rclone copyto "$ENCRYPTED" "${OFFSITE_REMOTE%/}/$(basename "$ENCRYPTED")" --immutable
   rclone copyto "$ENCRYPTED.sha256" "${OFFSITE_REMOTE%/}/$(basename "$ENCRYPTED.sha256")" --immutable
   OFFSITE_KEEP_DAYS="$(read_env OFFSITE_KEEP_DAYS)"

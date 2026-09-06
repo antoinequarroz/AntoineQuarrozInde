@@ -543,7 +543,11 @@ sudo scripts/ops/monitor.sh /home/ubuntu/antoinequarroz-vitrine --test-alert
 métier, l'index des médias et les fichiers du bucket `media/uploads`. Elle est
 gardée 14 jours dans `/var/backups/antoinequarroz` et copiée dans le bucket
 Supabase privé `backups`. Les archives distantes de plus de 14 jours sont aussi
-supprimées.
+supprimées. Le manifeste de format 3 enregistre le nombre exact de lignes de
+chaque table, l'inventaire Auth et le nombre de médias. Une réponse REST tronquée
+fait échouer la sauvegarde au lieu de produire silencieusement une archive
+incomplète. Le checksum SHA-256 est portable : il reste vérifiable après avoir
+retéléchargé l'archive sur une autre machine.
 
 ### Copie indépendante et chiffrée
 
@@ -607,11 +611,24 @@ sudo journalctl -u antoinequarroz-pipeline-reminders.service -n 100
 
 ## Exercice de reprise
 
-Le contrôle de reprise en lecture seule vérifie l'archive, ses fichiers JSON,
+Le contrôle de reprise en lecture seule vérifie l'archive, son checksum, les
+nombres de lignes et de médias consignés dans le manifeste, ses fichiers JSON,
 les relations clients et la présence du schéma versionné :
 
 ```bash
 sudo scripts/ops/restore-drill.sh /var/backups/antoinequarroz/aq-supabase-YYYYMMDDTHHMMSSZ.tar.gz /home/ubuntu/antoinequarroz-vitrine
+```
+
+Le timer `antoinequarroz-restore-drill.timer` exécute ce contrôle chaque mois à
+partir d'une copie retéléchargée du bucket Supabase privé, et non depuis le
+fichier local. Le succès écrit `/var/backups/antoinequarroz/.last-restore-drill`;
+le moniteur déclenche une alerte si cette preuve a plus de 40 jours lorsque
+`REQUIRE_RESTORE_DRILL=true`.
+
+Lancer cette preuve distante manuellement :
+
+```bash
+sudo scripts/ops/restore-supabase-copy-drill.sh /home/ubuntu/antoinequarroz-vitrine
 ```
 
 Pour tester toute la chaîne depuis Cloudflare R2, copier temporairement la clé
@@ -624,9 +641,12 @@ sudo scripts/ops/restore-offsite-drill.sh \
   /home/ubuntu/antoinequarroz-vitrine
 ```
 
-Ce test ne modifie jamais la production. Un basculement complet doit être testé
-dans une branche Supabase ou un projet temporaire avant toute restauration sur
-le projet principal.
+Ces tests ne modifient jamais la production. Le contrôle mensuel valide la copie
+distante Supabase; le contrôle R2 valide en plus le téléchargement, le checksum
+chiffré et le déchiffrement depuis le fournisseur indépendant. La clé privée
+`age` ne doit pas être déposée durablement sur le VPS. Un rejeu des données doit
+toujours cibler une branche Supabase ou un projet temporaire avant toute
+restauration sur le projet principal.
 
 ## Tests E2E
 
