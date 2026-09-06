@@ -83,7 +83,7 @@ EOF
 
 cat > /etc/systemd/system/antoinequarroz-restore-drill.service <<EOF
 [Unit]
-Description=Verify latest encrypted offsite backup
+Description=Verify the latest recoverable remote backup
 After=network-online.target
 [Service]
 Type=oneshot

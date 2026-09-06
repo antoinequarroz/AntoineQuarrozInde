@@ -23,10 +23,10 @@ jq -n \
   ($clients[0] | map(.id) | unique) as $client_ids |
   ($auth[0] | map(.id) | unique) as $auth_ids |
   [
-    ($projects[0][] | select(.client_id != null and (($client_ids | index(.client_id)) == null)) | {table:"projects", id, missing_client_id:.client_id}),
-    ($quotes[0][] | select(.client_id != null and (($client_ids | index(.client_id)) == null)) | {table:"quotes", id, missing_client_id:.client_id}),
-    ($invoices[0][] | select(.client_id != null and (($client_ids | index(.client_id)) == null)) | {table:"invoices", id, missing_client_id:.client_id}),
-    ($clients[0][] | select(.portal_user_id != null and (($auth_ids | index(.portal_user_id)) == null)) | {table:"clients", id, missing_auth_user_id:.portal_user_id})
+    ($projects[0][] | .client_id as $foreign_id | select($foreign_id != null and (($client_ids | index($foreign_id)) == null)) | {table:"projects", id, missing_client_id:$foreign_id}),
+    ($quotes[0][] | .client_id as $foreign_id | select($foreign_id != null and (($client_ids | index($foreign_id)) == null)) | {table:"quotes", id, missing_client_id:$foreign_id}),
+    ($invoices[0][] | .client_id as $foreign_id | select($foreign_id != null and (($client_ids | index($foreign_id)) == null)) | {table:"invoices", id, missing_client_id:$foreign_id}),
+    ($clients[0][] | .portal_user_id as $foreign_id | select($foreign_id != null and (($auth_ids | index($foreign_id)) == null)) | {table:"clients", id, missing_auth_user_id:$foreign_id})
   ]' > "$WORK_DIR/orphans.json"
 
 ORPHANS="$(jq 'length' "$WORK_DIR/orphans.json")"
