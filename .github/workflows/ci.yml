@@ -235,7 +235,16 @@ jobs:
       - run: npm ci --legacy-peer-deps
       - run: npx playwright install --with-deps chromium
       - name: Capture the deployed laboratory baseline
-        run: npm run quality:seo:lab -- "$E2E_BASE_URL"
+        run: |
+          for attempt in 1 2 3; do
+            if npm run quality:seo:lab -- "$E2E_BASE_URL"; then
+              exit 0
+            fi
+            if [ "$attempt" -eq 3 ]; then
+              exit 1
+            fi
+            echo "Production lab sample $attempt failed; retrying to rule out transient network variance."
+          done
       - name: Verify credentials and run E2E
         env:
           E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}

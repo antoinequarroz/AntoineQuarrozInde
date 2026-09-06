@@ -39,5 +39,7 @@ describe('AQ-SEO-014 release quality gate', () => {
     expect(workflow).toContain('\n  seo-quality:')
     expect(workflow).toContain('npm run quality:seo:lab -- http://127.0.0.1:3100')
     expect(workflow).toContain('npm run quality:seo:lab -- "$E2E_BASE_URL"')
+    expect(workflow).toContain('for attempt in 1 2 3; do')
+    expect(workflow).toContain('if [ "$attempt" -eq 3 ]; then')
   })
 })
