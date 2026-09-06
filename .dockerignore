@@ -4,3 +4,27 @@ node_modules
 .git
 .gitignore
 npm-debug.log*
+
+# Runtime configuration must never enter a Docker build context. Keep example
+# files available to contributors, but exclude every real or local override.
+.env
+.env.*
+!.env.example
+!**/.env.example
+
+# Local/editor output is not part of a production image.
+.artifacts
+.impeccable
+.agents
+.claude
+.codex
+.docx_render*
+.rendered_*
+tmp
+playwright-report
+test-results
+coverage
+*.docx
+report-source.md
+.DS_Store
+*.log

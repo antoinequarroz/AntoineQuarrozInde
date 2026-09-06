@@ -37,7 +37,7 @@ require_exact_header() {
   fi
 }
 
-require_exact_header 'Content-Security-Policy' "base-uri 'self'; frame-ancestors 'none'; object-src 'none'"
+require_exact_header 'Content-Security-Policy' "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://challenges.cloudflare.com; script-src-attr 'none'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://plausible.io https://*.supabase.co wss://*.supabase.co https://prod.spline.design https://unpkg.com https://challenges.cloudflare.com; frame-src 'self' blob: https://challenges.cloudflare.com; worker-src 'self' blob:; media-src 'self' blob:; manifest-src 'self'; upgrade-insecure-requests"
 require_exact_header 'Permissions-Policy' 'camera=(), geolocation=(), microphone=()'
 require_exact_header 'Referrer-Policy' 'strict-origin-when-cross-origin'
 require_exact_header 'Strict-Transport-Security' 'max-age=31536000'

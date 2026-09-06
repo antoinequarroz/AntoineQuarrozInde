@@ -50,7 +50,7 @@ describe('AQ-SEO-001 canonical public domain', () => {
     expect(deploy).toContain('docker compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile')
     expect(deploy).toContain('for ((attempt = 1; attempt <= 15; attempt += 1))')
     expect(deploy).toContain('Caddy did not accept its configuration after recreation.')
-    expect(deploy.lastIndexOf('validate_caddy_config\n')).toBeLessThan(deploy.indexOf('docker compose build web'))
+    expect(deploy.lastIndexOf('validate_caddy_config\n')).toBeLessThan(deploy.indexOf('git archive --format=tar HEAD'))
     expect(deploy.lastIndexOf('wait_for_health\n')).toBeLessThan(deploy.lastIndexOf('reload_caddy_config\n'))
   })
 

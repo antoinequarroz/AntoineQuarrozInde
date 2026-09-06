@@ -7,6 +7,7 @@ export default {
     './components/**/*.{vue,ts,tsx}',
     './pages/**/*.{vue,ts,tsx}',
     './layouts/**/*.{vue,ts,tsx}',
+    './shared/**/*.{ts,tsx}',
   ],
   theme: {
     extend: {

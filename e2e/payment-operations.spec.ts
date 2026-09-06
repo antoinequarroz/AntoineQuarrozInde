@@ -1,8 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
-
-const email = process.env.E2E_ADMIN_EMAIL
-const password = process.env.E2E_ADMIN_PASSWORD
+import { adminCredentialsConfigured, loginAdmin } from './helpers/admin-auth'
 
 const paymentOperations = {
   generatedAt: '2026-08-10T18:00:00.000Z',
@@ -32,7 +30,7 @@ const reconciliationInvoices = [
 
 test('admin can operate, reconcile and export the payment cockpit on desktop and mobile', async ({ page }, testInfo) => {
   test.setTimeout(180_000)
-  test.skip(!email || !password, 'E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD are required')
+  test.skip(!adminCredentialsConfigured, 'E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD are required')
   await page.route('**/api/admin/payment-operations**', async route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(paymentOperations) }))
   const reconciledBodies: any[] = []
   await page.route('**/api/admin/payment-reconciliation', async (route) => {
@@ -42,11 +40,7 @@ test('admin can operate, reconcile and export the payment cockpit on desktop and
     if (body.transaction.transactionId === 'DUP-001') return route.fulfill({ status: 409, json: { message: 'Ce mouvement bancaire a déjà été rapproché.' } })
     return route.fulfill({ json: { payment: { id: 101 }, paidAmountCents: body.transaction.amountCents, status: 'paid' } })
   })
-  await page.goto('/admin/login')
-  await page.getByLabel(/email/i).fill(email!)
-  await page.getByLabel(/mot de passe/i).fill(password!)
-  await page.getByRole('button', { name: /se connecter/i }).click()
-  await expect(page).toHaveURL(/\/admin(?:\/)?$/)
+  await loginAdmin(page)
 
   await page.goto('/admin/payments')
 

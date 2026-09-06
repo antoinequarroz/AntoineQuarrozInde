@@ -10,6 +10,7 @@ export default defineEventHandler(async (event) => {
 
   const supabase = getSupabaseAdmin()
   const publicView = isPublicContentRole(org.role)
+  if (!publicView) await requireAdminMfa(event, event.context.user)
   let query = supabase
     .from('articles')
     .select(publicView ? PUBLIC_ARTICLE_COLUMNS : '*')

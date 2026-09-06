@@ -29,6 +29,11 @@ MONITOR_TLS_WARN_DAYS="${MONITOR_TLS_WARN_DAYS:-${env_tls_warn_days:-21}}"
 REQUIRE_OFFSITE_BACKUP="${REQUIRE_OFFSITE_BACKUP:-${require_offsite:-false}}"
 REQUIRE_RESTORE_DRILL="${REQUIRE_RESTORE_DRILL:-${require_restore_drill:-false}}"
 
+# Reset the findings on every invocation before any optional control appends to
+# the list. With `set -u`, declaring it later made restore-drill monitoring fail
+# before the health checks could even run.
+issues=()
+
 send_alert() {
   local subject="$1"
   local message="$2"
@@ -66,7 +71,6 @@ failures=0
 status="unknown"
 if [[ -f "$STATE_FILE" ]]; then read -r failures status < "$STATE_FILE" || true; fi
 
-issues=()
 curl --fail --silent --show-error --max-time 12 "$HEALTH_URL" | jq -e '.status == "ok"' >/dev/null \
   || issues+=("health endpoint unavailable")
 

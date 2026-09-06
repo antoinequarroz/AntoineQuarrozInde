@@ -30,7 +30,7 @@ async function listen(headers: Record<string, string>) {
 }
 
 const expectedHeaders = {
-  'Content-Security-Policy': "base-uri 'self'; frame-ancestors 'none'; object-src 'none'",
+  'Content-Security-Policy': "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://challenges.cloudflare.com; script-src-attr 'none'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://plausible.io https://*.supabase.co wss://*.supabase.co https://prod.spline.design https://unpkg.com https://challenges.cloudflare.com; frame-src 'self' blob: https://challenges.cloudflare.com; worker-src 'self' blob:; media-src 'self' blob:; manifest-src 'self'; upgrade-insecure-requests",
   'Permissions-Policy': 'camera=(), geolocation=(), microphone=()',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
   'Strict-Transport-Security': 'max-age=31536000',
@@ -39,13 +39,24 @@ const expectedHeaders = {
 }
 
 describe('public security headers', () => {
-  it('configures conservative protections in Caddy without restricting application resources', async () => {
+  it('configures conservative protections in Caddy while allowing required application resources', async () => {
     const caddyfile = await readFile('Caddyfile', 'utf8')
 
     for (const [name, value] of Object.entries(expectedHeaders)) {
       expect(caddyfile).toContain(`${name} "${value}"`)
     }
     expect(caddyfile).toContain('-Server')
+    expect(caddyfile).not.toContain("script-src *")
+    expect(caddyfile).not.toContain("script-src 'self' https:")
+    expect(caddyfile).toContain("script-src-attr 'none'")
+    expect(caddyfile).toContain('https://fonts.googleapis.com')
+    expect(caddyfile).toContain('https://fonts.gstatic.com')
+    expect(caddyfile).toContain('https://*.supabase.co')
+    expect(caddyfile).toContain('wss://*.supabase.co')
+    expect(caddyfile).toContain('https://plausible.io')
+    expect(caddyfile).toContain('https://prod.spline.design')
+    expect(caddyfile).toContain('https://challenges.cloudflare.com')
+    expect(caddyfile).toMatch(/request_body\s*\{\s*max_size 8MB\s*\}/)
   })
 
   it('keeps the production proof after the canonical-domain check', async () => {

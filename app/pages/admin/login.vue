@@ -2,6 +2,7 @@
 definePageMeta({ layout: false })
 
 const auth = useAuthStore()
+const route = useRoute()
 
 const email = ref('')
 const password = ref('')
@@ -15,9 +16,12 @@ onMounted(() => {
 async function handleLogin() {
   if (!email.value || !password.value) return
   error.value = ''
-  const ok = await auth.login(email.value, password.value)
+  const ok = await auth.login(email.value, password.value, { deferOrganizationsUntilMfa: true })
   if (ok) {
-    await navigateTo('/admin', { replace: true })
+    const redirect = safeAdminRedirect(route.query.redirect)
+    await navigateTo(auth.requiresAdminMfa
+      ? { path: '/admin/security', query: { redirect } }
+      : redirect, { replace: true })
   } else {
     error.value = 'Identifiants invalides.'
     password.value = ''

@@ -2,11 +2,17 @@ export default defineNuxtRouteMiddleware(async (to) => {
   if (import.meta.server) return
   if (to.path.startsWith('/admin') && to.path !== '/admin/login') {
     const auth = useAuthStore()
-    await auth.checkSession()
+    await auth.checkSession({ deferOrganizationsUntilMfa: true })
     if (!auth.isAuthenticated) {
-      return navigateTo('/admin/login')
+      return navigateTo({ path: '/admin/login', query: { redirect: to.fullPath } })
     }
-    const allowedRoles = new Set(['owner', 'admin', 'manager'])
+    if (auth.requiresAdminMfa) {
+      if (to.path === '/admin/security') return
+      return navigateTo({ path: '/admin/security', query: { redirect: to.fullPath } })
+    }
+    const allowedRoles = new Set(to.path === '/admin/security'
+      ? ['owner', 'admin', 'manager', 'viewer']
+      : ['owner', 'admin', 'manager'])
     const administrativeOrganizations = auth.organizations.filter(organization => allowedRoles.has(organization.role))
     if (!administrativeOrganizations.length) {
       return navigateTo('/portal')

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Quote } from '~/types'
+import { printStructuredDocument } from '~/utils/printStructuredDocument'
 
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 
@@ -372,28 +373,20 @@ function printSelected() {
   }
   const q = selectedQuote.value
   const client = q.clientId ? (clientsById.value.get(q.clientId)?.name || '-') : '-'
-  const safe = (value: string | number | null | undefined) => String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[character] || character)
-  const html = `
-    <html>
-      <head><title>Devis ${q.number}</title></head>
-      <body style="font-family: Inter, ui-sans-serif, system-ui, sans-serif; padding: 24px; color: #111827;">
-        <h1 style="margin:0 0 16px;">Devis ${safe(q.number)}</h1>
-        <p><strong>Client :</strong> ${safe(client)}</p>
-        <p><strong>Titre :</strong> ${safe(q.title)}</p>
-        <p><strong>Montant :</strong> ${safe(formatAmount(q.amountCents, q.currency))}</p>
-        <p><strong>Statut :</strong> ${safe(statusLabel(q.status))}</p>
-        <p><strong>Émission :</strong> ${safe(q.issuedAt || '-')}</p>
-        <p><strong>Valide jusqu’au :</strong> ${safe(q.validUntil || '-')}</p>
-        <p><strong>Notes :</strong><br/>${safe(extractUserNotes(q.notes) || '-').replace(/\n/g, '<br/>')}</p>
-      </body>
-    </html>
-  `
-  const win = window.open('', '_blank')
-  if (!win) return
-  win.document.write(html)
-  win.document.close()
-  win.focus()
-  win.print()
+  const opened = printStructuredDocument({
+    title: `Devis ${q.number}`,
+    heading: `Devis ${q.number}`,
+    fields: [
+      { label: 'Client', value: client },
+      { label: 'Titre', value: q.title },
+      { label: 'Montant', value: formatAmount(q.amountCents, q.currency) },
+      { label: 'Statut', value: statusLabel(q.status) },
+      { label: 'Émission', value: q.issuedAt || '-' },
+      { label: 'Valide jusqu’au', value: q.validUntil || '-' },
+      { label: 'Notes', value: extractUserNotes(q.notes) || '-', multiline: true },
+    ],
+  })
+  if (!opened) toast.error('Autorise les fenêtres surgissantes pour imprimer ce devis.')
 }
 function downloadPdf() {
   if (!selectedQuote.value) {

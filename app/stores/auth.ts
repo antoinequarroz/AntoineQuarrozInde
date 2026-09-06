@@ -1,3 +1,9 @@
+import {
+  normalizeAdminMfaMode,
+  requiresAdminMfa as shouldRequireAdminMfa,
+  type AdminMfaLevel,
+} from '../utils/adminMfa'
+
 export const useAuthStore = defineStore('auth', () => {
   type OrganizationMembership = {
     id: string
@@ -12,6 +18,21 @@ export const useAuthStore = defineStore('auth', () => {
   const organizations = ref<OrganizationMembership[]>([])
   const currentOrganizationId = ref<string | null>(null)
   const loading = ref(false)
+  const mfaCurrentLevel = ref<AdminMfaLevel>(null)
+  const mfaNextLevel = ref<AdminMfaLevel>(null)
+  const mfaAssuranceKnown = ref(false)
+  const mfaError = ref('')
+  const adminMfaMode = computed(() => normalizeAdminMfaMode(useRuntimeConfig().public.adminMfaMode))
+  const requiresAdminMfa = computed(() => isAuthenticated.value && shouldRequireAdminMfa(
+    adminMfaMode.value,
+    mfaCurrentLevel.value,
+    mfaNextLevel.value,
+    mfaAssuranceKnown.value,
+  ))
+  const requiresMfaChallenge = computed(() => isAuthenticated.value
+    && mfaAssuranceKnown.value
+    && mfaCurrentLevel.value !== 'aal2'
+    && mfaNextLevel.value === 'aal2')
 
   function organizationStorageKey() {
     return `aq_current_organization:${userEmail.value ?? 'anonymous'}`
@@ -48,7 +69,48 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function checkSession() {
+  function clearOrganizations() {
+    organizations.value = []
+    currentOrganizationId.value = null
+  }
+
+  function resetMfaState() {
+    mfaCurrentLevel.value = null
+    mfaNextLevel.value = null
+    mfaAssuranceKnown.value = false
+    mfaError.value = ''
+  }
+
+  function normalizeAssuranceLevel(value: string | null): AdminMfaLevel {
+    if (value === 'aal1' || value === 'aal2') return value
+    return null
+  }
+
+  async function refreshMfaState() {
+    mfaAssuranceKnown.value = false
+    mfaError.value = ''
+    try {
+      const client = useSupabaseClient()
+      const { data, error } = await client.auth.mfa.getAuthenticatorAssuranceLevel()
+      if (error) throw error
+
+      mfaCurrentLevel.value = normalizeAssuranceLevel(data.currentLevel)
+      mfaNextLevel.value = normalizeAssuranceLevel(data.nextLevel)
+      mfaAssuranceKnown.value = true
+      return true
+    }
+    catch {
+      mfaCurrentLevel.value = null
+      mfaNextLevel.value = null
+      mfaError.value = 'Le niveau de sécurité de la session n’a pas pu être vérifié.'
+      return false
+    }
+  }
+
+  async function checkSession(options: {
+    deferOrganizationsUntilMfa?: boolean
+    deferOrganizationsUntilMfaChallenge?: boolean
+  } = {}) {
     const client = useSupabaseClient()
     let { data } = await client.auth.getSession()
     let session = data.session
@@ -66,15 +128,29 @@ export const useAuthStore = defineStore('auth', () => {
     accessToken.value = session?.access_token ?? null
     userEmail.value = session?.user?.email ?? null
     if (isAuthenticated.value) {
-      await loadOrganizations()
+      await refreshMfaState()
+      if ((options.deferOrganizationsUntilMfa && requiresAdminMfa.value)
+        || (options.deferOrganizationsUntilMfaChallenge && requiresMfaChallenge.value)) {
+        clearOrganizations()
+      }
+      else {
+        await loadOrganizations()
+      }
     } else {
-      organizations.value = []
-      currentOrganizationId.value = null
+      clearOrganizations()
+      resetMfaState()
     }
     return isAuthenticated.value
   }
 
-  async function login(email: string, password: string): Promise<boolean> {
+  async function login(
+    email: string,
+    password: string,
+    options: {
+      deferOrganizationsUntilMfa?: boolean
+      deferOrganizationsUntilMfaChallenge?: boolean
+    } = {},
+  ): Promise<boolean> {
     loading.value = true
     try {
       const client = useSupabaseClient()
@@ -83,7 +159,14 @@ export const useAuthStore = defineStore('auth', () => {
       isAuthenticated.value = true
       accessToken.value = data.session.access_token
       userEmail.value = data.user?.email ?? null
-      await loadOrganizations()
+      await refreshMfaState()
+      if ((options.deferOrganizationsUntilMfa && requiresAdminMfa.value)
+        || (options.deferOrganizationsUntilMfaChallenge && requiresMfaChallenge.value)) {
+        clearOrganizations()
+      }
+      else {
+        await loadOrganizations()
+      }
       return true
     }
     finally {
@@ -97,8 +180,8 @@ export const useAuthStore = defineStore('auth', () => {
     isAuthenticated.value = false
     accessToken.value = null
     userEmail.value = null
-    organizations.value = []
-    currentOrganizationId.value = null
+    clearOrganizations()
+    resetMfaState()
   }
 
   function authHeader() {
@@ -125,11 +208,19 @@ export const useAuthStore = defineStore('auth', () => {
     organizations,
     currentOrganizationId,
     loading,
+    mfaCurrentLevel,
+    mfaNextLevel,
+    mfaAssuranceKnown,
+    mfaError,
+    adminMfaMode,
+    requiresAdminMfa,
+    requiresMfaChallenge,
     checkSession,
     login,
     logout,
     authHeader,
     setCurrentOrganization,
     loadOrganizations,
+    refreshMfaState,
   }
 })

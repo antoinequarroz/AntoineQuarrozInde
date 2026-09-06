@@ -39,8 +39,10 @@ correction est livrée.
 
 ## Déploiement et retour arrière
 
-`scripts/deploy-vps.ps1` met à jour le dépôt puis délègue la mise en ligne à
-`scripts/ops/deploy-release.sh`. Avant de remplacer le conteneur, l'image active
+La livraison normale passe exclusivement par une pull request, sa fusion dans
+`main`, puis l'approbation de l'environnement GitHub `Production`.
+`scripts/ship.ps1` est volontairement désarmé : il ne réalise plus de `git add`,
+de commit, de push ou de déploiement manuel. Avant de remplacer le conteneur, l'image active
 est conservée sous le tag `antoinequarroz-web:previous`. La nouvelle image est
 construite sous le tag `candidate` avec le hash Git et l'heure de construction.
 
@@ -69,14 +71,15 @@ qualité et d'accessibilité. Après fusion dans `main`, le workflow suit cet or
 strict :
 
 1. tests, TypeScript, build, budgets et préflight PostgreSQL local ;
-2. approbation humaine de l'environnement GitHub `Production` ;
-3. détection, sauvegarde chiffrée et promotion des migrations en attente ;
-4. déploiement du SHA exact sur le VPS avec `scripts/ops/deploy-from-ci.sh` ;
-5. attente de ce même SHA sur `/api/version` et d'un `/api/health` vert ;
-6. vérification que l'apex redirige définitivement vers `www` en conservant l'URI ;
-7. vérification des routes privées, des crawlers, des pages localisées et des routes françaises uniquement ;
-8. validation de l'identité éditoriale et du `BlogPosting` de chaque article publié ;
-9. E2E de production avec les identifiants du compte sandbox.
+2. démarrage du candidat en CI et E2E publics sans identifiants avant toute production ;
+3. approbation humaine de l'environnement GitHub `Production` ;
+4. détection, sauvegarde chiffrée et promotion des migrations en attente ;
+5. déploiement du SHA exact sur le VPS avec `scripts/ops/deploy-from-ci.sh` ;
+6. attente de ce même SHA sur `/api/version` et d'un `/api/health` vert ;
+7. vérification que l'apex redirige définitivement vers `www` en conservant l'URI ;
+8. vérification des routes privées, des crawlers, des pages localisées et des routes françaises uniquement ;
+9. validation de l'identité éditoriale et du `BlogPosting` de chaque article publié ;
+10. E2E de production avec les identifiants du compte sandbox et, si son compte a un facteur vérifié, `E2E_ADMIN_TOTP_SECRET`.
 
 Les exécutions planifiées et manuelles vérifient la production courante sans
 redéployer. Sur un push `main`, les secrets de production ne deviennent
@@ -121,6 +124,8 @@ Antoine comme reviewer et contient uniquement les secrets suivants :
 - `SUPABASE_ACCESS_TOKEN` : jeton personnel Supabase utilisé par la CLI ;
 - `SUPABASE_PROJECT_REF` : identifiant de 20 caractères du projet attendu ;
 - `SUPABASE_BACKUP_AGE_RECIPIENT` : clé publique `age` dont la clé privée reste hors de GitHub et du VPS.
+- `E2E_ADMIN_EMAIL` et `E2E_ADMIN_PASSWORD` : identifiants du compte sandbox des E2E post-production ;
+- `E2E_ADMIN_TOTP_SECRET` : secret Base32 optionnel du facteur TOTP de ce compte, requis uniquement après activation de sa MFA.
 
 ### Reprise après une migration
 
@@ -156,13 +161,15 @@ La clé personnelle utilisée par `scripts/deploy-vps.ps1` reste distincte. La c
 CI est installée dans `authorized_keys` avec `restrict` et une commande forcée
 copiée depuis `scripts/ops/ci-ssh-gate.sh`. Installer aussi
 `scripts/ops/deploy-from-ci.sh` hors du checkout comme
-`/home/ubuntu/.local/bin/antoinequarroz-ci-deploy`. Cette clé ne peut ouvrir aucun
+`/home/ubuntu/.local/bin/antoinequarroz-ci-deploy`. Après chaque release validée,
+le script versionné est réinstallé atomiquement à cet emplacement afin que la
+commande forcée utilise les garde-fous de la release suivante. Cette clé ne peut ouvrir aucun
 shell, faire de redirection de port ou exécuter un script fourni par le runner :
 elle ne lance que cette commande de livraison fixe. Pour révoquer l'automatisation,
 supprimer la clé publique GitHub Actions du fichier
 `~/.ssh/authorized_keys`, puis supprimer ou désactiver les secrets de
-l'environnement `Production`. Le déploiement manuel reste disponible pendant
-le rollback. Un échec de build, de santé ou de version empêche les E2E et le
+l'environnement `Production`. Un rollback opérationnel reste manuel, mais aucun
+script local ne doit contourner le workflow de livraison. Un échec de build, de santé ou de version empêche les E2E et le
 script VPS remet automatiquement l'image `previous` en service lorsque le
 conteneur candidat a été lancé.
 
@@ -615,6 +622,8 @@ dans cette organisation puis supprime toutes les données temporaires.
 E2E_BASE_URL=https://www.antoinequarroz.ch
 E2E_ADMIN_EMAIL=e2e-admin@antoinequarroz.ch
 E2E_ADMIN_PASSWORD=...
+# Uniquement après activation du facteur TOTP sur ce compte
+E2E_ADMIN_TOTP_SECRET=...
 ```
 
 Lancer le parcours public et administrateur :

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Invoice } from '~/types'
+import { printStructuredDocument } from '~/utils/printStructuredDocument'
 import { generateScorReference, getQrReferenceError, isQrIban, isValidSwissIban, normalizeIban } from '~~/shared/utils/swissQr'
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 const store = useInvoicesStore()
@@ -317,25 +318,21 @@ function printSelected() {
   const documentLabel = i.documentType === 'credit_note' ? 'Avoir' : 'Facture'
   const client = i.clientId ? (clientsById.value.get(i.clientId)?.name || '-') : '-'
   const quote = i.quoteId ? (quotesById.value.get(i.quoteId)?.number || '-') : '-'
-  const html = `
-    <html><head><title>${documentLabel} ${i.number}</title></head>
-    <body style="font-family: ui-sans-serif, system-ui, sans-serif; padding: 24px; color: #111827;">
-      <h1 style="margin:0 0 16px;">${documentLabel} ${i.number}</h1>
-      <p><strong>Client:</strong> ${client}</p>
-      <p><strong>Devis:</strong> ${quote}</p>
-      <p><strong>Montant:</strong> ${formatAmount(i.amountCents, i.currency)}</p>
-      <p><strong>Statut:</strong> ${i.status}</p>
-      <p><strong>Emission:</strong> ${i.issuedAt || '-'}</p>
-      <p><strong>Échéance :</strong> ${i.dueAt || '-'}</p>
-      <p><strong>Payée le :</strong> ${i.paidAt || '-'}</p>
-      <p><strong>Notes:</strong><br/>${(i.notes || '-').replace(/\n/g, '<br/>')}</p>
-    </body></html>`
-  const win = window.open('', '_blank')
-  if (!win) return
-  win.document.write(html)
-  win.document.close()
-  win.focus()
-  win.print()
+  const opened = printStructuredDocument({
+    title: `${documentLabel} ${i.number}`,
+    heading: `${documentLabel} ${i.number}`,
+    fields: [
+      { label: 'Client', value: client },
+      { label: 'Devis', value: quote },
+      { label: 'Montant', value: formatAmount(i.amountCents, i.currency) },
+      { label: 'Statut', value: statusLabel(i.status) },
+      { label: 'Émission', value: i.issuedAt || '-' },
+      { label: 'Échéance', value: i.dueAt || '-' },
+      { label: 'Payée le', value: i.paidAt || '-' },
+      { label: 'Notes', value: i.notes || '-', multiline: true },
+    ],
+  })
+  if (!opened) toast.error('Autorise les fenêtres surgissantes pour imprimer cette facture.')
 }
 async function fetchInvoicePdf(invoice: Invoice) {
   return await $fetch<Blob>('/api/invoices/pdf', {

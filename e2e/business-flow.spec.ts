@@ -1,16 +1,9 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
+import { adminCredentialsConfigured, loginAdmin } from './helpers/admin-auth'
 
-const email = process.env.E2E_ADMIN_EMAIL
-const password = process.env.E2E_ADMIN_PASSWORD
-
-async function login(page: Page) {
-  await page.goto('/admin/login')
-  await page.getByLabel(/email/i).fill(email!)
-  await page.getByLabel(/mot de passe/i).fill(password!)
-  await page.getByRole('button', { name: /se connecter/i }).click()
-  await expect(page).toHaveURL(/\/admin(?:\/)?$/)
-
+async function accessToken(page: Page) {
+  await loginAdmin(page)
   return page.evaluate(() => {
     for (let index = 0; index < localStorage.length; index += 1) {
       const key = localStorage.key(index)
@@ -47,9 +40,9 @@ async function expectAccessibleDetailPage(page: Page) {
 }
 
 test('sandbox covers client to paid invoice and cleans up business data', async ({ page, request }) => {
-  test.skip(!email || !password, 'E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD are required')
+  test.skip(!adminCredentialsConfigured, 'E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD are required')
 
-  const accessToken = await login(page)
+  const accessToken = await accessToken(page)
   const baseHeaders = { authorization: `Bearer ${accessToken}` }
   const organizationsResponse = await request.get('/api/admin/organizations', { headers: baseHeaders })
   expect(organizationsResponse.ok()).toBeTruthy()

@@ -21,9 +21,25 @@ if [[ ! -f "$project_dir/docker-compose.yml" || ! -f "$project_dir/.env" || ! -d
 fi
 
 cd "$project_dir"
+
+assert_clean_checkout() {
+  local dirty_files
+  dirty_files="$(git status --porcelain=v1 --untracked-files=all)"
+  if [[ -n "$dirty_files" ]]; then
+    echo "Refusing deployment: the VPS Git checkout contains local changes:" >&2
+    printf '%s\n' "$dirty_files" >&2
+    exit 65
+  fi
+}
+
+# A deployment must never silently include operator-created or modified files.
+# The ignored runtime .env remains outside Git and is injected by Compose only
+# when the committed image is started.
+assert_clean_checkout
 git fetch --prune origin main
 git checkout main
 git pull --ff-only origin main
+assert_clean_checkout
 
 readonly actual_sha="$(git rev-parse HEAD)"
 if [[ "$actual_sha" != "$expected_sha" ]]; then
