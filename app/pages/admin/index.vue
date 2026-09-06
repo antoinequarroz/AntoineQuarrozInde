@@ -2,6 +2,8 @@
 import type { ContactMessage } from '~/types'
 import AdminAdminIcon from '~/components/admin/AdminIcon.vue'
 import AdminAdminEmptyState from '~/components/admin/AdminEmptyState.vue'
+import { buildCommercialTaskSuggestions, type CommercialTaskSuggestion } from '~/utils/commercialTaskPlan'
+import { isCommercialActionVisible, type CommercialActionState, type CommercialActionStatus } from '~/utils/commercialActionState'
 
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 
@@ -18,10 +20,14 @@ const toast = useToast()
 const messages = ref<ContactMessage[]>([])
 const runningAutomation = ref(false)
 const runningEmailReminders = ref(false)
+const showTaskPlan = ref(false)
+const selectedTaskSuggestionKeys = ref<string[]>([])
 const showReminderConfirm = ref(false)
 const selectedReminderKeys = ref<string[]>([])
 const closeReminderConfirm = () => { showReminderConfirm.value = false }
+const closeTaskPlan = () => { showTaskPlan.value = false }
 const { dialogRef: reminderDialogRef, handleDialogKeydown: handleReminderDialogKeydown } = useAccessibleDialog(showReminderConfirm, closeReminderConfirm, '[data-reminder-cancel]')
+const { dialogRef: taskPlanDialogRef, handleDialogKeydown: handleTaskPlanDialogKeydown } = useAccessibleDialog(showTaskPlan, closeTaskPlan, '[data-task-plan-close]')
 const reminderRuns = ref<Array<{ id: number, action: string, payload: Record<string, any>, created_at: string }>>([])
 const reminderRunsStatus = ref<'loading' | 'ready' | 'error'>('loading')
 const reminderPreview = ref<{
@@ -31,6 +37,9 @@ const reminderPreview = ref<{
   skipped: { alreadySent: number, missingContact: number, outsideMilestone: number, paused: number }
 } | null>(null)
 const reminderPreviewStatus = ref<'loading' | 'ready' | 'error'>('loading')
+const commercialActionStates = ref<Record<string, CommercialActionState>>({})
+const commercialActionStatesStatus = ref<'loading' | 'ready' | 'error'>('loading')
+const updatingCommercialActionKey = ref<string | null>(null)
 
 type DashboardSource = 'projects' | 'articles' | 'clients' | 'tasks' | 'quotes' | 'invoices' | 'appointments' | 'messages'
 type SourceStatus = 'idle' | 'loading' | 'ready' | 'error'
@@ -134,6 +143,7 @@ const nextOnboardingStep = computed(() => onboardingSteps.value.find(step => !st
 let dashboardLoadVersion = 0
 let reminderRunsRequestVersion = 0
 let reminderPreviewRequestVersion = 0
+let commercialActionStatesRequestVersion = 0
 
 function dashboardPreferencesKey() {
   return `aq_admin_dashboard_sections:${auth.userEmail ?? 'anonymous'}:${auth.currentOrganizationId ?? 'default'}`
@@ -220,6 +230,11 @@ const todayLabel = computed(() => new Date().toLocaleDateString('fr-CH', {
   day: '2-digit',
   month: 'long',
 }))
+const commercialSnoozeOptions = computed(() => [
+  { label: 'Demain', date: addDaysToIsoDate(todayIso.value, 1) },
+  { label: 'Dans 7 jours', date: addDaysToIsoDate(todayIso.value, 7) },
+  { label: 'Dans 30 jours', date: addDaysToIsoDate(todayIso.value, 30) },
+])
 
 const openTasks = computed(() =>
   tasks.tasks
@@ -240,6 +255,31 @@ const pendingQuotes = computed(() =>
     .filter(quote => quote.status === 'sent')
     .sort((a, b) => String(a.validUntil || '').localeCompare(String(b.validUntil || ''))),
 )
+
+const rawCommercialTaskSuggestions = computed(() => {
+  if ((['clients', 'tasks', 'quotes', 'invoices'] as DashboardSource[]).some(source => sourceStates[source] !== 'ready')) return []
+  return buildCommercialTaskSuggestions({
+    today: todayIso.value,
+    clients: clients.clients,
+    quotes: quotes.quotes,
+    invoices: invoices.invoices,
+    existingTaskTitles: tasks.tasks.map(task => task.title),
+  })
+})
+
+function commercialActionIsVisible(actionKey: string) {
+  if (commercialActionStatesStatus.value !== 'ready') return true
+  return isCommercialActionVisible(actionKey, commercialActionStates.value, todayIso.value)
+}
+
+const commercialTaskSuggestions = computed(() =>
+  rawCommercialTaskSuggestions.value.filter(suggestion => commercialActionIsVisible(suggestion.key)),
+)
+
+const selectedTaskSuggestions = computed(() => {
+  const selected = new Set(selectedTaskSuggestionKeys.value)
+  return commercialTaskSuggestions.value.filter(suggestion => selected.has(suggestion.key))
+})
 
 const nextAppointments = computed(() =>
   sourceStates.appointments === 'ready'
@@ -331,35 +371,53 @@ const metrics = computed(() => [
   },
 ])
 
-const priorities = computed(() => {
-  const items: Array<{
-    id: string
-    title: string
-    meta: string
-    to: string
-    icon: string
-    label: string
-    chip: string
-    order: number
-  }> = []
+type PriorityItem = {
+  id: string
+  title: string
+  meta: string
+  to: string
+  icon: string
+  label: string
+  chip: string
+  order: number
+  actionKey: string
+  sourceType: 'suggestion' | 'task' | 'message'
+  sourceId: number
+}
 
-  if (sourceStates.invoices === 'ready') {
-    for (const invoice of overdueInvoices.value.slice(0, 3)) {
-      items.push({
-        id: `invoice-${invoice.id}`,
-        title: `Relancer ${invoice.number}`,
-        meta: `${clientName(invoice.clientId)} · ${money(Math.max(0, (invoice.totalCents ?? invoice.amountCents) - invoice.paidAmountCents), invoice.currency)} · échéance ${invoice.dueAt || 'inconnue'}`,
-        to: `/admin/invoices?invoiceId=${invoice.id}`,
-        icon: 'receipt',
-        label: 'En retard',
-        chip: 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300',
-        order: 0,
-      })
-    }
+const priorities = computed(() => {
+  const items: PriorityItem[] = []
+
+  const focusedSuggestions = [
+    ...commercialTaskSuggestions.value.filter(suggestion => suggestion.kind === 'invoice').slice(0, 3),
+    ...commercialTaskSuggestions.value.filter(suggestion => suggestion.kind === 'lead').slice(0, 3),
+    ...commercialTaskSuggestions.value.filter(suggestion => suggestion.kind === 'quote').slice(0, 2),
+  ]
+  for (const suggestion of focusedSuggestions) {
+    const source = suggestion.kind === 'quote'
+      ? quotes.quotes.find(quote => quote.id === suggestion.sourceId)?.number
+      : suggestion.kind === 'invoice'
+        ? invoices.invoices.find(invoice => invoice.id === suggestion.sourceId)?.number
+        : clientName(suggestion.clientId)
+    items.push({
+      id: `suggestion-${suggestion.key}`,
+      title: `Relancer ${source || 'le client'}`,
+      meta: suggestion.reason,
+      to: suggestion.to,
+      icon: suggestion.kind === 'invoice' ? 'receipt' : suggestion.kind === 'quote' ? 'file-plus' : 'users',
+      label: suggestion.label,
+      chip: suggestion.priority === 'high'
+        ? 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300'
+        : 'bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300',
+      order: suggestion.kind === 'invoice' ? 0 : suggestion.kind === 'lead' ? 4 : 5,
+      actionKey: suggestion.key,
+      sourceType: 'suggestion',
+      sourceId: suggestion.sourceId,
+    })
   }
 
   if (sourceStates.tasks === 'ready') {
-    for (const task of dueTasks.value.slice(0, 4)) {
+    for (const task of dueTasks.value.filter(task => commercialActionIsVisible(`task:${task.id}`)).slice(0, 4)) {
       items.push({
         id: `task-${task.id}`,
         title: task.title,
@@ -371,12 +429,15 @@ const priorities = computed(() => {
           ? 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300'
           : 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300',
         order: task.priority === 'high' ? 1 : 2,
+        actionKey: `task:${task.id}`,
+        sourceType: 'task',
+        sourceId: task.id,
       })
     }
   }
 
   if (sourceStates.messages === 'ready') {
-    for (const message of newMessages.value.slice(0, 2)) {
+    for (const message of newMessages.value.filter(message => commercialActionIsVisible(`message:${message.id}`)).slice(0, 2)) {
       items.push({
         id: `message-${message.id}`,
         title: `Répondre à ${message.name}`,
@@ -386,26 +447,14 @@ const priorities = computed(() => {
         label: 'Nouveau prospect',
         chip: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300',
         order: 3,
+        actionKey: `message:${message.id}`,
+        sourceType: 'message',
+        sourceId: message.id,
       })
     }
   }
 
-  if (sourceStates.quotes === 'ready') {
-    for (const quote of pendingQuotes.value.slice(0, 2)) {
-      items.push({
-        id: `quote-${quote.id}`,
-        title: `Suivre ${quote.number}`,
-        meta: `${clientName(quote.clientId)} · ${money(quote.totalCents ?? quote.amountCents, quote.currency)} · valable jusqu’au ${quote.validUntil || '—'}`,
-        to: `/admin/quotes?quoteId=${quote.id}`,
-        icon: 'file-plus',
-        label: 'Devis envoyé',
-        chip: 'bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300',
-        order: 4,
-      })
-    }
-  }
-
-  return items.sort((a, b) => a.order - b.order).slice(0, 6)
+  return items.sort((a, b) => a.order - b.order).slice(0, 8)
 })
 
 const commercialRows = computed(() => {
@@ -496,12 +545,6 @@ function reminderMoney(cents = 0, currency = 'CHF') {
   return new Intl.NumberFormat('fr-CH', { style: 'currency', currency }).format(cents / 100)
 }
 
-function daysFromNow(isoDate: string) {
-  const today = new Date(`${todayIso.value}T00:00:00Z`)
-  const date = new Date(`${isoDate}T00:00:00Z`)
-  return Math.round((date.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-}
-
 function urgencyLabel(urgency: 'upcoming' | 'due' | 'overdue') {
   return urgency === 'overdue' ? 'En retard' : urgency === 'due' ? 'Échéance aujourd’hui' : 'À venir'
 }
@@ -564,6 +607,69 @@ async function loadMessages() {
   })
 }
 
+async function loadCommercialActionStates() {
+  const requestVersion = ++commercialActionStatesRequestVersion
+  const organizationId = auth.currentOrganizationId
+  commercialActionStatesStatus.value = 'loading'
+  try {
+    const states = await $fetch<Record<string, CommercialActionState>>('/api/admin/commercial-actions', {
+      headers: auth.authHeader(),
+    })
+    if (requestVersion !== commercialActionStatesRequestVersion || organizationId !== auth.currentOrganizationId) return
+    commercialActionStates.value = states
+    commercialActionStatesStatus.value = 'ready'
+  }
+  catch {
+    if (requestVersion !== commercialActionStatesRequestVersion || organizationId !== auth.currentOrganizationId) return
+    commercialActionStates.value = {}
+    commercialActionStatesStatus.value = 'error'
+  }
+}
+
+async function updateCommercialAction(item: PriorityItem, status: CommercialActionStatus, snoozedUntil: string | null = null) {
+  if (updatingCommercialActionKey.value || commercialActionStatesStatus.value !== 'ready') return
+  updatingCommercialActionKey.value = item.actionKey
+  let taskCompleted = false
+
+  try {
+    if (status === 'handled' && item.sourceType === 'task') {
+      const task = tasks.tasks.find(candidate => candidate.id === item.sourceId)
+      if (!task) throw new Error('Tâche introuvable')
+      await tasks.update(task.id, { ...task, status: 'done' })
+      taskCompleted = true
+    }
+
+    const state = await $fetch<CommercialActionState>('/api/admin/commercial-actions', {
+      method: 'POST',
+      headers: auth.authHeader(),
+      body: {
+        actionKey: item.actionKey,
+        status,
+        snoozedUntil,
+        targetPath: item.to,
+      },
+    })
+    commercialActionStates.value = { ...commercialActionStates.value, [item.actionKey]: state }
+    const message = status === 'handled'
+      ? 'Action marquée comme traitée'
+      : status === 'ignored'
+        ? 'Action retirée du cockpit'
+        : `Action reportée au ${new Date(`${snoozedUntil}T12:00:00`).toLocaleDateString('fr-CH')}`
+    toast.success(message)
+  }
+  catch (error) {
+    if (taskCompleted) {
+      toast.error('La tâche est terminée, mais son historique n’a pas pu être enregistré.')
+    }
+    else {
+      toast.error(readableError(error))
+    }
+  }
+  finally {
+    updatingCommercialActionKey.value = null
+  }
+}
+
 function toggleReminder(reminderKey: string) {
   selectedReminderKeys.value = selectedReminderKeys.value.includes(reminderKey)
     ? selectedReminderKeys.value.filter(key => key !== reminderKey)
@@ -575,60 +681,51 @@ function requestReminderSend() {
   showReminderConfirm.value = true
 }
 
-async function runPipelineAutomation() {
-  if (runningAutomation.value) return
+function taskSuggestionSource(suggestion: CommercialTaskSuggestion) {
+  if (suggestion.kind === 'lead') return clientName(suggestion.clientId)
+  if (suggestion.kind === 'quote') return quotes.quotes.find(quote => quote.id === suggestion.sourceId)?.number || 'Devis'
+  return invoices.invoices.find(invoice => invoice.id === suggestion.sourceId)?.number || 'Facture'
+}
+
+function toggleTaskSuggestion(key: string) {
+  selectedTaskSuggestionKeys.value = selectedTaskSuggestionKeys.value.includes(key)
+    ? selectedTaskSuggestionKeys.value.filter(item => item !== key)
+    : [...selectedTaskSuggestionKeys.value, key]
+}
+
+function requestTaskGeneration() {
+  if (!commercialTaskSuggestions.value.length) {
+    toast.success('Aucune nouvelle tâche commerciale à créer')
+    return
+  }
+  selectedTaskSuggestionKeys.value = []
+  showTaskPlan.value = true
+}
+
+async function confirmTaskGeneration() {
+  if (runningAutomation.value || !selectedTaskSuggestions.value.length) return
   runningAutomation.value = true
+  const suggestions = [...selectedTaskSuggestions.value]
 
   try {
-    await Promise.all([tasks.ensureLoaded(), quotes.ensureLoaded(), invoices.ensureLoaded(), clients.ensureLoaded()])
-    const existingTitles = new Set(tasks.tasks.map(task => task.title))
     let created = 0
-
-    for (const quote of quotes.quotes) {
-      if (quote.status !== 'sent' || !quote.validUntil) continue
-      const days = daysFromNow(quote.validUntil)
-      if (days < 0 || days > 3) continue
-      const title = `[RELANCE DEVIS ${quote.number}]`
-      if (existingTitles.has(title)) continue
-
+    for (const suggestion of suggestions) {
       await tasks.add({
-        title,
-        description: `Relancer le devis ${quote.number} (${quote.title}) avant expiration (${quote.validUntil}).`,
+        title: suggestion.title,
+        description: suggestion.description,
         status: 'todo',
-        priority: days <= 1 ? 'high' : 'medium',
-        dueDate: quote.validUntil,
-        clientId: quote.clientId ?? null,
-        projectId: null,
+        priority: suggestion.priority,
+        dueDate: suggestion.dueDate,
+        clientId: suggestion.clientId,
+        projectId: suggestion.projectId,
       })
-
-      existingTitles.add(title)
       created++
     }
-
-    for (const invoice of invoices.invoices) {
-      if (!['sent', 'overdue'].includes(invoice.status) || !invoice.dueAt) continue
-      const days = daysFromNow(invoice.dueAt)
-      if (days > 2) continue
-      const title = `[RELANCE FACTURE ${invoice.number}]`
-      if (existingTitles.has(title)) continue
-
-      await tasks.add({
-        title,
-        description: `Relancer la facture ${invoice.number} (echeance ${invoice.dueAt}).`,
-        status: 'todo',
-        priority: days < 0 ? 'high' : 'medium',
-        dueDate: invoice.dueAt,
-        clientId: invoice.clientId ?? null,
-        projectId: null,
-      })
-
-      existingTitles.add(title)
-      created++
-    }
-
-    toast.success(created > 0 ? `${created} relance(s) ajoutée(s)` : 'Aucune nouvelle relance à générer')
+    showTaskPlan.value = false
+    selectedTaskSuggestionKeys.value = []
+    toast.success(`${created} tâche(s) commerciale(s) créée(s)`)
   } catch {
-    toast.error('Impossible de générer les tâches de relance. Réessaie dans quelques instants.')
+    toast.error('Certaines tâches n’ont pas pu être créées. La liste a été recalculée sans dupliquer celles déjà ajoutées.')
   } finally {
     runningAutomation.value = false
   }
@@ -706,6 +803,7 @@ async function loadDashboard(force = false) {
   dashboardStatus.value = 'loading'
   failedSources.value = []
   const organizationId = auth.currentOrganizationId
+  const commercialActionStatesLoad = loadCommercialActionStates()
   const sources = dashboardSources(force)
 
   for (const source of sources) {
@@ -728,7 +826,7 @@ async function loadDashboard(force = false) {
   loadedOrganizationId.value = organizationId
   lastUpdatedAt.value = new Date()
   dashboardStatus.value = failedSources.value.length ? 'partial-error' : 'ready'
-  await Promise.allSettled([loadReminderRuns(), loadReminderPreview()])
+  await Promise.allSettled([loadReminderRuns(), loadReminderPreview(), commercialActionStatesLoad])
 }
 
 onMounted(() => {
@@ -839,33 +937,86 @@ watch(() => auth.currentOrganizationId, (organizationId, previousOrganizationId)
       <div class="rounded-lg border border-gray-200 bg-white shadow-sm dark:border-white/[0.08] dark:bg-[#111118]">
         <div class="flex items-center justify-between gap-3 border-b border-gray-100 px-4 py-3 dark:border-white/[0.06] sm:px-5">
           <div class="min-w-0">
-            <h2 class="text-sm font-semibold text-gray-950 dark:text-white">À traiter maintenant</h2>
-            <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Chaque ligne ouvre directement l’élément concerné.</p>
+            <h2 class="text-sm font-semibold text-gray-950 dark:text-white">À traiter aujourd’hui</h2>
+            <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Tâches dues, prospects inactifs, devis sans réponse et factures à relancer.</p>
           </div>
-          <span class="shrink-0 text-xs font-medium text-gray-500 dark:text-gray-400">{{ priorities.length }} action(s)</span>
+          <div class="shrink-0 text-right">
+            <span class="block text-xs font-medium text-gray-500 dark:text-gray-400">{{ priorities.length }} action(s)</span>
+            <button v-if="commercialActionStatesStatus === 'error'" type="button" class="mt-1 text-xs font-semibold text-rose-700 underline decoration-rose-300 underline-offset-2 dark:text-rose-300" @click="loadCommercialActionStates">
+              Recharger les actions
+            </button>
+          </div>
         </div>
 
         <div v-if="priorities.length" class="divide-y divide-gray-100 dark:divide-white/[0.06]">
-          <NuxtLink
+          <div
             v-for="item in priorities"
             :key="item.id"
-            :to="item.to"
-            class="group grid min-h-14 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 transition hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-violet-500 dark:hover:bg-white/[0.03] sm:px-5"
+            class="relative transition hover:bg-gray-50 dark:hover:bg-white/[0.03] sm:grid sm:grid-cols-[minmax(0,1fr)_auto] sm:items-stretch"
           >
-            <span class="inline-flex h-9 w-9 items-center justify-center rounded-lg" :class="item.chip">
-              <AdminAdminIcon :icon="item.icon" class="h-4 w-4" />
-            </span>
-            <div class="min-w-0">
-              <div class="flex min-w-0 items-center gap-2">
-                <p class="truncate text-sm font-semibold text-gray-950 dark:text-white">{{ item.title }}</p>
-                <span class="hidden rounded-md px-2 py-0.5 text-xs font-semibold sm:inline-flex" :class="item.chip">
-                  {{ item.label }}
-                </span>
+            <NuxtLink
+              :to="item.to"
+              class="group grid min-h-16 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-violet-500 sm:px-5"
+            >
+              <span class="inline-flex h-9 w-9 items-center justify-center rounded-lg" :class="item.chip">
+                <AdminAdminIcon :icon="item.icon" class="h-4 w-4" />
+              </span>
+              <div class="min-w-0">
+                <div class="flex min-w-0 items-center gap-2">
+                  <p class="truncate text-sm font-semibold text-gray-950 dark:text-white">{{ item.title }}</p>
+                  <span class="hidden rounded-md px-2 py-0.5 text-xs font-semibold sm:inline-flex" :class="item.chip">
+                    {{ item.label }}
+                  </span>
+                </div>
+                <p class="mt-1 truncate text-xs text-gray-500 dark:text-gray-400">{{ item.meta }}</p>
               </div>
-              <p class="mt-1 truncate text-xs text-gray-500 dark:text-gray-400">{{ item.meta }}</p>
+              <span class="text-lg leading-none text-gray-300 transition group-hover:text-gray-500 dark:text-gray-600">›</span>
+            </NuxtLink>
+
+            <div class="grid grid-cols-3 border-t border-gray-100 dark:border-white/[0.06] sm:flex sm:items-center sm:border-l sm:border-t-0 sm:px-2">
+              <button
+                type="button"
+                class="min-h-11 px-2 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-45 dark:text-emerald-300 dark:hover:bg-emerald-500/10"
+                :disabled="commercialActionStatesStatus !== 'ready' || updatingCommercialActionKey !== null"
+                :aria-label="`Marquer « ${item.title} » comme traité`"
+                @click="updateCommercialAction(item, 'handled')"
+              >
+                {{ updatingCommercialActionKey === item.actionKey ? 'Patiente…' : 'Traité' }}
+              </button>
+
+              <details class="group/reporter relative border-x border-gray-100 dark:border-white/[0.06] sm:border-x-0">
+                <summary
+                  class="flex min-h-11 cursor-pointer list-none items-center justify-center px-2 text-xs font-semibold text-gray-600 transition hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-violet-500 dark:text-gray-300 dark:hover:bg-white/[0.06] [&::-webkit-details-marker]:hidden"
+                  :class="commercialActionStatesStatus !== 'ready' || updatingCommercialActionKey !== null ? 'pointer-events-none opacity-45' : ''"
+                  :aria-disabled="commercialActionStatesStatus !== 'ready' || updatingCommercialActionKey !== null"
+                >
+                  Reporter
+                </summary>
+                <div class="absolute bottom-full right-1/2 z-20 mb-2 w-40 translate-x-1/2 overflow-hidden rounded-lg border border-gray-200 bg-white p-1 shadow-xl dark:border-white/[0.12] dark:bg-[#181822] sm:bottom-auto sm:right-0 sm:top-full sm:mt-2 sm:translate-x-0">
+                  <button
+                    v-for="option in commercialSnoozeOptions"
+                    :key="option.date"
+                    type="button"
+                    class="flex min-h-10 w-full items-center rounded-md px-3 text-left text-xs font-semibold text-gray-700 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:text-gray-200 dark:hover:bg-white/[0.06]"
+                    :aria-label="`Reporter « ${item.title} » : ${option.label.toLowerCase()}`"
+                    @click="updateCommercialAction(item, 'snoozed', option.date)"
+                  >
+                    {{ option.label }}
+                  </button>
+                </div>
+              </details>
+
+              <button
+                type="button"
+                class="min-h-11 px-2 text-xs font-semibold text-gray-500 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-45 dark:text-gray-400 dark:hover:bg-white/[0.06]"
+                :disabled="commercialActionStatesStatus !== 'ready' || updatingCommercialActionKey !== null"
+                :aria-label="`Ignorer « ${item.title} »`"
+                @click="updateCommercialAction(item, 'ignored')"
+              >
+                Ignorer
+              </button>
             </div>
-            <span class="text-lg leading-none text-gray-300 transition group-hover:text-gray-500 dark:text-gray-600">›</span>
-          </NuxtLink>
+          </div>
         </div>
 
         <AdminAdminEmptyState
@@ -1057,10 +1208,10 @@ watch(() => auth.currentOrganizationId, (organizationId, previousOrganizationId)
           <button
             class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-gray-200 px-3 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 disabled:opacity-60 dark:border-white/[0.12] dark:text-gray-200 dark:hover:bg-white/[0.04]"
             :disabled="runningAutomation"
-            @click="runPipelineAutomation"
+            @click="requestTaskGeneration"
           >
             <AdminAdminIcon icon="zap" class="h-4 w-4" />
-            {{ runningAutomation ? 'Génération…' : 'Créer les tâches' }}
+            {{ runningAutomation ? 'Génération…' : `Préparer ${commercialTaskSuggestions.length} tâche(s)` }}
           </button>
           <button
             class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-gray-950 px-3 text-xs font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-gray-950"
@@ -1252,6 +1403,48 @@ watch(() => auth.currentOrganizationId, (organizationId, previousOrganizationId)
               </div>
             </div>
           </section>
+        </div>
+      </div>
+    </Transition>
+
+    <Transition name="fade">
+      <div v-if="showTaskPlan" class="fixed inset-0 z-[90] flex items-center justify-center bg-black/55 p-3 sm:p-6" @click.self="closeTaskPlan">
+        <div ref="taskPlanDialogRef" role="dialog" aria-modal="true" aria-labelledby="task-plan-title" tabindex="-1" class="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-gray-200 bg-white p-4 shadow-2xl dark:border-white/[0.1] dark:bg-[#151522] sm:p-5" @keydown="handleTaskPlanDialogKeydown">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <h2 id="task-plan-title" class="font-display text-xl font-semibold text-gray-950 dark:text-white">Préparer les tâches commerciales</h2>
+              <p class="mt-1 text-sm leading-6 text-gray-600 dark:text-gray-300">Vérifie les suggestions avant de les ajouter. Aucun email n’est envoyé depuis cette étape.</p>
+            </div>
+            <button data-task-plan-close class="grid h-11 w-11 shrink-0 place-items-center rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-white/[0.06]" aria-label="Fermer la préparation" @click="closeTaskPlan">×</button>
+          </div>
+
+          <div class="mt-4 flex flex-wrap items-center justify-between gap-2">
+            <p class="text-xs text-gray-500 dark:text-gray-400">Sélectionne uniquement les suivis que tu veux ajouter aujourd’hui.</p>
+            <button type="button" class="min-h-11 rounded-lg border border-gray-200 px-3 text-xs font-semibold text-gray-700 dark:border-white/[0.12] dark:text-gray-200" @click="selectedTaskSuggestionKeys = commercialTaskSuggestions.map(suggestion => suggestion.key)">Tout sélectionner</button>
+          </div>
+
+          <div class="mt-3 divide-y divide-gray-100 overflow-hidden rounded-xl border border-gray-200 dark:divide-white/[0.06] dark:border-white/[0.1]">
+            <label v-for="suggestion in commercialTaskSuggestions" :key="suggestion.key" class="flex min-h-16 cursor-pointer items-start gap-3 px-3 py-3 hover:bg-gray-50 dark:hover:bg-white/[0.03] sm:px-4">
+              <input type="checkbox" class="mt-1 h-5 w-5 shrink-0 rounded border-gray-300 text-violet-600 focus:ring-2 focus:ring-violet-500" :checked="selectedTaskSuggestionKeys.includes(suggestion.key)" @change="toggleTaskSuggestion(suggestion.key)">
+              <span class="min-w-0 flex-1">
+                <span class="flex flex-wrap items-center gap-2">
+                  <span class="text-sm font-semibold text-gray-950 dark:text-white">{{ taskSuggestionSource(suggestion) }}</span>
+                  <span class="rounded-md px-2 py-0.5 text-xs font-semibold" :class="suggestion.priority === 'high' ? 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300' : 'bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300'">{{ suggestion.label }}</span>
+                </span>
+                <span class="mt-1 block text-xs leading-5 text-gray-500 dark:text-gray-400">{{ suggestion.reason }} · échéance {{ suggestion.dueDate }}</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="mt-5 flex flex-col-reverse gap-2 border-t border-gray-100 pt-4 dark:border-white/[0.08] sm:flex-row sm:items-center sm:justify-between">
+            <p class="text-xs text-gray-500 dark:text-gray-400">{{ selectedTaskSuggestions.length }} tâche(s) sélectionnée(s) sur {{ commercialTaskSuggestions.length }}</p>
+            <div class="flex gap-2">
+              <button data-task-plan-cancel class="min-h-11 flex-1 rounded-lg border border-gray-200 px-4 text-sm font-semibold text-gray-700 dark:border-white/[0.12] dark:text-gray-200 sm:flex-none" @click="closeTaskPlan">Annuler</button>
+              <button class="min-h-11 flex-1 rounded-lg bg-violet-600 px-4 text-sm font-semibold text-white hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none" :disabled="runningAutomation || !selectedTaskSuggestions.length" @click="confirmTaskGeneration">
+                {{ runningAutomation ? 'Création…' : `Ajouter (${selectedTaskSuggestions.length})` }}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </Transition>
