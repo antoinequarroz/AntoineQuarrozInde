@@ -30,7 +30,7 @@ async function listen(headers: Record<string, string>) {
 }
 
 const expectedHeaders = {
-  'Content-Security-Policy': "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://challenges.cloudflare.com; script-src-attr 'none'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://plausible.io https://*.supabase.co wss://*.supabase.co https://prod.spline.design https://unpkg.com https://challenges.cloudflare.com; frame-src 'self' blob: https://challenges.cloudflare.com; worker-src 'self' blob:; media-src 'self' blob:; manifest-src 'self'; upgrade-insecure-requests",
+  'Content-Security-Policy': "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://unpkg.com https://challenges.cloudflare.com; script-src-attr 'none'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://plausible.io https://*.supabase.co wss://*.supabase.co https://prod.spline.design https://unpkg.com https://challenges.cloudflare.com; frame-src 'self' blob: https://challenges.cloudflare.com; worker-src 'self' blob:; media-src 'self' blob:; manifest-src 'self'; upgrade-insecure-requests",
   'Permissions-Policy': 'camera=(), geolocation=(), microphone=()',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
   'Strict-Transport-Security': 'max-age=31536000',
@@ -48,6 +48,8 @@ describe('public security headers', () => {
     expect(caddyfile).toContain('-Server')
     expect(caddyfile).not.toContain("script-src *")
     expect(caddyfile).not.toContain("script-src 'self' https:")
+    expect(caddyfile).not.toMatch(/script-src[^;]*'unsafe-eval'/)
+    expect(caddyfile).toMatch(/script-src[^;]*'wasm-unsafe-eval'/)
     expect(caddyfile).toContain("script-src-attr 'none'")
     expect(caddyfile).toContain('https://fonts.googleapis.com')
     expect(caddyfile).toContain('https://fonts.gstatic.com')
