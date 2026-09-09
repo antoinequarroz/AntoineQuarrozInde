@@ -69,6 +69,34 @@ install_next_ci_deploy_command() {
   fi
 }
 
+install_hermes_read_token_from_stdin() {
+  local token
+
+  # The forced SSH command deliberately permits only the existing deployment
+  # command. CI therefore supplies the runtime-only secret on stdin, never in
+  # the command line, Git checkout, image, or logs. Manual deployments with no
+  # stdin keep the existing value unchanged.
+  if [[ -t 0 ]]; then
+    return 0
+  fi
+  IFS= read -r token || true
+  if [[ -z "$token" ]]; then
+    return 0
+  fi
+
+  (
+    local token_file
+    token_file="$(mktemp)"
+    trap 'rm -f -- "$token_file"' EXIT
+    chmod 600 "$token_file"
+    printf '%s' "$token" > "$token_file"
+    bash scripts/ops/install-hermes-read-token.sh "$PWD/.env" "$token_file"
+  )
+  token=''
+}
+
+install_hermes_read_token_from_stdin
+
 previous_image="$(docker inspect --format '{{.Image}}' "$container_name" 2>/dev/null || true)"
 if [[ -n "$previous_image" ]]; then
   docker image tag "$previous_image" "$image_name:$previous_tag"

@@ -165,23 +165,11 @@ jobs:
           [[ "$VPS_PROJECT_DIR" =~ ^/[A-Za-z0-9._/-]+$ ]]
           install -d -m 700 "$HOME/.ssh"
           install -m 600 /dev/null "$RUNNER_TEMP/vps_deploy_key"
-          trap 'rm -f "$RUNNER_TEMP/vps_deploy_key" "$RUNNER_TEMP/hermes_read_token"' EXIT
+          trap 'rm -f "$RUNNER_TEMP/vps_deploy_key"' EXIT
           printf '%s\n' "$VPS_SSH_PRIVATE_KEY" > "$RUNNER_TEMP/vps_deploy_key"
           printf '%s\n' "$VPS_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
           chmod 600 "$HOME/.ssh/known_hosts"
-          install -m 600 /dev/null "$RUNNER_TEMP/hermes_read_token"
-          printf '%s' "$HERMES_READ_TOKEN" > "$RUNNER_TEMP/hermes_read_token"
-          tar -czf - \
-            -C scripts/ops install-hermes-read-token.sh \
-            -C "$RUNNER_TEMP" hermes_read_token | ssh \
-            -i "$RUNNER_TEMP/vps_deploy_key" \
-            -o BatchMode=yes \
-            -o IdentitiesOnly=yes \
-            -o StrictHostKeyChecking=yes \
-            -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
-            "$VPS_USER@$VPS_HOST" \
-            "tar -xzf - -C '$VPS_PROJECT_DIR' && bash '$VPS_PROJECT_DIR/install-hermes-read-token.sh' '$VPS_PROJECT_DIR/.env' '$VPS_PROJECT_DIR/hermes_read_token'; status=\$?; rm -f '$VPS_PROJECT_DIR/install-hermes-read-token.sh' '$VPS_PROJECT_DIR/hermes_read_token'; exit \$status"
-          ssh \
+          printf '%s\n' "$HERMES_READ_TOKEN" | ssh \
             -i "$RUNNER_TEMP/vps_deploy_key" \
             -o BatchMode=yes \
             -o IdentitiesOnly=yes \
