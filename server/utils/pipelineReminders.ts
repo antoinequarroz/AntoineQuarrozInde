@@ -1,4 +1,3 @@
-import { Resend } from 'resend'
 import { logAudit } from './audit'
 import { buildPipelineReminderPlan, type PipelineReminderCandidate } from './pipelineReminderPlan'
 
@@ -127,7 +126,7 @@ export async function runPipelineReminders(input: {
   confirmedReminders?: PipelineReminderConfirmation[]
 }) {
   const config = useRuntimeConfig()
-  if (!config.resendApiKey) throw createError({ statusCode: 500, message: 'RESEND_API_KEY manquante' })
+  if (!isEmailConfigured(config)) throw createError({ statusCode: 503, message: 'Le service e-mail n’est pas configuré.' })
 
   const supabase = getSupabaseAdmin()
   const today = todayInZurich()
@@ -159,23 +158,21 @@ export async function runPipelineReminders(input: {
       }
     }
   }
-  const resend = new Resend(config.resendApiKey)
   let sentCount = 0
   let failedCount = 0
 
   for (const candidate of candidates) {
     const email = reminderEmail(candidate)
-    const { error } = await resend.emails.send(
-      {
-        from: 'Antoine Quarroz <info@antoinequarroz.ch>',
+    try {
+      await sendAppEmail({
         to: candidate.email,
         subject: email.subject,
         text: email.text,
         html: email.html,
-      },
-      { idempotencyKey: `${input.organizationId}:${candidate.reminderKey}` },
-    )
-    if (error) {
+        idempotencyKey: `${input.organizationId}:${candidate.reminderKey}`,
+      })
+    }
+    catch {
       failedCount += 1
       continue
     }

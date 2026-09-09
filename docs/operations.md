@@ -526,7 +526,9 @@ Les seuils sont configurables avec `MAX_DISK_USAGE_PERCENT` (85 par défaut) et
 21 jours avant son expiration, seuil modifiable avec `MONITOR_TLS_WARN_DAYS`.
 
 L'adresse destinataire est `MONITORING_ALERT_EMAIL` dans `.env`, avec
-`CONTACT_EMAIL` comme repli. L'envoi utilise `RESEND_API_KEY`.
+`CONTACT_EMAIL` comme repli. Tous les e-mails applicatifs et les alertes du VPS
+utilisent Lumail via `LUMAIL_API_KEY`. Les devis et factures sont annoncés par
+e-mail puis consultables et téléchargeables dans l'espace client sécurisé.
 
 Commandes utiles sur le VPS :
 

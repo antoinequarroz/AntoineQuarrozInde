@@ -1,5 +1,3 @@
-import { Resend } from 'resend'
-
 type TransactionalEmailInput = {
   to: string
   subject: string
@@ -25,18 +23,14 @@ export function portalEmailLayout(input: { preview: string, title: string, body:
 }
 
 export async function sendTransactionalEmail(input: TransactionalEmailInput) {
-  const config = useRuntimeConfig()
-  if (!config.resendApiKey) throw createError({ statusCode: 503, message: 'Le service e-mail n’est pas configuré.' })
-  const resend = new Resend(config.resendApiKey)
-  const { data, error } = await resend.emails.send({
-    from: 'Antoine Quarroz <info@antoinequarroz.ch>',
+  const result = await sendAppEmail({
     to: input.to,
     subject: input.subject,
     html: input.html,
     tags: input.tags,
-  }, { idempotencyKey: input.idempotencyKey.slice(0, 256) })
-  if (error) throw createError({ statusCode: 502, message: error.message || 'L’e-mail n’a pas pu être envoyé.' })
-  return { emailId: data?.id || null }
+    idempotencyKey: input.idempotencyKey,
+  })
+  return result
 }
 
 export async function notifyOperationalEvent(input: {
@@ -52,7 +46,7 @@ export async function notifyOperationalEvent(input: {
 }) {
   const config = useRuntimeConfig()
   const recipient = String(config.contactEmail || '').trim()
-  if (!recipient || !config.resendApiKey) return { sent: false, reason: 'not_configured' as const }
+  if (!recipient || !isEmailConfigured(config)) return { sent: false, reason: 'not_configured' as const }
   try {
     const result = await sendTransactionalEmail({
       to: recipient,

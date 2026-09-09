@@ -45,18 +45,14 @@ export async function reportApplicationError(report: ErrorReport) {
     const config = useRuntimeConfig()
     const recipient = config.monitoringAlertEmail || config.contactEmail
     const lastAlert = alertCooldown.get(fingerprint) || 0
-    if (!config.resendApiKey || !recipient || Date.now() - lastAlert < 10 * 60 * 1000) return
+    if (!isEmailConfigured(config) || !recipient || Date.now() - lastAlert < 10 * 60 * 1000) return
 
     alertCooldown.set(fingerprint, Date.now())
-    await $fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${config.resendApiKey}` },
-      body: {
-        from: 'Monitoring <onboarding@resend.dev>',
-        to: [recipient],
-        subject: `[${report.severity || 'error'}] Erreur application Antoine Quarroz`,
-        text: `${message}\n\nSource: ${report.source}\nPage: ${path || 'inconnue'}\nEmpreinte: ${fingerprint}`,
-      },
+    await sendAppEmail({
+      to: recipient,
+      subject: `[${report.severity || 'error'}] Erreur application Antoine Quarroz`,
+      text: `${message}\n\nSource: ${report.source}\nPage: ${path || 'inconnue'}\nEmpreinte: ${fingerprint}`,
+      idempotencyKey: `error-${fingerprint}-${Math.floor(Date.now() / (10 * 60 * 1000))}`,
     })
   }
   catch (error) {
