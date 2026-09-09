@@ -19,6 +19,7 @@ const navGroups = [
       { label: 'Prospects', icon: 'book-open', href: '/admin/crm' },
       { label: 'Clients', icon: 'users', href: '/admin/clients' },
       { label: 'Messages', icon: 'mail', href: '/admin/messages' },
+      { label: 'E-mails', icon: 'send', href: '/admin/emails' },
       { label: 'Devis', icon: 'file-plus', href: '/admin/quotes' },
     ],
   },

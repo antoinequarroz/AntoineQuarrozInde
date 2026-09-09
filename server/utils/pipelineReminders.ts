@@ -170,6 +170,7 @@ export async function runPipelineReminders(input: {
         text: email.text,
         html: email.html,
         idempotencyKey: `${input.organizationId}:${candidate.reminderKey}`,
+        tags: [{ name: 'category', value: 'pipeline_reminder' }],
       })
     }
     catch {

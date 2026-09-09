@@ -35,6 +35,14 @@ const props = defineProps<{
     <path d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" />
     <polyline points="22,6 12,13 2,6" />
   </svg>
+  <svg v-else-if="props.icon === 'search'" :class="props.class || 'w-4 h-4'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+    <circle cx="11" cy="11" r="7" />
+    <path d="m20 20-4-4" stroke-linecap="round" />
+  </svg>
+  <svg v-else-if="props.icon === 'send'" :class="props.class || 'w-4 h-4'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+    <path d="m22 2-7 20-4-9-9-4Z" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M22 2 11 13" stroke-linecap="round" stroke-linejoin="round" />
+  </svg>
   <svg v-else-if="props.icon === 'shield'" :class="props.class || 'w-4 h-4'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
   </svg>
