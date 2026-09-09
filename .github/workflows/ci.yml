@@ -52,7 +52,10 @@ jobs:
           node-version: 22.19.0
           cache: npm
       - run: npm ci --legacy-peer-deps
-      - run: npx playwright install --with-deps chromium
+      - name: Install Chromium without unrelated Chrome APT source
+        run: |
+          sudo rm -f /etc/apt/sources.list.d/google-chrome.list
+          npx playwright install --with-deps chromium
       - run: npx playwright test e2e/accessibility.spec.ts --project=chromium
 
   seo-quality:
@@ -69,7 +72,10 @@ jobs:
           node-version: 22.19.0
           cache: npm
       - run: npm ci --legacy-peer-deps
-      - run: npx playwright install --with-deps chromium
+      - name: Install Chromium without unrelated Chrome APT source
+        run: |
+          sudo rm -f /etc/apt/sources.list.d/google-chrome.list
+          npx playwright install --with-deps chromium
       - run: npm run build
       - name: Start the candidate and capture its laboratory baseline
         run: |
@@ -241,7 +247,10 @@ jobs:
           node-version: 22.19.0
           cache: npm
       - run: npm ci --legacy-peer-deps
-      - run: npx playwright install --with-deps chromium
+      - name: Install Chromium without unrelated Chrome APT source
+        run: |
+          sudo rm -f /etc/apt/sources.list.d/google-chrome.list
+          npx playwright install --with-deps chromium
       - name: Capture the deployed laboratory baseline
         run: |
           for attempt in 1 2 3; do
