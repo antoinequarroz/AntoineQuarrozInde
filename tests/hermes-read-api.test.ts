@@ -24,7 +24,10 @@ describe('Hermes read-only CRM access', () => {
 
   it('passes the private token to Nuxt only at container runtime', () => {
     const compose = readFileSync(new URL('../docker-compose.yml', import.meta.url), 'utf8')
+    const workflow = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8')
 
     expect(compose).toContain('NUXT_HERMES_READ_TOKEN: ${HERMES_READ_TOKEN:-}')
+    expect(workflow).toContain('HERMES_READ_TOKEN: ${{ secrets.HERMES_READ_TOKEN }}')
+    expect(workflow).toContain('scripts/ops/install-hermes-read-token.sh')
   })
 })
