@@ -54,7 +54,7 @@ jobs:
       - run: npm ci --legacy-peer-deps
       - name: Install Chromium without unrelated Chrome APT source
         run: |
-          sudo rm -f /etc/apt/sources.list.d/google-chrome.list
+          sudo rm -f /etc/apt/sources.list.d/google-chrome.list /etc/apt/sources.list.d/google-chrome.sources
           npx playwright install --with-deps chromium
       - run: npx playwright test e2e/accessibility.spec.ts --project=chromium
 
@@ -74,7 +74,7 @@ jobs:
       - run: npm ci --legacy-peer-deps
       - name: Install Chromium without unrelated Chrome APT source
         run: |
-          sudo rm -f /etc/apt/sources.list.d/google-chrome.list
+          sudo rm -f /etc/apt/sources.list.d/google-chrome.list /etc/apt/sources.list.d/google-chrome.sources
           npx playwright install --with-deps chromium
       - run: npm run build
       - name: Start the candidate and capture its laboratory baseline
@@ -132,7 +132,7 @@ jobs:
         run: |
           # Chrome is not used by the deploy job. Its third-party APT index can
           # temporarily be inconsistent and must not block recovery tooling.
-          sudo rm -f /etc/apt/sources.list.d/google-chrome.list
+          sudo rm -f /etc/apt/sources.list.d/google-chrome.list /etc/apt/sources.list.d/google-chrome.sources
           sudo apt-get update -qq
           sudo apt-get install -y -qq age
       - name: Promote verified Supabase migrations
@@ -249,7 +249,7 @@ jobs:
       - run: npm ci --legacy-peer-deps
       - name: Install Chromium without unrelated Chrome APT source
         run: |
-          sudo rm -f /etc/apt/sources.list.d/google-chrome.list
+          sudo rm -f /etc/apt/sources.list.d/google-chrome.list /etc/apt/sources.list.d/google-chrome.sources
           npx playwright install --with-deps chromium
       - name: Capture the deployed laboratory baseline
         run: |
