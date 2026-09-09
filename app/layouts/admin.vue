@@ -293,7 +293,7 @@ watch(isSidebarOpen, (open) => {
 </script>
 
 <template>
-  <div class="admin-shell min-h-screen bg-gray-50 dark:bg-[#0b0b12] flex text-sm">
+  <div class="admin-shell flex min-h-screen w-full max-w-full overflow-x-clip bg-gray-50 text-sm dark:bg-[#0b0b12]">
     <a href="#admin-main-content" class="sr-only fixed left-3 top-3 z-[100] rounded-lg bg-gray-950 px-4 py-3 font-semibold text-white focus:not-sr-only">Aller au contenu principal</a>
     <Transition name="fade">
       <div v-if="isSidebarOpen" class="fixed inset-0 bg-black/40 z-40 lg:hidden backdrop-blur-sm" @click="isSidebarOpen = false" />
@@ -377,7 +377,7 @@ watch(isSidebarOpen, (open) => {
       </div>
     </aside>
 
-    <div class="flex-1 lg:ml-56 flex flex-col min-h-screen min-w-0">
+    <div class="flex min-h-screen min-w-0 max-w-full flex-1 flex-col lg:ml-56">
       <header class="admin-topbar sticky top-0 z-30 h-14 flex items-center gap-2 sm:gap-3 px-3 sm:px-6 bg-white/90 dark:bg-[#111118]/90 backdrop-blur-xl border-b border-gray-100 dark:border-white/[0.06]">
         <button
           aria-controls="admin-navigation"
@@ -469,7 +469,7 @@ watch(isSidebarOpen, (open) => {
         <UiThemeToggle />
       </header>
 
-      <main id="admin-main-content" tabindex="-1" class="admin-main flex-1 p-4 sm:p-6">
+      <main id="admin-main-content" tabindex="-1" class="admin-main min-w-0 max-w-full flex-1 overflow-x-clip p-4 sm:p-6">
         <div
           v-if="!isStandalone && !dismissedPwaHint"
           class="mb-3 flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200"

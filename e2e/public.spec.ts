@@ -97,6 +97,9 @@ test('front portfolio cards stay separated and navigation follows the active pro
     const cards = page.locator('[data-helix-card]')
     const navigation = page.locator('[data-project-navigation]')
     await expect(cards.first()).toBeVisible()
+    await expect.poll(async () => Boolean(await cards.first().evaluate(element => (
+      (element as HTMLElement).style.transform
+    )))).toBe(true)
 
     const track = cards.first().locator('xpath=ancestor::div[contains(@style, "height")][1]')
     const trackMetrics = await track.evaluate((element) => {
