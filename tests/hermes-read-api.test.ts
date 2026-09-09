@@ -28,6 +28,8 @@ describe('Hermes read-only CRM access', () => {
 
     expect(compose).toContain('NUXT_HERMES_READ_TOKEN: ${HERMES_READ_TOKEN:-}')
     expect(workflow).toContain('HERMES_READ_TOKEN: ${{ secrets.HERMES_READ_TOKEN }}')
-    expect(workflow).toContain('scripts/ops/install-hermes-read-token.sh')
+    expect(workflow).toContain('-C scripts/ops install-hermes-read-token.sh')
+    expect(workflow).toContain('tar -czf -')
+    expect(workflow).not.toMatch(/^\s*scp\s/m)
   })
 })
