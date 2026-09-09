@@ -225,6 +225,7 @@ test('secondary admin pages remain complete and responsive on mobile', async ({ 
     ['/admin/articles', 'Articles'],
     ['/admin/reviews', 'Avis clients'],
     ['/admin/messages', 'Messages CRM'],
+    ['/admin/emails', 'Suivi des e-mails'],
     ['/admin/analytics', 'Performance commerciale'],
     ['/admin/payments', 'Encaissements'],
     ['/admin/audit', 'Maintenance audit'],

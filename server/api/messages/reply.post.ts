@@ -53,6 +53,7 @@ export default defineEventHandler(async (event) => {
       </div>
     `,
     idempotencyKey: `contact-reply-${id}-${Date.now()}`,
+    tags: [{ name: 'category', value: 'contact_reply' }],
   })
 
   await supabase

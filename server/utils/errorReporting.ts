@@ -53,6 +53,7 @@ export async function reportApplicationError(report: ErrorReport) {
       subject: `[${report.severity || 'error'}] Erreur application Antoine Quarroz`,
       text: `${message}\n\nSource: ${report.source}\nPage: ${path || 'inconnue'}\nEmpreinte: ${fingerprint}`,
       idempotencyKey: `error-${fingerprint}-${Math.floor(Date.now() / (10 * 60 * 1000))}`,
+      tags: [{ name: 'category', value: 'monitoring_alert' }],
     })
   }
   catch (error) {

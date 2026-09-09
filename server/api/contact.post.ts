@@ -178,6 +178,7 @@ export default defineEventHandler(async (event) => {
       </div>
     `,
     idempotencyKey: `contact-${linkedClientId || normalizedEmail}-${now}`,
+    tags: [{ name: 'category', value: 'contact_notification' }],
   })
 
   return { success: true, clientId: linkedClientId, acquisitionChannel }
