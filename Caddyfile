@@ -18,3 +18,25 @@ www.antoinequarroz.ch {
 	}
 	reverse_proxy web:3000
 }
+
+metricove.antoinequarroz.ch {
+	encode zstd gzip
+
+	@backend path /api/* /health/*
+	handle @backend {
+		reverse_proxy metricove-api:3000
+	}
+
+	handle {
+		reverse_proxy metricove-web:8080
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy strict-origin-when-cross-origin
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		-Server
+	}
+}
