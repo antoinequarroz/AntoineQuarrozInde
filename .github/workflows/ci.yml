@@ -171,30 +171,16 @@ jobs:
           chmod 600 "$HOME/.ssh/known_hosts"
           install -m 600 /dev/null "$RUNNER_TEMP/hermes_read_token"
           printf '%s' "$HERMES_READ_TOKEN" > "$RUNNER_TEMP/hermes_read_token"
-          scp \
-            -i "$RUNNER_TEMP/vps_deploy_key" \
-            -o BatchMode=yes \
-            -o IdentitiesOnly=yes \
-            -o StrictHostKeyChecking=yes \
-            -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
-            scripts/ops/install-hermes-read-token.sh \
-            "$VPS_USER@$VPS_HOST:$VPS_PROJECT_DIR/.install-hermes-read-token.sh"
-          scp \
-            -i "$RUNNER_TEMP/vps_deploy_key" \
-            -o BatchMode=yes \
-            -o IdentitiesOnly=yes \
-            -o StrictHostKeyChecking=yes \
-            -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
-            "$RUNNER_TEMP/hermes_read_token" \
-            "$VPS_USER@$VPS_HOST:$VPS_PROJECT_DIR/.hermes-read-token.new"
-          ssh \
+          tar -czf - \
+            -C scripts/ops install-hermes-read-token.sh \
+            -C "$RUNNER_TEMP" hermes_read_token | ssh \
             -i "$RUNNER_TEMP/vps_deploy_key" \
             -o BatchMode=yes \
             -o IdentitiesOnly=yes \
             -o StrictHostKeyChecking=yes \
             -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
             "$VPS_USER@$VPS_HOST" \
-            "bash '$VPS_PROJECT_DIR/.install-hermes-read-token.sh' '$VPS_PROJECT_DIR/.env' '$VPS_PROJECT_DIR/.hermes-read-token.new'; status=\$?; rm -f '$VPS_PROJECT_DIR/.install-hermes-read-token.sh'; exit \$status"
+            "tar -xzf - -C '$VPS_PROJECT_DIR' && bash '$VPS_PROJECT_DIR/install-hermes-read-token.sh' '$VPS_PROJECT_DIR/.env' '$VPS_PROJECT_DIR/hermes_read_token'; status=\$?; rm -f '$VPS_PROJECT_DIR/install-hermes-read-token.sh' '$VPS_PROJECT_DIR/hermes_read_token'; exit \$status"
           ssh \
             -i "$RUNNER_TEMP/vps_deploy_key" \
             -o BatchMode=yes \
