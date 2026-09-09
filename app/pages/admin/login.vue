@@ -30,13 +30,13 @@ async function handleLogin() {
 </script>
 
 <template>
-  <div class="min-h-screen bg-surface-light-secondary dark:bg-surface-dark flex items-center justify-center p-4">
+  <main class="relative grid min-h-screen min-h-[100svh] w-full place-items-center overflow-hidden bg-surface-light-secondary p-4 dark:bg-surface-dark sm:p-6">
     <div class="absolute inset-0 overflow-hidden pointer-events-none">
       <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-violet-600/10 rounded-full blur-3xl" />
       <div class="absolute bottom-1/4 right-1/4 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl" />
     </div>
 
-    <div class="relative w-full max-w-md">
+    <div class="relative z-10 mx-auto w-full max-w-md justify-self-center">
       <div class="card-glass p-8 sm:p-10">
         <div class="flex justify-center mb-8">
           <div class="flex items-center gap-3">
@@ -54,7 +54,7 @@ async function handleLogin() {
           Connexion
         </h1>
         <p class="text-gray-500 dark:text-gray-400 text-center text-sm mb-8">
-          Acces reserve a l'administrateur
+          Accès réservé à l’administrateur
         </p>
 
         <form class="space-y-5" :data-hydrated="hydrated" @submit.prevent="handleLogin">
@@ -124,7 +124,7 @@ async function handleLogin() {
         </NuxtLink>
       </div>
     </div>
-  </div>
+  </main>
 </template>
 
 <style scoped>

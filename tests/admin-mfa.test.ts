@@ -184,6 +184,11 @@ describe('admin MFA interface wiring', () => {
     expect(adminMiddleware).toContain("? ['owner', 'admin', 'manager', 'viewer']")
   })
 
+  it('keeps the standalone admin login form centered across viewport sizes', () => {
+    expect(loginPage).toContain('<main class="relative grid min-h-screen min-h-[100svh] w-full place-items-center')
+    expect(loginPage).toContain('mx-auto w-full max-w-md justify-self-center')
+  })
+
   it('steps up enrolled portal sessions without loading organizations first', () => {
     expect(portalMiddleware).toContain('deferOrganizationsUntilMfaChallenge: true')
     expect(portalMiddleware).toContain('auth.requiresMfaChallenge')
