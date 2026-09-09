@@ -158,6 +158,7 @@ jobs:
       - name: Deploy the exact main commit
         env:
           HERMES_READ_TOKEN: ${{ secrets.HERMES_READ_TOKEN }}
+          HERMES_PUBLISH_TOKEN: ${{ secrets.HERMES_PUBLISH_TOKEN }}
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_USER: ${{ secrets.VPS_USER }}
           VPS_PROJECT_DIR: ${{ secrets.VPS_PROJECT_DIR }}
@@ -170,7 +171,9 @@ jobs:
           test -n "$VPS_SSH_PRIVATE_KEY"
           test -n "$VPS_KNOWN_HOSTS"
           test -n "$HERMES_READ_TOKEN"
+          test -n "$HERMES_PUBLISH_TOKEN"
           [[ "$HERMES_READ_TOKEN" =~ ^[a-f0-9]{64}$ ]]
+          [[ "$HERMES_PUBLISH_TOKEN" =~ ^[a-f0-9]{64}$ ]]
           [[ "$VPS_HOST" =~ ^[A-Za-z0-9.-]+$ ]]
           [[ "$VPS_USER" =~ ^[a-z_][a-z0-9_-]*$ ]]
           [[ "$VPS_PROJECT_DIR" =~ ^/[A-Za-z0-9._/-]+$ ]]
@@ -180,7 +183,7 @@ jobs:
           printf '%s\n' "$VPS_SSH_PRIVATE_KEY" > "$RUNNER_TEMP/vps_deploy_key"
           printf '%s\n' "$VPS_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
           chmod 600 "$HOME/.ssh/known_hosts"
-          printf '%s\n' "$HERMES_READ_TOKEN" | ssh \
+          printf '%s\n%s\n' "$HERMES_READ_TOKEN" "$HERMES_PUBLISH_TOKEN" | ssh \
             -i "$RUNNER_TEMP/vps_deploy_key" \
             -o BatchMode=yes \
             -o IdentitiesOnly=yes \

@@ -29,10 +29,10 @@ describe('Hermes read-only CRM access', () => {
 
     expect(compose).toContain('NUXT_HERMES_READ_TOKEN: ${HERMES_READ_TOKEN:-}')
     expect(workflow).toContain('HERMES_READ_TOKEN: ${{ secrets.HERMES_READ_TOKEN }}')
-    expect(workflow).toContain(`printf '%s\\n' "$HERMES_READ_TOKEN" | ssh`)
+    expect(workflow).toContain(`printf '%s\\n%s\\n' "$HERMES_READ_TOKEN" "$HERMES_PUBLISH_TOKEN" | ssh`)
     expect(workflow).not.toContain('tar -czf -')
     expect(workflow).not.toMatch(/^\s*scp\s/m)
-    expect(release).toContain('install_hermes_read_token_from_stdin')
-    expect(release).toContain('bash scripts/ops/install-hermes-read-token.sh "$PWD/.env" "$token_file"')
+    expect(release).toContain('install_hermes_tokens_from_stdin')
+    expect(release).toContain('bash scripts/ops/install-hermes-read-token.sh "$PWD/.env" "$read_token_file"')
   })
 })

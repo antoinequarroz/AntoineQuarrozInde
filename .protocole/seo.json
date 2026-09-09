@@ -1,0 +1,79 @@
+{
+  "domaines": [
+    {
+      "url": "https://www.antoinequarroz.ch",
+      "sitemap": "https://www.antoinequarroz.ch/sitemap.xml",
+      "locales": [
+        "fr"
+      ],
+      "search_console": "sc-domain:antoinequarroz.ch"
+    }
+  ],
+  "produit": {
+    "nom": "Antoine Quarroz - developpement web et mobile",
+    "url_inscription": "https://www.antoinequarroz.ch/contact",
+    "cible": "PME, independants et organisations du Valais qui ont besoin d'un site, d'une refonte ou d'un outil metier"
+  },
+  "niche": {
+    "mots_cles": [
+      "developpeur web Valais",
+      "creation site internet Valais",
+      "application mobile sur mesure Suisse",
+      "outil metier PME Valais"
+    ],
+    "langues": [
+      "fr"
+    ],
+    "prompts_ia": [
+      "Quel developpeur choisir pour creer un site internet en Valais ?",
+      "Comment preparer la creation d'un site vitrine pour une PME en Valais ?",
+      "Quand une PME devrait-elle remplacer ses feuilles Excel par un outil metier ?"
+    ]
+  },
+  "concurrents": [],
+  "geo": {
+    "profil": ".hermes/geo/profile.md",
+    "file": ".hermes/geo/queue",
+    "inventaire": ".hermes/geo/content-inventory.md",
+    "dossier_contenu": "seo/articles",
+    "cadence_par_semaine": 7,
+    "publication_automatique": true,
+    "publication_endpoint": "https://www.antoinequarroz.ch/api/hermes/articles",
+    "publication_script": "scripts/hermes/publish_article.py",
+    "branche_prefixe": "geo/",
+    "prefixes_articles": [
+      "/blog"
+    ],
+    "branche_production": "main",
+    "extensions_contenu": [
+      ".json"
+    ],
+    "cle_date": "publishedAt",
+    "locales_attendues": 1
+  },
+  "seuils": {
+    "budget_treg_usd_par_semaine": 0,
+    "prompts_ia_par_semaine": 0,
+    "inspections_par_semaine": 10,
+    "idees_par_semaine": 14,
+    "impressions_min_requete": 10,
+    "semaines_avant_bilan": 4,
+    "semaines_sans_impressions": 6,
+    "jours_pr_en_attente": 7,
+    "audit_urls_max": 100,
+    "reserve_jours_alerte": 7,
+    "points_de_mesure_jours": [
+      7,
+      14,
+      28
+    ]
+  },
+  "exclusions": {
+    "urls": [
+      "/admin",
+      "/api",
+      "/login"
+    ],
+    "sujets": []
+  }
+}
