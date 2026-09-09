@@ -26,6 +26,22 @@ describe('client portal access boundaries', () => {
     expect(access).toContain('redirectTo: `${siteUrl}/portal/setup`')
   })
 
+  it('routes self-service password recovery through Lumail without account enumeration', () => {
+    const login = source('../app/pages/portal/login.vue')
+    const recovery = source('../server/api/portal/recovery.post.ts')
+
+    expect(login).toContain("$fetch<{ message: string }>('/api/portal/recovery'")
+    expect(login).not.toContain('resetPasswordForEmail')
+    expect(recovery).toContain("generateLink({\n      type: 'recovery'")
+    expect(recovery).toContain('getUserById(client.portal_user_id)')
+    expect(recovery).toContain('authEmail !== email')
+    expect(recovery).toContain('sendTransactionalEmail')
+    expect(recovery).toContain('recoveryRequestsByIp')
+    expect(recovery).toContain('recoveryRequestsByEmail')
+    expect(recovery).toContain('return genericResponse()')
+    expect(recovery).not.toContain('payload: { email:')
+  })
+
   it('resolves portal ownership by immutable user id before legacy email fallback', () => {
     const portal = source('../server/utils/portalAccess.ts')
     expect(portal.indexOf(".eq('portal_user_id', user.id)")).toBeLessThan(portal.indexOf(".ilike('email', user.email)"))
