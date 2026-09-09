@@ -1,5 +1,3 @@
-import { Resend } from 'resend'
-
 const RATE_WINDOW_MS = 60_000
 const RATE_LIMIT_MAX = 5
 const MIN_FORM_FILL_MS = 1200
@@ -85,13 +83,12 @@ export default defineEventHandler(async (event) => {
   }
 
   // If no API key configured, return success anyway (dev mode)
-  if (!config.resendApiKey) {
-    console.warn('[contact] RESEND_API_KEY not set — email not actually sent')
+  if (!isEmailConfigured(config)) {
+    console.warn('[contact] no email provider configured — email not actually sent')
     return { success: true, acquisitionChannel }
   }
 
   const org = await resolveOrganizationContext(event)
-  const resend = new Resend(config.resendApiKey)
   const supabase = getSupabaseAdmin()
 
   const safeSubject = normalizedSubject || 'Nouveau message'
@@ -164,8 +161,7 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  const { error } = await resend.emails.send({
-    from: 'Portfolio <info@antoinequarroz.ch>',
+  await sendAppEmail({
     to: config.contactEmail,
     replyTo: normalizedEmail,
     subject: `[Portfolio] ${safeSubject}`,
@@ -181,11 +177,8 @@ export default defineEventHandler(async (event) => {
         <p style="color:#374151;line-height:1.6;white-space:pre-wrap">${safeMessage}</p>
       </div>
     `,
+    idempotencyKey: `contact-${linkedClientId || normalizedEmail}-${now}`,
   })
-
-  if (error) {
-    throw createError({ statusCode: 500, message: 'Erreur lors de l\'envoi' })
-  }
 
   return { success: true, clientId: linkedClientId, acquisitionChannel }
 })

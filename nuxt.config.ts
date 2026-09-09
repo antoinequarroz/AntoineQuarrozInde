@@ -199,7 +199,8 @@ export default defineNuxtConfig({
   },
 
   runtimeConfig: {
-    resendApiKey: process.env.RESEND_API_KEY || '',
+    lumailApiKey: process.env.LUMAIL_API_KEY || '',
+    emailFrom: process.env.EMAIL_FROM || 'info@antoinequarroz.ch',
     contactEmail: process.env.CONTACT_EMAIL || 'info@antoinequarroz.ch',
     monitoringAlertEmail: process.env.MONITORING_ALERT_EMAIL || '',
     turnstileSecretKey: process.env.TURNSTILE_SECRET_KEY || '',

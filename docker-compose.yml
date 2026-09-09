@@ -17,7 +17,8 @@ services:
       # Nuxt runtimeConfig is overridden only by NUXT_* variables at runtime.
       # Map operator-facing .env names explicitly so private values are never
       # required (or captured) during the image build.
-      NUXT_RESEND_API_KEY: ${RESEND_API_KEY:-}
+      NUXT_LUMAIL_API_KEY: ${LUMAIL_API_KEY:-}
+      NUXT_EMAIL_FROM: ${EMAIL_FROM:-info@antoinequarroz.ch}
       NUXT_CONTACT_EMAIL: ${CONTACT_EMAIL:-}
       NUXT_MONITORING_ALERT_EMAIL: ${MONITORING_ALERT_EMAIL:-}
       NUXT_TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-}

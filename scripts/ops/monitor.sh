@@ -38,15 +38,15 @@ send_alert() {
   local subject="$1"
   local message="$2"
   local api_key recipient payload
-  api_key="$(read_env RESEND_API_KEY)"
+  api_key="$(read_env LUMAIL_API_KEY)"
   recipient="$(read_env MONITORING_ALERT_EMAIL)"
   [[ -z "$recipient" ]] && recipient="$(read_env CONTACT_EMAIL)"
   if [[ -z "$api_key" || -z "$recipient" ]]; then
     logger -t aq-monitor "$subject - $message (email alert not configured)"
     return 0
   fi
-  payload="$(jq -n --arg to "$recipient" --arg subject "$subject" --arg text "$message" '{from:"Monitoring <monitoring@antoinequarroz.ch>",to:[$to],subject:$subject,text:$text}')"
-  curl --fail --silent --show-error https://api.resend.com/emails \
+  payload="$(jq -n --arg to "$recipient" --arg subject "$subject" --arg text "$message" '{from:"info@antoinequarroz.ch",to:$to,subject:$subject,markdown:$text}')"
+  curl --fail --silent --show-error https://lumail.io/api/v2/emails \
     -H "Authorization: Bearer $api_key" \
     -H 'Content-Type: application/json' \
     --data "$payload" >/dev/null
