@@ -24,10 +24,19 @@ async function sendRecovery() {
   recoveryMessage.value = ''
   if (!email.value.trim()) { errorMessage.value = 'Saisissez d’abord votre adresse e-mail.'; return }
   sendingRecovery.value = true
-  const client = useSupabaseClient()
-  await client.auth.resetPasswordForEmail(email.value.trim(), { redirectTo: `${window.location.origin}/portal/setup` })
-  sendingRecovery.value = false
-  recoveryMessage.value = 'Si cette adresse possède un accès, un lien de réinitialisation vient d’être envoyé.'
+  try {
+    const result = await $fetch<{ message: string }>('/api/portal/recovery', {
+      method: 'POST',
+      body: { email: email.value.trim() },
+    })
+    recoveryMessage.value = result.message
+  }
+  catch (error: any) {
+    errorMessage.value = error?.data?.message || 'La demande n’a pas pu être envoyée. Réessayez dans quelques minutes.'
+  }
+  finally {
+    sendingRecovery.value = false
+  }
 }
 </script>
 

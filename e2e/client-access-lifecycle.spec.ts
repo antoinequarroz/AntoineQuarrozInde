@@ -74,10 +74,27 @@ test('admin invites, suspends and restores a client portal access', async ({ pag
 
 test('portal login exposes a non-enumerating password recovery path', async ({ page }) => {
   test.setTimeout(60_000)
+  let recoveryRequestEmail = ''
+  await page.route('**/api/portal/recovery', async (route) => {
+    recoveryRequestEmail = String(route.request().postDataJSON()?.email || '')
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        success: true,
+        message: 'Si cette adresse possède un accès, un lien de réinitialisation vient d’être envoyé.',
+      }),
+    })
+  })
   await page.goto('/portal/login')
   await page.waitForFunction(() => Boolean((document.querySelector('#__nuxt') as any)?.__vue_app__))
   await page.getByLabel('E-mail').fill('')
   await expect(page.getByRole('button', { name: 'Mot de passe oublié ?' })).toBeVisible()
   await page.getByRole('button', { name: 'Mot de passe oublié ?' }).click()
   await expect(page.getByRole('alert')).toHaveText('Saisissez d’abord votre adresse e-mail.')
+
+  await page.getByLabel('E-mail').fill('client@example.com')
+  await page.getByRole('button', { name: 'Mot de passe oublié ?' }).click()
+  await expect(page.locator('p[role="status"]')).toHaveText('Si cette adresse possède un accès, un lien de réinitialisation vient d’être envoyé.')
+  expect(recoveryRequestEmail).toBe('client@example.com')
 })
