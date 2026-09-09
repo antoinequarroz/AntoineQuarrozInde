@@ -1,6 +1,3 @@
-import { Resend } from 'resend'
-import { buildBillingDocument } from './billingDocument'
-
 type BillingEmailKind = 'quote' | 'invoice'
 
 export async function sendBillingEmail(input: {
@@ -11,54 +8,44 @@ export async function sendBillingEmail(input: {
   recipientName: string
 }) {
   const config = useRuntimeConfig()
-  if (!config.resendApiKey) {
-    throw createError({ statusCode: 503, message: 'Le service email n’est pas configuré.' })
-  }
+  if (!config.lumailApiKey) throw createError({ statusCode: 503, message: 'Le service email Lumail n’est pas configuré.' })
 
   const supabase = getSupabaseAdmin()
   const table = input.kind === 'quote' ? 'quotes' : 'invoices'
-  const itemsTable = input.kind === 'quote' ? 'quote_items' : 'invoice_items'
-  const itemForeignKey = input.kind === 'quote' ? 'quote_id' : 'invoice_id'
-  const [{ data: document, error }, { data: organization }] = await Promise.all([
-    supabase.from(table).select('*').eq('organization_id', input.organizationId).eq('id', input.documentId).single(),
-    supabase.from('organizations').select('*').eq('id', input.organizationId).single(),
-  ])
+  const { data: document, error } = await supabase
+    .from(table)
+    .select('*')
+    .eq('organization_id', input.organizationId)
+    .eq('id', input.documentId)
+    .single()
   if (error || !document) throw createError({ statusCode: 404, message: 'Document introuvable.' })
 
-  const [{ data: client }, { data: items }] = await Promise.all([
-    supabase.from('clients').select('*').eq('organization_id', input.organizationId).eq('id', document.client_id).single(),
-    supabase.from(itemsTable).select('*').eq('organization_id', input.organizationId).eq(itemForeignKey, input.documentId).order('position', { ascending: true }),
-  ])
+  const { data: client } = await supabase.from('clients').select('id').eq('organization_id', input.organizationId).eq('id', document.client_id).single()
   if (!client) throw createError({ statusCode: 400, message: 'Le client associé est introuvable.' })
 
-  const { pdf, engine } = await buildBillingDocument({
-    kind: input.kind,
-    document,
-    organization: organization || {},
-    client,
-    items: items || [],
-  })
   const isCreditNote = input.kind === 'invoice' && document.document_type === 'credit_note'
-  const label = input.kind === 'quote' ? 'devis' : isCreditNote ? 'avoir' : 'facture'
   const capitalized = input.kind === 'quote' ? 'Devis' : isCreditNote ? 'Avoir' : 'Facture'
-  const documentArticle = input.kind === 'quote' ? 'le devis' : isCreditNote ? `l'avoir` : 'la facture'
+  const documentArticle = input.kind === 'quote' ? 'votre devis' : isCreditNote ? `votre avoir` : 'votre facture'
   const subjectSuffix = input.kind === 'quote' && document.title ? ` – ${document.title}` : ''
-  const resend = new Resend(config.resendApiKey)
-  const { data, error: sendError } = await resend.emails.send({
-    from: 'Antoine Quarroz <info@antoinequarroz.ch>',
+  const siteUrl = String(config.public.siteUrl || 'https://www.antoinequarroz.ch').replace(/\/$/, '')
+  const portalUrl = `${siteUrl}/portal#${input.kind === 'quote' ? 'devis' : 'factures'}`
+  const email = await sendAppEmail({
     to: input.recipientEmail,
     subject: `${capitalized} ${document.number}${subjectSuffix}`,
     html: `
       <div style="font-family:Inter,Arial,sans-serif;max-width:600px;margin:0 auto;color:#111827;line-height:1.6">
         <p>Bonjour ${escapeEmailHtml(input.recipientName)},</p>
-        <p>Vous trouverez en pièce jointe ${documentArticle} <strong>${escapeEmailHtml(document.number)}</strong>.</p>
+        <p>${capitalized} <strong>${escapeEmailHtml(document.number)}</strong> est maintenant disponible dans votre espace client sécurisé.</p>
+        <p style="margin:28px 0">
+          <a href="${escapeEmailHtml(portalUrl)}" style="display:inline-block;padding:12px 20px;border-radius:10px;background:#111827;color:#ffffff;text-decoration:none;font-weight:700">Consulter ${documentArticle}</a>
+        </p>
+        <p style="font-size:14px;color:#4b5563">Connectez-vous à votre espace client pour le consulter et télécharger le PDF.</p>
         <p>${input.kind === 'quote' ? 'Je reste volontiers disponible pour toute question ou adaptation.' : 'Merci pour votre confiance.'}</p>
         <p>Cordialement,<br><strong>Antoine Quarroz</strong></p>
       </div>`,
-    attachments: [{ filename: `${label}-${document.number}.pdf`, content: pdf }],
+    idempotencyKey: `${input.kind}-${input.organizationId}-${input.documentId}`,
   })
-  if (sendError) throw createError({ statusCode: 502, message: sendError.message || 'Échec de l’envoi.' })
-  return { emailId: data?.id || null, engine, document }
+  return { emailId: email.emailId, emailProvider: email.provider, engine: 'portal-link' as const, document }
 }
 
 function escapeEmailHtml(value: unknown) {

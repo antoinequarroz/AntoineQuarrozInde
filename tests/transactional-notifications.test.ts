@@ -4,9 +4,9 @@ import { describe, expect, it } from 'vitest'
 const source = (path: string) => readFileSync(new URL(path, import.meta.url), 'utf8')
 
 describe('transactional portal notifications', () => {
-  it('uses Resend idempotency keys and records delivery outcomes', () => {
+  it('uses provider-neutral idempotency keys and records delivery outcomes', () => {
     const email = source('../server/utils/transactionalEmail.ts')
-    expect(email).toContain('{ idempotencyKey: input.idempotencyKey.slice(0, 256) }')
+    expect(email).toContain('idempotencyKey: input.idempotencyKey')
     expect(email).toContain(".notification_sent`")
     expect(email).toContain(".notification_failed`")
   })

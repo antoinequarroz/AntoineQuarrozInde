@@ -1,5 +1,3 @@
-import { Resend } from 'resend'
-
 function escapeHtml(input: string) {
   return input
     .replaceAll('&', '&amp;')
@@ -24,8 +22,8 @@ export default defineEventHandler(async (event) => {
   }
 
   const config = useRuntimeConfig()
-  if (!config.resendApiKey) {
-    throw createError({ statusCode: 500, message: 'RESEND_API_KEY manquante' })
+  if (!isEmailConfigured(config)) {
+    throw createError({ statusCode: 503, message: 'Le service e-mail n’est pas configuré.' })
   }
 
   const supabase = getSupabaseAdmin()
@@ -40,13 +38,11 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, message: 'Message introuvable' })
   }
 
-  const resend = new Resend(config.resendApiKey)
   const safeSubject = escapeHtml(replySubject)
   const safeName = escapeHtml(contact.name || '')
   const safeMessage = escapeHtml(replyMessage).replaceAll('\n', '<br>')
 
-  const { error: sendError } = await resend.emails.send({
-    from: 'Portfolio <info@antoinequarroz.ch>',
+  await sendAppEmail({
     to: contact.email,
     subject: safeSubject,
     html: `
@@ -56,11 +52,8 @@ export default defineEventHandler(async (event) => {
         <p style="margin-top:20px">Antoine Quarroz<br/>info@antoinequarroz.ch</p>
       </div>
     `,
+    idempotencyKey: `contact-reply-${id}-${Date.now()}`,
   })
-
-  if (sendError) {
-    throw createError({ statusCode: 500, message: sendError.message || 'Erreur envoi email' })
-  }
 
   await supabase
     .from('contact_messages')
