@@ -209,6 +209,7 @@ export default defineNuxtConfig({
     stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET || '',
     supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
     adminEmail: process.env.ADMIN_EMAIL || '',
+    hermesReadToken: process.env.HERMES_READ_TOKEN || '',
     public: {
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'https://www.antoinequarroz.ch',
       plausibleDomain: process.env.NUXT_PUBLIC_PLAUSIBLE_DOMAIN || 'antoinequarroz.ch',
