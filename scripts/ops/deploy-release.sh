@@ -69,8 +69,8 @@ install_next_ci_deploy_command() {
   fi
 }
 
-install_hermes_read_token_from_stdin() {
-  local token
+install_hermes_tokens_from_stdin() {
+  local read_token publish_token
 
   # The forced SSH command deliberately permits only the existing deployment
   # command. CI therefore supplies the runtime-only secret on stdin, never in
@@ -79,23 +79,28 @@ install_hermes_read_token_from_stdin() {
   if [[ -t 0 ]]; then
     return 0
   fi
-  IFS= read -r token || true
-  if [[ -z "$token" ]]; then
+  IFS= read -r read_token || true
+  IFS= read -r publish_token || true
+  if [[ -z "$read_token" && -z "$publish_token" ]]; then
     return 0
   fi
 
   (
-    local token_file
-    token_file="$(mktemp)"
-    trap 'rm -f -- "$token_file"' EXIT
-    chmod 600 "$token_file"
-    printf '%s' "$token" > "$token_file"
-    bash scripts/ops/install-hermes-read-token.sh "$PWD/.env" "$token_file"
+    local read_token_file publish_token_file
+    read_token_file="$(mktemp)"
+    publish_token_file="$(mktemp)"
+    trap 'rm -f -- "$read_token_file" "$publish_token_file"' EXIT
+    chmod 600 "$read_token_file" "$publish_token_file"
+    printf '%s' "$read_token" > "$read_token_file"
+    printf '%s' "$publish_token" > "$publish_token_file"
+    bash scripts/ops/install-hermes-read-token.sh "$PWD/.env" "$read_token_file"
+    bash scripts/ops/install-hermes-publish-token.sh "$PWD/.env" "$publish_token_file"
   )
-  token=''
+  read_token=''
+  publish_token=''
 }
 
-install_hermes_read_token_from_stdin
+install_hermes_tokens_from_stdin
 
 previous_image="$(docker inspect --format '{{.Image}}' "$container_name" 2>/dev/null || true)"
 if [[ -n "$previous_image" ]]; then
