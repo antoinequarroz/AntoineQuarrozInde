@@ -516,8 +516,8 @@ onBeforeUnmount(() => {
               class="absolute left-1/2 top-[54%] isolate h-[20.5rem] w-[16.2rem] rounded-[1.25rem] shadow-[0_28px_64px_-24px_rgba(76,29,149,0.26)] dark:shadow-[0_28px_64px_-24px_rgba(2,2,8,0.78)] [backface-visibility:hidden] xl:h-[22rem] xl:w-[17.5rem] xl:rounded-[1.4rem]"
             >
               <div data-helix-surface class="relative h-full w-full overflow-hidden rounded-[inherit] border border-violet-500/15 bg-white/95 dark:border-white/15 dark:bg-[#11111b]">
-                <div class="relative h-36 overflow-hidden bg-[#10101b] xl:h-44">
-                  <img v-if="project.image && shouldRenderDesktopImage(index)" data-helix-image :src="project.image" :alt="project.title" class="h-full w-full object-cover" loading="lazy" decoding="async">
+                <div data-helix-image class="relative h-36 overflow-hidden bg-[#10101b] xl:h-44">
+                  <img v-if="project.image && shouldRenderDesktopImage(index)" :src="project.image" :alt="project.title" class="h-full w-full object-cover" loading="lazy" decoding="async">
                   <div v-else class="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(139,92,246,0.42),transparent_36%),radial-gradient(circle_at_72%_72%,rgba(34,211,238,0.28),transparent_34%)]" />
                   <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
                   <span class="absolute left-4 top-4 rounded-full bg-black/45 px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-white">{{ categoryLabel(project.category) }}</span>
