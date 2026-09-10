@@ -28,6 +28,15 @@ test('authenticated admin can reach CRM, quotes and invoices', async ({ page }) 
   await expect(page.getByRole('button', { name: 'Pipeline' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Actions du jour' })).toBeVisible()
   await expect(page.getByRole('link', { name: 'Relances Lumail' })).toHaveAttribute('href', '/admin#relances-clients')
+  const reminderPreviewButtons = page.getByRole('button', { name: /Prévisualiser la relance Lumail/ })
+  if (await reminderPreviewButtons.count()) {
+    await reminderPreviewButtons.first().click()
+    const reminderDialog = page.getByRole('dialog', { name: 'Vérifier avant l’envoi' })
+    await expect(reminderDialog).toBeVisible()
+    await expect(reminderDialog.getByText(/Aucun message ne part sans ta confirmation/)).toBeVisible()
+    await reminderDialog.getByRole('button', { name: 'Annuler' }).click()
+    await expect(reminderDialog).toBeHidden()
+  }
 
   await page.goto('/admin/quotes')
   await expect(page.getByRole('heading', { name: 'Devis', exact: true })).toBeVisible()
