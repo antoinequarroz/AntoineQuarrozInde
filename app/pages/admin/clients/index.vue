@@ -240,7 +240,7 @@ async function saveCurrentView() {
     await loadViews()
     toast.success('Vue sauvegardée')
   } catch {
-    toast.error('Erreur sauvegarde vue')
+    toast.error('La vue n’a pas pu être sauvegardée. Vérifie son nom et réessaie.')
   }
 }
 
@@ -267,7 +267,7 @@ async function removeView(name: string) {
     })
     await loadViews()
   } catch {
-    toast.error('Erreur suppression vue')
+    toast.error('La vue n’a pas pu être supprimée. Recharge la page puis réessaie.')
   }
 }
 
@@ -280,7 +280,6 @@ async function loadClients() {
         mode: 'page',
         q: queryState.value.q || undefined,
         status: queryState.value.status === 'all' ? undefined : queryState.value.status,
-        hideLeads: '1',
         sort: queryState.value.sort,
         order: queryState.value.order,
         page: queryState.value.page,
@@ -327,7 +326,7 @@ async function handleSubmit() {
     showForm.value = false
     await loadClients()
   } catch {
-    toast.error('Erreur de sauvegarde')
+    toast.error('Le client n’a pas pu être enregistré. Vérifie les champs obligatoires et ta connexion.')
   } finally {
     savingClient.value = false
   }
@@ -340,7 +339,7 @@ async function handleDelete(id: number) {
     toast.success('Client supprimé')
     await loadClients()
   } catch {
-    toast.error('Erreur de suppression')
+    toast.error('Le client n’a pas pu être supprimé. Vérifie qu’aucun document ne bloque cette action.')
   }
 }
 
@@ -368,7 +367,7 @@ async function bulkSetStatus(status: Client['status']) {
     toast.success('Statut mis à jour')
     await loadClients()
   } catch {
-    toast.error('Erreur action en lot')
+    toast.error('Les statuts n’ont pas tous pu être modifiés. Recharge la liste avant de réessayer.')
   }
 }
 
@@ -381,7 +380,7 @@ async function bulkDelete() {
     toast.success('Clients supprimés')
     await loadClients()
   } catch {
-    toast.error('Erreur suppression en lot')
+    toast.error('La suppression groupée a échoué. Recharge la liste et vérifie les dossiers liés.')
   }
 }
 
@@ -394,6 +393,7 @@ function toggleSort(column: 'created_at' | 'name' | 'email' | 'status') {
 }
 
 const kanbanColumns = computed(() => ([
+  { key: 'lead' as const, label: 'Prospects', items: pageData.value.items.filter(client => client.status === 'lead') },
   { key: 'active' as const, label: 'Actifs', items: pageData.value.items.filter(client => client.status === 'active') },
   { key: 'inactive' as const, label: 'Inactifs', items: pageData.value.items.filter(client => client.status === 'inactive') },
 ]))
@@ -407,15 +407,29 @@ function startDrag(id: number) {
 async function moveClientToStatus(status: Client['status']) {
   const id = draggingClientId.value
   if (!id) return
+  const previousStatus = pageData.value.items.find(client => client.id === id)?.status
   try {
     await store.update(id, { status })
-    toast.success(`Client passé en ${status === 'active' ? 'actif' : 'inactif'}`)
     await loadClients()
+    toast.success(`Contact passé en ${status === 'lead' ? 'prospect' : status === 'active' ? 'client actif' : 'inactif'}`, previousStatus ? {
+      actionLabel: 'Annuler',
+      onAction: async () => {
+        await store.update(id, { status: previousStatus })
+        await loadClients()
+        toast.info('Déplacement annulé')
+      },
+    } : undefined)
   } catch {
-    toast.error('Erreur déplacement')
+    toast.error('Le contact n’a pas pu être déplacé. Réessaie après avoir vérifié ta connexion.')
   } finally {
     draggingClientId.value = null
   }
+}
+
+async function setClientStatus(client: Client, status: Client['status']) {
+  if (client.status === status) return
+  draggingClientId.value = client.id
+  await moveClientToStatus(status)
 }
 
 watch(() => route.fullPath, async () => {
@@ -451,6 +465,7 @@ onMounted(async () => {
         <input :value="queryState.q" aria-label="Rechercher un client" class="input-field" placeholder="Rechercher client, société, email..." @input="updateFilters({ q: ($event.target as HTMLInputElement).value })">
         <select :value="queryState.status" aria-label="Filtrer les clients par statut" class="input-field" @change="updateFilters({ status: ($event.target as HTMLSelectElement).value })">
           <option value="all">Tous statuts</option>
+          <option value="lead">Prospect</option>
           <option value="active">Actif</option>
           <option value="inactive">Inactif</option>
         </select>
@@ -614,7 +629,7 @@ onMounted(async () => {
             v-for="client in column.items"
             :key="`kanban-${client.id}`"
             draggable="true"
-            class="rounded-lg border border-gray-100 dark:border-white/[0.06] bg-gray-50/70 dark:bg-white/[0.03] p-2.5 cursor-move"
+            class="rounded-lg border border-gray-100 bg-gray-50/70 p-2.5 dark:border-white/[0.06] dark:bg-white/[0.03]"
             @dragstart="startDrag(client.id)"
           >
             <p class="text-sm font-medium">{{ client.name }}</p>
@@ -625,6 +640,13 @@ onMounted(async () => {
               <button class="text-xs text-violet-600" @click="openEdit(client)">Éditer</button>
               <button class="text-xs font-semibold text-cyan-700 dark:text-cyan-300" @click="openPortalAccess(client)">Accès portail</button>
             </div>
+            <label class="mt-3 block text-xs font-medium text-gray-500 dark:text-gray-400">Déplacer dans
+              <select :value="client.status" class="input-field mt-1" @change="setClientStatus(client, ($event.target as HTMLSelectElement).value as Client['status'])">
+                <option value="lead">Prospects</option>
+                <option value="active">Actifs</option>
+                <option value="inactive">Inactifs</option>
+              </select>
+            </label>
           </article>
           <p v-if="!column.items.length" class="text-xs text-gray-400 py-6 text-center">Aucun client</p>
         </div>
@@ -654,6 +676,7 @@ onMounted(async () => {
             <label class="space-y-1 text-xs font-medium text-gray-600 dark:text-gray-300">Téléphone<input v-model="form.phone" type="tel" class="input-field" autocomplete="tel"></label>
           </div>
           <label class="block space-y-1 text-xs font-medium text-gray-600 dark:text-gray-300">Statut<select v-model="form.status" class="input-field">
+            <option value="lead">Prospect</option>
             <option value="active">Actif</option>
             <option value="inactive">Inactif</option>
           </select></label>

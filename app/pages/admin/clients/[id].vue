@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { ContactMessage } from '~/types'
+import { CLIENT_WORKFLOW_STAGES, resolveClientWorkflow } from '~/utils/clientWorkflow'
 
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 
@@ -14,9 +15,14 @@ const appointmentsStore = useAppointmentsStore()
 const projectsStore = useProjectsStore()
 const auth = useAuthStore()
 const { statusLabel } = useBusinessLabels()
+const formatDate = (value: string | null | undefined, withTime = false) => value
+  ? new Intl.DateTimeFormat('fr-CH', withTime ? { dateStyle: 'medium', timeStyle: 'short' } : { dateStyle: 'medium' }).format(new Date(value.length === 10 ? `${value}T12:00:00` : value))
+  : 'Non définie'
 
 const auditLogs = ref<Array<{ id: number, action: string, entity_type: string, entity_id: string | null, payload: any, created_at: string }>>([])
 const relatedMessages = ref<ContactMessage[]>([])
+const loading = ref(true)
+const loadError = ref('')
 
 const client = computed(() => clientsStore.clients.find(c => c.id === clientId.value) || null)
 const clientTasks = computed(() => tasksStore.tasks.filter(t => t.clientId === clientId.value))
@@ -34,39 +40,12 @@ const nextAppointment = computed(() => {
     .filter(a => a.startsAt >= now && a.status === 'scheduled')
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt))[0] || null
 })
-const acceptedQuote = computed(() => clientQuotes.value.find(quote => quote.status === 'accepted') || null)
-const openInvoice = computed(() => clientInvoices.value.find(invoice => invoice.documentType === 'invoice' && invoice.status === 'overdue')
-  || clientInvoices.value.find(invoice => invoice.documentType === 'invoice' && (invoice.status === 'sent' || invoice.status === 'draft'))
-  || null)
-const allInvoicesPaid = computed(() => clientInvoices.value.length > 0 && clientInvoices.value.every(invoice => invoice.status === 'paid'))
-const pipelineIndex = computed(() => {
-  if (client.value?.status === 'lead' && !clientQuotes.value.length) return 0
-  if (!acceptedQuote.value) return 1
-  if (!clientProjects.value.length) return 2
-  if (!clientInvoices.value.length) return 3
-  if (!allInvoicesPaid.value) return 4
-  return 5
-})
-const pipelineStages = computed(() => [
-  { label: 'Prospect', done: pipelineIndex.value > 0 },
-  { label: 'Devis', done: pipelineIndex.value > 1 },
-  { label: 'Projet', done: pipelineIndex.value > 2 },
-  { label: 'Facture', done: pipelineIndex.value > 3 },
-  { label: 'Payé', done: pipelineIndex.value > 4 },
-])
-const nextAction = computed(() => {
-  if (!client.value) return null
-  if (!clientQuotes.value.length) return { label: 'Créer et cadrer le premier devis', to: `/admin/quotes?new=1&clientId=${client.value.id}` }
-  const draft = clientQuotes.value.find(quote => quote.status === 'draft')
-  if (draft) return { label: `Finaliser et envoyer le devis ${draft.number}`, to: '/admin/quotes' }
-  const sent = clientQuotes.value.find(quote => quote.status === 'sent')
-  if (sent && !acceptedQuote.value) return { label: `Relancer le devis ${sent.number}`, to: '/admin/quotes' }
-  if (acceptedQuote.value && !clientProjects.value.length) return { label: 'Créer le projet accepté', to: `/admin/projects?new=1&clientId=${client.value.id}` }
-  if (clientProjects.value.length && !clientInvoices.value.length) return { label: 'Émettre la première facture', to: `/admin/invoices?new=1&clientId=${client.value.id}` }
-  if (openInvoice.value?.status === 'overdue') return { label: `Relancer la facture ${openInvoice.value.number}`, to: '/admin/invoices' }
-  if (openInvoice.value) return { label: `Suivre le règlement de ${openInvoice.value.number}`, to: '/admin/invoices' }
-  return { label: 'Planifier le suivi client', to: `/admin/appointments?new=1&clientId=${client.value.id}` }
-})
+const clientWorkflow = computed(() => client.value
+  ? resolveClientWorkflow({ client: client.value, projects: clientProjects.value, quotes: clientQuotes.value, invoices: clientInvoices.value, tasks: clientTasks.value })
+  : null)
+const pipelineIndex = computed(() => clientWorkflow.value?.stageIndex ?? 0)
+const pipelineStages = computed(() => CLIENT_WORKFLOW_STAGES.map((stage, index) => ({ ...stage, done: index < pipelineIndex.value })))
+const nextAction = computed(() => clientWorkflow.value ? { label: clientWorkflow.value.action, to: clientWorkflow.value.to } : null)
 const nextDeadline = computed(() => {
   const values = [
     ...clientTasks.value.filter(task => task.status !== 'done' && task.dueDate).map(task => ({ date: task.dueDate!, label: task.title })),
@@ -77,17 +56,26 @@ const nextDeadline = computed(() => {
 })
 
 const timeline = computed(() => {
+  const actionLabels: Record<string, string> = {
+    create: 'Création',
+    update: 'Mise à jour',
+    delete: 'Suppression',
+    sent: 'Envoi',
+    payment_created: 'Paiement enregistré',
+    payment_voided: 'Paiement annulé',
+  }
+  const entityLabels: Record<string, string> = { client: 'Client', project: 'Projet', quote: 'Devis', invoice: 'Facture', task: 'Tâche' }
   const auditEvents = auditLogs.value.map((log) => {
     const payload = log.payload || {}
     const title = payload.title || payload.name || payload.number || `${log.entity_type} ${log.entity_id || ''}`.trim()
-    const status = payload.status ? ` (${payload.status})` : ''
+    const status = payload.status ? ` · ${statusLabel(payload.status)}` : ''
     const meta = payload.amount_cents != null
       ? `${(Number(payload.amount_cents) / 100).toFixed(2)} CHF`
       : (payload.email || payload.priority || '')
 
     return {
       key: `audit-${log.id}`,
-      title: `${log.action} · ${title}${status}`,
+      title: `${actionLabels[log.action] || 'Activité'} · ${entityLabels[log.entity_type] || 'Dossier'} ${title}${status}`,
       meta,
       date: log.created_at?.slice(0, 19).replace('T', ' ') || '',
       sortDate: log.created_at || '',
@@ -96,8 +84,8 @@ const timeline = computed(() => {
 
   const messageEvents = relatedMessages.value.map(message => ({
     key: `message-${message.id}`,
-    title: `message_contact · ${message.subject || 'Nouveau message'}`,
-    meta: `${message.name} (${message.status})`,
+    title: `Message reçu · ${message.subject || 'Nouveau message'}`,
+    meta: `${message.name} · ${statusLabel(message.status)}`,
     date: message.createdAt?.slice(0, 19).replace('T', ' ') || '',
     sortDate: message.createdAt || '',
   }))
@@ -106,32 +94,25 @@ const timeline = computed(() => {
 })
 
 onMounted(async () => {
-  await Promise.all([
-    clientsStore.ensureLoaded(),
-    tasksStore.ensureLoaded(),
-    quotesStore.ensureLoaded(),
-    invoicesStore.ensureLoaded(),
-    appointmentsStore.ensureLoaded(),
-    projectsStore.ensureLoaded(),
-  ])
-
-  auditLogs.value = await $fetch('/api/audit', {
-    query: { clientId: clientId.value, limit: 80 },
-    headers: auth.authHeader(),
-  })
-
-  if (client.value?.email) {
-    relatedMessages.value = await $fetch('/api/messages', {
-      query: { email: client.value.email },
-      headers: auth.authHeader(),
-    })
+  try {
+    await Promise.all([
+      clientsStore.ensureLoaded(), tasksStore.ensureLoaded(), quotesStore.ensureLoaded(), invoicesStore.ensureLoaded(), appointmentsStore.ensureLoaded(), projectsStore.ensureLoaded(),
+    ])
+    auditLogs.value = await $fetch('/api/audit', { query: { clientId: clientId.value, limit: 80 }, headers: auth.authHeader() })
+    if (client.value?.email) relatedMessages.value = await $fetch('/api/messages', { query: { email: client.value.email }, headers: auth.authHeader() })
+  } catch {
+    loadError.value = 'La fiche client ne peut pas être chargée. Vérifie ta connexion, puis réessaie.'
+  } finally {
+    loading.value = false
   }
 })
 </script>
 
 <template>
   <div class="space-y-6 admin-main-safe">
-    <div v-if="client" class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4 min-w-0">
+    <div v-if="loading" role="status" aria-live="polite" class="grid min-h-56 place-items-center rounded-xl border border-gray-200 bg-white dark:border-white/10 dark:bg-[#111118]"><div class="text-center"><div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-violet-200 border-t-violet-600" /><p class="mt-3 text-sm text-gray-500">Chargement de la fiche client…</p></div></div>
+    <div v-else-if="loadError" role="alert" class="rounded-xl border border-red-200 bg-red-50 p-5 text-red-900 dark:border-red-400/20 dark:bg-red-400/10 dark:text-red-100"><p class="font-semibold">Fiche indisponible</p><p class="mt-1 text-sm">{{ loadError }}</p><NuxtLink to="/admin/clients" class="mt-4 inline-flex min-h-11 items-center rounded-lg bg-red-700 px-4 text-sm font-semibold text-white">Retour aux clients</NuxtLink></div>
+    <div v-else-if="client" class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4 min-w-0">
       <div class="min-w-0">
         <NuxtLink to="/admin/clients" class="text-xs text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">← Retour clients</NuxtLink>
         <h1 class="font-display font-semibold text-2xl text-gray-900 dark:text-white mt-1">{{ client.name }}</h1>
@@ -144,20 +125,22 @@ onMounted(async () => {
       </div>
       <div class="grid grid-cols-1 sm:flex items-stretch sm:items-center gap-2 w-full sm:w-auto">
         <NuxtLink :to="`/admin/quotes?new=1&clientId=${client.id}`" class="px-3 py-2 rounded-lg bg-violet-600 text-white text-xs font-semibold text-center">Nouveau devis</NuxtLink>
+        <NuxtLink :to="`/admin/tasks?new=1&clientId=${client.id}`" class="inline-flex min-h-11 items-center justify-center rounded-lg border border-violet-200 px-3 py-2 text-center text-xs font-semibold text-violet-700 dark:border-violet-500/30 dark:text-violet-200">Nouvelle tâche</NuxtLink>
         <NuxtLink :to="`/admin/invoices?new=1&clientId=${client.id}`" class="inline-flex min-h-11 items-center justify-center rounded-lg bg-sky-700 px-3 py-2 text-center text-xs font-semibold text-white">Nouvelle facture</NuxtLink>
         <NuxtLink :to="`/admin/appointments?new=1&clientId=${client.id}`" class="inline-flex min-h-11 items-center justify-center rounded-lg bg-emerald-700 px-3 py-2 text-center text-xs font-semibold text-white">Nouveau RDV</NuxtLink>
       </div>
     </div>
 
-    <div v-if="!client" class="rounded-xl border border-gray-200 dark:border-white/10 p-6 text-sm text-gray-500">
+    <div v-if="!loading && !loadError && !client" class="rounded-xl border border-gray-200 dark:border-white/10 p-6 text-sm text-gray-500">
       Client introuvable.
     </div>
 
-    <template v-else>
+    <template v-if="!loading && !loadError && client">
       <section class="rounded-xl border border-gray-100 bg-white p-4 dark:border-white/10 dark:bg-[#111118]">
         <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
           <div class="min-w-0 flex-1">
             <p class="text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Parcours client</p>
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Progression calculée depuis les devis, projets, factures et paiements liés.</p>
             <ol class="mt-3 grid grid-cols-5 gap-1.5" aria-label="Progression du client">
               <li v-for="(stage, index) in pipelineStages" :key="stage.label" class="min-w-0">
                 <div class="h-1.5 rounded-full" :class="stage.done ? 'bg-violet-600' : index === pipelineIndex ? 'bg-cyan-400' : 'bg-gray-200 dark:bg-white/10'" />
@@ -167,7 +150,7 @@ onMounted(async () => {
           </div>
           <div class="grid gap-2 sm:grid-cols-2 xl:w-[430px]">
             <div class="rounded-lg bg-violet-50 p-3 dark:bg-violet-500/10"><p class="text-xs text-violet-600 dark:text-violet-300">Prochaine action</p><NuxtLink v-if="nextAction" :to="nextAction.to" class="mt-1 block text-sm font-semibold text-violet-950 hover:text-violet-700 dark:text-violet-100 dark:hover:text-violet-300">{{ nextAction.label }} →</NuxtLink></div>
-            <div class="rounded-lg bg-gray-50 p-3 dark:bg-white/[0.04]"><p class="text-xs text-gray-600 dark:text-gray-300">Prochaine échéance</p><p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">{{ nextDeadline ? nextDeadline.date : 'Aucune' }}</p><p v-if="nextDeadline" class="truncate text-xs text-gray-500">{{ nextDeadline.label }}</p></div>
+            <div class="rounded-lg bg-gray-50 p-3 dark:bg-white/[0.04]"><p class="text-xs text-gray-600 dark:text-gray-300">Prochaine échéance</p><p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">{{ nextDeadline ? formatDate(nextDeadline.date) : 'Aucune' }}</p><p v-if="nextDeadline" class="truncate text-xs text-gray-500">{{ nextDeadline.label }}</p></div>
           </div>
         </div>
       </section>
@@ -191,7 +174,7 @@ onMounted(async () => {
         <div class="rounded-xl border border-gray-100 dark:border-white/10 bg-white dark:bg-[#111118] p-4">
           <p class="text-xs uppercase text-gray-600 dark:text-gray-300">Prochain RDV</p>
           <p class="font-display font-bold text-sm mt-2 text-gray-800 dark:text-gray-100">
-            {{ nextAppointment ? new Date(nextAppointment.startsAt).toLocaleString('fr-CH') : 'Aucun' }}
+            {{ nextAppointment ? formatDate(nextAppointment.startsAt, true) : 'Aucun' }}
           </p>
         </div>
       </div>
@@ -200,19 +183,17 @@ onMounted(async () => {
         <div class="rounded-xl border border-gray-100 dark:border-white/10 bg-white dark:bg-[#111118] p-4">
           <h2 class="text-sm font-semibold mb-3">Projets liés</h2>
           <div v-if="clientProjects.length" class="space-y-2">
-            <div v-for="project in clientProjects.slice(0, 5)" :key="project.id" class="flex items-center justify-between gap-3 text-sm min-w-0">
-              <span class="truncate">{{ project.title }}</span><span class="text-xs uppercase text-gray-600 dark:text-gray-300">{{ project.category }}</span>
-            </div>
+            <NuxtLink v-for="project in clientProjects.slice(0, 5)" :key="project.id" :to="`/admin/projects/${project.id}`" class="flex min-h-11 items-center justify-between gap-3 rounded-lg px-2 text-sm transition hover:bg-violet-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:hover:bg-violet-500/10"><span class="truncate font-medium">{{ project.title }}</span><span class="text-xs uppercase text-gray-600 dark:text-gray-300">{{ project.category }}</span></NuxtLink>
           </div>
           <NuxtLink v-else :to="`/admin/projects?new=1&clientId=${client.id}`" class="text-xs font-semibold text-violet-600">Créer le premier projet</NuxtLink>
         </div>
         <div class="rounded-xl border border-gray-100 dark:border-white/10 bg-white dark:bg-[#111118] p-4">
           <h2 class="text-sm font-semibold mb-3">Devis récents</h2>
           <div v-if="clientQuotes.length" class="space-y-2">
-            <div v-for="q in clientQuotes.slice(0, 5)" :key="q.id" class="flex items-center justify-between gap-3 text-sm min-w-0">
+            <NuxtLink v-for="q in clientQuotes.slice(0, 5)" :key="q.id" :to="`/admin/quotes?quoteId=${q.id}&clientId=${client.id}`" class="flex min-h-11 items-center justify-between gap-3 rounded-lg px-2 text-sm transition hover:bg-violet-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:hover:bg-violet-500/10">
               <span class="truncate">{{ q.number }} · {{ q.title }}</span>
               <span class="whitespace-nowrap text-gray-600 dark:text-gray-300">{{ (q.amountCents / 100).toFixed(2) }} {{ q.currency }}</span>
-            </div>
+            </NuxtLink>
           </div>
           <p v-else class="text-xs text-gray-600 dark:text-gray-300">Aucun devis</p>
         </div>
@@ -220,10 +201,10 @@ onMounted(async () => {
         <div class="rounded-xl border border-gray-100 dark:border-white/10 bg-white dark:bg-[#111118] p-4">
           <h2 class="text-sm font-semibold mb-3">Factures récentes</h2>
           <div v-if="clientInvoices.length" class="space-y-2">
-            <div v-for="i in clientInvoices.slice(0, 5)" :key="i.id" class="flex items-center justify-between gap-3 text-sm min-w-0">
+            <NuxtLink v-for="i in clientInvoices.slice(0, 5)" :key="i.id" :to="`/admin/invoices?invoiceId=${i.id}&clientId=${client.id}`" class="flex min-h-11 items-center justify-between gap-3 rounded-lg px-2 text-sm transition hover:bg-violet-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:hover:bg-violet-500/10">
               <span class="truncate">{{ i.number }} · {{ statusLabel(i.status) }}</span>
               <span class="whitespace-nowrap text-gray-600 dark:text-gray-300">{{ (i.amountCents / 100).toFixed(2) }} {{ i.currency }}</span>
-            </div>
+            </NuxtLink>
           </div>
           <p v-else class="text-xs text-gray-600 dark:text-gray-300">Aucune facture</p>
         </div>
@@ -231,10 +212,10 @@ onMounted(async () => {
         <div class="rounded-xl border border-gray-100 dark:border-white/10 bg-white dark:bg-[#111118] p-4">
           <h2 class="text-sm font-semibold mb-3">Tâches</h2>
           <div v-if="clientTasks.length" class="space-y-2">
-            <div v-for="t in clientTasks.slice(0, 6)" :key="t.id" class="flex items-center justify-between gap-3 text-sm min-w-0">
+            <NuxtLink v-for="t in clientTasks.slice(0, 6)" :key="t.id" :to="`/admin/tasks?taskId=${t.id}&clientId=${client.id}`" class="flex min-h-11 items-center justify-between gap-3 rounded-lg px-2 text-sm transition hover:bg-violet-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:hover:bg-violet-500/10">
               <span class="truncate">{{ t.title }}</span>
               <span class="whitespace-nowrap text-gray-600 dark:text-gray-300">{{ statusLabel(t.status) }}</span>
-            </div>
+            </NuxtLink>
           </div>
           <p v-else class="text-xs text-gray-600 dark:text-gray-300">Aucune tâche</p>
         </div>
@@ -244,7 +225,7 @@ onMounted(async () => {
           <div v-if="clientAppointments.length" class="space-y-2">
             <div v-for="a in clientAppointments.slice(0, 6)" :key="a.id" class="flex items-center justify-between gap-3 text-sm min-w-0">
               <span class="truncate">{{ a.title }}</span>
-              <span class="whitespace-nowrap text-gray-600 dark:text-gray-300">{{ new Date(a.startsAt).toLocaleDateString('fr-CH') }}</span>
+              <span class="whitespace-nowrap text-gray-600 dark:text-gray-300">{{ formatDate(a.startsAt) }}</span>
             </div>
           </div>
           <p v-else class="text-xs text-gray-600 dark:text-gray-300">Aucun rendez-vous</p>
@@ -259,7 +240,7 @@ onMounted(async () => {
               <p class="text-sm text-gray-800 dark:text-gray-100 truncate">{{ message.subject || 'Nouveau message' }}</p>
               <p class="admin-text-wrap text-xs text-gray-600 dark:text-gray-300">{{ message.message }}</p>
             </div>
-            <span class="whitespace-nowrap text-xs text-gray-600 dark:text-gray-300">{{ message.createdAt?.slice(0, 10) }}</span>
+            <span class="whitespace-nowrap text-xs text-gray-600 dark:text-gray-300">{{ formatDate(message.createdAt) }}</span>
           </div>
         </div>
         <p v-else class="text-xs text-gray-600 dark:text-gray-300">Aucun message lié pour cet email</p>
@@ -273,7 +254,7 @@ onMounted(async () => {
               <p class="text-sm text-gray-800 dark:text-gray-100 truncate">{{ event.title }}</p>
               <p class="admin-text-wrap text-xs text-gray-600 dark:text-gray-300">{{ event.meta }}</p>
             </div>
-            <span class="whitespace-nowrap text-xs text-gray-600 dark:text-gray-300">{{ event.date }}</span>
+            <span class="whitespace-nowrap text-xs text-gray-600 dark:text-gray-300">{{ formatDate(event.sortDate, true) }}</span>
           </div>
         </div>
         <p v-else class="text-xs text-gray-600 dark:text-gray-300">Aucune activité pour ce client</p>

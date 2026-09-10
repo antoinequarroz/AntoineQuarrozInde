@@ -4,6 +4,8 @@ import type { Task } from '~/types'
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 
 const store = useTasksStore()
+const clientsStore = useClientsStore()
+const projectsStore = useProjectsStore()
 const toast = useToast()
 const { statusLabel } = useBusinessLabels()
 const route = useRoute()
@@ -16,16 +18,30 @@ const isOffline = ref(false)
 const loadError = ref('')
 const submitting = ref(false)
 let onlineStateHandler: (() => void) | null = null
+const formatDate = (value: string | null) => value ? new Intl.DateTimeFormat('fr-CH', { dateStyle: 'medium' }).format(new Date(`${value}T12:00:00`)) : 'Non définie'
 const form = reactive({
   title: '',
   description: '',
   status: 'todo' as Task['status'],
   priority: 'medium' as Task['priority'],
   dueDate: '',
+  clientId: null as number | null,
+  projectId: null as number | null,
+})
+
+const availableProjects = computed(() => form.clientId
+  ? projectsStore.projects.filter(project => !project.clientId || project.clientId === form.clientId)
+  : projectsStore.projects)
+
+const clientsById = computed(() => new Map(clientsStore.clients.map(client => [client.id, client])))
+const projectsById = computed(() => new Map(projectsStore.projects.map(project => [project.id, project])))
+
+watch(() => form.clientId, () => {
+  if (form.projectId && !availableProjects.value.some(project => project.id === form.projectId)) form.projectId = null
 })
 
 function resetForm() {
-  Object.assign(form, { title: '', description: '', status: 'todo', priority: 'medium', dueDate: '' })
+  Object.assign(form, { title: '', description: '', status: 'todo', priority: 'medium', dueDate: '', clientId: null, projectId: null })
 }
 
 function openNew() {
@@ -42,6 +58,8 @@ function openEdit(task: Task) {
     status: task.status,
     priority: task.priority,
     dueDate: task.dueDate || '',
+    clientId: task.clientId,
+    projectId: task.projectId,
   })
   showForm.value = true
 }
@@ -53,8 +71,8 @@ async function handleSubmit() {
     status: form.status,
     priority: form.priority,
     dueDate: form.dueDate || null,
-    clientId: null,
-    projectId: null,
+    clientId: form.clientId,
+    projectId: form.projectId,
   }
   submitting.value = true
   try {
@@ -95,9 +113,17 @@ async function loadTasks(force = false) {
 }
 
 onMounted(async () => {
-  await loadTasks()
+  await Promise.all([loadTasks(), clientsStore.ensureLoaded(), projectsStore.ensureLoaded()])
   if (route.query.new === '1') {
     openNew()
+    const projectId = Number(route.query.projectId || 0)
+    const clientId = Number(route.query.clientId || 0)
+    if (clientId) form.clientId = clientId
+    if (projectId) {
+      form.projectId = projectId
+      const project = projectsStore.projects.find(item => item.id === projectId)
+      if (project?.clientId) form.clientId = project.clientId
+    }
     return
   }
   const taskId = Number(route.query.taskId || 0)
@@ -158,10 +184,10 @@ onBeforeUnmount(() => {
     <div v-if="!store.loading && !loadError && store.tasks.length" class="space-y-2 sm:hidden">
       <article v-for="task in store.tasks" :key="`mobile-${task.id}`" class="rounded-xl border border-gray-200 bg-white p-4 dark:border-white/[0.08] dark:bg-[#111118]">
         <div class="flex items-start justify-between gap-3">
-          <div class="min-w-0"><h2 class="font-semibold text-gray-900 dark:text-white">{{ task.title }}</h2><p v-if="task.description" class="mt-1 line-clamp-2 text-sm text-gray-500 dark:text-gray-400">{{ task.description }}</p></div>
+          <div class="min-w-0"><h2 class="font-semibold text-gray-900 dark:text-white">{{ task.title }}</h2><p v-if="task.description" class="mt-1 line-clamp-2 text-sm text-gray-500 dark:text-gray-400">{{ task.description }}</p><p v-if="task.clientId || task.projectId" class="mt-1 truncate text-xs font-medium text-violet-700 dark:text-violet-300">{{ task.projectId ? projectsById.get(task.projectId)?.title : clientsById.get(task.clientId!)?.name }}</p></div>
           <span class="shrink-0 rounded-md px-2 py-1 text-xs font-semibold" :class="task.status === 'done' ? 'bg-green-50 text-green-700 dark:bg-green-500/10 dark:text-green-300' : task.status === 'in_progress' ? 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300' : 'bg-amber-50 text-amber-800 dark:bg-amber-500/10 dark:text-amber-200'">{{ statusLabel(task.status) }}</span>
         </div>
-        <dl class="mt-3 grid grid-cols-2 gap-3 text-xs"><div><dt class="text-gray-400">Priorité</dt><dd class="mt-1 font-medium text-gray-700 dark:text-gray-200">{{ task.priority === 'high' ? 'Haute' : task.priority === 'low' ? 'Basse' : 'Moyenne' }}</dd></div><div><dt class="text-gray-400">Échéance</dt><dd class="mt-1 font-medium text-gray-700 dark:text-gray-200">{{ task.dueDate || 'Non définie' }}</dd></div></dl>
+        <dl class="mt-3 grid grid-cols-2 gap-3 text-xs"><div><dt class="text-gray-400">Priorité</dt><dd class="mt-1 font-medium text-gray-700 dark:text-gray-200">{{ task.priority === 'high' ? 'Haute' : task.priority === 'low' ? 'Basse' : 'Moyenne' }}</dd></div><div><dt class="text-gray-400">Échéance</dt><dd class="mt-1 font-medium text-gray-700 dark:text-gray-200">{{ formatDate(task.dueDate) }}</dd></div></dl>
         <div class="mt-3 flex gap-2 border-t border-gray-100 pt-3 dark:border-white/[0.06]"><button type="button" class="min-h-11 flex-1 rounded-lg text-sm font-semibold text-violet-700 hover:bg-violet-50 dark:text-violet-300 dark:hover:bg-violet-500/10" @click="openEdit(task)">Modifier</button><button type="button" class="min-h-11 flex-1 rounded-lg text-sm font-semibold text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10" @click="handleDelete(task.id)">Supprimer</button></div>
       </article>
     </div>
@@ -182,6 +208,7 @@ onBeforeUnmount(() => {
             <td class="px-5 py-3">
               <p class="text-sm font-medium text-gray-800 dark:text-gray-200">{{ task.title }}</p>
               <p class="text-xs text-gray-400 line-clamp-1">{{ task.description || '-' }}</p>
+              <p v-if="task.clientId || task.projectId" class="mt-0.5 truncate text-xs font-medium text-violet-700 dark:text-violet-300">{{ task.projectId ? projectsById.get(task.projectId)?.title : clientsById.get(task.clientId!)?.name }}</p>
             </td>
             <td class="px-5 py-3">
               <span class="text-xs px-2 py-1 rounded-md"
@@ -190,7 +217,7 @@ onBeforeUnmount(() => {
               </span>
             </td>
             <td class="px-5 py-3 hidden sm:table-cell text-xs text-gray-500">{{ task.priority === 'high' ? 'Haute' : task.priority === 'low' ? 'Basse' : 'Moyenne' }}</td>
-            <td class="px-5 py-3 hidden sm:table-cell text-xs text-gray-500">{{ task.dueDate || 'Non définie' }}</td>
+            <td class="px-5 py-3 hidden sm:table-cell text-xs text-gray-500">{{ formatDate(task.dueDate) }}</td>
             <td class="px-5 py-3 text-right">
               <div class="flex justify-end gap-1"><button class="min-h-11 rounded-lg px-3 text-xs font-semibold text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-500/10" @click="openEdit(task)">Modifier</button><button class="min-h-11 rounded-lg px-3 text-xs font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10" @click="handleDelete(task.id)">Supprimer</button></div>
             </td>
@@ -206,6 +233,11 @@ onBeforeUnmount(() => {
           <h2 id="task-form-title" class="font-display text-lg font-semibold text-gray-900 dark:text-white">{{ editing ? 'Modifier la tâche' : 'Nouvelle tâche' }}</h2>
           <div><label for="task-title" class="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">Titre *</label><input id="task-title" v-model="form.title" class="input-field" placeholder="Ex. Préparer la maquette" required></div>
           <div><label for="task-description" class="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">Description</label><textarea id="task-description" v-model="form.description" rows="3" class="input-field" placeholder="Contexte ou résultat attendu" /></div>
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div><label for="task-client" class="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">Client</label><select id="task-client" v-model.number="form.clientId" class="input-field"><option :value="null">Aucun client</option><option v-for="client in clientsStore.clients" :key="client.id" :value="client.id">{{ client.name }}</option></select></div>
+            <div><label for="task-project" class="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">Projet</label><select id="task-project" v-model.number="form.projectId" class="input-field"><option :value="null">Aucun projet</option><option v-for="project in availableProjects" :key="project.id" :value="project.id">{{ project.title }}</option></select></div>
+          </div>
+          <p v-if="form.clientId || form.projectId" class="rounded-lg bg-violet-50 px-3 py-2 text-xs text-violet-900 dark:bg-violet-500/10 dark:text-violet-100">Cette tâche apparaîtra dans le suivi de {{ form.projectId ? projectsById.get(form.projectId)?.title : clientsById.get(form.clientId!)?.name }}.</p>
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div><label for="task-status" class="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">Statut</label><select id="task-status" v-model="form.status" class="input-field">
               <option value="todo">{{ statusLabel('todo') }}</option>
