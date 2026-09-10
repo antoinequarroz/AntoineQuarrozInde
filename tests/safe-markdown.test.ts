@@ -63,6 +63,29 @@ describe('safe Markdown renderer', () => {
     expect(html).toContain('<li>Premier point</li>')
     expect(html).not.toContain('- Premier point')
   })
+
+  it('renders internal and HTTPS Markdown links as safe anchors', () => {
+    const html = renderSafeMarkdown([
+      '[Présenter mon projet](/creation-site-internet-valais)',
+      '[Source officielle](https://www.edoeb.admin.ch/fr/les-basiques)',
+    ].join('\n'))
+
+    expect(html).toContain('href="/creation-site-internet-valais"')
+    expect(html).toContain('>Présenter mon projet</a>')
+    expect(html).toContain('href="https://www.edoeb.admin.ch/fr/les-basiques"')
+    expect(html).toContain('target="_blank" rel="noopener noreferrer"')
+  })
+
+  it.each([
+    '[Piège](javascript:alert(1))',
+    '[Piège](data:text/html,bad)',
+    '[Piège](//evil.test/path)',
+  ])('does not turn an unsafe Markdown URL into an anchor: %s', (markdown) => {
+    const html = renderSafeMarkdown(markdown)
+
+    expect(html).not.toContain('<a ')
+    expect(html).toContain('Piège')
+  })
 })
 
 describe('CRM printable documents', () => {
