@@ -13,6 +13,7 @@ const MARKDOWN_CLASSES = {
     tableHeader: 'border-b border-gray-200 px-4 py-3 font-semibold dark:border-white/10',
     tableCell: 'border-b border-gray-100 px-4 py-3 align-top text-gray-600 last:border-b-0 dark:border-white/5 dark:text-gray-300',
     strong: 'font-semibold text-gray-900 dark:text-white',
+    link: 'font-medium text-violet-600 underline decoration-violet-300 underline-offset-4 transition-colors hover:text-violet-700 dark:text-violet-400 dark:decoration-violet-500/60 dark:hover:text-violet-300',
     code: 'px-1.5 py-0.5 rounded bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400 text-sm font-mono',
   },
   compact: {
@@ -27,6 +28,7 @@ const MARKDOWN_CLASSES = {
     tableHeader: 'border-b border-gray-200 px-3 py-2 font-semibold dark:border-white/10',
     tableCell: 'border-b border-gray-100 px-3 py-2 align-top text-gray-600 last:border-b-0 dark:border-white/5 dark:text-gray-300',
     strong: 'font-semibold text-gray-900 dark:text-white',
+    link: 'font-medium text-violet-600 underline decoration-violet-300 underline-offset-4 hover:text-violet-700 dark:text-violet-400 dark:decoration-violet-500/60',
     code: 'px-1 py-0.5 rounded bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400 text-xs font-mono',
   },
 } as const
@@ -43,7 +45,7 @@ export function escapeHtml(value: string): string {
 
 function renderInlineMarkdown(value: string, variant: MarkdownVariant): string {
   const classes = MARKDOWN_CLASSES[variant]
-  const tokens = /(`[^`\n]+`|\*\*[^*\n]+\*\*|\*[^*\n]+\*)/g
+  const tokens = /(\[[^\]\n]+\]\([^\s)\n]+\)|`[^`\n]+`|\*\*[^*\n]+\*\*|\*[^*\n]+\*)/g
   let cursor = 0
   let html = ''
 
@@ -52,7 +54,31 @@ function renderInlineMarkdown(value: string, variant: MarkdownVariant): string {
     const token = match[0]
     html += escapeHtml(value.slice(cursor, index))
 
-    if (token.startsWith('`')) {
+    if (token.startsWith('[')) {
+      const separator = token.indexOf('](')
+      const label = token.slice(1, separator)
+      const url = token.slice(separator + 2, -1)
+      const isInternal = /^\/(?!\/)/.test(url)
+      let isSafe = isInternal
+
+      if (!isInternal) {
+        try {
+          isSafe = new URL(url).protocol === 'https:'
+        }
+        catch {
+          isSafe = false
+        }
+      }
+
+      if (isSafe) {
+        const externalAttributes = isInternal ? '' : ' target="_blank" rel="noopener noreferrer"'
+        html += `<a class="${classes.link}" href="${escapeHtml(url)}"${externalAttributes}>${escapeHtml(label)}</a>`
+      }
+      else {
+        html += escapeHtml(token)
+      }
+    }
+    else if (token.startsWith('`')) {
       html += `<code class="${classes.code}">${escapeHtml(token.slice(1, -1))}</code>`
     }
     else if (token.startsWith('**')) {
@@ -82,9 +108,9 @@ function isTableSeparator(line: string, expectedColumns: number): boolean {
  * Render the small Markdown subset supported by the article editor.
  *
  * User text is escaped before it reaches any generated HTML element. Raw HTML,
- * event handlers and URL-bearing Markdown are deliberately unsupported, which
- * keeps the result safe for SSR and Vue's `v-html` sink without a browser-only
- * sanitizer.
+ * event handlers and unsafe URL schemes are deliberately unsupported. Links
+ * are restricted to root-relative paths and HTTPS, keeping the result safe for
+ * SSR and Vue's `v-html` sink without a browser-only sanitizer.
  */
 export function renderSafeMarkdown(markdown: string, variant: MarkdownVariant = 'public'): string {
   if (!markdown.trim()) return ''
