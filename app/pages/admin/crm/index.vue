@@ -2,6 +2,8 @@
 import type { Client } from '~/types'
 import AdminAdminIcon from '~/components/admin/AdminIcon.vue'
 import AdminAdminEmptyState from '~/components/admin/AdminEmptyState.vue'
+import AdminViewSkeleton from '~/components/admin/AdminViewSkeleton.vue'
+import { CLIENT_WORKFLOW_STAGES, resolveClientWorkflow } from '~/utils/clientWorkflow'
 
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 
@@ -120,68 +122,17 @@ const stats = computed(() => {
   return { total, leads, active, conversion }
 })
 
-const PIPELINE_STAGES = [
-  { id: 'lead', label: 'Prospects', tone: 'bg-amber-500' },
-  { id: 'client', label: 'Clients', tone: 'bg-cyan-500' },
-  { id: 'project', label: 'Projets', tone: 'bg-violet-500' },
-  { id: 'quote', label: 'Devis', tone: 'bg-fuchsia-500' },
-  { id: 'invoice', label: 'Factures', tone: 'bg-sky-500' },
-  { id: 'paid', label: 'Payés', tone: 'bg-emerald-500' },
-] as const
-
-type PipelineStage = typeof PIPELINE_STAGES[number]['id']
-
 const pipelineClients = computed(() => {
-  const now = new Date().toISOString().slice(0, 10)
   return store.clients.map((client) => {
     const projects = projectsStore.projects.filter(project => project.clientId === client.id)
     const quotes = quotesStore.quotes.filter(quote => quote.clientId === client.id)
     const invoices = invoicesStore.invoices.filter(invoice => invoice.clientId === client.id)
-    const tasks = tasksStore.tasks
-      .filter(task => task.clientId === client.id && task.status !== 'done')
-      .sort((a, b) => String(a.dueDate || '9999').localeCompare(String(b.dueDate || '9999')))
-    const openInvoice = invoices.find(invoice => invoice.status === 'overdue')
-      || invoices.find(invoice => invoice.status === 'sent')
-      || invoices.find(invoice => invoice.status === 'draft')
-    const paidInvoice = invoices.find(invoice => invoice.status === 'paid')
-    const activeQuote = quotes.find(quote => quote.status === 'sent')
-      || quotes.find(quote => quote.status === 'accepted')
-      || quotes.find(quote => quote.status === 'draft')
-
-    let stage: PipelineStage = client.status === 'lead' ? 'lead' : 'client'
-    let action = client.status === 'lead' ? 'Qualifier le besoin' : 'Créer un projet'
-    let to = `/admin/clients/${client.id}`
-    let dueDate: string | null = tasks[0]?.dueDate || null
-
-    if (projects.length) {
-      stage = 'project'
-      action = tasks[0]?.title || 'Continuer le projet'
-      to = '/admin/projects'
-    }
-    if (activeQuote) {
-      stage = 'quote'
-      action = activeQuote.status === 'draft' ? `Finaliser ${activeQuote.number}` : `Suivre ${activeQuote.number}`
-      dueDate = activeQuote.validUntil || dueDate
-      to = '/admin/quotes'
-    }
-    if (openInvoice) {
-      stage = 'invoice'
-      action = openInvoice.status === 'overdue' || (openInvoice.dueAt && openInvoice.dueAt < now)
-        ? `Relancer ${openInvoice.number}`
-        : `Suivre ${openInvoice.number}`
-      dueDate = openInvoice.dueAt || dueDate
-      to = '/admin/invoices'
-    } else if (paidInvoice) {
-      stage = 'paid'
-      action = 'Préparer le suivi client'
-      dueDate = paidInvoice.paidAt || dueDate
-      to = `/admin/clients/${client.id}`
-    }
-    return { client, stage, action, to, dueDate }
+    const tasks = tasksStore.tasks.filter(task => task.clientId === client.id)
+    return { client, ...resolveClientWorkflow({ client, projects, quotes, invoices, tasks }) }
   })
 })
 
-const pipelineColumns = computed(() => PIPELINE_STAGES.map(stage => ({
+const pipelineColumns = computed(() => CLIENT_WORKFLOW_STAGES.map(stage => ({
   ...stage,
   items: pipelineClients.value.filter(item => item.stage === stage.id),
 })))
@@ -236,7 +187,7 @@ onMounted(() => { void loadCrm() })
       </div>
     </section>
 
-    <div v-if="loading" role="status" class="grid min-h-48 place-items-center rounded-xl border border-gray-200 bg-white dark:border-white/[0.08] dark:bg-[#111118]"><div class="text-center"><div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-violet-200 border-t-violet-600" /><p class="mt-3 text-sm text-gray-500 dark:text-gray-400">Chargement du CRM…</p></div></div>
+    <AdminViewSkeleton v-if="loading" variant="pipeline" label="Chargement du CRM" />
     <div v-else-if="loadError" role="alert" class="rounded-xl border border-red-200 bg-red-50 p-5 text-red-900 dark:border-red-400/20 dark:bg-red-400/10 dark:text-red-100"><p class="font-semibold">Le CRM est indisponible</p><p class="mt-1 text-sm">{{ loadError }}</p><button type="button" class="mt-4 min-h-11 rounded-lg bg-red-700 px-4 text-sm font-semibold text-white" @click="loadCrm(true)">Réessayer</button></div>
 
     <section v-if="!loading && !loadError" class="grid grid-cols-2 gap-2.5 xl:grid-cols-4">
@@ -346,8 +297,12 @@ onMounted(() => { void loadCrm() })
         </div>
         <span class="text-xs font-medium text-gray-400">{{ pipelineClients.length }} relation{{ pipelineClients.length > 1 ? 's' : '' }}</span>
       </div>
+      <details class="mb-3 rounded-lg border border-violet-200/70 bg-violet-50/60 px-3 py-2 dark:border-violet-500/20 dark:bg-violet-500/[0.08]">
+        <summary class="cursor-pointer text-xs font-semibold text-violet-900 dark:text-violet-100">Comment le pipeline se met-il à jour ?</summary>
+        <p class="mt-2 text-xs leading-5 text-violet-800 dark:text-violet-200">L’étape avance à partir des preuves du dossier : devis envoyé ou accepté, projet lié, facture émise puis paiement enregistré. Chaque carte ouvre directement l’élément qui demande ton attention.</p>
+      </details>
       <div class="admin-scrollbar overflow-x-auto pb-3">
-        <div class="grid min-w-[1320px] grid-cols-6 gap-3">
+        <div class="grid min-w-[1100px] grid-cols-5 gap-3">
           <div v-for="column in pipelineColumns" :key="column.id" class="min-w-0 rounded-xl border border-gray-200 bg-gray-50/70 p-2.5 dark:border-white/[0.08] dark:bg-white/[0.025]">
             <div class="mb-3 flex items-center justify-between gap-2 px-1">
               <div class="flex min-w-0 items-center gap-2">

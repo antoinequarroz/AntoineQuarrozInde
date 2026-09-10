@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Quote } from '~/types'
+import AdminViewSkeleton from '~/components/admin/AdminViewSkeleton.vue'
 import { printStructuredDocument } from '~/utils/printStructuredDocument'
 
 definePageMeta({ layout: 'admin', middleware: 'admin' })
@@ -264,15 +265,6 @@ async function del(id: number) {
   }
 }
 
-async function quickSetStatus(id: number, status: Quote['status']) {
-  try {
-    await store.update(id, { status } as any)
-    toast.success(`Statut : ${statusLabel(status)}`)
-  } catch {
-    toast.error('Le statut n’a pas pu être modifié')
-  }
-}
-
 function upsertNoteLine(source: string | null | undefined, key: string, value: string) {
   const lines = (source || '').split('\n').filter(Boolean)
   const prefix = `[${key}] `
@@ -282,6 +274,8 @@ function upsertNoteLine(source: string | null | undefined, key: string, value: s
 }
 
 async function markQuoteEvent(q: Quote, event: 'sent_at' | 'viewed_at' | 'signed_at') {
+  const labels = { sent_at: 'envoyé hors de cette application', viewed_at: 'vu par le client', signed_at: 'signé par le client' }
+  if (!confirm(`Confirmer manuellement que le devis ${q.number} a été ${labels[event]} ? Cette correction sera conservée dans les notes.`)) return
   try {
     const now = new Date().toISOString()
     const notes = upsertNoteLine(q.notes, event, now)
@@ -289,7 +283,7 @@ async function markQuoteEvent(q: Quote, event: 'sent_at' | 'viewed_at' | 'signed
     if (event === 'sent_at') patch.status = 'sent'
     if (event === 'signed_at') patch.status = 'accepted'
     await store.update(q.id, patch as any)
-    toast.success('Événement enregistré')
+    toast.success(`Correction manuelle enregistrée pour ${q.number}`)
   } catch {
     toast.error('L’événement n’a pas pu être enregistré')
   }
@@ -311,12 +305,12 @@ async function sendQuoteEmail(q: Quote) {
 async function convertToInvoice(q: Quote) {
   runningAction.value = `convert-${q.id}`
   try {
-    const result = await $fetch<{ created: boolean, invoice: { number: string } }>('/api/quotes/convert', {
+    const result = await $fetch<{ created: boolean, invoice: { id: number, number: string, client_id?: number | null } }>('/api/quotes/convert', {
       method: 'POST', body: { id: q.id }, headers: auth.authHeader(),
     })
     await Promise.all([store.ensureLoaded(true), invoices.ensureLoaded(true)])
     toast.success(result.created ? `Facture ${result.invoice.number} créée` : `La facture ${result.invoice.number} existe déjà`)
-    await navigateTo('/admin/invoices')
+    await navigateTo({ path: '/admin/invoices', query: { invoiceId: String(result.invoice.id), clientId: String(q.clientId || result.invoice.client_id || '') } })
   } catch (error: any) {
     toast.error(error?.data?.message || 'Impossible de créer la facture')
   } finally {
@@ -444,7 +438,7 @@ onMounted(async () => {
         </div>
       </div>
     </section>
-    <div v-if="store.loading && !store.loaded" role="status" class="grid min-h-48 place-items-center rounded-xl border border-gray-200 bg-white dark:border-white/[0.08] dark:bg-[#111118]"><div class="text-center"><div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-violet-200 border-t-violet-600" /><p class="mt-3 text-sm text-gray-500 dark:text-gray-400">Chargement des devis…</p></div></div>
+    <AdminViewSkeleton v-if="store.loading && !store.loaded" label="Chargement des devis" />
     <div v-else-if="loadError" role="alert" class="rounded-xl border border-red-200 bg-red-50 p-5 text-red-900 dark:border-red-400/20 dark:bg-red-400/10 dark:text-red-100"><p class="font-semibold">Les devis sont indisponibles</p><p class="mt-1 text-sm">{{ loadError }}</p><button type="button" class="mt-4 min-h-11 rounded-lg bg-red-700 px-4 text-sm font-semibold text-white" @click="loadQuotes(true)">Réessayer</button></div>
 
     <div v-if="!store.loading && !loadError" class="grid grid-cols-1 gap-2 rounded-xl border border-gray-100 bg-white p-3 dark:border-white/[0.06] dark:bg-[#111118] sm:grid-cols-[1fr_170px]">
@@ -474,8 +468,8 @@ onMounted(async () => {
             >
               <button type="button" class="block min-h-11 w-full rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500" @click="selectedId = q.id"><span class="block text-sm font-semibold">{{ q.number }}</span><span class="block truncate text-xs text-gray-500">{{ q.title }}</span><span class="mt-1 block text-xs">{{ formatAmount(q.amountCents, q.currency) }}</span></button>
               <div class="mt-2 flex flex-wrap gap-2">
-                <button v-if="q.status!=='sent'" class="min-h-11 rounded-lg px-2 text-xs font-semibold text-amber-700 hover:bg-amber-50 dark:text-amber-300" @click="quickSetStatus(q.id,'sent')">Envoyer</button>
-                <button v-if="q.status!=='accepted'" class="min-h-11 rounded-lg px-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 dark:text-emerald-300" @click="quickSetStatus(q.id,'accepted')">Accepter</button>
+                <button v-if="q.status === 'draft'" class="min-h-11 rounded-lg px-2 text-xs font-semibold text-violet-700 hover:bg-violet-50 dark:text-violet-300" @click="sendQuoteEmail(q)">Envoyer le PDF</button>
+                <button v-if="q.status === 'sent'" class="min-h-11 rounded-lg px-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 dark:text-emerald-300" @click="markQuoteEvent(q,'signed_at')">Confirmer la signature</button>
                 <button class="min-h-11 rounded-lg px-2 text-xs font-semibold text-violet-700 hover:bg-violet-50 dark:text-violet-300" @click="openEdit(q)">Modifier</button>
               </div>
             </article>
@@ -491,7 +485,8 @@ onMounted(async () => {
           >
             <button type="button" class="block min-h-11 w-full rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500" @click="selectedId = q.id"><span class="flex items-start justify-between gap-2"><strong class="text-sm">{{ q.number }}</strong><span class="text-xs font-semibold uppercase text-gray-500">{{ statusLabel(q.status) }}</span></span><span class="mt-1 block truncate text-sm text-gray-600 dark:text-gray-300">{{ q.title }}</span><span class="mt-1 block text-xs text-gray-500">{{ q.clientId ? clientsById.get(q.clientId)?.name || 'Client non renseigné' : 'Client non renseigné' }}</span><strong class="mt-2 block text-sm">{{ formatAmount(q.amountCents, q.currency) }}</strong></button>
             <div class="mt-3 grid grid-cols-3 gap-1 border-t border-gray-100 pt-3 dark:border-white/[0.06]">
-              <button class="min-h-11 rounded-lg text-xs font-semibold text-emerald-700 hover:bg-emerald-50 dark:text-emerald-300" @click="quickSetStatus(q.id, 'accepted')">Accepter</button>
+              <button v-if="q.status === 'draft'" class="min-h-11 rounded-lg text-xs font-semibold text-violet-700 hover:bg-violet-50 dark:text-violet-300" @click="sendQuoteEmail(q)">Envoyer</button>
+              <button v-else-if="q.status === 'sent'" class="min-h-11 rounded-lg text-xs font-semibold text-emerald-700 hover:bg-emerald-50 dark:text-emerald-300" @click="markQuoteEvent(q, 'signed_at')">Signature</button>
               <button class="min-h-11 rounded-lg text-xs font-semibold text-violet-700 hover:bg-violet-50 dark:text-violet-300" @click="openEdit(q)">Modifier</button>
               <button class="min-h-11 rounded-lg text-xs font-semibold text-red-600 hover:bg-red-50 dark:text-red-400" @click="del(q.id)">Supprimer</button>
             </div>
@@ -524,7 +519,7 @@ onMounted(async () => {
               <td class="px-4 py-3 text-sm">{{ formatAmount(q.amountCents, q.currency) }}</td>
               <td class="px-4 py-3 text-sm">{{ statusLabel(q.status) }}</td>
               <td class="px-4 py-3 text-right">
-                <div class="flex justify-end gap-1"><button class="min-h-11 rounded-lg px-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 dark:text-emerald-300" @click.stop="quickSetStatus(q.id, 'accepted')">Accepter</button><button class="min-h-11 rounded-lg px-2 text-xs font-semibold text-amber-700 hover:bg-amber-50 dark:text-amber-300" @click.stop="quickSetStatus(q.id, 'sent')">Marquer envoyé</button><button class="min-h-11 rounded-lg px-2 text-xs font-semibold text-violet-700 hover:bg-violet-50 dark:text-violet-300" @click.stop="openEdit(q)">Modifier</button><button class="min-h-11 rounded-lg px-2 text-xs font-semibold text-red-600 hover:bg-red-50 dark:text-red-400" @click.stop="del(q.id)">Supprimer</button></div>
+                <div class="flex justify-end gap-1"><button v-if="q.status === 'draft'" class="min-h-11 rounded-lg px-2 text-xs font-semibold text-violet-700 hover:bg-violet-50 dark:text-violet-300" @click.stop="sendQuoteEmail(q)">Envoyer PDF</button><button v-if="q.status === 'sent'" class="min-h-11 rounded-lg px-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 dark:text-emerald-300" @click.stop="markQuoteEvent(q, 'signed_at')">Confirmer signature</button><button v-if="q.status === 'draft'" class="min-h-11 rounded-lg px-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 dark:text-gray-300" @click.stop="openEdit(q)">Modifier</button></div>
               </td>
             </tr>
           </tbody>
@@ -546,13 +541,19 @@ onMounted(async () => {
             <p><span class="text-gray-600 dark:text-gray-300">Émission :</span> {{ selectedQuote.issuedAt || '-' }}</p>
             <p><span class="text-gray-600 dark:text-gray-300">Valide jusqu’au :</span> {{ selectedQuote.validUntil || '-' }}</p>
           </div>
-          <div class="mt-4 grid grid-cols-2 gap-2">
-            <button class="min-h-11 rounded-lg border border-gray-200 px-2 text-xs dark:border-white/[0.12] disabled:opacity-50" :disabled="runningAction === `send-${selectedQuote.id}`" @click="sendQuoteEmail(selectedQuote)">{{ runningAction === `send-${selectedQuote.id}` ? 'Envoi…' : 'Envoyer avec PDF' }}</button>
-            <button class="min-h-11 rounded-lg border border-gray-200 px-2 text-xs dark:border-white/[0.12]" @click="markQuoteEvent(selectedQuote, 'sent_at')">Marquer envoyé</button>
-            <button class="min-h-11 rounded-lg border border-gray-200 px-2 text-xs dark:border-white/[0.12]" @click="markQuoteEvent(selectedQuote, 'viewed_at')">Marquer vu</button>
-            <button class="min-h-11 rounded-lg border border-emerald-300/60 px-2 text-xs text-emerald-700" @click="markQuoteEvent(selectedQuote, 'signed_at')">Marquer signé</button>
-            <button class="min-h-11 rounded-lg border border-gray-200 px-2 text-xs dark:border-white/[0.12]" @click="duplicateQuote(selectedQuote)">Dupliquer</button>
-            <button class="col-span-2 min-h-11 rounded-lg bg-violet-600 px-3 text-xs font-semibold text-white disabled:opacity-50" :disabled="runningAction === `convert-${selectedQuote.id}`" @click="convertToInvoice(selectedQuote)">{{ runningAction === `convert-${selectedQuote.id}` ? 'Création…' : 'Créer la facture' }}</button>
+          <div class="mt-4 space-y-2">
+            <button v-if="selectedQuote.status === 'draft' || selectedQuote.status === 'sent'" class="min-h-11 w-full rounded-lg bg-violet-600 px-3 text-sm font-semibold text-white disabled:opacity-50" :disabled="runningAction === `send-${selectedQuote.id}`" @click="sendQuoteEmail(selectedQuote)">{{ runningAction === `send-${selectedQuote.id}` ? 'Envoi…' : selectedQuote.status === 'draft' ? 'Envoyer le devis avec son PDF' : 'Renvoyer le devis avec son PDF' }}</button>
+            <button v-if="selectedQuote.status === 'accepted'" class="min-h-11 w-full rounded-lg bg-violet-600 px-3 text-sm font-semibold text-white disabled:opacity-50" :disabled="runningAction === `convert-${selectedQuote.id}`" @click="convertToInvoice(selectedQuote)">{{ runningAction === `convert-${selectedQuote.id}` ? 'Création…' : 'Créer la facture' }}</button>
+            <button v-if="selectedQuote.status === 'sent'" class="min-h-11 w-full rounded-lg border border-emerald-300/60 px-3 text-sm font-semibold text-emerald-700 dark:text-emerald-300" @click="markQuoteEvent(selectedQuote, 'signed_at')">Confirmer une signature externe</button>
+            <details class="rounded-lg border border-gray-200 dark:border-white/[0.12]">
+              <summary class="cursor-pointer px-3 py-3 text-xs font-semibold text-gray-700 dark:text-gray-200">Plus d’actions</summary>
+              <div class="grid grid-cols-2 gap-2 border-t border-gray-100 p-2 dark:border-white/[0.08]">
+                <button class="min-h-11 rounded-lg px-2 text-xs hover:bg-gray-50 dark:hover:bg-white/[0.04]" @click="markQuoteEvent(selectedQuote, 'sent_at')">Corriger : envoyé</button>
+                <button class="min-h-11 rounded-lg px-2 text-xs hover:bg-gray-50 dark:hover:bg-white/[0.04]" @click="markQuoteEvent(selectedQuote, 'viewed_at')">Corriger : vu</button>
+                <button class="min-h-11 rounded-lg px-2 text-xs hover:bg-gray-50 dark:hover:bg-white/[0.04]" @click="duplicateQuote(selectedQuote)">Dupliquer</button>
+                <button v-if="selectedQuote.status === 'draft'" class="min-h-11 rounded-lg px-2 text-xs text-red-600 hover:bg-red-50 dark:text-red-300" @click="del(selectedQuote.id)">Supprimer</button>
+              </div>
+            </details>
           </div>
           <p class="mt-4 whitespace-pre-wrap break-words text-xs text-gray-500">{{ extractUserNotes(selectedQuote.notes) || 'Aucune note' }}</p>
         </template>

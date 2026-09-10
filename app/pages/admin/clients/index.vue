@@ -3,6 +3,7 @@ import type { Client } from '~/types'
 import AdminAdminCard from '~/components/admin/AdminCard.vue'
 import AdminAdminEmptyState from '~/components/admin/AdminEmptyState.vue'
 import AdminAdminToolbar from '~/components/admin/AdminToolbar.vue'
+import AdminViewSkeleton from '~/components/admin/AdminViewSkeleton.vue'
 
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 
@@ -240,7 +241,7 @@ async function saveCurrentView() {
     await loadViews()
     toast.success('Vue sauvegardée')
   } catch {
-    toast.error('Erreur sauvegarde vue')
+    toast.error('La vue n’a pas pu être sauvegardée. Vérifie son nom et réessaie.')
   }
 }
 
@@ -267,7 +268,7 @@ async function removeView(name: string) {
     })
     await loadViews()
   } catch {
-    toast.error('Erreur suppression vue')
+    toast.error('La vue n’a pas pu être supprimée. Recharge la page puis réessaie.')
   }
 }
 
@@ -280,7 +281,6 @@ async function loadClients() {
         mode: 'page',
         q: queryState.value.q || undefined,
         status: queryState.value.status === 'all' ? undefined : queryState.value.status,
-        hideLeads: '1',
         sort: queryState.value.sort,
         order: queryState.value.order,
         page: queryState.value.page,
@@ -327,7 +327,7 @@ async function handleSubmit() {
     showForm.value = false
     await loadClients()
   } catch {
-    toast.error('Erreur de sauvegarde')
+    toast.error('Le client n’a pas pu être enregistré. Vérifie les champs obligatoires et ta connexion.')
   } finally {
     savingClient.value = false
   }
@@ -340,7 +340,7 @@ async function handleDelete(id: number) {
     toast.success('Client supprimé')
     await loadClients()
   } catch {
-    toast.error('Erreur de suppression')
+    toast.error('Le client n’a pas pu être supprimé. Vérifie qu’aucun document ne bloque cette action.')
   }
 }
 
@@ -368,7 +368,7 @@ async function bulkSetStatus(status: Client['status']) {
     toast.success('Statut mis à jour')
     await loadClients()
   } catch {
-    toast.error('Erreur action en lot')
+    toast.error('Les statuts n’ont pas tous pu être modifiés. Recharge la liste avant de réessayer.')
   }
 }
 
@@ -381,7 +381,7 @@ async function bulkDelete() {
     toast.success('Clients supprimés')
     await loadClients()
   } catch {
-    toast.error('Erreur suppression en lot')
+    toast.error('La suppression groupée a échoué. Recharge la liste et vérifie les dossiers liés.')
   }
 }
 
@@ -394,6 +394,7 @@ function toggleSort(column: 'created_at' | 'name' | 'email' | 'status') {
 }
 
 const kanbanColumns = computed(() => ([
+  { key: 'lead' as const, label: 'Prospects', items: pageData.value.items.filter(client => client.status === 'lead') },
   { key: 'active' as const, label: 'Actifs', items: pageData.value.items.filter(client => client.status === 'active') },
   { key: 'inactive' as const, label: 'Inactifs', items: pageData.value.items.filter(client => client.status === 'inactive') },
 ]))
@@ -407,15 +408,29 @@ function startDrag(id: number) {
 async function moveClientToStatus(status: Client['status']) {
   const id = draggingClientId.value
   if (!id) return
+  const previousStatus = pageData.value.items.find(client => client.id === id)?.status
   try {
     await store.update(id, { status })
-    toast.success(`Client passé en ${status === 'active' ? 'actif' : 'inactif'}`)
     await loadClients()
+    toast.success(`Contact passé en ${status === 'lead' ? 'prospect' : status === 'active' ? 'client actif' : 'inactif'}`, previousStatus ? {
+      actionLabel: 'Annuler',
+      onAction: async () => {
+        await store.update(id, { status: previousStatus })
+        await loadClients()
+        toast.info('Déplacement annulé')
+      },
+    } : undefined)
   } catch {
-    toast.error('Erreur déplacement')
+    toast.error('Le contact n’a pas pu être déplacé. Réessaie après avoir vérifié ta connexion.')
   } finally {
     draggingClientId.value = null
   }
+}
+
+async function setClientStatus(client: Client, status: Client['status']) {
+  if (client.status === status) return
+  draggingClientId.value = client.id
+  await moveClientToStatus(status)
 }
 
 watch(() => route.fullPath, async () => {
@@ -451,6 +466,7 @@ onMounted(async () => {
         <input :value="queryState.q" aria-label="Rechercher un client" class="input-field" placeholder="Rechercher client, société, email..." @input="updateFilters({ q: ($event.target as HTMLInputElement).value })">
         <select :value="queryState.status" aria-label="Filtrer les clients par statut" class="input-field" @change="updateFilters({ status: ($event.target as HTMLSelectElement).value })">
           <option value="all">Tous statuts</option>
+          <option value="lead">Prospect</option>
           <option value="active">Actif</option>
           <option value="inactive">Inactif</option>
         </select>
@@ -498,12 +514,11 @@ onMounted(async () => {
       <button class="min-h-11 shrink-0 rounded-lg bg-red-700 px-4 text-sm font-semibold text-white hover:bg-red-800" @click="loadClients">Réessayer</button>
     </div>
 
-    <div v-else-if="queryState.view === 'table'" class="space-y-3">
-      <AdminAdminCard v-if="loading">
-        <AdminAdminEmptyState title="Chargement..." />
-      </AdminAdminCard>
+    <AdminViewSkeleton v-else-if="loading" :variant="queryState.view === 'kanban' ? 'pipeline' : 'table'" label="Chargement des clients" />
 
-      <div v-else class="sm:hidden space-y-2">
+    <div v-else-if="queryState.view === 'table'" class="space-y-3">
+
+      <div class="sm:hidden space-y-2">
         <AdminAdminCard v-for="client in pageData.items" :key="`mobile-${client.id}`">
           <label class="mb-2 flex items-center gap-2 text-xs text-gray-500">
             <input :checked="selectedIds.includes(client.id)" type="checkbox" @change="toggleOne(client.id)">
@@ -536,7 +551,7 @@ onMounted(async () => {
         <AdminAdminEmptyState v-if="!pageData.items.length" title="Aucun client" body="Ajuste les filtres ou crée un nouveau client." />
       </div>
 
-      <div v-if="!loading" class="hidden sm:block overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm dark:border-white/[0.06] dark:bg-[#111118]">
+      <div class="hidden sm:block overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm dark:border-white/[0.06] dark:bg-[#111118]">
         <table class="w-full">
           <thead class="border-b border-gray-100 dark:border-white/[0.06]">
             <tr>
@@ -614,7 +629,7 @@ onMounted(async () => {
             v-for="client in column.items"
             :key="`kanban-${client.id}`"
             draggable="true"
-            class="rounded-lg border border-gray-100 dark:border-white/[0.06] bg-gray-50/70 dark:bg-white/[0.03] p-2.5 cursor-move"
+            class="rounded-lg border border-gray-100 bg-gray-50/70 p-2.5 dark:border-white/[0.06] dark:bg-white/[0.03]"
             @dragstart="startDrag(client.id)"
           >
             <p class="text-sm font-medium">{{ client.name }}</p>
@@ -625,13 +640,20 @@ onMounted(async () => {
               <button class="text-xs text-violet-600" @click="openEdit(client)">Éditer</button>
               <button class="text-xs font-semibold text-cyan-700 dark:text-cyan-300" @click="openPortalAccess(client)">Accès portail</button>
             </div>
+            <label class="mt-3 block text-xs font-medium text-gray-500 dark:text-gray-400">Déplacer dans
+              <select :value="client.status" class="input-field mt-1" @change="setClientStatus(client, ($event.target as HTMLSelectElement).value as Client['status'])">
+                <option value="lead">Prospects</option>
+                <option value="active">Actifs</option>
+                <option value="inactive">Inactifs</option>
+              </select>
+            </label>
           </article>
           <p v-if="!column.items.length" class="text-xs text-gray-400 py-6 text-center">Aucun client</p>
         </div>
       </AdminAdminCard>
     </div>
 
-    <div v-if="!loadError" class="flex items-center justify-between gap-3 rounded-xl border border-gray-100 bg-white p-3 shadow-sm dark:border-white/[0.06] dark:bg-[#111118]">
+    <div v-if="!loadError && !loading" class="flex items-center justify-between gap-3 rounded-xl border border-gray-100 bg-white p-3 shadow-sm dark:border-white/[0.06] dark:bg-[#111118]">
       <p class="text-xs text-gray-500">Page {{ pageData.page }} / {{ totalPages }} · {{ pageData.total }} {{ pageData.total === 1 ? 'résultat' : 'résultats' }}</p>
       <div class="flex items-center gap-2">
         <button class="min-h-10 rounded-lg border border-gray-200 px-3 text-xs disabled:opacity-50 dark:border-white/[0.12]" :disabled="pageData.page <= 1" @click="replaceQuery({ page: String(pageData.page - 1) })">Précédent</button>
@@ -654,6 +676,7 @@ onMounted(async () => {
             <label class="space-y-1 text-xs font-medium text-gray-600 dark:text-gray-300">Téléphone<input v-model="form.phone" type="tel" class="input-field" autocomplete="tel"></label>
           </div>
           <label class="block space-y-1 text-xs font-medium text-gray-600 dark:text-gray-300">Statut<select v-model="form.status" class="input-field">
+            <option value="lead">Prospect</option>
             <option value="active">Actif</option>
             <option value="inactive">Inactif</option>
           </select></label>

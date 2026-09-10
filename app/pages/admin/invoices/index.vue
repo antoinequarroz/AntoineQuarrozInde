@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Invoice } from '~/types'
+import AdminViewSkeleton from '~/components/admin/AdminViewSkeleton.vue'
 import { printStructuredDocument } from '~/utils/printStructuredDocument'
 import { generateScorReference, getQrReferenceError, isQrIban, isValidSwissIban, normalizeIban } from '~~/shared/utils/swissQr'
 definePageMeta({ layout: 'admin', middleware: 'admin' })
@@ -217,30 +218,6 @@ async function submit() {
   }
 }
 async function del(id: number) { if (!confirm('Supprimer cette facture ?')) return; try { await store.remove(id); if (selectedId.value === id) selectedId.value = store.invoices[0]?.id ?? null; toast.success('Facture supprimée') } catch { toast.error('La facture n’a pas pu être supprimée') } }
-async function quickSetStatus(id: number, status: Invoice['status']) {
-  try {
-    const invoice = store.invoices.find(i => i.id === id)
-    if (!invoice) return
-    if (status === 'sent' && !canMarkSent(invoice)) {
-      toast.error('Seul un brouillon peut être marqué comme envoyé.')
-      return
-    }
-    if (status === 'paid' && invoice) {
-      if (!canRecordPayment(invoice)) {
-        toast.error('Aucun paiement ne peut être ajouté à ce document.')
-        return
-      }
-      openPaymentForm(invoice)
-      return
-    }
-    const patch: Record<string, any> = { status }
-    if (status === 'paid' && !store.invoices.find(i => i.id === id)?.paidAt) patch.paidAt = todayInZurich()
-    await store.update(id, patch as any)
-    toast.success(`Statut : ${statusLabel(status)}`)
-  } catch {
-    toast.error('Erreur statut')
-  }
-}
 function openPaymentForm(invoice: Invoice) {
   if (!canRecordPayment(invoice)) { toast.error('Aucun paiement ne peut être ajouté à ce document.'); return }
   const remaining = Math.max(0, (invoice.totalCents ?? invoice.amountCents) - invoice.paidAmountCents)
@@ -274,6 +251,8 @@ function upsertNoteLine(source: string | null | undefined, key: string, value: s
   return next.join('\n').trim()
 }
 async function markInvoiceEvent(i: Invoice, event: 'sent_at' | 'viewed_at' | 'paid_signal_at') {
+  const labels = { sent_at: 'envoyé hors de cette application', viewed_at: 'vu par le client', paid_signal_at: 'payé' }
+  if (!confirm(`Confirmer manuellement que le document ${i.number} a été ${labels[event]} ? Cette correction sera conservée dans les notes.`)) return
   try {
     const now = new Date().toISOString()
     const notes = upsertNoteLine(i.notes, event, now)
@@ -281,9 +260,9 @@ async function markInvoiceEvent(i: Invoice, event: 'sent_at' | 'viewed_at' | 'pa
     if (event === 'sent_at') patch.status = 'sent'
     if (event === 'paid_signal_at') { openPaymentForm(i); return }
     await store.update(i.id, patch as any)
-    toast.success('Evenement enregistre')
+    toast.success(`Correction manuelle enregistrée pour ${i.number}`)
   } catch {
-    toast.error('Erreur evenement')
+    toast.error('La correction manuelle n’a pas pu être enregistrée. Vérifie ta connexion et réessaie.')
   }
 }
 function formatAmount(amountCents: number, currency: string) { return `${(amountCents / 100).toFixed(2)} ${currency}` }
@@ -475,11 +454,7 @@ onBeforeUnmount(releasePdfPreview)
       <div><p class="text-sm font-semibold">IBAN non configuré</p><p class="mt-1 text-xs text-amber-800 dark:text-amber-200/80">Ajoute ton IBAN pour générer une QR-facture suisse. Tu peux déjà créer et prévisualiser un PDF classique sans IBAN.</p></div>
       <button type="button" class="min-h-10 shrink-0 rounded-lg bg-amber-900 px-4 text-xs font-semibold text-white transition hover:bg-amber-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 dark:bg-amber-300 dark:text-amber-950 dark:hover:bg-amber-200" @click="showBillingProfile = true">Ajouter mon IBAN</button>
     </div>
-    <div v-if="loadingData" role="status" aria-live="polite" class="space-y-3">
-      <span class="sr-only">Chargement des factures</span>
-      <div class="h-20 animate-pulse rounded-xl bg-gray-200/70 dark:bg-white/[0.06]" />
-      <div class="h-64 animate-pulse rounded-xl bg-gray-200/70 dark:bg-white/[0.06]" />
-    </div>
+    <AdminViewSkeleton v-if="loadingData" label="Chargement des factures" />
     <div v-else-if="loadError" role="alert" class="flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-red-900 dark:border-red-400/20 dark:bg-red-400/10 dark:text-red-100 sm:flex-row sm:items-center sm:justify-between">
       <div><p class="font-semibold">Chargement impossible</p><p class="mt-1 text-sm">{{ loadError }}</p></div>
       <button class="min-h-11 shrink-0 rounded-lg bg-red-700 px-4 text-sm font-semibold text-white hover:bg-red-800" @click="loadInvoicesPage(true)">Réessayer</button>
@@ -514,8 +489,8 @@ onBeforeUnmount(releasePdfPreview)
               <p class="mt-1 text-xs">{{ formatAmount(i.amountCents, i.currency) }}</p>
             </button>
             <div class="mt-2 flex flex-wrap gap-2">
-              <button v-if="canMarkSent(i)" class="min-h-10 rounded-lg px-2 text-xs text-amber-700" @click="quickSetStatus(i.id, 'sent')">Envoyer</button>
-              <button v-if="canRecordPayment(i)" class="min-h-10 rounded-lg px-2 text-xs text-emerald-700" @click="quickSetStatus(i.id, 'paid')">Paiement</button>
+              <button v-if="canMarkSent(i)" class="min-h-10 rounded-lg px-2 text-xs font-semibold text-violet-700" @click="sendInvoiceEmail(i)">Envoyer le PDF</button>
+              <button v-if="canRecordPayment(i)" class="min-h-10 rounded-lg px-2 text-xs text-emerald-700" @click="openPaymentForm(i)">Paiement</button>
               <button v-if="i.status === 'draft'" class="min-h-10 rounded-lg px-2 text-xs text-violet-700" @click="openEdit(i)">Éditer</button>
             </div>
           </article>
@@ -539,14 +514,14 @@ onBeforeUnmount(releasePdfPreview)
             <p class="mt-2 text-sm font-semibold">{{ formatAmount(q.amountCents, q.currency) }}</p>
           </button>
           <div class="mt-3 flex flex-wrap items-center gap-1 border-t border-gray-100 pt-2 dark:border-white/[0.06]">
-            <button v-if="canRecordPayment(q)" class="min-h-10 rounded-lg px-2 text-xs font-medium text-emerald-700 hover:bg-emerald-50 dark:text-emerald-300 dark:hover:bg-emerald-500/10" @click="quickSetStatus(q.id, 'paid')">Enregistrer un paiement</button>
+            <button v-if="canRecordPayment(q)" class="min-h-10 rounded-lg px-2 text-xs font-medium text-emerald-700 hover:bg-emerald-50 dark:text-emerald-300 dark:hover:bg-emerald-500/10" @click="openPaymentForm(q)">Enregistrer un paiement</button>
             <button v-if="q.status === 'draft'" class="min-h-10 rounded-lg px-2 text-xs text-violet-700 hover:bg-violet-50 dark:text-violet-300 dark:hover:bg-violet-500/10" @click="openEdit(q)">Éditer</button>
             <button v-if="q.status === 'draft'" class="min-h-10 rounded-lg px-2 text-xs text-red-600 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-500/10" @click="del(q.id)">Supprimer</button>
           </div>
           <div v-if="selectedId === q.id" class="mt-2 grid grid-cols-2 gap-2 rounded-lg bg-gray-50 p-2 dark:bg-white/[0.04]" :aria-label="`Actions pour ${q.number}`">
             <button class="min-h-10 rounded-lg border border-violet-200 px-2 text-xs font-semibold text-violet-700 dark:border-violet-500/30 dark:text-violet-300" :disabled="loadingPdf" @click="previewPdf(q)">Voir le PDF</button>
             <button class="min-h-10 rounded-lg border border-gray-200 px-2 text-xs font-semibold dark:border-white/[0.12]" :disabled="downloadingPdf" @click="downloadPdf(q)">Télécharger</button>
-            <button class="col-span-2 min-h-10 rounded-lg bg-violet-600 px-2 text-xs font-semibold text-white" :disabled="runningAction === `send-${q.id}`" @click="sendInvoiceEmail(q)">{{ runningAction === `send-${q.id}` ? 'Envoi…' : 'Envoyer avec le PDF' }}</button>
+            <button v-if="q.status === 'draft' || q.status === 'sent' || q.status === 'overdue'" class="col-span-2 min-h-10 rounded-lg bg-violet-600 px-2 text-xs font-semibold text-white" :disabled="runningAction === `send-${q.id}`" @click="sendInvoiceEmail(q)">{{ runningAction === `send-${q.id}` ? 'Envoi…' : q.status === 'overdue' ? 'Relancer avec le PDF' : q.status === 'sent' ? 'Renvoyer avec le PDF' : 'Envoyer avec le PDF' }}</button>
             <button class="col-span-2 min-h-10 rounded-lg border border-gray-200 px-2 text-xs font-semibold dark:border-white/[0.12]" @click="duplicateInvoice(q)">Dupliquer la facture</button>
             <button v-if="q.documentType === 'invoice' && q.status !== 'draft'" class="col-span-2 min-h-10 rounded-lg border border-cyan-300/60 px-2 text-xs font-semibold text-cyan-700 dark:text-cyan-300" @click="createCreditNote(q)">Créer un avoir</button>
             <button v-if="q.documentType === 'invoice' && ['sent', 'overdue'].includes(q.status)" class="col-span-2 min-h-10 rounded-lg border border-gray-200 px-2 text-xs font-semibold dark:border-white/[0.12]" @click="toggleReminders(q)">{{ q.remindersPaused ? 'Reprendre les relances' : 'Suspendre les relances' }}</button>
@@ -578,7 +553,7 @@ onBeforeUnmount(releasePdfPreview)
             <td class="px-4 py-3 text-sm">{{ formatAmount(q.amountCents, q.currency) }}</td>
             <td class="px-4 py-3 text-sm">{{ q.dueAt || '-' }}</td>
             <td class="px-4 py-3 text-sm">{{ statusLabel(q.status) }}</td>
-            <td class="space-x-2 px-4 py-3 text-right"><button v-if="canRecordPayment(q)" class="text-xs text-emerald-600" @click.stop="quickSetStatus(q.id, 'paid')">Paiement</button><button v-if="canMarkSent(q)" class="text-xs text-amber-600" @click.stop="quickSetStatus(q.id, 'sent')">Envoyée</button><button v-if="q.status === 'draft'" class="text-xs text-violet-600" @click.stop="openEdit(q)">Éditer</button><button v-if="q.status === 'draft'" class="text-xs text-red-500" @click.stop="del(q.id)">Supprimer</button></td>
+            <td class="space-x-2 px-4 py-3 text-right"><button v-if="canRecordPayment(q)" class="text-xs font-semibold text-emerald-700 dark:text-emerald-300" @click.stop="openPaymentForm(q)">Paiement</button><button v-if="canMarkSent(q)" class="text-xs font-semibold text-violet-700 dark:text-violet-300" @click.stop="sendInvoiceEmail(q)">Envoyer PDF</button><button v-if="q.status === 'draft'" class="text-xs text-gray-600 dark:text-gray-300" @click.stop="openEdit(q)">Éditer</button></td>
           </tr>
           <tr v-if="!filteredInvoices.length"><td colspan="7" class="p-8 text-center text-sm text-gray-500 dark:text-gray-400">Aucune facture trouvée. Modifie la recherche ou crée une nouvelle facture.</td></tr>
         </tbody>
@@ -602,16 +577,24 @@ onBeforeUnmount(releasePdfPreview)
           <p><span class="text-gray-400">Encaissé :</span> {{ formatAmount(selectedInvoice.paidAmountCents, selectedInvoice.currency) }}</p>
           <p><span class="text-gray-400">Solde :</span> {{ formatAmount(Math.max(0, (selectedInvoice.totalCents ?? selectedInvoice.amountCents) - selectedInvoice.paidAmountCents), selectedInvoice.currency) }}</p>
         </div>
-        <div class="mt-4 grid grid-cols-2 gap-2">
-          <button class="min-h-10 rounded-lg border border-violet-200 px-3 text-xs font-semibold text-violet-700 disabled:cursor-not-allowed disabled:opacity-50 dark:border-violet-500/30 dark:text-violet-300" :disabled="loadingPdf" @click="previewPdf(selectedInvoice)">{{ loadingPdf ? 'Génération…' : 'Voir le PDF' }}</button>
-          <button class="min-h-10 rounded-lg border border-gray-200 px-3 text-xs font-semibold text-gray-700 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/[0.12] dark:text-gray-200" :disabled="downloadingPdf" @click="downloadPdf(selectedInvoice)">{{ downloadingPdf ? 'Téléchargement…' : 'Télécharger' }}</button>
-          <button class="col-span-2 min-h-10 rounded-lg bg-violet-600 px-3 text-xs font-semibold text-white disabled:opacity-50" :disabled="runningAction === `send-${selectedInvoice.id}`" @click="sendInvoiceEmail(selectedInvoice)">{{ runningAction === `send-${selectedInvoice.id}` ? 'Envoi…' : 'Envoyer avec le PDF' }}</button>
-          <button class="px-2 py-1.5 rounded-lg border border-gray-200 dark:border-white/[0.12] text-xs" @click="markInvoiceEvent(selectedInvoice, 'sent_at')">Marquer envoyée</button>
-          <button class="px-2 py-1.5 rounded-lg border border-gray-200 dark:border-white/[0.12] text-xs" @click="markInvoiceEvent(selectedInvoice, 'viewed_at')">Marquer vue</button>
-          <button v-if="canRecordPayment(selectedInvoice)" class="col-span-2 min-h-10 rounded-lg border border-emerald-300/60 px-2 text-xs text-emerald-600" @click="openPaymentForm(selectedInvoice)">Enregistrer un paiement</button>
-          <button class="col-span-2 px-2 py-1.5 rounded-lg border border-gray-200 dark:border-white/[0.12] text-xs" @click="duplicateInvoice(selectedInvoice)">Dupliquer la facture</button>
-          <button v-if="selectedInvoice.documentType === 'invoice' && selectedInvoice.status !== 'draft'" class="col-span-2 px-2 py-1.5 rounded-lg border border-cyan-300/60 text-cyan-700 dark:text-cyan-300 text-xs" @click="createCreditNote(selectedInvoice)">Créer un avoir</button>
-          <button v-if="selectedInvoice.documentType === 'invoice' && ['sent', 'overdue'].includes(selectedInvoice.status)" class="col-span-2 min-h-10 rounded-lg border border-gray-200 px-3 text-xs font-semibold dark:border-white/[0.12]" @click="toggleReminders(selectedInvoice)">{{ selectedInvoice.remindersPaused ? 'Reprendre les relances' : 'Suspendre les relances' }}</button>
+        <div class="mt-4 space-y-2">
+          <button v-if="selectedInvoice.status === 'draft' || selectedInvoice.status === 'overdue'" class="min-h-11 w-full rounded-lg bg-violet-600 px-3 text-sm font-semibold text-white disabled:opacity-50" :disabled="runningAction === `send-${selectedInvoice.id}`" @click="sendInvoiceEmail(selectedInvoice)">{{ runningAction === `send-${selectedInvoice.id}` ? 'Envoi…' : selectedInvoice.status === 'overdue' ? 'Relancer avec la facture PDF' : 'Envoyer la facture avec son PDF' }}</button>
+          <button v-else-if="selectedInvoice.status === 'sent' && canRecordPayment(selectedInvoice)" class="min-h-11 w-full rounded-lg bg-emerald-700 px-3 text-sm font-semibold text-white" @click="openPaymentForm(selectedInvoice)">Enregistrer un paiement</button>
+          <button v-else-if="selectedInvoice.status === 'paid'" class="min-h-11 w-full rounded-lg bg-violet-600 px-3 text-sm font-semibold text-white" :disabled="downloadingPdf" @click="downloadPdf(selectedInvoice)">{{ downloadingPdf ? 'Téléchargement…' : 'Télécharger la facture acquittée' }}</button>
+          <div class="grid grid-cols-2 gap-2">
+            <button class="min-h-10 rounded-lg border border-violet-200 px-3 text-xs font-semibold text-violet-700 dark:border-violet-500/30 dark:text-violet-300" :disabled="loadingPdf" @click="previewPdf(selectedInvoice)">{{ loadingPdf ? 'Génération…' : 'Voir le PDF' }}</button>
+            <button class="min-h-10 rounded-lg border border-gray-200 px-3 text-xs font-semibold text-gray-700 dark:border-white/[0.12] dark:text-gray-200" :disabled="downloadingPdf" @click="downloadPdf(selectedInvoice)">Télécharger</button>
+          </div>
+          <details class="rounded-lg border border-gray-200 dark:border-white/[0.12]">
+            <summary class="cursor-pointer px-3 py-3 text-xs font-semibold text-gray-700 dark:text-gray-200">Plus d’actions</summary>
+            <div class="grid grid-cols-2 gap-2 border-t border-gray-100 p-2 dark:border-white/[0.08]">
+              <button class="min-h-11 rounded-lg px-2 text-xs hover:bg-gray-50 dark:hover:bg-white/[0.04]" @click="markInvoiceEvent(selectedInvoice, 'sent_at')">Corriger : envoyée</button>
+              <button class="min-h-11 rounded-lg px-2 text-xs hover:bg-gray-50 dark:hover:bg-white/[0.04]" @click="markInvoiceEvent(selectedInvoice, 'viewed_at')">Corriger : vue</button>
+              <button class="min-h-11 rounded-lg px-2 text-xs hover:bg-gray-50 dark:hover:bg-white/[0.04]" @click="duplicateInvoice(selectedInvoice)">Dupliquer</button>
+              <button v-if="selectedInvoice.documentType === 'invoice' && selectedInvoice.status !== 'draft'" class="min-h-11 rounded-lg px-2 text-xs text-cyan-700 hover:bg-cyan-50 dark:text-cyan-300" @click="createCreditNote(selectedInvoice)">Créer un avoir</button>
+              <button v-if="selectedInvoice.documentType === 'invoice' && ['sent', 'overdue'].includes(selectedInvoice.status)" class="col-span-2 min-h-11 rounded-lg px-3 text-xs hover:bg-gray-50 dark:hover:bg-white/[0.04]" @click="toggleReminders(selectedInvoice)">{{ selectedInvoice.remindersPaused ? 'Reprendre les relances' : 'Suspendre les relances' }}</button>
+            </div>
+          </details>
         </div>
         <div v-if="selectedInvoice.payments?.length" class="mt-4 border-t border-gray-100 pt-3 dark:border-white/[0.06]">
           <p class="text-xs font-semibold uppercase text-gray-400">Historique des paiements</p>
