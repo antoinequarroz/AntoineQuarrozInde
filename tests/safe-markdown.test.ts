@@ -37,6 +37,32 @@ describe('safe Markdown renderer', () => {
     expect(html).not.toContain('<img')
     expect(html).not.toContain('<script>')
   })
+
+  it('renders Markdown tables instead of exposing pipe syntax', () => {
+    const markdown = [
+      '| Critère | Agence web | Développeur freelance |',
+      '|---|---|---|',
+      '| Interlocuteur | Une équipe | Un interlocuteur principal |',
+      '| Budget | Selon le périmètre | Selon le périmètre |',
+    ].join('\n')
+    const html = renderSafeMarkdown(markdown)
+
+    expect(html).toContain('<table class=')
+    expect(html).toContain('<th class=')
+    expect(html).toContain('<td class=')
+    expect(html).toContain('Développeur freelance')
+    expect(html).not.toContain('| Critère |')
+    expect(html).not.toContain('|---|')
+  })
+
+  it('renders ordered and unordered Markdown lists as semantic lists', () => {
+    const html = renderSafeMarkdown('- Premier point\n- Deuxième point\n\n1. Étape une\n2. Étape deux')
+
+    expect(html).toContain('<ul class=')
+    expect(html).toContain('<ol class=')
+    expect(html).toContain('<li>Premier point</li>')
+    expect(html).not.toContain('- Premier point')
+  })
 })
 
 describe('CRM printable documents', () => {
