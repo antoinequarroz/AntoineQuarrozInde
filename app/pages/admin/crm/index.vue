@@ -3,6 +3,8 @@ import type { Client } from '~/types'
 import AdminAdminIcon from '~/components/admin/AdminIcon.vue'
 import AdminAdminEmptyState from '~/components/admin/AdminEmptyState.vue'
 import AdminViewSkeleton from '~/components/admin/AdminViewSkeleton.vue'
+import { isCommercialActionVisible, type CommercialActionState } from '~/utils/commercialActionState'
+import { buildCommercialTaskSuggestions, type CommercialTaskSuggestion } from '~/utils/commercialTaskPlan'
 import { CLIENT_WORKFLOW_STAGES, resolveClientWorkflow } from '~/utils/clientWorkflow'
 
 definePageMeta({ layout: 'admin', middleware: 'admin' })
@@ -12,6 +14,7 @@ const projectsStore = useProjectsStore()
 const quotesStore = useQuotesStore()
 const invoicesStore = useInvoicesStore()
 const tasksStore = useTasksStore()
+const auth = useAuthStore()
 const toast = useToast()
 
 const tab = ref<'pipeline' | 'contacts' | 'prospects'>('pipeline')
@@ -21,6 +24,8 @@ const statusFilter = ref<'all' | Client['status']>('all')
 const sortBy = ref<'recent' | 'name'>('recent')
 const loading = ref(true)
 const loadError = ref('')
+const commercialActionStates = ref<Record<string, CommercialActionState>>({})
+const commercialActionStatesStatus = ref<'loading' | 'ready' | 'error'>('loading')
 
 const AVATAR_TONES = [
   'bg-violet-500',
@@ -122,6 +127,46 @@ const stats = computed(() => {
   return { total, leads, active, conversion }
 })
 
+const todayIso = computed(() => new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Europe/Zurich',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+}).format(new Date()))
+
+const rawActionsToday = computed(() => buildCommercialTaskSuggestions({
+  today: todayIso.value,
+  clients: store.clients,
+  quotes: quotesStore.quotes,
+  invoices: invoicesStore.invoices,
+  existingTaskTitles: tasksStore.tasks.map(task => task.title),
+}))
+
+const actionsToday = computed(() => commercialActionStatesStatus.value === 'ready'
+  ? rawActionsToday.value.filter(action => isCommercialActionVisible(action.key, commercialActionStates.value, todayIso.value))
+  : rawActionsToday.value)
+
+const visibleActionsToday = computed(() => actionsToday.value.slice(0, 4))
+const urgentActionCount = computed(() => actionsToday.value.filter(action => action.priority === 'high').length)
+
+function actionIcon(action: CommercialTaskSuggestion) {
+  if (action.kind === 'invoice') return 'receipt'
+  if (action.kind === 'quote') return 'file-text'
+  return 'users'
+}
+
+function actionName(action: CommercialTaskSuggestion) {
+  if (action.kind === 'lead') return store.clients.find(client => client.id === action.clientId)?.name || `Prospect #${action.sourceId}`
+  if (action.kind === 'quote') return quotesStore.quotes.find(quote => quote.id === action.sourceId)?.number || `Devis #${action.sourceId}`
+  return invoicesStore.invoices.find(invoice => invoice.id === action.sourceId)?.number || `Facture #${action.sourceId}`
+}
+
+function actionTone(action: CommercialTaskSuggestion) {
+  if (action.priority === 'high') return 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300'
+  if (action.kind === 'quote') return 'bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300'
+  return 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'
+}
+
 const pipelineClients = computed(() => {
   return store.clients.map((client) => {
     const projects = projectsStore.projects.filter(project => project.clientId === client.id)
@@ -154,8 +199,17 @@ async function markStatus(client: Client, status: Client['status']) {
 async function loadCrm(force = false) {
   loading.value = true
   loadError.value = ''
+  commercialActionStatesStatus.value = 'loading'
   try {
     await Promise.all([store.ensureLoaded(force), projectsStore.ensureLoaded(force), quotesStore.ensureLoaded(force), invoicesStore.ensureLoaded(force), tasksStore.ensureLoaded(force)])
+    try {
+      commercialActionStates.value = await $fetch<Record<string, CommercialActionState>>('/api/admin/commercial-actions', { headers: auth.authHeader() })
+      commercialActionStatesStatus.value = 'ready'
+    }
+    catch {
+      commercialActionStates.value = {}
+      commercialActionStatesStatus.value = 'error'
+    }
   }
   catch { loadError.value = 'Le pipeline CRM ne peut pas être chargé. Réessaie dans quelques instants.' }
   finally { loading.value = false }
@@ -210,6 +264,50 @@ onMounted(() => { void loadCrm() })
         <span class="absolute inset-x-0 top-0 h-1 bg-sky-500" />
         <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Taux de conversion</p>
         <p class="mt-2 text-2xl font-semibold text-gray-950 dark:text-white">{{ stats.conversion }}%</p>
+      </div>
+    </section>
+
+    <section v-if="!loading && !loadError" aria-labelledby="actions-today-title" class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-white/[0.08] dark:bg-[#111118]">
+      <div class="flex flex-col gap-3 border-b border-gray-100 px-4 py-3 dark:border-white/[0.06] sm:flex-row sm:items-center sm:justify-between sm:px-5">
+        <div class="min-w-0">
+          <div class="flex flex-wrap items-center gap-2">
+            <h2 id="actions-today-title" class="text-sm font-semibold text-gray-950 dark:text-white">Actions du jour</h2>
+            <span v-if="urgentActionCount" class="rounded-md bg-rose-50 px-2 py-0.5 text-xs font-semibold text-rose-700 dark:bg-rose-500/10 dark:text-rose-300">{{ urgentActionCount }} urgente{{ urgentActionCount > 1 ? 's' : '' }}</span>
+            <span v-if="commercialActionStatesStatus === 'error'" class="rounded-md bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">Suivi à vérifier</span>
+          </div>
+          <p class="mt-1 text-xs leading-5 text-gray-500 dark:text-gray-400">Prospects inactifs, devis sans réponse et factures à suivre, triés par priorité.</p>
+        </div>
+        <NuxtLink to="/admin#relances-clients" class="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-lg border border-gray-200 px-3 text-xs font-semibold text-gray-700 transition-[color,background-color,border-color,transform] duration-150 hover:border-violet-300 hover:text-violet-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 active:scale-[0.96] dark:border-white/[0.12] dark:text-gray-200 dark:hover:border-violet-500/40 dark:hover:text-violet-300">
+          <AdminAdminIcon icon="mail" class="h-4 w-4" />
+          Relances Lumail
+        </NuxtLink>
+      </div>
+
+      <div v-if="visibleActionsToday.length" class="divide-y divide-gray-100 dark:divide-white/[0.06] sm:grid sm:grid-cols-2 sm:divide-x sm:divide-y-0 sm:divide-gray-100 dark:sm:divide-white/[0.06] xl:grid-cols-4">
+        <NuxtLink
+          v-for="action in visibleActionsToday"
+          :key="action.key"
+          :to="action.to"
+          class="group flex min-h-[112px] items-start gap-3 px-4 py-3 transition-[color,background-color,transform] duration-150 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-violet-500 active:scale-[0.96] dark:hover:bg-white/[0.03] sm:px-5"
+        >
+          <span class="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg" :class="actionTone(action)">
+            <AdminAdminIcon :icon="actionIcon(action)" class="h-4 w-4" />
+          </span>
+          <span class="min-w-0 flex-1">
+            <span class="block truncate text-sm font-semibold text-gray-950 dark:text-white">{{ actionName(action) }}</span>
+            <span class="mt-1 inline-flex rounded-md px-2 py-0.5 text-xs font-semibold" :class="actionTone(action)">{{ action.label }}</span>
+            <span class="mt-1 block line-clamp-2 text-xs leading-5 text-gray-500 dark:text-gray-400">{{ action.reason }}</span>
+            <span class="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-violet-700 transition-colors group-hover:text-violet-800 dark:text-violet-300 dark:group-hover:text-violet-200">Ouvrir le dossier <span aria-hidden="true">›</span></span>
+          </span>
+        </NuxtLink>
+      </div>
+      <div v-else class="px-4 py-6 text-center sm:px-5">
+        <span class="mx-auto inline-flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300"><AdminAdminIcon icon="check-square" class="h-5 w-5" /></span>
+        <p class="mt-2 text-sm font-semibold text-gray-900 dark:text-white">Tout est à jour</p>
+        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Aucune action commerciale ne demande ton attention aujourd’hui.</p>
+      </div>
+      <div v-if="actionsToday.length > visibleActionsToday.length" class="border-t border-gray-100 px-4 py-2.5 text-center dark:border-white/[0.06] sm:px-5">
+        <NuxtLink to="/admin" class="inline-flex min-h-10 items-center text-xs font-semibold text-violet-700 hover:text-violet-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:text-violet-300 dark:hover:text-violet-200">Voir les {{ actionsToday.length }} actions dans le cockpit</NuxtLink>
       </div>
     </section>
 

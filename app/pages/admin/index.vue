@@ -1192,7 +1192,7 @@ watch(() => auth.currentOrganizationId, (organizationId, previousOrganizationId)
       </div>
     </section>
 
-    <section v-show="isSectionVisible('reminders')" class="rounded-lg border border-gray-200 bg-white shadow-sm dark:border-white/[0.08] dark:bg-[#111118]" :style="{ order: sectionOrder('reminders') }">
+    <section id="relances-clients" v-show="isSectionVisible('reminders')" class="scroll-mt-20 rounded-lg border border-gray-200 bg-white shadow-sm dark:border-white/[0.08] dark:bg-[#111118]" :style="{ order: sectionOrder('reminders') }">
       <div class="flex flex-col gap-3 border-b border-gray-100 px-4 py-3 dark:border-white/[0.06] sm:flex-row sm:items-center sm:justify-between sm:px-5">
         <div class="min-w-0">
           <h2 class="text-sm font-semibold text-gray-950 dark:text-white">Relances clients</h2>
