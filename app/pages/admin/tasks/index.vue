@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Task } from '~/types'
+import AdminViewSkeleton from '~/components/admin/AdminViewSkeleton.vue'
 
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 
@@ -167,9 +168,7 @@ onBeforeUnmount(() => {
       </div>
     </section>
 
-    <div v-if="store.loading && !store.loaded" role="status" aria-live="polite" class="grid min-h-56 place-items-center rounded-xl border border-gray-200 bg-white dark:border-white/[0.08] dark:bg-[#111118]">
-      <div class="text-center"><div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-violet-200 border-t-violet-600" /><p class="mt-3 text-sm text-gray-500 dark:text-gray-400">Chargement des tâches…</p></div>
-    </div>
+    <AdminViewSkeleton v-if="store.loading && !store.loaded" label="Chargement des tâches" />
 
     <div v-else-if="loadError" role="alert" class="rounded-xl border border-red-200 bg-red-50 p-5 text-red-900 dark:border-red-400/20 dark:bg-red-400/10 dark:text-red-100">
       <p class="font-semibold">Les tâches sont indisponibles</p>

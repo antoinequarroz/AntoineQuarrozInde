@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Invoice } from '~/types'
+import AdminViewSkeleton from '~/components/admin/AdminViewSkeleton.vue'
 import { printStructuredDocument } from '~/utils/printStructuredDocument'
 import { generateScorReference, getQrReferenceError, isQrIban, isValidSwissIban, normalizeIban } from '~~/shared/utils/swissQr'
 definePageMeta({ layout: 'admin', middleware: 'admin' })
@@ -453,11 +454,7 @@ onBeforeUnmount(releasePdfPreview)
       <div><p class="text-sm font-semibold">IBAN non configuré</p><p class="mt-1 text-xs text-amber-800 dark:text-amber-200/80">Ajoute ton IBAN pour générer une QR-facture suisse. Tu peux déjà créer et prévisualiser un PDF classique sans IBAN.</p></div>
       <button type="button" class="min-h-10 shrink-0 rounded-lg bg-amber-900 px-4 text-xs font-semibold text-white transition hover:bg-amber-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 dark:bg-amber-300 dark:text-amber-950 dark:hover:bg-amber-200" @click="showBillingProfile = true">Ajouter mon IBAN</button>
     </div>
-    <div v-if="loadingData" role="status" aria-live="polite" class="space-y-3">
-      <span class="sr-only">Chargement des factures</span>
-      <div class="h-20 animate-pulse rounded-xl bg-gray-200/70 dark:bg-white/[0.06]" />
-      <div class="h-64 animate-pulse rounded-xl bg-gray-200/70 dark:bg-white/[0.06]" />
-    </div>
+    <AdminViewSkeleton v-if="loadingData" label="Chargement des factures" />
     <div v-else-if="loadError" role="alert" class="flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-red-900 dark:border-red-400/20 dark:bg-red-400/10 dark:text-red-100 sm:flex-row sm:items-center sm:justify-between">
       <div><p class="font-semibold">Chargement impossible</p><p class="mt-1 text-sm">{{ loadError }}</p></div>
       <button class="min-h-11 shrink-0 rounded-lg bg-red-700 px-4 text-sm font-semibold text-white hover:bg-red-800" @click="loadInvoicesPage(true)">Réessayer</button>

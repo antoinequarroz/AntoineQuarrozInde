@@ -3,6 +3,7 @@ import type { Client } from '~/types'
 import AdminAdminCard from '~/components/admin/AdminCard.vue'
 import AdminAdminEmptyState from '~/components/admin/AdminEmptyState.vue'
 import AdminAdminToolbar from '~/components/admin/AdminToolbar.vue'
+import AdminViewSkeleton from '~/components/admin/AdminViewSkeleton.vue'
 
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 
@@ -513,12 +514,11 @@ onMounted(async () => {
       <button class="min-h-11 shrink-0 rounded-lg bg-red-700 px-4 text-sm font-semibold text-white hover:bg-red-800" @click="loadClients">Réessayer</button>
     </div>
 
-    <div v-else-if="queryState.view === 'table'" class="space-y-3">
-      <AdminAdminCard v-if="loading">
-        <AdminAdminEmptyState title="Chargement..." />
-      </AdminAdminCard>
+    <AdminViewSkeleton v-else-if="loading" :variant="queryState.view === 'kanban' ? 'pipeline' : 'table'" label="Chargement des clients" />
 
-      <div v-else class="sm:hidden space-y-2">
+    <div v-else-if="queryState.view === 'table'" class="space-y-3">
+
+      <div class="sm:hidden space-y-2">
         <AdminAdminCard v-for="client in pageData.items" :key="`mobile-${client.id}`">
           <label class="mb-2 flex items-center gap-2 text-xs text-gray-500">
             <input :checked="selectedIds.includes(client.id)" type="checkbox" @change="toggleOne(client.id)">
@@ -551,7 +551,7 @@ onMounted(async () => {
         <AdminAdminEmptyState v-if="!pageData.items.length" title="Aucun client" body="Ajuste les filtres ou crée un nouveau client." />
       </div>
 
-      <div v-if="!loading" class="hidden sm:block overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm dark:border-white/[0.06] dark:bg-[#111118]">
+      <div class="hidden sm:block overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm dark:border-white/[0.06] dark:bg-[#111118]">
         <table class="w-full">
           <thead class="border-b border-gray-100 dark:border-white/[0.06]">
             <tr>
@@ -653,7 +653,7 @@ onMounted(async () => {
       </AdminAdminCard>
     </div>
 
-    <div v-if="!loadError" class="flex items-center justify-between gap-3 rounded-xl border border-gray-100 bg-white p-3 shadow-sm dark:border-white/[0.06] dark:bg-[#111118]">
+    <div v-if="!loadError && !loading" class="flex items-center justify-between gap-3 rounded-xl border border-gray-100 bg-white p-3 shadow-sm dark:border-white/[0.06] dark:bg-[#111118]">
       <p class="text-xs text-gray-500">Page {{ pageData.page }} / {{ totalPages }} · {{ pageData.total }} {{ pageData.total === 1 ? 'résultat' : 'résultats' }}</p>
       <div class="flex items-center gap-2">
         <button class="min-h-10 rounded-lg border border-gray-200 px-3 text-xs disabled:opacity-50 dark:border-white/[0.12]" :disabled="pageData.page <= 1" @click="replaceQuery({ page: String(pageData.page - 1) })">Précédent</button>

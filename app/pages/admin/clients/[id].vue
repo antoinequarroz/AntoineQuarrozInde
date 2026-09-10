@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { ContactMessage } from '~/types'
 import { CLIENT_WORKFLOW_STAGES, resolveClientWorkflow } from '~/utils/clientWorkflow'
+import AdminViewSkeleton from '~/components/admin/AdminViewSkeleton.vue'
 
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 
@@ -110,7 +111,7 @@ onMounted(async () => {
 
 <template>
   <div class="space-y-6 admin-main-safe">
-    <div v-if="loading" role="status" aria-live="polite" class="grid min-h-56 place-items-center rounded-xl border border-gray-200 bg-white dark:border-white/10 dark:bg-[#111118]"><div class="text-center"><div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-violet-200 border-t-violet-600" /><p class="mt-3 text-sm text-gray-500">Chargement de la fiche client…</p></div></div>
+    <AdminViewSkeleton v-if="loading" variant="detail" label="Chargement de la fiche client" />
     <div v-else-if="loadError" role="alert" class="rounded-xl border border-red-200 bg-red-50 p-5 text-red-900 dark:border-red-400/20 dark:bg-red-400/10 dark:text-red-100"><p class="font-semibold">Fiche indisponible</p><p class="mt-1 text-sm">{{ loadError }}</p><NuxtLink to="/admin/clients" class="mt-4 inline-flex min-h-11 items-center rounded-lg bg-red-700 px-4 text-sm font-semibold text-white">Retour aux clients</NuxtLink></div>
     <div v-else-if="client" class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4 min-w-0">
       <div class="min-w-0">
