@@ -4,11 +4,16 @@
 from __future__ import annotations
 
 import argparse
+import base64
 import hashlib
+import hmac
 import json
 import os
 import re
+import secrets
+import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
@@ -121,6 +126,47 @@ def publish_linkedin(content: str) -> dict:
     return {"id": headers.get("x-restli-id") or body.get("id"), "response": body}
 
 
+def oauth1_quote(value: str) -> str:
+    return urllib.parse.quote(value, safe="~-._")
+
+
+def oauth1_authorization_header(
+    method: str,
+    url: str,
+    consumer_key: str,
+    consumer_secret: str,
+    access_token: str,
+    access_token_secret: str,
+    *,
+    nonce: str | None = None,
+    timestamp: str | None = None,
+) -> str:
+    params = {
+        "oauth_consumer_key": consumer_key,
+        "oauth_nonce": nonce or secrets.token_hex(16),
+        "oauth_signature_method": "HMAC-SHA1",
+        "oauth_timestamp": timestamp or str(int(time.time())),
+        "oauth_token": access_token,
+        "oauth_version": "1.0",
+    }
+    normalized = "&".join(
+        f"{oauth1_quote(key)}={oauth1_quote(value)}"
+        for key, value in sorted(params.items())
+    )
+    signature_base = "&".join(
+        oauth1_quote(part) for part in (method.upper(), url, normalized)
+    )
+    signing_key = f"{oauth1_quote(consumer_secret)}&{oauth1_quote(access_token_secret)}"
+    signature = base64.b64encode(
+        hmac.new(signing_key.encode(), signature_base.encode(), hashlib.sha1).digest()
+    ).decode()
+    params["oauth_signature"] = signature
+    return "OAuth " + ", ".join(
+        f'{oauth1_quote(key)}="{oauth1_quote(value)}"'
+        for key, value in sorted(params.items())
+    )
+
+
 def publish_x(content: str) -> dict:
     allowed_cost = float(os.environ.get("HERMES_X_MAX_USD_PER_POST", "0") or "0")
     if allowed_cost < X_POST_WITH_URL_ESTIMATED_USD:
@@ -128,14 +174,28 @@ def publish_x(content: str) -> dict:
             "Publication X bloquee par le plafond de cout. "
             f"Minimum requis: {X_POST_WITH_URL_ESTIMATED_USD:.2f} USD par post avec URL."
         )
-    token = os.environ.get("X_USER_ACCESS_TOKEN", "").strip()
-    if not token:
-        raise RuntimeError("X_USER_ACCESS_TOKEN absent.")
+    credentials = {
+        "consumer_key": os.environ.get("X_API_KEY", "").strip(),
+        "consumer_secret": os.environ.get("X_API_SECRET", "").strip(),
+        "access_token": os.environ.get("X_ACCESS_TOKEN", "").strip(),
+        "access_token_secret": os.environ.get("X_ACCESS_TOKEN_SECRET", "").strip(),
+    }
+    missing = [name for name, value in credentials.items() if not value]
+    if missing:
+        raise RuntimeError(f"Identifiants X OAuth 1.0a absents: {', '.join(missing)}.")
+    authorization = oauth1_authorization_header(
+        "POST",
+        X_POSTS_ENDPOINT,
+        credentials["consumer_key"],
+        credentials["consumer_secret"],
+        credentials["access_token"],
+        credentials["access_token_secret"],
+    )
     body, _ = request_json(
         X_POSTS_ENDPOINT,
         {"text": content},
         {
-            "Authorization": f"Bearer {token}",
+            "Authorization": authorization,
             "User-Agent": "hermes-antoinequarroz/1.0",
         },
     )
