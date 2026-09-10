@@ -42,7 +42,12 @@ describe('Hermes social publication helper', () => {
   it('keeps tokens out of source and documents the X cost gate', () => {
     const source = readFileSync(script, 'utf8')
     expect(source).toContain('os.environ.get("LINKEDIN_ACCESS_TOKEN"')
-    expect(source).toContain('os.environ.get("X_USER_ACCESS_TOKEN"')
+    expect(source).toContain('os.environ.get("X_API_KEY"')
+    expect(source).toContain('os.environ.get("X_API_SECRET"')
+    expect(source).toContain('os.environ.get("X_ACCESS_TOKEN"')
+    expect(source).toContain('os.environ.get("X_ACCESS_TOKEN_SECRET"')
+    expect(source).toContain('oauth_signature_method')
+    expect(source).toContain('HMAC-SHA1')
     expect(source).toContain('HERMES_X_MAX_USD_PER_POST')
     expect(source).toContain('X_POST_WITH_URL_ESTIMATED_USD = 0.20')
   })
