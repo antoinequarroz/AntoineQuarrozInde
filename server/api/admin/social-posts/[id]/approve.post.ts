@@ -13,7 +13,7 @@ export default defineEventHandler(async (event) => {
   if (!['draft', 'failed'].includes(current.status)) throw createError({ statusCode: 409, message: 'Statut incompatible.' })
   const content = validateSocialContent(current.platform, body.content)
   if (!content.includes(current.article_url)) {
-    throw createError({ statusCode: 400, message: 'Le texte doit contenir le lien public de l’article.' })
+    throw createError({ statusCode: 400, message: 'Le texte doit contenir le lien public associé.' })
   }
   const { data: connection } = await supabase.from('social_platform_connections').select('state,checked_at')
     .eq('organization_id', org.id).eq('platform', current.platform).maybeSingle()

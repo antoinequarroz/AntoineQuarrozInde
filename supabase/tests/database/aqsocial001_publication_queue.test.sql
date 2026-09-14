@@ -1,6 +1,6 @@
 begin;
 
-select plan(8);
+select plan(10);
 
 insert into public.organizations (id, name, slug)
 values ('00000000-0000-0000-0000-000000000701', 'AQ Social Queue', 'aq-social-queue');
@@ -74,6 +74,42 @@ select throws_ok(
   '23514',
   null,
   'the queue rejects a path outside the social review directory'
+);
+
+select lives_ok(
+  $$
+    insert into public.social_posts (
+      organization_id, platform, source_key, article_title, article_url, content, source_path
+    ) values (
+      '00000000-0000-0000-0000-000000000701',
+      'linkedin',
+      'homepage-introduction',
+      'Présentation',
+      'https://www.antoinequarroz.ch/',
+      'Premier post de présentation. https://www.antoinequarroz.ch/',
+      'seo/social/a-valider/presentation-linkedin.md'
+    )
+  $$,
+  'the queue accepts the canonical homepage for a standalone social post'
+);
+
+select throws_ok(
+  $$
+    insert into public.social_posts (
+      organization_id, platform, source_key, article_title, article_url, content, source_path
+    ) values (
+      '00000000-0000-0000-0000-000000000701',
+      'linkedin',
+      'external-destination',
+      'External destination',
+      'https://example.com/',
+      'An external destination.',
+      'seo/social/a-valider/external-linkedin.md'
+    )
+  $$,
+  '23514',
+  null,
+  'the queue rejects an external destination URL'
 );
 
 select * from finish();

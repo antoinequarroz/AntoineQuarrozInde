@@ -21,6 +21,10 @@ date: 2026-09-10
 Texte du post avec son URL publique.
 ```
 
+Pour une publication autonome, comme un message de présentation, `article_url`
+peut contenir la page d'accueil canonique `https://www.antoinequarroz.ch/`.
+Le nom du champ est conservé pour rester compatible avec les brouillons d'articles.
+
 Validation locale, sans publication :
 
 ```bash

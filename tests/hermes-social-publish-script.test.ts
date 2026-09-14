@@ -32,6 +32,19 @@ describe('Hermes social publication helper', () => {
     expect(receipt).toMatchObject({ platform: 'linkedin', externalWrite: false, status: 'validated' })
   })
 
+  it('accepts the canonical homepage for a standalone introduction post', () => {
+    const { project, path } = createDraft('APPROUVE', 'linkedin', 'Je me présente ici.\n\nhttps://www.antoinequarroz.ch/')
+    const draft = readFileSync(path, 'utf8').replace(
+      'https://www.antoinequarroz.ch/blog/test-social',
+      'https://www.antoinequarroz.ch/',
+    )
+    writeFileSync(path, draft)
+    const receipt = JSON.parse(execFileSync('python3', [
+      script, '--project', project, '--draft', path, '--dry-run',
+    ], { encoding: 'utf8' }))
+    expect(receipt).toMatchObject({ platform: 'linkedin', externalWrite: false, status: 'validated' })
+  })
+
   it('rejects an X draft longer than 280 characters', () => {
     const articleUrl = 'https://www.antoinequarroz.ch/blog/test-social'
     const { project, path } = createDraft('APPROUVE', 'x', `${'a'.repeat(260)} ${articleUrl}`)
