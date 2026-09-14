@@ -250,7 +250,7 @@ test('secondary admin pages remain complete and responsive on mobile', async ({ 
   await selectSandboxOrganization(page)
 
   const routes = [
-    ['/admin/crm', 'Carnet d’adresses & prospection'],
+    ['/admin/crm', 'CRM clients'],
     ['/admin/tasks', 'Tâches'],
     ['/admin/quotes', 'Devis'],
     ['/admin/appointments', 'Agenda'],
