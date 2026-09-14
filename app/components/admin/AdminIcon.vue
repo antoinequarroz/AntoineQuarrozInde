@@ -43,6 +43,12 @@ const props = defineProps<{
     <path d="m22 2-7 20-4-9-9-4Z" stroke-linecap="round" stroke-linejoin="round" />
     <path d="M22 2 11 13" stroke-linecap="round" stroke-linejoin="round" />
   </svg>
+  <svg v-else-if="props.icon === 'share-2'" :class="props.class || 'w-4 h-4'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+    <circle cx="18" cy="5" r="3" />
+    <circle cx="6" cy="12" r="3" />
+    <circle cx="18" cy="19" r="3" />
+    <path d="m8.6 10.5 6.8-4M8.6 13.5l6.8 4" stroke-linecap="round" />
+  </svg>
   <svg v-else-if="props.icon === 'shield'" :class="props.class || 'w-4 h-4'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
   </svg>

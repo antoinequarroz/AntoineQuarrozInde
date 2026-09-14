@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Publish one explicitly approved social draft, with local idempotency receipts."""
+"""Publish approved social drafts locally or from the site's secure queue."""
 
 from __future__ import annotations
 
@@ -25,6 +25,7 @@ ALLOWED_DRAFT_ROOT = Path("seo/social/a-valider")
 RECEIPT_ROOT = Path("seo/social/receipts")
 LINKEDIN_VERSION = "202606"
 X_POST_WITH_URL_ESTIMATED_USD = 0.20
+DEFAULT_SITE_URL = "https://www.antoinequarroz.ch"
 
 
 def parse_draft(path: Path) -> dict[str, str]:
@@ -53,6 +54,7 @@ def parse_draft(path: Path) -> dict[str, str]:
         "platform": platform,
         "status": status,
         "article_url": article_url,
+        "article_title": metadata.get("article_title") or metadata.get("titre") or "",
         "content": content,
     }
 
@@ -94,6 +96,23 @@ def request_json(url: str, payload: dict, headers: dict[str, str]) -> tuple[dict
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode("utf-8", errors="replace")
         raise RuntimeError(f"Publication refusee par la plateforme ({exc.code}): {detail[:500]}") from exc
+
+
+def site_request(site_url: str, token: str, *, payload: dict | None = None, path: str = "social-publications") -> dict:
+    url = f"{site_url.rstrip('/')}/api/hermes/{path}"
+    request = urllib.request.Request(
+        url,
+        data=None if payload is None else json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+        headers={"Authorization": f"Bearer {token}", "User-Agent": "hermes-antoinequarroz/1.0",
+                 **({"Content-Type": "application/json"} if payload is not None else {})},
+        method="POST" if payload is not None else "GET",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=60) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", errors="replace")
+        raise RuntimeError(f"File sociale indisponible ({exc.code}): {detail[:500]}") from exc
 
 
 def publish_linkedin(content: str) -> dict:
@@ -202,14 +221,113 @@ def publish_x(content: str) -> dict:
     return {"id": body.get("data", {}).get("id"), "response": body}
 
 
+def connection_state(platform: str) -> tuple[str, str]:
+    if platform == "linkedin":
+        author = os.environ.get("LINKEDIN_PERSON_URN", "").strip()
+        ready = bool(os.environ.get("LINKEDIN_ACCESS_TOKEN", "").strip()) and bool(
+            re.fullmatch(r"urn:li:person:[A-Za-z0-9_-]+", author)
+        )
+        return ("ready", "Connexion LinkedIn disponible dans Hermes.") if ready else ("blocked", "Connexion LinkedIn incomplète dans Hermes.")
+    names = ("X_API_KEY", "X_API_SECRET", "X_ACCESS_TOKEN", "X_ACCESS_TOKEN_SECRET")
+    credentials_ready = all(os.environ.get(name, "").strip() for name in names)
+    allowed_cost = float(os.environ.get("HERMES_X_MAX_USD_PER_POST", "0") or "0")
+    ready = credentials_ready and allowed_cost >= X_POST_WITH_URL_ESTIMATED_USD
+    return ("ready", "Connexion X et plafond de coût disponibles dans Hermes.") if ready else ("blocked", "Connexion X ou plafond de coût encore incomplet dans Hermes.")
+
+
+def external_post_url(platform: str, post_id: str | None) -> str | None:
+    if not post_id:
+        return None
+    if platform == "x":
+        return f"https://x.com/i/web/status/{urllib.parse.quote(str(post_id), safe='')}"
+    return f"https://www.linkedin.com/feed/update/{urllib.parse.quote(str(post_id), safe=':')}"
+
+
+def process_approved(site_url: str, token: str, *, dry_run: bool) -> dict:
+    for platform in ("linkedin", "x"):
+        state, message = connection_state(platform)
+        site_request(site_url, token, payload={"action": "readiness", "platform": platform, "state": state, "message": message})
+    queued = site_request(site_url, token).get("posts", [])
+    summary = {"queued": len(queued), "published": 0, "failed": 0, "externalWrite": False}
+    if dry_run:
+        return summary
+    for queued_post in queued:
+        platform = queued_post.get("platform")
+        state, _ = connection_state(platform)
+        if state != "ready":
+            continue
+        claimed = site_request(site_url, token, payload={"action": "claim", "id": queued_post["id"], "version": queued_post["version"]})["post"]
+        try:
+            result = publish_linkedin(claimed["content"]) if platform == "linkedin" else publish_x(claimed["content"])
+            post_id = result.get("id")
+            site_request(site_url, token, payload={"action": "complete", "id": claimed["id"], "version": claimed["version"], "externalPostId": post_id, "externalPostUrl": external_post_url(platform, post_id)})
+            summary["published"] += 1
+            summary["externalWrite"] = True
+        except Exception as exc:
+            site_request(site_url, token, payload={"action": "fail", "id": claimed["id"], "version": claimed["version"], "error": str(exc)[:1000]})
+            summary["failed"] += 1
+    return summary
+
+
+def sync_drafts(project: Path, site_url: str, token: str, *, dry_run: bool) -> dict:
+    draft_root = (project / ALLOWED_DRAFT_ROOT).resolve()
+    result: dict[str, object] = {"found": 0, "synced": 0, "errors": []}
+    for draft_path in sorted(draft_root.glob("*.md")):
+        result["found"] = int(result["found"]) + 1
+        try:
+            draft = parse_draft(draft_path)
+            platform = draft["platform"]
+            content = draft["content"]
+            article_url = draft["article_url"]
+            if platform not in {"linkedin", "x"}:
+                raise ValueError("plateforme absente ou invalide")
+            if not article_url.startswith(CANONICAL_ARTICLE_PREFIX) or article_url not in content:
+                raise ValueError("URL canonique absente du texte")
+            if not content or len(content) > (280 if platform == "x" else 3000):
+                raise ValueError("longueur de texte invalide")
+            if not dry_run:
+                site_request(site_url, token, path="social-drafts", payload={
+                    "platform": platform,
+                    "sourceKey": draft_path.stem,
+                    "articleTitle": draft["article_title"] or draft_path.stem.replace("-", " ").strip().capitalize(),
+                    "articleUrl": article_url,
+                    "content": content,
+                    "sourcePath": str(draft_path.relative_to(project)),
+                })
+            result["synced"] = int(result["synced"]) + 1
+        except Exception as exc:
+            errors = result["errors"]
+            assert isinstance(errors, list)
+            errors.append({"file": draft_path.name, "error": str(exc)[:300]})
+    return result
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--project", type=Path, default=Path("."))
-    parser.add_argument("--draft", type=Path, required=True)
+    mode = parser.add_mutually_exclusive_group(required=True)
+    mode.add_argument("--draft", type=Path)
+    mode.add_argument("--process-approved", action="store_true")
+    mode.add_argument("--sync-drafts", action="store_true")
+    parser.add_argument("--site-url", default=os.environ.get("HERMES_SITE_URL", DEFAULT_SITE_URL))
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
     project = args.project.resolve()
+    if args.process_approved:
+        token = os.environ.get("HERMES_PUBLISH_TOKEN", "").strip()
+        if not token:
+            raise RuntimeError("HERMES_PUBLISH_TOKEN absent.")
+        print(json.dumps(process_approved(args.site_url, token, dry_run=args.dry_run), ensure_ascii=False))
+        return 0
+    if args.sync_drafts:
+        token = os.environ.get("HERMES_PUBLISH_TOKEN", "").strip()
+        if not token:
+            raise RuntimeError("HERMES_PUBLISH_TOKEN absent.")
+        print(json.dumps(sync_drafts(project, args.site_url, token, dry_run=args.dry_run), ensure_ascii=False))
+        return 0
+
+    assert args.draft is not None
     draft_path = args.draft if args.draft.is_absolute() else project / args.draft
     draft = validate_draft(draft_path, project)
     fingerprint = hashlib.sha256(

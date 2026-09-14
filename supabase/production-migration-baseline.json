@@ -34,5 +34,6 @@
   { "filename": "20260904230738_activate_project_case_study_approvals.sql", "sha256": "4d50429d2b4385e493e43c0b0ee365a02c24af52f505131ac4acc06e80608d37" },
   { "filename": "20260906104808_enforce_tenant_relationships.sql", "sha256": "665afc95427245735ed2aa763334b49619cd32154aa931ef7013f7e4aa5b84d2" },
   { "filename": "20260906105439_harden_media_bucket.sql", "sha256": "2fb2c367f32a09d1bd88f6b0c8bceaa307edb8fa5c0139bbcb1cfaf6e703989c" },
-  { "filename": "20260910000500_repair_legacy_article_slug.sql", "sha256": "f48d79e9650b3bd8e2bec5683060939b9d2c2af45810aefea512843c76759f99" }
+  { "filename": "20260910000500_repair_legacy_article_slug.sql", "sha256": "f48d79e9650b3bd8e2bec5683060939b9d2c2af45810aefea512843c76759f99" },
+  { "filename": "20260914071740_add_social_publication_queue.sql", "sha256": "3483017300d74c8c1150ea2793a42b638e57a0735ce7d118b21fc916d5645a12" }
 ]

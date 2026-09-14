@@ -43,6 +43,7 @@ const navGroups = [
     label: 'Publier',
     items: [
       { label: 'Articles', icon: 'file-text', href: '/admin/articles' },
+      { label: 'Réseaux sociaux', icon: 'share-2', href: '/admin/social' },
       { label: 'Avis', icon: 'star', href: '/admin/reviews' },
     ],
   },
