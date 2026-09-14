@@ -3,7 +3,7 @@ import type { Client } from '~/types'
 import AdminAdminIcon from '~/components/admin/AdminIcon.vue'
 import AdminAdminEmptyState from '~/components/admin/AdminEmptyState.vue'
 import AdminViewSkeleton from '~/components/admin/AdminViewSkeleton.vue'
-import { isCommercialActionVisible, type CommercialActionState } from '~/utils/commercialActionState'
+import { isCommercialActionVisible, type CommercialActionState, type CommercialActionStatus } from '~/utils/commercialActionState'
 import { buildCommercialTaskSuggestions, type CommercialTaskSuggestion } from '~/utils/commercialTaskPlan'
 import { CLIENT_WORKFLOW_STAGES, resolveClientWorkflow } from '~/utils/clientWorkflow'
 
@@ -26,6 +26,47 @@ const loading = ref(true)
 const loadError = ref('')
 const commercialActionStates = ref<Record<string, CommercialActionState>>({})
 const commercialActionStatesStatus = ref<'loading' | 'ready' | 'error'>('loading')
+const updatingCommercialActionKey = ref<string | null>(null)
+const commercialActionFeedback = ref('')
+
+type ReminderCandidate = {
+  reminderKey: string
+  targetType: 'quote' | 'invoice'
+  targetId: number
+  clientId: number
+  clientName: string
+  email: string
+  subject: string
+  bodyText: string
+  number: string
+  dueDate: string
+  milestone: string
+  urgency: 'upcoming' | 'due' | 'overdue'
+  balanceCents?: number
+  currency?: string
+}
+
+type ReminderPreview = {
+  automationEnabled: boolean
+  generatedAt: string
+  candidates: ReminderCandidate[]
+  skipped: { alreadySent: number, missingContact: number, outsideMilestone: number, paused: number }
+}
+
+const showReminderConfirm = ref(false)
+const reminderDialogStatus = ref<'idle' | 'loading' | 'ready' | 'error'>('idle')
+const reminderDialogError = ref('')
+const selectedReminderAction = ref<CommercialTaskSuggestion | null>(null)
+const selectedReminderCandidate = ref<ReminderCandidate | null>(null)
+const sendingReminder = ref(false)
+let reminderPreviewRequestVersion = 0
+const closeReminderConfirm = () => {
+  if (sendingReminder.value) return
+  reminderPreviewRequestVersion++
+  showReminderConfirm.value = false
+  reminderDialogStatus.value = 'idle'
+}
+const { dialogRef: reminderDialogRef, handleDialogKeydown: handleReminderDialogKeydown } = useAccessibleDialog(showReminderConfirm, closeReminderConfirm, '[data-reminder-cancel]')
 
 const AVATAR_TONES = [
   'bg-violet-500',
@@ -148,6 +189,23 @@ const actionsToday = computed(() => commercialActionStatesStatus.value === 'read
 
 const visibleActionsToday = computed(() => actionsToday.value.slice(0, 4))
 const urgentActionCount = computed(() => actionsToday.value.filter(action => action.priority === 'high').length)
+const commercialSnoozeOptions = computed(() => [
+  { label: 'Demain', date: addDaysToIsoDate(todayIso.value, 1) },
+  { label: 'Dans 3 jours', date: addDaysToIsoDate(todayIso.value, 3) },
+  { label: 'Dans 7 jours', date: addDaysToIsoDate(todayIso.value, 7) },
+])
+
+function addDaysToIsoDate(isoDate: string, days: number) {
+  const [year, month, day] = isoDate.split('-').map(Number)
+  const date = new Date(Date.UTC(year || 1970, (month || 1) - 1, day || 1))
+  date.setUTCDate(date.getUTCDate() + days)
+  return date.toISOString().slice(0, 10)
+}
+
+function readableError(error: unknown) {
+  const value = error as { data?: { message?: string }, message?: string }
+  return value?.data?.message || value?.message || 'L’action n’a pas pu être enregistrée. Réessaie dans quelques instants.'
+}
 
 function actionIcon(action: CommercialTaskSuggestion) {
   if (action.kind === 'invoice') return 'receipt'
@@ -165,6 +223,117 @@ function actionTone(action: CommercialTaskSuggestion) {
   if (action.priority === 'high') return 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300'
   if (action.kind === 'quote') return 'bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300'
   return 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'
+}
+
+async function persistCommercialAction(action: CommercialTaskSuggestion, status: CommercialActionStatus, snoozedUntil: string | null = null) {
+  const state = await $fetch<CommercialActionState>('/api/admin/commercial-actions', {
+    method: 'POST',
+    headers: auth.authHeader(),
+    body: {
+      actionKey: action.key,
+      status,
+      snoozedUntil,
+      targetPath: action.to,
+    },
+  })
+  commercialActionStates.value = { ...commercialActionStates.value, [action.key]: state }
+  commercialActionStatesStatus.value = 'ready'
+}
+
+async function updateCommercialAction(action: CommercialTaskSuggestion, status: CommercialActionStatus, snoozedUntil: string | null = null) {
+  if (updatingCommercialActionKey.value || commercialActionStatesStatus.value !== 'ready') return
+  updatingCommercialActionKey.value = action.key
+  commercialActionFeedback.value = ''
+  try {
+    await persistCommercialAction(action, status, snoozedUntil)
+    const message = status === 'handled'
+      ? `${actionName(action)} marqué comme traité`
+      : status === 'ignored'
+        ? `${actionName(action)} retiré des actions du jour`
+        : `${actionName(action)} reporté au ${new Date(`${snoozedUntil}T12:00:00`).toLocaleDateString('fr-CH')}`
+    commercialActionFeedback.value = message
+    toast.success(message)
+  }
+  catch (error) {
+    const message = readableError(error)
+    commercialActionFeedback.value = message
+    toast.error(message)
+  }
+  finally {
+    updatingCommercialActionKey.value = null
+  }
+}
+
+async function prepareReminder(action: CommercialTaskSuggestion) {
+  if (action.kind === 'lead' || sendingReminder.value) return
+  const requestVersion = ++reminderPreviewRequestVersion
+  selectedReminderAction.value = action
+  selectedReminderCandidate.value = null
+  reminderDialogError.value = ''
+  reminderDialogStatus.value = 'loading'
+  showReminderConfirm.value = true
+
+  try {
+    const preview = await $fetch<ReminderPreview>('/api/admin/pipeline/reminders', { headers: auth.authHeader() })
+    if (requestVersion !== reminderPreviewRequestVersion || selectedReminderAction.value?.key !== action.key) return
+    const candidate = preview.candidates.find(item => item.targetType === action.kind && item.targetId === action.sourceId) || null
+    if (!candidate) {
+      reminderDialogStatus.value = 'error'
+      reminderDialogError.value = 'Aucun message ne peut être envoyé aujourd’hui pour ce dossier. Le moteur Lumail respecte les jalons et les envois déjà effectués.'
+      return
+    }
+    selectedReminderCandidate.value = candidate
+    reminderDialogStatus.value = 'ready'
+  }
+  catch (error) {
+    if (requestVersion !== reminderPreviewRequestVersion || selectedReminderAction.value?.key !== action.key) return
+    reminderDialogStatus.value = 'error'
+    reminderDialogError.value = readableError(error)
+  }
+}
+
+async function sendSelectedReminder() {
+  const action = selectedReminderAction.value
+  const candidate = selectedReminderCandidate.value
+  if (!action || !candidate || sendingReminder.value) return
+  sendingReminder.value = true
+  reminderDialogError.value = ''
+
+  try {
+    const result = await $fetch<{ sentCount: number, failedCount: number }>('/api/admin/pipeline/reminders', {
+      method: 'POST',
+      headers: auth.authHeader(),
+      body: {
+        confirmedReminders: [{
+          reminderKey: candidate.reminderKey,
+          email: candidate.email,
+          subject: candidate.subject,
+          bodyText: candidate.bodyText,
+        }],
+      },
+    })
+    if (result.sentCount !== 1 || result.failedCount) throw new Error('Lumail n’a pas confirmé l’envoi. Aucun traitement automatique n’a été appliqué.')
+
+    try {
+      await persistCommercialAction(action, 'handled')
+    }
+    catch {
+      toast.error('L’e-mail est parti, mais la carte n’a pas pu être retirée. Recharge le CRM avant toute nouvelle tentative.')
+      showReminderConfirm.value = false
+      return
+    }
+
+    const message = `Relance ${candidate.number} envoyée avec Lumail à ${candidate.email}`
+    commercialActionFeedback.value = message
+    toast.success(message)
+    showReminderConfirm.value = false
+  }
+  catch (error) {
+    reminderDialogError.value = readableError(error)
+  }
+  finally {
+    sendingReminder.value = false
+  }
 }
 
 const pipelineClients = computed(() => {
@@ -268,6 +437,7 @@ onMounted(() => { void loadCrm() })
     </section>
 
     <section v-if="!loading && !loadError" aria-labelledby="actions-today-title" class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-white/[0.08] dark:bg-[#111118]">
+      <p class="sr-only" role="status" aria-live="polite">{{ commercialActionFeedback }}</p>
       <div class="flex flex-col gap-3 border-b border-gray-100 px-4 py-3 dark:border-white/[0.06] sm:flex-row sm:items-center sm:justify-between sm:px-5">
         <div class="min-w-0">
           <div class="flex flex-wrap items-center gap-2">
@@ -284,22 +454,81 @@ onMounted(() => { void loadCrm() })
       </div>
 
       <div v-if="visibleActionsToday.length" class="divide-y divide-gray-100 dark:divide-white/[0.06] sm:grid sm:grid-cols-2 sm:divide-x sm:divide-y-0 sm:divide-gray-100 dark:sm:divide-white/[0.06] xl:grid-cols-4">
-        <NuxtLink
+        <article
           v-for="action in visibleActionsToday"
           :key="action.key"
-          :to="action.to"
-          class="group flex min-h-[112px] items-start gap-3 px-4 py-3 transition-[color,background-color,transform] duration-150 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-violet-500 active:scale-[0.96] dark:hover:bg-white/[0.03] sm:px-5"
+          class="flex min-h-[196px] flex-col px-4 py-3 transition-colors duration-150 hover:bg-gray-50 dark:hover:bg-white/[0.03] sm:px-5"
         >
-          <span class="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg" :class="actionTone(action)">
-            <AdminAdminIcon :icon="actionIcon(action)" class="h-4 w-4" />
-          </span>
-          <span class="min-w-0 flex-1">
-            <span class="block truncate text-sm font-semibold text-gray-950 dark:text-white">{{ actionName(action) }}</span>
-            <span class="mt-1 inline-flex rounded-md px-2 py-0.5 text-xs font-semibold" :class="actionTone(action)">{{ action.label }}</span>
-            <span class="mt-1 block line-clamp-2 text-xs leading-5 text-gray-500 dark:text-gray-400">{{ action.reason }}</span>
-            <span class="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-violet-700 transition-colors group-hover:text-violet-800 dark:text-violet-300 dark:group-hover:text-violet-200">Ouvrir le dossier <span aria-hidden="true">›</span></span>
-          </span>
-        </NuxtLink>
+          <NuxtLink
+            :to="action.to"
+            class="group flex min-w-0 flex-1 items-start gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#111118]"
+          >
+            <span class="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg" :class="actionTone(action)">
+              <AdminAdminIcon :icon="actionIcon(action)" class="h-4 w-4" />
+            </span>
+            <span class="min-w-0 flex-1">
+              <span class="block truncate text-sm font-semibold text-gray-950 dark:text-white">{{ actionName(action) }}</span>
+              <span class="mt-1 inline-flex rounded-md px-2 py-0.5 text-xs font-semibold" :class="actionTone(action)">{{ action.label }}</span>
+              <span class="mt-1 block line-clamp-2 text-xs leading-5 text-gray-500 dark:text-gray-400">{{ action.reason }}</span>
+              <span class="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-violet-700 transition-colors group-hover:text-violet-800 dark:text-violet-300 dark:group-hover:text-violet-200">Ouvrir le dossier <span aria-hidden="true">›</span></span>
+            </span>
+          </NuxtLink>
+
+          <button
+            v-if="action.kind !== 'lead'"
+            type="button"
+            class="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-gray-950 px-3 text-xs font-semibold text-white transition-[background-color,transform] duration-150 hover:bg-gray-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-gray-950 dark:hover:bg-gray-100 dark:focus-visible:ring-offset-[#111118]"
+            :disabled="reminderDialogStatus === 'loading' || Boolean(updatingCommercialActionKey)"
+            :aria-label="`Prévisualiser la relance Lumail pour ${actionName(action)}`"
+            @click="prepareReminder(action)"
+          >
+            <AdminAdminIcon icon="send" class="h-4 w-4" />
+            Préparer la relance
+          </button>
+
+          <div class="mt-2 grid grid-cols-3 overflow-visible rounded-lg border border-gray-200 dark:border-white/[0.1]">
+            <button
+              type="button"
+              class="min-h-11 rounded-l-[7px] px-1.5 text-xs font-semibold text-emerald-700 transition-[background-color,transform] duration-150 hover:bg-emerald-50 focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-45 dark:text-emerald-300 dark:hover:bg-emerald-500/10"
+              :disabled="commercialActionStatesStatus !== 'ready' || Boolean(updatingCommercialActionKey)"
+              :aria-label="`Marquer ${actionName(action)} comme traité`"
+              @click="updateCommercialAction(action, 'handled')"
+            >
+              {{ updatingCommercialActionKey === action.key ? 'Patiente…' : 'Traité' }}
+            </button>
+            <details class="group/reporter relative border-x border-gray-200 dark:border-white/[0.1]">
+              <summary
+                class="flex min-h-11 cursor-pointer list-none items-center justify-center px-1.5 text-xs font-semibold text-gray-600 transition-colors duration-150 hover:bg-gray-100 focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:text-gray-300 dark:hover:bg-white/[0.06] [&::-webkit-details-marker]:hidden"
+                :class="commercialActionStatesStatus !== 'ready' || Boolean(updatingCommercialActionKey) ? 'pointer-events-none opacity-45' : ''"
+                :aria-disabled="commercialActionStatesStatus !== 'ready' || Boolean(updatingCommercialActionKey)"
+                @click="commercialActionStatesStatus !== 'ready' || Boolean(updatingCommercialActionKey) ? $event.preventDefault() : undefined"
+              >
+                Reporter
+              </summary>
+              <div class="absolute bottom-full left-1/2 z-20 mb-2 w-40 -translate-x-1/2 overflow-hidden rounded-lg border border-gray-200 bg-white p-1 shadow-xl dark:border-white/[0.12] dark:bg-[#181822]">
+                <button
+                  v-for="option in commercialSnoozeOptions"
+                  :key="option.date"
+                  type="button"
+                  class="flex min-h-11 w-full items-center rounded-md px-3 text-left text-xs font-semibold text-gray-700 transition-colors duration-150 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 active:scale-[0.96] dark:text-gray-200 dark:hover:bg-white/[0.06]"
+                  :aria-label="`Reporter ${actionName(action)} : ${option.label.toLowerCase()}`"
+                  @click="updateCommercialAction(action, 'snoozed', option.date)"
+                >
+                  {{ option.label }}
+                </button>
+              </div>
+            </details>
+            <button
+              type="button"
+              class="min-h-11 rounded-r-[7px] px-1.5 text-xs font-semibold text-gray-500 transition-[background-color,transform] duration-150 hover:bg-gray-100 focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-45 dark:text-gray-400 dark:hover:bg-white/[0.06]"
+              :disabled="commercialActionStatesStatus !== 'ready' || Boolean(updatingCommercialActionKey)"
+              :aria-label="`Ignorer ${actionName(action)}`"
+              @click="updateCommercialAction(action, 'ignored')"
+            >
+              Ignorer
+            </button>
+          </div>
+        </article>
       </div>
       <div v-else class="px-4 py-6 text-center sm:px-5">
         <span class="mx-auto inline-flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300"><AdminAdminIcon icon="check-square" class="h-5 w-5" /></span>
@@ -627,5 +856,51 @@ onMounted(() => { void loadCrm() })
         class="border-t border-gray-100 dark:border-white/[0.06]"
       />
     </div>
+
+    <Transition name="fade">
+      <div v-if="showReminderConfirm" class="fixed inset-0 z-[90] flex items-center justify-center bg-black/55 p-3 sm:p-6" @click.self="closeReminderConfirm">
+        <div ref="reminderDialogRef" role="dialog" aria-modal="true" aria-labelledby="crm-reminder-title" tabindex="-1" class="max-h-[90vh] w-full max-w-xl overflow-y-auto overscroll-contain rounded-2xl border border-gray-200 bg-white p-4 shadow-2xl dark:border-white/[0.1] dark:bg-[#151522] sm:p-5" @keydown="handleReminderDialogKeydown">
+          <div class="flex items-start justify-between gap-4">
+            <div class="min-w-0">
+              <p class="text-xs font-semibold uppercase tracking-[0.12em] text-violet-600 dark:text-violet-300">Lumail</p>
+              <h2 id="crm-reminder-title" class="mt-1 font-display text-xl font-semibold text-gray-950 dark:text-white">Vérifier avant l’envoi</h2>
+              <p class="mt-1 text-sm leading-6 text-gray-600 dark:text-gray-300">Aucun message ne part sans ta confirmation.</p>
+            </div>
+            <button type="button" class="grid h-11 w-11 shrink-0 place-items-center rounded-lg text-gray-500 transition-colors duration-150 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 disabled:opacity-50 dark:hover:bg-white/[0.06]" :disabled="sendingReminder" aria-label="Fermer la prévisualisation" @click="closeReminderConfirm">×</button>
+          </div>
+
+          <div v-if="reminderDialogStatus === 'loading'" role="status" class="grid min-h-52 place-items-center text-center">
+            <div><span class="mx-auto block h-7 w-7 animate-spin rounded-full border-2 border-violet-200 border-t-violet-600" /><p class="mt-3 text-sm text-gray-500 dark:text-gray-400">Préparation du message sécurisé…</p></div>
+          </div>
+
+          <div v-else-if="reminderDialogStatus === 'error'" role="alert" class="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-100">
+            <p class="text-sm font-semibold">Relance indisponible</p>
+            <p class="mt-1 text-sm leading-6">{{ reminderDialogError }}</p>
+            <NuxtLink to="/admin#relances-clients" class="mt-3 inline-flex min-h-11 items-center font-semibold underline underline-offset-4">Voir toutes les relances</NuxtLink>
+          </div>
+
+          <template v-else-if="selectedReminderCandidate">
+            <dl class="mt-5 grid gap-2 rounded-xl bg-gray-50 p-3 text-sm dark:bg-white/[0.04] sm:grid-cols-2 sm:p-4">
+              <div><dt class="text-xs text-gray-500 dark:text-gray-400">Destinataire</dt><dd class="mt-1 break-all font-semibold text-gray-950 dark:text-white">{{ selectedReminderCandidate.clientName }} · {{ selectedReminderCandidate.email }}</dd></div>
+              <div><dt class="text-xs text-gray-500 dark:text-gray-400">Document</dt><dd class="mt-1 font-semibold text-gray-950 dark:text-white">{{ selectedReminderCandidate.number }} · échéance {{ selectedReminderCandidate.dueDate }}</dd></div>
+            </dl>
+            <div class="mt-3 rounded-xl border border-gray-200 p-3 dark:border-white/[0.1] sm:p-4">
+              <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Objet</p>
+              <p class="mt-1 text-sm font-semibold text-gray-950 dark:text-white">{{ selectedReminderCandidate.subject }}</p>
+              <p class="mt-4 whitespace-pre-line text-sm leading-6 text-gray-600 dark:text-gray-300">{{ selectedReminderCandidate.bodyText }}</p>
+            </div>
+            <p v-if="reminderDialogError" role="alert" class="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-800 dark:bg-rose-500/10 dark:text-rose-200">{{ reminderDialogError }}</p>
+          </template>
+
+          <div class="mt-5 flex flex-col-reverse gap-2 border-t border-gray-100 pt-4 dark:border-white/[0.08] sm:flex-row sm:justify-end">
+            <button data-reminder-cancel type="button" class="min-h-11 rounded-lg border border-gray-200 px-4 text-sm font-semibold text-gray-700 transition-[background-color,transform] duration-150 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 active:scale-[0.96] disabled:opacity-50 dark:border-white/[0.12] dark:text-gray-200 dark:hover:bg-white/[0.04]" :disabled="sendingReminder" @click="closeReminderConfirm">Annuler</button>
+            <button v-if="reminderDialogStatus === 'ready'" type="button" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-violet-600 px-4 text-sm font-semibold text-white transition-[background-color,transform] duration-150 hover:bg-violet-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-50 dark:focus-visible:ring-offset-[#151522]" :disabled="sendingReminder || !selectedReminderCandidate" @click="sendSelectedReminder">
+              <AdminAdminIcon icon="send" class="h-4 w-4" />
+              {{ sendingReminder ? 'Envoi en cours…' : 'Confirmer l’envoi' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>

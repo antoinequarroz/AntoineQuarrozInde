@@ -1,4 +1,5 @@
 import { isCommercialActionStatus } from '../../../app/utils/commercialActionState'
+import { parseCommercialActionTarget } from '../../utils/commercialActionTarget'
 
 const isoDatePattern = /^\d{4}-\d{2}-\d{2}$/
 
@@ -30,6 +31,21 @@ export default defineEventHandler(async (event) => {
     targetPath: targetPath || null,
   }
   const supabase = getSupabaseAdmin()
+  const target = parseCommercialActionTarget(actionKey)
+  let clientId: number | null = null
+  if (target) {
+    const { data: targetRow, error: targetError } = await supabase
+      .from(target.table)
+      .select(target.clientColumn)
+      .eq('organization_id', org.id)
+      .eq('id', target.sourceId)
+      .maybeSingle()
+    if (targetError) throw createError({ statusCode: 500, message: targetError.message })
+    const resolvedClientId = (targetRow as Record<string, unknown> | null)?.[target.clientColumn]
+    clientId = Number.isSafeInteger(Number(resolvedClientId)) && Number(resolvedClientId) > 0
+      ? Number(resolvedClientId)
+      : null
+  }
   const { data, error } = await supabase
     .from('audit_logs')
     .insert({
@@ -38,6 +54,7 @@ export default defineEventHandler(async (event) => {
       action: 'commercial_action.state_changed',
       entity_type: 'commercial_action',
       entity_id: actionKey,
+      client_id: clientId,
       payload,
     })
     .select('created_at')

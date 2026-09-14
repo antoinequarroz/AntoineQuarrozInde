@@ -68,6 +68,20 @@ const timeline = computed(() => {
   const entityLabels: Record<string, string> = { client: 'Client', project: 'Projet', quote: 'Devis', invoice: 'Facture', task: 'Tâche' }
   const auditEvents = auditLogs.value.map((log) => {
     const payload = log.payload || {}
+    if (log.action === 'commercial_action.state_changed') {
+      const stateLabel = payload.status === 'handled'
+        ? 'Action commerciale traitée'
+        : payload.status === 'ignored'
+          ? 'Action commerciale ignorée'
+          : `Action commerciale reportée${payload.snoozedUntil ? ` au ${formatDate(payload.snoozedUntil)}` : ''}`
+      return {
+        key: `audit-${log.id}`,
+        title: stateLabel,
+        meta: payload.targetPath || '',
+        date: log.created_at?.slice(0, 19).replace('T', ' ') || '',
+        sortDate: log.created_at || '',
+      }
+    }
     const title = payload.title || payload.name || payload.number || `${log.entity_type} ${log.entity_id || ''}`.trim()
     const status = payload.status ? ` · ${statusLabel(payload.status)}` : ''
     const meta = payload.amount_cents != null
