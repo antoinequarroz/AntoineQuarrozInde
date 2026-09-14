@@ -1,6 +1,6 @@
 begin;
 
-select plan(12);
+select plan(14);
 
 insert into public.organizations (id, name, slug)
 values ('00000000-0000-0000-0000-000000000101', 'AQ Project Publication', 'aq-project-publication');
@@ -242,6 +242,66 @@ select is(
   ),
   '{"after":{"portfolioVisible":true,"caseStudyApproved":false,"caseStudyPublished":false},"before":{"portfolioVisible":false,"caseStudyApproved":false,"caseStudyPublished":false}}'::jsonb,
   'the successful transition stores its exact previous and next states'
+);
+
+select lives_ok(
+  $$
+    select public.save_project_with_publication_audit(
+      '00000000-0000-0000-0000-000000000101',
+      null,
+      '00000000-0000-0000-0000-000000000110',
+      'manager',
+      '{
+        "title":"Linkless draft",
+        "slug":"aqproj001-linkless-draft",
+        "category":"mobile",
+        "tags":[],
+        "description":"Private mobile draft",
+        "image":"https://example.com/draft.jpg",
+        "live_url":null,
+        "code_url":null,
+        "featured":false,
+        "portfolio_visible":false,
+        "case_study_published":false,
+        "client_disclosure_status":"pending",
+        "case_study_approval_confirmed":false,
+        "deliverables":[],
+        "gallery_images":[],
+        "results":[]
+      }'::jsonb
+    )
+  $$,
+  'a private draft may omit both external links'
+);
+
+select lives_ok(
+  $$
+    select public.save_project_with_publication_audit(
+      '00000000-0000-0000-0000-000000000101',
+      null,
+      '00000000-0000-0000-0000-000000000111',
+      'admin',
+      '{
+        "title":"GitHub-only app",
+        "slug":"aqproj001-github-only",
+        "category":"mobile",
+        "tags":[],
+        "description":"Public mobile application",
+        "image":"https://example.com/mobile.jpg",
+        "live_url":null,
+        "code_url":"https://github.com/example/mobile",
+        "featured":false,
+        "portfolio_visible":true,
+        "case_study_published":false,
+        "client_disclosure_status":"pending",
+        "case_study_approval_confirmed":false,
+        "deliverables":[],
+        "gallery_images":[],
+        "results":[]
+      }'::jsonb
+    )
+  $$,
+  'an administrator may publish a GitHub-only mobile project'
 );
 
 select * from finish();

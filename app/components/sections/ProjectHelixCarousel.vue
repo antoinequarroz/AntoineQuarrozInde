@@ -426,9 +426,9 @@ onBeforeUnmount(() => {
             </div>
             <div class="p-3.5 max-[390px]:p-3">
               <p :lang="descriptionLanguage(project)" class="line-clamp-3 text-sm leading-relaxed text-gray-600 dark:text-gray-300">{{ descriptionFor(project) }}</p>
-              <div v-if="project.liveUrl || project.codeUrl || (locale === 'fr' && project.caseStudyPublished)" class="mt-3 flex flex-wrap gap-2">
-                <NuxtLink v-if="locale === 'fr' && project.caseStudyPublished" :to="localePath(`/projets/${project.slug}`)" class="inline-flex min-h-11 items-center rounded-full bg-violet-600 px-4 text-xs font-bold text-white transition-colors hover:bg-violet-500" @click="trackProject('project_case_study_click', project)">
-                  {{ t('portfolio.read_case_study') }}
+              <div class="mt-3 flex flex-wrap gap-2">
+                <NuxtLink :to="`/projets/${project.slug}`" class="inline-flex min-h-11 items-center rounded-full bg-violet-600 px-4 text-xs font-bold text-white transition-colors hover:bg-violet-500" @click="trackProject('project_case_study_click', project)">
+                  {{ t('portfolio.view_details') }}
                 </NuxtLink>
                 <a v-if="project.liveUrl" :href="project.liveUrl" target="_blank" rel="noopener noreferrer" class="inline-flex min-h-11 items-center rounded-full bg-violet-600 px-4 text-xs font-bold text-white transition-colors hover:bg-violet-500" @click="trackProject('project_live_click', project)">{{ t('portfolio.view') }}</a>
                 <a v-if="project.codeUrl" :href="project.codeUrl" target="_blank" rel="noopener noreferrer" class="inline-flex min-h-11 items-center rounded-full border border-violet-500/25 px-4 text-xs font-bold text-violet-700 transition-colors hover:bg-violet-500/10 dark:text-violet-200" @click="trackProject('project_code_click', project)">{{ t('portfolio.code') }}</a>
@@ -476,7 +476,7 @@ onBeforeUnmount(() => {
                 </div>
               </div>
               <div class="mt-5 flex flex-wrap gap-2">
-                <NuxtLink v-if="locale === 'fr' && activeProject.caseStudyPublished" :to="localePath(`/projets/${activeProject.slug}`)" class="btn-primary rounded-full px-4 py-2 text-xs" @click="trackProject('project_case_study_click', activeProject)">{{ t('portfolio.read_case_study') }}</NuxtLink>
+                <NuxtLink :to="`/projets/${activeProject.slug}`" class="btn-primary rounded-full px-4 py-2 text-xs" @click="trackProject('project_case_study_click', activeProject)">{{ t('portfolio.view_details') }}</NuxtLink>
                 <a v-if="activeProject.liveUrl" :href="activeProject.liveUrl" target="_blank" rel="noopener noreferrer" class="btn-primary rounded-full px-4 py-2 text-xs" @click="trackProject('project_live_click', activeProject)">{{ t('portfolio.view') }}</a>
                 <a v-if="activeProject.codeUrl" :href="activeProject.codeUrl" target="_blank" rel="noopener noreferrer" class="btn-secondary rounded-full px-4 py-2 text-xs" @click="trackProject('project_code_click', activeProject)">{{ t('portfolio.code') }}</a>
               </div>

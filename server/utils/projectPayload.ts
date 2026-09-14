@@ -42,12 +42,6 @@ function optionalUrl(value: unknown) {
   }
 }
 
-function requiredUrl(value: unknown, field: string) {
-  const url = optionalUrl(value)
-  if (!url) throw createError({ statusCode: 400, message: `${field} is required` })
-  return url
-}
-
 function booleanValue(value: unknown, field: string) {
   if (value === undefined || value === null) return false
   if (typeof value !== 'boolean') {
@@ -104,6 +98,8 @@ export function projectPayload(body: Record<string, unknown>, organizationId: st
   const slug = requiredText(body.slug, 'slug', 180)
   const completedAt = optionalText(body.completedAt, 10)
   const clientId = body.clientId ? Number(body.clientId) : null
+  const liveUrl = optionalUrl(body.liveUrl)
+  const codeUrl = optionalUrl(body.codeUrl)
 
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
     throw createError({ statusCode: 400, message: 'Project slug must contain lowercase letters, numbers and hyphens only' })
@@ -113,6 +109,9 @@ export function projectPayload(body: Record<string, unknown>, organizationId: st
   }
   if (clientId !== null && (!Number.isInteger(clientId) || clientId <= 0)) {
     throw createError({ statusCode: 400, message: 'Invalid project client' })
+  }
+  if ((portfolioVisible || caseStudyPublished) && !liveUrl && !codeUrl) {
+    throw createError({ statusCode: 400, message: 'A public project requires a website or GitHub URL' })
   }
 
   return {
@@ -126,8 +125,8 @@ export function projectPayload(body: Record<string, unknown>, organizationId: st
     description_en: optionalText(body.descriptionEn, 1200),
     description_de: optionalText(body.descriptionDe, 1200),
     image: requiredText(body.image, 'image', 2000),
-    live_url: requiredUrl(body.liveUrl, 'liveUrl'),
-    code_url: optionalUrl(body.codeUrl),
+    live_url: liveUrl,
+    code_url: codeUrl,
     featured: Boolean(body.featured),
     portfolio_visible: portfolioVisible,
     case_study_published: caseStudyPublished,

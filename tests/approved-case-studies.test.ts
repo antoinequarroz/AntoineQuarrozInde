@@ -226,7 +226,7 @@ describe('AQ-SEO-012 approved case studies', () => {
       expect(page).toContain(`{ key: '${key}', title: '${heading}'`)
     }
     expect(page).toContain('data-case-study-services')
-    expect(page).toContain('project.caseStudyLiveUrl')
+    expect(page).toContain('project.value?.caseStudyLiveUrl')
     expect(hub).toContain('data-case-study-card-services')
     expect(hub).not.toContain("'@type': 'FAQPage'")
     expect(hub).not.toContain('transformer le trafic en demandes qualifiées')
@@ -259,6 +259,6 @@ describe('AQ-SEO-012 approved case studies', () => {
     expect(migration).toContain('for update')
     expect(migration).toContain('project.case_study_sensitive_changed')
     expect(api).toContain('case_study_approved_at.not.is.null')
-    expect(sitemap).toContain(".not('case_study_approved_at', 'is', null)")
+    expect(sitemap).toContain('case_study_approved_at.not.is.null')
   })
 })

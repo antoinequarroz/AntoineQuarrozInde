@@ -125,6 +125,7 @@
     "live_available": "Live project available",
     "source_available": "Source code available",
     "read_case_study": "Read the case study",
+    "view_details": "View project details",
     "selection_count_one": "{count} project in this selection. Scroll to explore it.",
     "selection_count_many": "{count} projects in this selection. Scroll to explore them.",
     "browse_hint": "Drag to explore",
@@ -169,7 +170,8 @@
   },
   "case_study": {
     "back": "Back to portfolio",
-    "not_found": "Case study not found",
+    "not_found": "Project not found",
+    "overview": "About the project",
     "role": "My role",
     "duration": "Duration",
     "delivered": "Delivered",

@@ -11,10 +11,11 @@ describe('project publication states', () => {
   })
 
   it('adds a private-by-default portfolio state without hiding existing projects', async () => {
-    const [compatibilityMigration, activationMigration, caseStudyActivationMigration, schema] = await Promise.all([
+    const [compatibilityMigration, activationMigration, caseStudyActivationMigration, flexibleLinksMigration, schema] = await Promise.all([
       readFile('supabase/migrations/20260903193214_add_project_portfolio_visibility.sql', 'utf8'),
       readFile('supabase/migrations/20260903203219_activate_project_portfolio_visibility.sql', 'utf8'),
       readFile('supabase/migrations/20260904230738_activate_project_case_study_approvals.sql', 'utf8'),
+      readFile('supabase/migrations/20260914195144_allow_project_github_only.sql', 'utf8'),
       readFile('supabase/schema.sql', 'utf8'),
     ])
 
@@ -36,6 +37,11 @@ describe('project publication states', () => {
     expect(caseStudyActivationMigration).toContain('save_project_with_publication_audit_transition')
     expect(caseStudyActivationMigration).toContain('from public.organization_memberships')
     expect(caseStudyActivationMigration).not.toMatch(/security\s+definer/i)
+    expect(flexibleLinksMigration).toContain('project_public_link_required')
+    expect(flexibleLinksMigration).toContain("nullif(btrim(new.live_url), '') is null")
+    expect(flexibleLinksMigration).toContain("nullif(btrim(new.code_url), '') is null")
+    expect(flexibleLinksMigration).not.toContain('project_case_study_live_url_required')
+    expect(flexibleLinksMigration).not.toMatch(/drop\s+(table|column)/i)
   })
 
   it.each([
@@ -169,7 +175,7 @@ describe('project publication states', () => {
     expect(form).toContain('portfolioVisible: false')
     expect(form).toContain('Portfolio {{ project.portfolioVisible ? \'visible\' : \'masqué\' }}')
     expect(form).toContain("project.caseStudyPublished && project.caseStudyApprovedAt ? 'publiée' : project.caseStudyPublished ? 'à approuver' : 'brouillon'")
-    expect(form).toContain('v-if="project.caseStudyPublished && project.caseStudyApprovedAt"')
+    expect(form).toContain('v-if="project.portfolioVisible || (project.caseStudyPublished && project.caseStudyApprovedAt)"')
     expect(fields).toContain('Afficher dans le portfolio')
     expect(fields).toContain('Publier l’étude de cas')
     expect(fields).toContain(':disabled="!canManagePublication"')
@@ -177,7 +183,6 @@ describe('project publication states', () => {
     expect(publicApi).toContain("query.or('portfolio_visible.eq.true,and(case_study_published.eq.true,case_study_approved_at.not.is.null)')")
     expect(updateApi).toContain("rpc('save_project_with_publication_audit'")
     expect(updateApi).not.toContain('logAudit(')
-    expect(sitemap).toContain(".eq('case_study_published', true)")
-    expect(sitemap).not.toContain(".eq('portfolio_visible', true)")
+    expect(sitemap).toContain(".or('portfolio_visible.eq.true,and(case_study_published.eq.true,case_study_approved_at.not.is.null)')")
   })
 })

@@ -18,7 +18,8 @@ const siteUrl = String(runtimeConfig.public.siteUrl).replace(/\/+$/, '')
 await store.ensureLoaded()
 
 const project = computed(() => store.projects.find(item => (
-  item.slug === route.params.slug && item.caseStudyPublished
+  item.slug === route.params.slug
+  && (item.portfolioVisible || (item.caseStudyPublished && item.caseStudyApprovedAt))
 )))
 
 if (!project.value) {
@@ -31,15 +32,22 @@ onMounted(() => {
   }
 })
 
+function descriptionFor(item: NonNullable<typeof project.value>) {
+  if (locale.value === 'en' && item.descriptionEn?.trim()) return item.descriptionEn
+  if (locale.value === 'de' && item.descriptionDe?.trim()) return item.descriptionDe
+  return item.description
+}
+
 const breadcrumbs = computed(() => resolvePublicBreadcrumbTrail(siteUrl, [
   { name: 'Accueil', path: '/' },
-  { name: 'Cas clients', path: '/cas-clients-valais' },
   { name: project.value!.title, path: `/projets/${encodeURIComponent(project.value!.slug)}` },
 ]))
 const canonicalUrl = computed(() => breadcrumbs.value.items.at(-1)!.url)
 const pageTitle = computed(() => project.value?.seoTitle || `${project.value?.title} — Antoine Quarroz`)
-const pageDescription = computed(() => project.value?.seoDescription || project.value?.description)
+const pageDescription = computed(() => project.value?.seoDescription || (project.value ? descriptionFor(project.value) : ''))
 const socialImage = computed(() => resolvePublicSocialImage(siteUrl, project.value?.image))
+const publicLiveUrl = computed(() => project.value?.liveUrl || project.value?.caseStudyLiveUrl)
+const publicCodeUrl = computed(() => project.value?.codeUrl || project.value?.caseStudyCodeUrl)
 const socialImageAlt = computed(() => socialImage.value.isFallback
   ? t('seo.social.default_image_alt')
   : t('seo.social.project_image_alt', { title: project.value?.title ?? '' }))
@@ -126,9 +134,6 @@ useHead(() => ({
             <h1 class="mt-6 max-w-4xl font-display text-4xl font-bold leading-[1.04] text-gray-950 dark:text-white sm:text-6xl lg:text-7xl">
               {{ project.title }}
             </h1>
-            <p class="mt-6 max-w-2xl text-lg leading-relaxed text-gray-600 dark:text-gray-300 md:text-xl">
-              {{ project.description }}
-            </p>
           </div>
 
           <dl class="grid grid-cols-2 gap-x-6 gap-y-5 rounded-3xl border border-violet-500/15 bg-white/75 p-6 shadow-xl shadow-violet-500/5 backdrop-blur dark:border-white/10 dark:bg-white/[0.04]">
@@ -160,9 +165,16 @@ useHead(() => ({
 
     <section class="section-container py-16 md:py-24">
       <div class="mx-auto max-w-5xl space-y-16 md:space-y-24">
+        <article class="grid gap-5 md:grid-cols-[11rem_minmax(0,1fr)] md:gap-12">
+          <div>
+            <span class="font-display text-sm text-violet-500/70">01</span>
+            <h2 class="mt-2 font-display text-2xl font-bold text-gray-950 dark:text-white md:text-3xl">{{ t('case_study.overview') }}</h2>
+          </div>
+          <p class="whitespace-pre-line text-lg leading-8 text-gray-600 dark:text-gray-300">{{ descriptionFor(project) }}</p>
+        </article>
         <article v-for="(section, index) in storySections" :key="section.key" :data-case-study-section="section.key" class="grid gap-5 md:grid-cols-[11rem_minmax(0,1fr)] md:gap-12">
           <div>
-            <span class="font-display text-sm text-violet-500/70">{{ String(index + 1).padStart(2, '0') }}</span>
+            <span class="font-display text-sm text-violet-500/70">{{ String(index + 2).padStart(2, '0') }}</span>
             <h2 class="mt-2 font-display text-2xl font-bold text-gray-950 dark:text-white md:text-3xl">{{ section.title }}</h2>
           </div>
           <p class="whitespace-pre-line text-lg leading-8 text-gray-600 dark:text-gray-300">{{ section.content }}</p>
@@ -228,8 +240,8 @@ useHead(() => ({
           <p class="mt-4 leading-relaxed text-white/70">{{ t('case_study.cta_text') }}</p>
           <div class="mt-7 flex flex-wrap justify-center gap-3">
             <NuxtLink :to="localePath('/#contact')" class="btn-primary">{{ t('case_study.cta_button') }}</NuxtLink>
-            <a v-if="project.caseStudyLiveUrl" :href="project.caseStudyLiveUrl" target="_blank" rel="noopener noreferrer" class="btn-secondary border-white/15 bg-white/5 text-white hover:bg-white/10">{{ t('case_study.view_live') }}</a>
-            <a v-if="project.caseStudyCodeUrl" :href="project.caseStudyCodeUrl" target="_blank" rel="noopener noreferrer" class="btn-secondary border-white/15 bg-white/5 text-white hover:bg-white/10">{{ t('case_study.view_code') }}</a>
+            <a v-if="publicLiveUrl" :href="publicLiveUrl" target="_blank" rel="noopener noreferrer" class="btn-secondary border-white/15 bg-white/5 text-white hover:bg-white/10">{{ t('case_study.view_live') }}</a>
+            <a v-if="publicCodeUrl" :href="publicCodeUrl" target="_blank" rel="noopener noreferrer" class="btn-secondary border-white/15 bg-white/5 text-white hover:bg-white/10">{{ t('case_study.view_code') }}</a>
           </div>
         </div>
       </div>

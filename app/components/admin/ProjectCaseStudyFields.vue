@@ -61,7 +61,7 @@ function addGalleryImage() {
     <fieldset class="rounded-2xl border border-violet-200/70 bg-violet-50/50 p-4 dark:border-violet-400/20 dark:bg-violet-500/[0.06]">
       <legend class="px-1 font-display text-base font-semibold text-gray-900 dark:text-white">Publication</legend>
       <p class="mt-1 text-sm leading-relaxed text-gray-500 dark:text-gray-400">
-        Choisissez séparément la carte du portfolio et la page détaillée. Un réglage ne modifie jamais l’autre.
+        Le portfolio rend la carte et sa page projet publiques. L’étude de cas ajoute séparément les contenus avancés approuvés.
       </p>
       <p v-if="!canManagePublication" class="mt-2 text-xs font-medium text-amber-700 dark:text-amber-300">
         Seuls les propriétaires et administrateurs peuvent modifier ces réglages.
@@ -83,7 +83,7 @@ function addGalleryImage() {
           <input v-model="model.caseStudyPublished" type="checkbox" :disabled="!canManagePublication" class="mt-0.5 h-5 w-5 rounded border-gray-300 text-violet-600 focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 disabled:cursor-not-allowed">
           <span class="min-w-0">
             <span class="block text-sm font-semibold text-gray-800 dark:text-gray-100">Publier l’étude de cas</span>
-            <span class="mt-1 block text-xs leading-relaxed text-gray-500 dark:text-gray-400">Rend la page détaillée et son lien publics.</span>
+            <span class="mt-1 block text-xs leading-relaxed text-gray-500 dark:text-gray-400">Ajoute à la page projet le contexte, les décisions et les résultats approuvés.</span>
             <span class="mt-2 block text-xs font-semibold" :class="model.caseStudyPublished ? 'text-cyan-700 dark:text-cyan-300' : 'text-gray-500 dark:text-gray-400'" role="status">
               {{ model.caseStudyPublished && model.caseStudyApprovedAt ? 'Publiée et approuvée' : model.caseStudyPublished ? 'À valider' : 'Brouillon' }}
             </span>
