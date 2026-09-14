@@ -4,53 +4,18 @@
 from __future__ import annotations
 
 import argparse
-import base64
 import hashlib
 import json
-import math
 import os
-import struct
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
-import zlib
 from pathlib import Path
 
 
 SITE = "https://www.antoinequarroz.ch"
 ENDPOINT = f"{SITE}/api/hermes/articles"
-
-
-def _chunk(kind: bytes, data: bytes) -> bytes:
-    return struct.pack(">I", len(data)) + kind + data + struct.pack(">I", zlib.crc32(kind + data) & 0xFFFFFFFF)
-
-
-def branded_cover(seed: str, width: int = 1200, height: int = 630) -> str:
-    """Create a deterministic dark/turquoise abstract PNG without dependencies."""
-    digest = hashlib.sha256(seed.encode("utf-8")).digest()
-    phase = digest[0] / 255 * math.tau
-    raw = bytearray()
-    for y in range(height):
-        raw.append(0)
-        for x in range(width):
-            nx, ny = x / width, y / height
-            wave = math.sin(nx * 8.2 + phase) * 0.055 + math.sin(nx * 17.0 - phase) * 0.018
-            glow = max(0.0, 1.0 - math.hypot(nx - 0.72, ny - (0.48 + wave)) * 2.2)
-            ribbon = max(0.0, 1.0 - abs(ny - (0.62 + wave)) * 12.0)
-            accent = max(0.0, 1.0 - math.hypot(nx - 0.18, ny - 0.24) * 5.2)
-            grain = ((x * 17 + y * 31 + digest[(x + y) % len(digest)]) % 13) / 255
-            raw.extend((
-                min(255, int(9 + 9 * glow + 218 * accent + grain * 10)),
-                min(255, int(18 + 132 * glow + 155 * ribbon + 72 * accent + grain * 10)),
-                min(255, int(31 + 128 * glow + 134 * ribbon + 25 * accent + grain * 12)),
-            ))
-    png = b"\x89PNG\r\n\x1a\n"
-    png += _chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0))
-    png += _chunk(b"IDAT", zlib.compress(bytes(raw), 9))
-    png += _chunk(b"IEND", b"")
-    return "data:image/png;base64," + base64.b64encode(png).decode("ascii")
-
 
 def load_payload(path: Path) -> dict:
     payload = json.loads(path.read_text(encoding="utf-8"))
@@ -59,7 +24,11 @@ def load_payload(path: Path) -> dict:
     payload["site"] = SITE
     payload["published"] = True
     if not payload.get("coverImageDataUrl"):
-        payload["coverImageDataUrl"] = branded_cover(str(payload.get("slug") or payload.get("title") or "article"))
+        raise ValueError(
+            "Couverture editoriale manquante: publication bloquee. "
+            "Fournir une image 16:9 photorealiste bleu-noir et doree conforme aux references du blog."
+        )
+    payload["coverStyle"] = "aq-editorial-photorealistic-v1"
     return payload
 
 
