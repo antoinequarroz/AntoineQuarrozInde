@@ -37,6 +37,14 @@ test('authenticated admin can reach CRM, quotes and invoices', async ({ page }) 
     await reminderDialog.getByRole('button', { name: 'Annuler' }).click()
     await expect(reminderDialog).toBeHidden()
   }
+  const handledButtons = page.getByRole('button', { name: /Marquer .* comme traité/ })
+  if (await handledButtons.count()) {
+    await handledButtons.first().click()
+    const undoButton = page.getByRole('button', { name: /Annuler la dernière décision/ })
+    await expect(undoButton).toBeFocused()
+    await undoButton.click()
+    await expect(page.getByText(/restauré dans les actions du jour/)).toBeAttached()
+  }
 
   await page.goto('/admin/quotes')
   await expect(page.getByRole('heading', { name: 'Devis', exact: true })).toBeVisible()

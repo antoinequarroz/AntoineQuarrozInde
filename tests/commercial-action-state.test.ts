@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isCommercialActionVisible, normalizeCommercialActionStates } from '../app/utils/commercialActionState'
+import { isCommercialActionStatus, isCommercialActionVisible, normalizeCommercialActionStates } from '../app/utils/commercialActionState'
 
 describe('commercial action state', () => {
   it('keeps the latest valid state for each action', () => {
@@ -28,5 +28,16 @@ describe('commercial action state', () => {
     }
     expect(isCommercialActionVisible('message:4', states, '2026-09-08')).toBe(false)
     expect(isCommercialActionVisible('message:4', states, '2026-09-09')).toBe(true)
+  })
+
+  it('shows an action again when its latest decision is restored', () => {
+    expect(isCommercialActionStatus('restored')).toBe(true)
+    const states = normalizeCommercialActionStates([
+      { payload: { actionKey: 'quote:8', status: 'restored' }, created_at: '2026-09-07T10:00:00Z' },
+      { payload: { actionKey: 'quote:8', status: 'handled' }, created_at: '2026-09-06T10:00:00Z' },
+    ])
+
+    expect(states['quote:8']).toMatchObject({ status: 'restored', snoozedUntil: null })
+    expect(isCommercialActionVisible('quote:8', states, '2026-09-07')).toBe(true)
   })
 })

@@ -69,11 +69,13 @@ const timeline = computed(() => {
   const auditEvents = auditLogs.value.map((log) => {
     const payload = log.payload || {}
     if (log.action === 'commercial_action.state_changed') {
-      const stateLabel = payload.status === 'handled'
-        ? 'Action commerciale traitée'
-        : payload.status === 'ignored'
-          ? 'Action commerciale ignorée'
-          : `Action commerciale reportée${payload.snoozedUntil ? ` au ${formatDate(payload.snoozedUntil)}` : ''}`
+      const stateLabel = payload.status === 'restored'
+        ? 'Action commerciale restaurée'
+        : payload.status === 'handled'
+          ? 'Action commerciale traitée'
+          : payload.status === 'ignored'
+            ? 'Action commerciale ignorée'
+            : `Action commerciale reportée${payload.snoozedUntil ? ` au ${formatDate(payload.snoozedUntil)}` : ''}`
       return {
         key: `audit-${log.id}`,
         title: stateLabel,

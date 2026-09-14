@@ -1,4 +1,4 @@
-export type CommercialActionStatus = 'handled' | 'snoozed' | 'ignored'
+export type CommercialActionStatus = 'handled' | 'snoozed' | 'ignored' | 'restored'
 
 export type CommercialActionState = {
   actionKey: string
@@ -12,7 +12,7 @@ type AuditStateRow = {
   created_at?: unknown
 }
 
-const validStatuses = new Set<CommercialActionStatus>(['handled', 'snoozed', 'ignored'])
+const validStatuses = new Set<CommercialActionStatus>(['handled', 'snoozed', 'ignored', 'restored'])
 const isoDatePattern = /^\d{4}-\d{2}-\d{2}$/
 
 export function isCommercialActionStatus(value: unknown): value is CommercialActionStatus {
@@ -53,6 +53,7 @@ export function isCommercialActionVisible(
 ) {
   const state = states[actionKey]
   if (!state) return true
+  if (state.status === 'restored') return true
   if (state.status === 'handled' || state.status === 'ignored') return false
   return !state.snoozedUntil || state.snoozedUntil <= today
 }

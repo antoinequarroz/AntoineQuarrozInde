@@ -28,6 +28,11 @@ const commercialActionStates = ref<Record<string, CommercialActionState>>({})
 const commercialActionStatesStatus = ref<'loading' | 'ready' | 'error'>('loading')
 const updatingCommercialActionKey = ref<string | null>(null)
 const commercialActionFeedback = ref('')
+const undoCommercialActionButton = ref<HTMLButtonElement | null>(null)
+const lastUndoableCommercialAction = ref<{
+  action: CommercialTaskSuggestion
+  message: string
+} | null>(null)
 
 type ReminderCandidate = {
   reminderKey: string
@@ -244,6 +249,7 @@ async function updateCommercialAction(action: CommercialTaskSuggestion, status: 
   if (updatingCommercialActionKey.value || commercialActionStatesStatus.value !== 'ready') return
   updatingCommercialActionKey.value = action.key
   commercialActionFeedback.value = ''
+  let shouldFocusUndo = false
   try {
     await persistCommercialAction(action, status, snoozedUntil)
     const message = status === 'handled'
@@ -252,7 +258,9 @@ async function updateCommercialAction(action: CommercialTaskSuggestion, status: 
         ? `${actionName(action)} retiré des actions du jour`
         : `${actionName(action)} reporté au ${new Date(`${snoozedUntil}T12:00:00`).toLocaleDateString('fr-CH')}`
     commercialActionFeedback.value = message
+    lastUndoableCommercialAction.value = { action, message }
     toast.success(message)
+    shouldFocusUndo = true
   }
   catch (error) {
     const message = readableError(error)
@@ -261,6 +269,39 @@ async function updateCommercialAction(action: CommercialTaskSuggestion, status: 
   }
   finally {
     updatingCommercialActionKey.value = null
+  }
+  if (shouldFocusUndo) {
+    await nextTick()
+    undoCommercialActionButton.value?.focus()
+  }
+}
+
+async function undoLastCommercialAction() {
+  const decision = lastUndoableCommercialAction.value
+  if (!decision || updatingCommercialActionKey.value || commercialActionStatesStatus.value !== 'ready') return
+  const { action } = decision
+  updatingCommercialActionKey.value = action.key
+  commercialActionFeedback.value = ''
+  let shouldFocusRestoredAction = false
+  try {
+    await persistCommercialAction(action, 'restored')
+    const message = `${actionName(action)} restauré dans les actions du jour`
+    commercialActionFeedback.value = message
+    lastUndoableCommercialAction.value = null
+    toast.success(message)
+    shouldFocusRestoredAction = true
+  }
+  catch (error) {
+    const message = readableError(error)
+    commercialActionFeedback.value = message
+    toast.error(message)
+  }
+  finally {
+    updatingCommercialActionKey.value = null
+  }
+  if (shouldFocusRestoredAction) {
+    await nextTick()
+    document.querySelector<HTMLElement>(`[data-commercial-action-key="${action.key}"] a`)?.focus()
   }
 }
 
@@ -453,10 +494,30 @@ onMounted(() => { void loadCrm() })
         </NuxtLink>
       </div>
 
+      <div
+        v-if="lastUndoableCommercialAction"
+        role="group"
+        aria-label="Dernière décision commerciale"
+        class="flex flex-col gap-3 border-b border-violet-100 bg-violet-50 px-4 py-3 text-sm text-violet-950 dark:border-violet-500/15 dark:bg-violet-500/10 dark:text-violet-100 sm:flex-row sm:items-center sm:justify-between sm:px-5"
+      >
+        <p class="font-medium">{{ lastUndoableCommercialAction.message }}</p>
+        <button
+          ref="undoCommercialActionButton"
+          type="button"
+          class="inline-flex min-h-11 shrink-0 items-center justify-center rounded-lg border border-violet-200 bg-white px-4 text-sm font-semibold text-violet-800 transition-[background-color,transform] duration-150 hover:bg-violet-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-50 dark:border-violet-400/25 dark:bg-violet-500/10 dark:text-violet-100 dark:hover:bg-violet-500/20"
+          :disabled="Boolean(updatingCommercialActionKey)"
+          :aria-label="`Annuler la dernière décision pour ${actionName(lastUndoableCommercialAction.action)}`"
+          @click="undoLastCommercialAction"
+        >
+          {{ updatingCommercialActionKey === lastUndoableCommercialAction.action.key ? 'Restauration…' : 'Annuler' }}
+        </button>
+      </div>
+
       <div v-if="visibleActionsToday.length" class="divide-y divide-gray-100 dark:divide-white/[0.06] sm:grid sm:grid-cols-2 sm:divide-x sm:divide-y-0 sm:divide-gray-100 dark:sm:divide-white/[0.06] xl:grid-cols-4">
         <article
           v-for="action in visibleActionsToday"
           :key="action.key"
+          :data-commercial-action-key="action.key"
           class="flex min-h-[196px] flex-col px-4 py-3 transition-colors duration-150 hover:bg-gray-50 dark:hover:bg-white/[0.03] sm:px-5"
         >
           <NuxtLink

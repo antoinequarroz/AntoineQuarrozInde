@@ -31,4 +31,17 @@ describe('admin CRM daily actions', () => {
     expect(clientPage).toContain("log.action === 'commercial_action.state_changed'")
     expect(clientPage).toContain('Action commerciale traitée')
   })
+
+  it('restores the latest decision without deleting its audit history', async () => {
+    const [page, endpoint, clientPage] = await Promise.all([
+      readFile('app/pages/admin/crm/index.vue', 'utf8'),
+      readFile('server/api/admin/commercial-actions.post.ts', 'utf8'),
+      readFile('app/pages/admin/clients/[id].vue', 'utf8'),
+    ])
+    expect(page).toContain("persistCommercialAction(action, 'restored')")
+    expect(page).toContain('Annuler la dernière décision')
+    expect(page).toContain('undoCommercialActionButton.value?.focus()')
+    expect(endpoint).toContain("action: 'commercial_action.state_changed'")
+    expect(clientPage).toContain('Action commerciale restaurée')
+  })
 })
