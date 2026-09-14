@@ -184,6 +184,12 @@ describe('admin MFA interface wiring', () => {
     expect(adminMiddleware).toContain("? ['owner', 'admin', 'manager', 'viewer']")
   })
 
+  it('lets production E2E continue when Supabase restores an AAL2 session', () => {
+    expect(adminAuth).toContain("getByRole('link', { name: 'Continuer vers l’administration', exact: true })")
+    expect(adminAuth).toContain('challengeCode.or(continueToAdmin)')
+    expect(adminAuth).toContain('await continueToAdmin.click()')
+  })
+
   it('keeps the standalone admin login form centered across viewport sizes', () => {
     expect(loginPage).toContain('<main class="relative grid min-h-screen min-h-[100svh] w-full place-items-center')
     expect(loginPage).toContain('mx-auto w-full max-w-md justify-self-center')
