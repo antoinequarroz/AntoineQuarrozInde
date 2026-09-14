@@ -20,7 +20,7 @@ describe('localized project descriptions', () => {
     expect(form).toContain('v-model="form.descriptionEn"')
     expect(form).toContain('v-model="form.descriptionDe"')
     expect(form).toContain('v-model="form.liveUrl" type="url"')
-    expect(form).toContain('autocomplete="url" required')
+    expect(form).not.toContain('v-model="form.liveUrl" type="url" class="input-field" placeholder="https://..." autocomplete="url" required')
     expect(carousel).toContain("locale.value === 'en' && project.descriptionEn?.trim()")
     expect(carousel).toContain("locale.value === 'de' && project.descriptionDe?.trim()")
     expect(carousel).toContain('return project.description')

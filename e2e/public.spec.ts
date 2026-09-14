@@ -417,6 +417,31 @@ test('approved case studies stay complete and private-field free without JavaScr
   await context.close()
 })
 
+test('every portfolio card links to a complete project page without JavaScript', { tag: '@live-data' }, async ({ browser, request }) => {
+  const response = await request.get('/api/projects')
+  expect(response.ok()).toBeTruthy()
+  const projects = await response.json() as Array<Record<string, unknown>>
+  const portfolio = projects.filter(project => project.portfolio_visible === true)
+
+  const context = await browser.newContext({ javaScriptEnabled: false })
+  const page = await context.newPage()
+  await page.goto('/')
+
+  for (const project of portfolio) {
+    const slug = String(project.slug)
+    const title = String(project.title)
+    const path = `/projets/${encodeURIComponent(slug)}`
+    expect(await page.locator(`a[href="${path}"]`).count()).toBeGreaterThan(0)
+    const detailResponse = await page.goto(path)
+    expect(detailResponse?.ok()).toBeTruthy()
+    await expect(page.getByRole('heading', { level: 1, name: title })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 2, name: /À propos du projet/ })).toBeVisible()
+    await page.goto('/')
+  }
+
+  await context.close()
+})
+
 test('service pages expose an accessible breadcrumb without JavaScript', async ({ browser }) => {
   const paths = [
     '/developpeur-web-valais',

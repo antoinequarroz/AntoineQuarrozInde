@@ -125,6 +125,7 @@
     "live_available": "Live-Projekt verfügbar",
     "source_available": "Quellcode verfügbar",
     "read_case_study": "Case Study entdecken",
+    "view_details": "Projekt entdecken",
     "selection_count_one": "{count} Projekt in dieser Auswahl. Scrollen Sie, um es zu entdecken.",
     "selection_count_many": "{count} Projekte in dieser Auswahl. Scrollen Sie, um sie zu entdecken.",
     "browse_hint": "Ziehen zum Entdecken",
@@ -169,7 +170,8 @@
   },
   "case_study": {
     "back": "Zurück zum Portfolio",
-    "not_found": "Case Study nicht gefunden",
+    "not_found": "Projekt nicht gefunden",
+    "overview": "Über das Projekt",
     "role": "Meine Rolle",
     "duration": "Dauer",
     "delivered": "Fertiggestellt",

@@ -82,6 +82,7 @@ function queryResult(data: unknown[] | null, error: unknown = null) {
   const query: any = {
     eq: vi.fn(() => query),
     not: vi.fn(() => query),
+    or: vi.fn(() => query),
     then: (resolve: (value: unknown) => void) => resolve({ data, error }),
   }
   return query
@@ -206,8 +207,7 @@ describe('AQ-SEO-006 sitemap discovery', () => {
     expect(articleQuery.eq).toHaveBeenNthCalledWith(2, 'published', true)
     expect(select.projects).toHaveBeenCalledWith('slug, case_study_published_at, updated_at, created_at')
     expect(projectQuery.eq).toHaveBeenNthCalledWith(1, 'organization_id', 'org-public')
-    expect(projectQuery.eq).toHaveBeenNthCalledWith(2, 'case_study_published', true)
-    expect(projectQuery.not).toHaveBeenCalledWith('case_study_approved_at', 'is', null)
+    expect(projectQuery.or).toHaveBeenCalledWith('portfolio_visible.eq.true,and(case_study_published.eq.true,case_study_approved_at.not.is.null)')
     expect(xml).toContain('<loc>https://example.test/blog/article</loc>')
     expect(xml).toContain('<loc>https://example.test/projets/etude</loc>')
     expect(setHeader).toHaveBeenCalledWith(event, 'content-type', 'application/xml; charset=UTF-8')
@@ -256,7 +256,7 @@ describe('AQ-SEO-006 sitemap discovery', () => {
     const origin = await startProofServer('valid')
     const result = await execFileAsync('bash', ['scripts/ops/verify-sitemap-discovery.sh', origin])
 
-    expect(result.stdout).toContain('1 article(s), 1 case study/studies')
+    expect(result.stdout).toContain('1 article(s), 1 public project(s), 1 case study/studies')
   })
 
   it.each([

@@ -159,18 +159,20 @@ for (const project of projects) {
   for (const field of forbiddenProjectFields) {
     if (Object.hasOwn(project, field)) fail(`The public projects API exposed ${field}.`)
   }
-  if (project.case_study_published !== true) continue
+  if (project.portfolio_visible !== true && project.case_study_published !== true) {
+    fail(`The public projects API exposed a private project: ${project.slug || '(missing slug)'}.`)
+  }
   const path = `/projets/${encodeURIComponent(String(project.slug || '').trim())}`
   const entry = locations.get(`${origin}${path}`)
-  if (!entry) fail(`Published case study missing from sitemap: ${path}.`)
+  if (!entry) fail(`Public project missing from sitemap: ${path}.`)
   const expected = normalizeDate(project.updated_at, project.case_study_published_at, project.created_at)
   if (entry.lastmods.length !== 1 || entry.lastmods[0] !== expected) {
-    fail(`Case study ${path} has an incorrect or missing lastmod.`)
+    fail(`Project ${path} has an incorrect or missing lastmod.`)
   }
-  if (!caseHub.includes(`href="${path}"`)) {
+  if (project.case_study_published === true && !caseHub.includes(`href="${path}"`)) {
     fail(`Published case study has no SSR link from /cas-clients-valais: ${path}.`)
   }
 }
 
-process.stdout.write(`Sitemap discovery is complete on ${origin}: ${articles.length} article(s), ${projects.filter(item => item.case_study_published === true).length} case study/studies.\n`)
+process.stdout.write(`Sitemap discovery is complete on ${origin}: ${articles.length} article(s), ${projects.length} public project(s), ${projects.filter(item => item.case_study_published === true).length} case study/studies.\n`)
 NODE

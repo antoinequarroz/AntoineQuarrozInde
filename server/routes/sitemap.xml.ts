@@ -19,8 +19,7 @@ export default defineEventHandler(async (event) => {
         .from('projects')
         .select('slug, case_study_published_at, updated_at, created_at')
         .eq('organization_id', org.id)
-        .eq('case_study_published', true)
-        .not('case_study_approved_at', 'is', null),
+        .or('portfolio_visible.eq.true,and(case_study_published.eq.true,case_study_approved_at.not.is.null)'),
     ])
     const projectsResult = isMissingCaseStudyApprovalSchema(initialProjectsResult.error)
       ? { data: [], error: null }

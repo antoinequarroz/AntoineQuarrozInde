@@ -57,7 +57,7 @@ describe('parcours client vers paiement', () => {
     expect(payload.code_url).toBeNull()
   })
 
-  it('exige une image et une URL publique, mais pas de lien GitHub', async () => {
+  it('exige une image et au moins un lien pour un projet public', async () => {
     const { projectPayload } = await import('../server/utils/projectPayload')
     const base = {
       title: 'Site vitrine',
@@ -68,8 +68,18 @@ describe('parcours client vers paiement', () => {
     }
 
     expect(() => projectPayload(base, 'org-test')).toThrow('image is required')
-    expect(() => projectPayload({ ...base, image: 'https://example.com/cover.jpg', liveUrl: '' }, 'org-test')).toThrow('liveUrl is required')
-    expect(projectPayload({ ...base, image: 'https://example.com/cover.jpg' }, 'org-test').code_url).toBeNull()
+    expect(projectPayload({ ...base, image: 'https://example.com/cover.jpg', liveUrl: '' }, 'org-test').live_url).toBeNull()
+    expect(() => projectPayload({ ...base, image: 'https://example.com/cover.jpg', liveUrl: '', portfolioVisible: true }, 'org-test')).toThrow('website or GitHub URL')
+    expect(projectPayload({
+      ...base,
+      image: 'https://example.com/cover.jpg',
+      liveUrl: '',
+      codeUrl: 'https://github.com/example/mobile-app',
+      portfolioVisible: true,
+    }, 'org-test')).toMatchObject({
+      live_url: null,
+      code_url: 'https://github.com/example/mobile-app',
+    })
   })
 
   it('conserve les mêmes totaux du devis à la facture', () => {

@@ -125,6 +125,7 @@
     "live_available": "Projet accessible en ligne",
     "source_available": "Code source accessible",
     "read_case_study": "Découvrir l’étude de cas",
+    "view_details": "Découvrir le projet",
     "selection_count_one": "{count} projet dans cette sélection. Faites défiler pour l’explorer.",
     "selection_count_many": "{count} projets dans cette sélection. Faites défiler pour les explorer.",
     "browse_hint": "Faites glisser pour explorer",
@@ -169,7 +170,8 @@
   },
   "case_study": {
     "back": "Retour au portfolio",
-    "not_found": "Étude de cas introuvable",
+    "not_found": "Projet introuvable",
+    "overview": "À propos du projet",
     "role": "Mon rôle",
     "duration": "Durée",
     "delivered": "Livré en",

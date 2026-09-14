@@ -332,9 +332,6 @@ begin
     if nullif(btrim(new.image), '') is null then
       raise exception 'project_case_study_image_required' using errcode = '22023';
     end if;
-    if nullif(btrim(new.live_url), '') is null then
-      raise exception 'project_case_study_live_url_required' using errcode = '22023';
-    end if;
     if nullif(btrim(new.challenge), '') is null then
       raise exception 'project_case_study_context_required' using errcode = '22023';
     end if;
@@ -383,6 +380,12 @@ begin
     end if;
   elsif new.case_study_approved_at is not null or new.case_study_approved_by is not null then
     raise exception 'project_case_study_draft_approval_forbidden' using errcode = '22023';
+  end if;
+
+  if (new.portfolio_visible or new.case_study_published)
+    and nullif(btrim(new.live_url), '') is null
+    and nullif(btrim(new.code_url), '') is null then
+    raise exception 'project_public_link_required' using errcode = '22023';
   end if;
 
   return new;

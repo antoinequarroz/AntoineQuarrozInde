@@ -139,6 +139,11 @@ async function handleSubmit() {
     return
   }
 
+  if ((form.portfolioVisible || form.caseStudyPublished) && !form.liveUrl.trim() && !form.codeUrl.trim()) {
+    toast.error('Pour publier ce projet, ajoutez au moins un lien : site ou GitHub')
+    return
+  }
+
   const incompleteResultIndex = form.results.findIndex(result => !result.value.trim() || !result.label.trim())
   if (incompleteResultIndex !== -1) {
     toast.error(`Complétez ou supprimez la mesure ${incompleteResultIndex + 1}`)
@@ -339,14 +344,15 @@ function caseStudyTone(project: Project) {
                 <input id="project-tags" v-model="form.tags" type="text" class="input-field" placeholder="Vue 3, Nuxt, Tailwind">
               </div>
               <div>
-                <label for="project-live-url" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">URL du projet *</label>
-                <input id="project-live-url" v-model="form.liveUrl" type="url" class="input-field" placeholder="https://..." autocomplete="url" required>
+                <label for="project-live-url" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">URL du site <span class="font-normal text-gray-400">(facultatif)</span></label>
+                <input id="project-live-url" v-model="form.liveUrl" type="url" class="input-field" placeholder="https://..." autocomplete="url">
               </div>
             </div>
 
             <div>
               <label for="project-code-url" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">URL GitHub <span class="font-normal text-gray-400">(facultatif)</span></label>
               <input id="project-code-url" v-model="form.codeUrl" type="url" class="input-field" placeholder="https://github.com/..." autocomplete="url">
+              <p class="mt-1.5 text-xs leading-relaxed text-gray-400">Pour publier le projet, renseignez au moins le site ou GitHub.</p>
             </div>
 
             <AdminProjectCaseStudyFields v-model="form" :can-manage-publication="canManagePublication" />
@@ -413,7 +419,7 @@ function caseStudyTone(project: Project) {
         </div>
         <div class="mt-3 flex flex-wrap items-center gap-1.5">
           <NuxtLink :to="`/admin/projects/${project.id}`" class="inline-flex min-h-10 items-center rounded-lg px-2 text-xs font-semibold text-violet-700 hover:bg-violet-50 dark:text-violet-300 dark:hover:bg-violet-500/10">Piloter</NuxtLink>
-          <NuxtLink v-if="project.caseStudyPublished && project.caseStudyApprovedAt" :to="`/projets/${project.slug}`" target="_blank" class="text-xs font-semibold text-cyan-700 dark:text-cyan-300">Voir l’étude</NuxtLink>
+          <NuxtLink v-if="project.portfolioVisible || (project.caseStudyPublished && project.caseStudyApprovedAt)" :to="`/projets/${project.slug}`" target="_blank" class="text-xs font-semibold text-cyan-700 dark:text-cyan-300">Voir la page</NuxtLink>
           <button class="min-h-10 rounded-lg px-2 text-xs text-violet-700 hover:bg-violet-50 dark:text-violet-300 dark:hover:bg-violet-500/10" @click="openEdit(project)">Éditer</button>
           <button class="min-h-10 rounded-lg px-2 text-xs text-red-600 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-500/10" @click="handleDelete(project.id)">Supprimer</button>
         </div>
@@ -473,10 +479,10 @@ function caseStudyTone(project: Project) {
               <div class="flex items-center justify-end gap-1.5">
                 <NuxtLink :to="`/admin/projects/${project.id}`" aria-label="Ouvrir le cockpit du projet" class="flex h-8 items-center rounded-lg px-2 text-xs font-semibold text-violet-600 hover:bg-violet-50 dark:text-violet-300 dark:hover:bg-violet-500/10">Piloter</NuxtLink>
                 <NuxtLink
-                  v-if="project.caseStudyPublished && project.caseStudyApprovedAt"
+                  v-if="project.portfolioVisible || (project.caseStudyPublished && project.caseStudyApprovedAt)"
                   :to="`/projets/${project.slug}`"
                   target="_blank"
-                  aria-label="Voir l’étude de cas publiée"
+                  aria-label="Voir la page publique du projet"
                   class="flex h-8 w-8 items-center justify-center rounded-lg text-cyan-600 transition-colors hover:bg-cyan-50 hover:text-cyan-700 dark:text-cyan-300 dark:hover:bg-cyan-500/10"
                 >
                   <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14 3h7v7m0-7L10 14M5 7v12h12v-5" /></svg>
