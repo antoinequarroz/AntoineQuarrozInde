@@ -13,6 +13,7 @@ type Variant =
   | 'valid'
   | 'empty'
   | 'multiple'
+  | 'portfolio-project'
   | 'private-field'
   | 'missing-section'
   | 'missing-service'
@@ -63,6 +64,19 @@ async function serve(variant: Variant) {
     ? []
     : variant === 'multiple'
       ? [project('cas-un'), project('cas-deux')]
+      : variant === 'portfolio-project'
+        ? [{
+            ...project('portfolio-seul'),
+            portfolio_visible: true,
+            case_study_published: false,
+            challenge: null,
+            project_role: null,
+            project_scope: null,
+            key_decisions: null,
+            outcome: null,
+            related_service_paths: [],
+            results: [],
+          }]
       : [project()]
 
   if (variant === 'private-field') {
@@ -73,7 +87,10 @@ async function serve(variant: Variant) {
   const server = createServer((request, response) => {
     const address = server.address()
     const origin = `http://127.0.0.1:${typeof address === 'object' && address ? address.port : 0}`
-    const casePaths = projects.map(item => `/projets/${item.slug}`)
+    const projectPaths = projects.map(item => `/projets/${item.slug}`)
+    const casePaths = projects
+      .filter(item => item.case_study_published)
+      .map(item => `/projets/${item.slug}`)
     response.setHeader('cache-control', 'no-store')
 
     if (request.url === '/api/projects') {
@@ -89,7 +106,7 @@ async function serve(variant: Variant) {
     }
     if (request.url === '/sitemap.xml') {
       response.setHeader('content-type', 'application/xml')
-      const paths = variant === 'extra-sitemap' ? [...casePaths, '/projets/non-approuve'] : casePaths
+      const paths = variant === 'extra-sitemap' ? [...projectPaths, '/projets/non-approuve'] : projectPaths
       response.end(`<?xml version="1.0"?><urlset>${paths.map(path => `<url><loc>${origin}${path}</loc></url>`).join('')}</urlset>`)
       return
     }
@@ -107,7 +124,7 @@ async function serve(variant: Variant) {
         return
       }
       response.setHeader('content-type', 'text/html')
-      const markers = ['context', 'role', 'scope', 'decisions', 'results']
+      const markers = (matched.case_study_published ? ['context', 'role', 'scope', 'decisions', 'results'] : [])
         .filter(marker => variant !== 'missing-section' || marker !== 'scope')
         .map(marker => `<section data-case-study-section="${marker}">${marker}</section>`)
         .join('')
@@ -147,7 +164,7 @@ describe('AQ-SEO-012 anonymous approved case-study proof', () => {
     expect(source).toContain('docker run --rm -i "$fallback_node_image" node')
   })
 
-  it.each(['valid', 'empty', 'multiple'] as const)('accepts the %s public state', async (variant) => {
+  it.each(['valid', 'empty', 'multiple', 'portfolio-project'] as const)('accepts the %s public state', async (variant) => {
     const origin = await serve(variant)
     await expect(run(origin)).resolves.toMatchObject({ stdout: expect.stringContaining('proof passed') })
   })

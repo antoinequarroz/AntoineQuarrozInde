@@ -165,6 +165,15 @@ async function main() {
   const projects = parseProjects(projectsBody)
   projects.forEach(project => visit(project))
   const cases = projects.filter(project => project.case_study_published === true)
+  const publicProjectPaths = new Set()
+
+  for (const project of projects) {
+    const slug = String(project.slug || '').trim()
+    if (!slug) fail('A public project has no slug.')
+    const path = `/projets/${encodeURIComponent(slug)}`
+    if (publicProjectPaths.has(path)) fail(`Duplicate public project path: ${path}.`)
+    publicProjectPaths.add(path)
+  }
 
   const casePaths = new Map()
   for (const project of cases) {
@@ -206,13 +215,13 @@ async function main() {
     .filter(location => location.startsWith(`${origin}/projets/`))
     .map(location => location.slice(origin.length))
   if (new Set(sitemapProjectPaths).size !== sitemapProjectPaths.length) {
-    fail('The sitemap contains a duplicate case-study location.')
+    fail('The sitemap contains a duplicate project location.')
   }
-  for (const path of casePaths.keys()) {
-    if (!sitemapProjectPaths.includes(path)) fail(`${path}: approved case study is missing from the sitemap.`)
+  for (const path of publicProjectPaths) {
+    if (!sitemapProjectPaths.includes(path)) fail(`${path}: public project is missing from the sitemap.`)
   }
   for (const path of sitemapProjectPaths) {
-    if (!casePaths.has(path)) fail(`${path}: sitemap exposed a case study absent from the approved public API.`)
+    if (!publicProjectPaths.has(path)) fail(`${path}: sitemap exposed a project absent from the public API.`)
   }
 
   for (const [path, project] of casePaths) {
