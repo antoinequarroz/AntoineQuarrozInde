@@ -20,7 +20,8 @@ from pathlib import Path
 
 LINKEDIN_POSTS_ENDPOINT = "https://api.linkedin.com/rest/posts"
 X_POSTS_ENDPOINT = "https://api.x.com/2/tweets"
-CANONICAL_ARTICLE_PREFIX = "https://www.antoinequarroz.ch/blog/"
+CANONICAL_SITE_HOME = "https://www.antoinequarroz.ch/"
+CANONICAL_ARTICLE_PREFIX = f"{CANONICAL_SITE_HOME}blog/"
 ALLOWED_DRAFT_ROOT = Path("seo/social/a-valider")
 RECEIPT_ROOT = Path("seo/social/receipts")
 LINKEDIN_VERSION = "202606"
@@ -70,8 +71,8 @@ def validate_draft(path: Path, project: Path) -> dict[str, str]:
         raise ValueError("Plateforme autorisee: linkedin ou x.")
     if draft["status"] != "APPROUVE":
         raise ValueError("Publication refusee: le statut doit etre exactement APPROUVE.")
-    if not draft["article_url"].startswith(CANONICAL_ARTICLE_PREFIX):
-        raise ValueError("L'URL doit etre un article public du site canonique.")
+    if draft["article_url"] != CANONICAL_SITE_HOME and not draft["article_url"].startswith(CANONICAL_ARTICLE_PREFIX):
+        raise ValueError("L'URL doit etre l'accueil ou un article public du site canonique.")
     if draft["article_url"] not in draft["content"]:
         raise ValueError("Le texte public doit contenir l'URL de l'article approuve.")
     if draft["platform"] == "x" and len(draft["content"]) > 280:
@@ -281,7 +282,7 @@ def sync_drafts(project: Path, site_url: str, token: str, *, dry_run: bool) -> d
             article_url = draft["article_url"]
             if platform not in {"linkedin", "x"}:
                 raise ValueError("plateforme absente ou invalide")
-            if not article_url.startswith(CANONICAL_ARTICLE_PREFIX) or article_url not in content:
+            if (article_url != CANONICAL_SITE_HOME and not article_url.startswith(CANONICAL_ARTICLE_PREFIX)) or article_url not in content:
                 raise ValueError("URL canonique absente du texte")
             if not content or len(content) > (280 if platform == "x" else 3000):
                 raise ValueError("longueur de texte invalide")

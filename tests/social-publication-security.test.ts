@@ -4,6 +4,17 @@ import { describe, expect, it } from 'vitest'
 const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
 
 describe('social publication queue', () => {
+  it('accepts standalone posts only for the canonical homepage', () => {
+    const validation = read('server/utils/socialPublication.ts')
+    const publisher = read('scripts/hermes/publish_social.py')
+    const adminPage = read('app/pages/admin/social/index.vue')
+
+    expect(validation).toContain("const SITE_HOME = 'https://www.antoinequarroz.ch/'")
+    expect(validation).toContain('articleUrl !== SITE_HOME')
+    expect(publisher).toContain('CANONICAL_SITE_HOME = "https://www.antoinequarroz.ch/"')
+    expect(adminPage).toContain('Voir le lien associé')
+  })
+
   it('keeps the database tables server-only', () => {
     const migration = read('supabase/migrations/20260914071740_add_social_publication_queue.sql')
     expect(migration).toContain('alter table public.social_posts enable row level security')
