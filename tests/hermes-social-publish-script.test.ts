@@ -50,5 +50,8 @@ describe('Hermes social publication helper', () => {
     expect(source).toContain('HMAC-SHA1')
     expect(source).toContain('HERMES_X_MAX_USD_PER_POST')
     expect(source).toContain('X_POST_WITH_URL_ESTIMATED_USD = 0.20')
+    expect(source).toContain('--process-approved')
+    expect(source).toContain('--sync-drafts')
+    expect(source).toContain('HERMES_PUBLISH_TOKEN')
   })
 })

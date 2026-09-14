@@ -47,3 +47,22 @@ Secrets requis dans l'environnement privé de Hermes :
 Le jeton LinkedIn actuel dure deux mois. Son renouvellement doit être suivi par
 la surveillance Hermes. Aucun secret ne doit être placé dans Git, un brouillon
 ou une conversation.
+
+## Validation depuis le site
+
+La page privée `/admin/social` permet de modifier, refuser ou approuver un texte.
+Les accès aux plateformes restent exclusivement dans Hermes. Après une approbation,
+le processeur réclame atomiquement l'élément avant l'appel externe :
+
+```bash
+python3 scripts/hermes/publish_social.py --project . --process-approved
+```
+
+Il requiert `HERMES_PUBLISH_TOKEN`. X utilise `X_API_KEY`, `X_API_SECRET`,
+`X_ACCESS_TOKEN` et `X_ACCESS_TOKEN_SECRET`, en plus du plafond de coût.
+
+Le job SEO synchronise les nouveaux brouillons avec le tableau avant le passage du processeur :
+
+```bash
+python3 scripts/hermes/publish_social.py --project . --sync-drafts
+```
