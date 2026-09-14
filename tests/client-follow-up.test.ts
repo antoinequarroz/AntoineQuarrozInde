@@ -59,7 +59,7 @@ describe('client follow-up contract', () => {
 
   it('keeps the database change additive, bounded and tenant-indexed', async () => {
     const migration = await readFile(
-      new URL('../supabase/migrations/20260914071424_add_client_follow_up_fields.sql', import.meta.url),
+      new URL('../supabase/migrations/20260914081500_add_client_follow_up_fields.sql', import.meta.url),
       'utf8',
     )
 
