@@ -53,7 +53,10 @@ test('authenticated admin can reach CRM, quotes and invoices', async ({ page }) 
     const undoButton = page.getByRole('button', { name: /Annuler la dernière décision/ })
     await expect(undoButton).toBeFocused()
     await undoButton.click()
-    await expect(page.getByText(/restauré dans les actions du jour/)).toBeAttached()
+    await expect(
+      page.locator('p[role="status"][aria-live="polite"]')
+        .filter({ hasText: /restauré dans les actions du jour/ }),
+    ).toBeAttached()
   }
 
   await page.goto('/admin/quotes')
