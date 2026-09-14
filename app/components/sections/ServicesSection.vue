@@ -88,21 +88,21 @@ function selectService(service: { key: ServiceKey }) {
       <div class="relative max-w-6xl mx-auto">
         <div class="hidden md:block absolute inset-x-16 top-1/2 -translate-y-1/2 h-56 bg-violet-500/12 dark:bg-violet-500/18 blur-3xl pointer-events-none" />
 
-        <div class="grid md:grid-cols-3 gap-5 md:gap-6 lg:gap-8 items-end">
+        <div class="grid gap-6 md:grid-cols-3 md:gap-6 lg:gap-8 md:items-end">
           <div
             v-for="(service, index) in services"
             :key="service.key"
             v-motion
             data-service-motion
-            :initial="{ opacity: 0, y: 36 }"
-            :visible="{ opacity: 1, y: index === 1 ? -14 : 0, transition: { delay: index * 90, duration: 520 } }"
+            :initial="{ opacity: 0, y: 0 }"
+            :visible="{ opacity: 1, y: 0, transition: { delay: index * 90, duration: 520 } }"
             class="relative"
           >
             <article
               data-service-card
               class="service-card group relative flex min-h-[20.5rem] max-[430px]:min-h-[19.25rem] md:min-h-[31rem] flex-col rounded-3xl border backdrop-blur-md transition-[transform,box-shadow,border-color] duration-500 ease-out md:origin-bottom"
               :class="index === 1
-                ? 'z-20 md:scale-[1.03] md:hover:scale-[1.045] border-violet-500/25 bg-white/90 shadow-2xl shadow-violet-500/15 dark:border-violet-300/35 dark:bg-gradient-to-b dark:from-[#2a1f57] dark:via-[#1d173b] dark:to-[#1a2448] dark:shadow-[0_25px_80px_rgba(76,29,149,0.42)]'
+                ? 'z-20 md:-translate-y-3.5 md:scale-[1.03] md:hover:scale-[1.045] border-violet-500/25 bg-white/90 shadow-2xl shadow-violet-500/15 dark:border-violet-300/35 dark:bg-gradient-to-b dark:from-[#2a1f57] dark:via-[#1d173b] dark:to-[#1a2448] dark:shadow-[0_25px_80px_rgba(76,29,149,0.42)]'
                 : index === 0
                   ? 'z-10 md:translate-y-4 md:-rotate-[1.75deg] md:hover:-translate-y-1 md:hover:-rotate-[0.35deg] md:hover:scale-[1.015] border-violet-500/15 bg-white/78 shadow-xl shadow-violet-500/10 dark:border-white/10 dark:bg-white/[0.045] dark:shadow-black/25'
                   : 'z-10 md:translate-y-4 md:rotate-[1.75deg] md:hover:-translate-y-1 md:hover:rotate-[0.35deg] md:hover:scale-[1.015] border-violet-500/15 bg-white/78 shadow-xl shadow-violet-500/10 dark:border-white/10 dark:bg-white/[0.045] dark:shadow-black/25'"
