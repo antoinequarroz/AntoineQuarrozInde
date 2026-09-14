@@ -85,17 +85,24 @@ export async function loginAdmin(page: Page) {
 
   if (new URL(page.url()).pathname === '/admin/security') {
     const challengeCode = page.getByLabel('Code à six chiffres')
+    const continueToAdmin = page.getByRole('link', { name: 'Continuer vers l’administration', exact: true })
     // Factor discovery calls Supabase after the page transition and can exceed
     // Playwright's 5 s assertion default on a cold production connection.
-    await expect(challengeCode).toBeVisible({ timeout: 20_000 })
-    if (!adminTotpSecret) {
-      throw new Error('This admin account requires MFA. Configure E2E_ADMIN_TOTP_SECRET with its Base32 TOTP secret.')
-    }
+    await expect(challengeCode.or(continueToAdmin)).toBeVisible({ timeout: 20_000 })
 
-    const remainingWindowMs = 30_000 - (Date.now() % 30_000)
-    if (remainingWindowMs < 5_000) await page.waitForTimeout(remainingWindowMs + 250)
-    await challengeCode.fill(generateTotpCode(adminTotpSecret))
-    await page.getByRole('button', { name: 'Vérifier et continuer' }).click()
+    if (await continueToAdmin.isVisible()) {
+      await continueToAdmin.click()
+    }
+    else {
+      if (!adminTotpSecret) {
+        throw new Error('This admin account requires MFA. Configure E2E_ADMIN_TOTP_SECRET with its Base32 TOTP secret.')
+      }
+
+      const remainingWindowMs = 30_000 - (Date.now() % 30_000)
+      if (remainingWindowMs < 5_000) await page.waitForTimeout(remainingWindowMs + 250)
+      await challengeCode.fill(generateTotpCode(adminTotpSecret))
+      await page.getByRole('button', { name: 'Vérifier et continuer' }).click()
+    }
   }
 
   await expect(page).toHaveURL(/\/admin(?:\/)?$/)
