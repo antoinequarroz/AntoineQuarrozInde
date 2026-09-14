@@ -1,6 +1,13 @@
-export type ReminderTarget = 'quote' | 'invoice'
+export type ReminderTarget = 'quote' | 'invoice' | 'lead'
 
-export type ReminderPlanClient = { id: number, name?: string | null, email?: string | null }
+export type ReminderPlanClient = {
+  id: number
+  name?: string | null
+  email?: string | null
+  status?: string | null
+  next_follow_up_at?: string | null
+  follow_up_note?: string | null
+}
 export type ReminderPlanQuote = { id: number, number: string, title?: string | null, client_id?: number | null, valid_until?: string | null, status: string }
 export type ReminderPlanInvoice = { id: number, number: string, client_id?: number | null, due_at?: string | null, status: string, reminders_paused?: boolean, balance_cents?: number, currency?: string }
 
@@ -18,6 +25,7 @@ export type PipelineReminderCandidate = {
   urgency: 'upcoming' | 'due' | 'overdue'
   balanceCents?: number
   currency?: string
+  hasInternalNote?: boolean
 }
 
 function calendarDayDifference(fromIso: string, toIso: string) {
@@ -80,6 +88,38 @@ export function buildPipelineReminderPlan(input: {
       urgency: milestone.urgency,
       balanceCents: target === 'invoice' ? Number((row as ReminderPlanInvoice).balance_cents || 0) : undefined,
       currency: target === 'invoice' ? String((row as ReminderPlanInvoice).currency || 'CHF') : undefined,
+    })
+  }
+
+  for (const client of input.clients) {
+    if (client.status !== 'lead' || !client.next_follow_up_at) continue
+    const daysUntilDue = calendarDayDifference(input.today, client.next_follow_up_at)
+    if (daysUntilDue > 0) {
+      skipped.outsideMilestone += 1
+      continue
+    }
+    if (!client.email) {
+      skipped.missingContact += 1
+      continue
+    }
+    const reminderKey = `lead:${client.id}:relance-${client.next_follow_up_at}`
+    if (sentKeys.has(reminderKey)) {
+      skipped.alreadySent += 1
+      continue
+    }
+    candidates.push({
+      reminderKey,
+      targetType: 'lead',
+      targetId: Number(client.id),
+      clientId: Number(client.id),
+      clientName: String(client.name || ''),
+      email: String(client.email),
+      number: String(client.name || `Prospect #${client.id}`),
+      title: null,
+      dueDate: client.next_follow_up_at,
+      milestone: 'relance-prospect',
+      urgency: daysUntilDue < 0 ? 'overdue' : 'due',
+      hasInternalNote: Boolean(client.follow_up_note?.trim()),
     })
   }
 

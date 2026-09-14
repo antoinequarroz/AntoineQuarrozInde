@@ -94,6 +94,9 @@ export interface Client {
   acquisitionSource: string | null
   acquisitionMedium: string | null
   acquisitionCampaign: string | null
+  nextFollowUpAt: string | null
+  followUpNote: string | null
+  lastContactedAt: string | null
   portalUserId?: string | null
   portalInvitedAt?: string | null
   portalActivatedAt?: string | null
