@@ -96,7 +96,7 @@ onBeforeUnmount(() => {
         </div>
 
         <!-- Center Desktop -->
-        <nav class="hidden md:flex items-center justify-center gap-7">
+        <nav class="hidden lg:flex items-center justify-center gap-7">
           <a
             v-for="link in navLinks"
             :key="link.href"
@@ -118,18 +118,20 @@ onBeforeUnmount(() => {
 
         <!-- Right -->
         <div class="justify-self-end flex items-center gap-1.5 md:gap-2">
-          <UiLangSwitcher />
-          <UiThemeToggle />
+          <div data-desktop-nav-preferences class="hidden items-center gap-2 lg:flex">
+            <UiLangSwitcher />
+            <UiThemeToggle />
+          </div>
           <a
             :href="`${localePath('/')}#contact`"
-            class="hidden md:inline-flex items-center justify-center px-4 py-2 rounded-full text-sm font-semibold transition-colors"
+            class="hidden lg:inline-flex items-center justify-center px-4 py-2 rounded-full text-sm font-semibold transition-colors"
             :class="isScrolled ? 'bg-violet-600 text-white hover:bg-violet-500' : 'bg-white text-black hover:bg-white/90'"
           >
             {{ t('nav.contact') }}
           </a>
           <button
             id="mobile-menu-trigger"
-            class="md:hidden h-11 w-11 rounded-full flex items-center justify-center transition-colors"
+            class="flex h-11 w-11 items-center justify-center rounded-full transition-colors lg:hidden"
             :class="isScrolled ? 'bg-gray-100 dark:bg-gray-800/60 text-gray-700 dark:text-gray-200' : 'bg-white/15 text-white'"
             :aria-label="isMenuOpen ? menuLabels.close : menuLabels.open"
             :aria-expanded="isMenuOpen"
@@ -155,7 +157,7 @@ onBeforeUnmount(() => {
         v-if="isMenuOpen"
         id="mobile-navigation"
         ref="dialogRef"
-        class="md:hidden fixed inset-0 z-50 backdrop-blur-2xl bg-[#07070f]/96"
+        class="fixed inset-0 z-50 bg-[#07070f]/96 backdrop-blur-2xl lg:hidden"
         role="dialog"
         aria-modal="true"
         aria-labelledby="mobile-menu-title"
@@ -184,7 +186,7 @@ onBeforeUnmount(() => {
             </button>
           </div>
 
-          <div class="mt-4 flex items-center gap-2">
+          <div data-mobile-nav-preferences class="mt-4 flex items-center gap-2">
             <UiLangSwitcher />
             <UiThemeToggle />
           </div>

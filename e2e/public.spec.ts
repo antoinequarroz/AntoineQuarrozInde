@@ -17,7 +17,7 @@ test('hero remains usable without JavaScript and with reduced motion', async ({ 
   await expect(noScriptPage.locator('[data-hero-secondary-cta]')).toHaveAttribute('href', /^\/(?:en|de)?#portfolio$/)
   await noScriptContext.close()
 
-  const reducedContext = await browser.newContext({ reducedMotion: 'reduce', viewport: { width: 390, height: 844 } })
+  const reducedContext = await browser.newContext({ reducedMotion: 'reduce', viewport: { width: 1280, height: 800 } })
   const reducedPage = await reducedContext.newPage()
   await reducedPage.goto('/')
   await expect(reducedPage.locator('[data-spline-state="fallback-motion"]')).toBeVisible()
@@ -30,13 +30,62 @@ test('hero remains usable without JavaScript and with reduced motion', async ({ 
   const mobileContext = await browser.newContext({ viewport: { width: 390, height: 844 } })
   const mobilePage = await mobileContext.newPage()
   await mobilePage.goto('/')
-  await expect(mobilePage.locator('[data-spline-state="fallback-mobile"]')).toBeVisible()
-  await expect(mobilePage.locator('img[src="/hero-robot-mobile.png"]')).toBeVisible()
+  await expect(mobilePage.locator('[data-hero-spline-frame]')).toBeHidden()
+  await expect(mobilePage.locator('img[src="/hero-robot-mobile.png"]')).toHaveCount(0)
   const splineRuntimeLoaded = await mobilePage.evaluate(() => performance
     .getEntriesByType('resource')
     .some(entry => entry.name.includes('@splinetool/viewer')))
   expect(splineRuntimeLoaded).toBeFalsy()
   await mobileContext.close()
+})
+
+test('mobile navigation keeps preferences inside the burger menu', async ({ page }) => {
+  for (const viewport of [
+    { width: 390, height: 844 },
+    { width: 768, height: 1024 },
+  ]) {
+    await page.setViewportSize(viewport)
+    await page.goto('/')
+
+    await expect(page.locator('[data-desktop-nav-preferences]')).toBeHidden()
+    await expect(page.locator('[data-mobile-nav-preferences]')).toHaveCount(0)
+    await expect(page.locator('#mobile-menu-trigger')).toBeVisible()
+
+    await page.waitForFunction(() => Boolean((document.querySelector('#__nuxt') as HTMLElement & { __vue_app__?: unknown })?.__vue_app__))
+    await page.locator('#mobile-menu-trigger').click()
+    await expect(page.locator('#mobile-menu-trigger')).toHaveAttribute('aria-expanded', 'true')
+    await expect(page.locator('[data-mobile-nav-preferences]')).toBeVisible()
+    await expect(page.locator('[data-mobile-nav-preferences] summary')).toBeVisible()
+    await expect(page.locator('[data-mobile-nav-preferences] button')).toBeVisible()
+  }
+})
+
+test('mobile service cards keep an even vertical rhythm', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/#services')
+
+  const cards = page.locator('[data-service-card]')
+  await expect(cards).toHaveCount(3)
+  await expect(cards.first()).toBeVisible()
+
+  const readGaps = async () => {
+    const boxes = await cards.evaluateAll(elements => elements.map((element) => {
+      const rect = element.getBoundingClientRect()
+      return { top: rect.top, bottom: rect.bottom }
+    }))
+    return [
+      (boxes[1]?.top ?? 0) - (boxes[0]?.bottom ?? 0),
+      (boxes[2]?.top ?? 0) - (boxes[1]?.bottom ?? 0),
+    ]
+  }
+  await expect.poll(async () => {
+    const [firstGap = 0, secondGap = 0] = await readGaps()
+    return Math.abs(firstGap - secondGap)
+  }).toBeLessThanOrEqual(1)
+  const [firstGap = 0, secondGap = 0] = await readGaps()
+
+  expect(firstGap).toBeGreaterThanOrEqual(23)
+  expect(Math.abs(firstGap - secondGap)).toBeLessThanOrEqual(1)
 })
 
 test('mobile landing keeps every visible interactive target touch friendly', async ({ page }) => {

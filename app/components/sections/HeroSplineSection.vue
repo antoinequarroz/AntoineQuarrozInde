@@ -13,7 +13,7 @@ onMounted(() => track('hero_view'))
         <!-- Spline background -->
         <div
             data-hero-spline-frame
-            class="absolute inset-x-0 bottom-0 z-0 h-[42svh] min-h-[19rem] overflow-hidden sm:inset-0 sm:h-full sm:min-h-0"
+            class="absolute inset-0 z-0 hidden overflow-hidden sm:block"
         >
             <UiSplineRobot
                 :scene-url="sceneUrl"
@@ -45,7 +45,7 @@ onMounted(() => track('hero_view'))
             data-hero-critical-content
         >
             <div class="h-full grid grid-rows-[1fr_auto] py-10 md:py-24">
-                <div class="flex items-start pt-24 sm:items-center sm:pt-0">
+                <div class="flex items-center pt-10 sm:pt-0">
                     <div class="hero-copy max-w-3xl text-white">
                         <!-- Badge -->
                         <div
@@ -161,17 +161,4 @@ onMounted(() => track('hero_view'))
     }
 }
 
-@media (max-width: 639px) {
-    .hero-copy {
-        max-width: 100%;
-        padding-bottom: min(42svh, 22rem);
-    }
-
-    :deep(.hero-spline-stage) {
-        transform: translate3d(0, 8%, 0) scale(0.9);
-        transform-origin: center bottom;
-        mask-image: linear-gradient(to bottom, transparent 0%, black 24%, black 100%);
-        pointer-events: none;
-    }
-}
 </style>

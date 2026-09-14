@@ -23,7 +23,7 @@ describe('AQ-SEO-013 hero fallback', () => {
     expect(hero).toContain(':href="`${localePath(\'/\')}#contact`"')
     expect(robot).toContain('data-spline-state="fallback-ssr"')
     expect(robot).toContain("useFallback('fallback-error')")
-    expect(robot).toContain('/hero-robot-mobile.png')
+    expect(robot).not.toContain('/hero-robot-mobile.png')
     expect(robot).toContain('https://unpkg.com/@splinetool/viewer@1.12.98/build/spline-viewer.js')
     expect(robot).not.toContain("import('@splinetool/viewer')")
     expect(robot).toContain('8_000')

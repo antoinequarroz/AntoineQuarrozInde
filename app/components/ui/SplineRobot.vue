@@ -154,18 +154,7 @@ onBeforeUnmount(() => {
 <template>
   <ClientOnly>
     <div :class="['spline-shell overflow-hidden bg-black', props.className, props.opacityClass]" :data-spline-state="state" aria-hidden="true">
-      <div class="spline-static absolute inset-0 bg-black">
-        <img
-          v-if="isSmallViewport"
-          src="/hero-robot-mobile.png"
-          alt=""
-          width="390"
-          height="354"
-          decoding="async"
-          fetchpriority="high"
-          class="h-full w-full object-cover object-center"
-        >
-      </div>
+      <div class="spline-static absolute inset-0 bg-black" />
       <spline-viewer
         v-if="viewerReady && (state === 'loading' || state === 'ready')"
         :url="props.sceneUrl"
