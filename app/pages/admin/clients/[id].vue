@@ -69,15 +69,35 @@ const timeline = computed(() => {
   const auditEvents = auditLogs.value.map((log) => {
     const payload = log.payload || {}
     if (log.action === 'commercial_action.state_changed') {
-      const stateLabel = payload.status === 'handled'
-        ? 'Action commerciale traitée'
-        : payload.status === 'ignored'
-          ? 'Action commerciale ignorée'
-          : `Action commerciale reportée${payload.snoozedUntil ? ` au ${formatDate(payload.snoozedUntil)}` : ''}`
+      const stateLabel = payload.status === 'restored'
+        ? 'Action commerciale restaurée'
+        : payload.status === 'handled'
+          ? 'Action commerciale traitée'
+          : payload.status === 'ignored'
+            ? 'Action commerciale ignorée'
+            : `Action commerciale reportée${payload.snoozedUntil ? ` au ${formatDate(payload.snoozedUntil)}` : ''}`
       return {
         key: `audit-${log.id}`,
         title: stateLabel,
         meta: payload.targetPath || '',
+        date: log.created_at?.slice(0, 19).replace('T', ' ') || '',
+        sortDate: log.created_at || '',
+      }
+    }
+    if (log.action === 'prospect.follow_up_contacted') {
+      return {
+        key: `audit-${log.id}`,
+        title: 'Relance prospect envoyée avec Lumail',
+        meta: payload.contactedAt ? `Contact enregistré le ${formatDate(payload.contactedAt)}` : '',
+        date: log.created_at?.slice(0, 19).replace('T', ' ') || '',
+        sortDate: log.created_at || '',
+      }
+    }
+    if (log.action === 'client.update' && Array.isArray(payload.followUpFieldsChanged) && payload.followUpFieldsChanged.includes('next_follow_up_at')) {
+      return {
+        key: `audit-${log.id}`,
+        title: payload.nextFollowUpAt ? 'Prochaine relance planifiée' : 'Planification de relance terminée',
+        meta: payload.nextFollowUpAt ? `Prévue le ${formatDate(payload.nextFollowUpAt)}` : '',
         date: log.created_at?.slice(0, 19).replace('T', ' ') || '',
         sortDate: log.created_at || '',
       }

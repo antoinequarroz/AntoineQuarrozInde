@@ -69,6 +69,8 @@ const form = reactive({
   acquisitionSource: '',
   acquisitionMedium: '',
   acquisitionCampaign: '',
+  nextFollowUpAt: '',
+  followUpNote: '',
 })
 
 const queryState = computed(() => {
@@ -160,7 +162,7 @@ async function runPortalAction(client: Client, action: 'invite' | 'resend' | 're
 }
 
 function resetForm() {
-  Object.assign(form, { name: '', company: '', email: '', phone: '', status: 'active', notes: '', billingStreet: '', billingBuilding: '', billingPostalCode: '', billingCity: '', billingCountry: 'CH', acquisitionSource: '', acquisitionMedium: '', acquisitionCampaign: '' })
+  Object.assign(form, { name: '', company: '', email: '', phone: '', status: 'active', notes: '', billingStreet: '', billingBuilding: '', billingPostalCode: '', billingCity: '', billingCountry: 'CH', acquisitionSource: '', acquisitionMedium: '', acquisitionCampaign: '', nextFollowUpAt: '', followUpNote: '' })
   inviteAfterCreate.value = false
 }
 
@@ -187,6 +189,8 @@ function openEdit(client: Client) {
     acquisitionSource: client.acquisitionSource || '',
     acquisitionMedium: client.acquisitionMedium || '',
     acquisitionCampaign: client.acquisitionCampaign || '',
+    nextFollowUpAt: client.nextFollowUpAt || '',
+    followUpNote: client.followUpNote || '',
   })
   showForm.value = true
 }
@@ -313,6 +317,8 @@ async function handleSubmit() {
     acquisitionSource: form.acquisitionSource || null,
     acquisitionMedium: form.acquisitionMedium || null,
     acquisitionCampaign: form.acquisitionCampaign || null,
+    nextFollowUpAt: form.nextFollowUpAt || null,
+    followUpNote: form.followUpNote || null,
   }
 
   try {
@@ -541,6 +547,7 @@ onMounted(async () => {
           <p class="text-xs text-gray-400">{{ client.phone || '-' }}</p>
           <span class="mt-2 inline-flex rounded-md px-2 py-1 text-xs font-semibold" :class="portalAccessTone(client)">{{ portalAccessLabels[portalAccessStatus(client)] }}</span>
           <p class="mt-2 text-xs font-medium text-cyan-700 dark:text-cyan-300">{{ client.acquisitionSource || 'Source non attribuée' }}</p>
+          <p v-if="client.nextFollowUpAt" class="mt-2 text-xs font-semibold text-violet-700 dark:text-violet-300">Prochaine relance · {{ client.nextFollowUpAt }}</p>
           <div class="mt-3 flex flex-wrap items-center gap-1">
             <NuxtLink :to="`/admin/clients/${client.id}`" class="inline-flex min-h-10 items-center rounded-lg px-2 text-xs text-sky-700 hover:bg-sky-50 dark:text-sky-300 dark:hover:bg-sky-500/10">Voir</NuxtLink>
             <button class="min-h-10 rounded-lg px-2 text-xs text-violet-700 hover:bg-violet-50 dark:text-violet-300 dark:hover:bg-violet-500/10" @click="openEdit(client)">Éditer</button>
@@ -587,6 +594,7 @@ onMounted(async () => {
                     <p class="text-sm font-medium text-gray-800 dark:text-gray-200">{{ client.name }}</p>
                     <p class="text-xs text-gray-400">{{ client.company || 'Indépendant' }}</p>
                     <p class="mt-0.5 text-xs font-medium text-cyan-700 dark:text-cyan-300">{{ client.acquisitionSource || 'Non attribuée' }}</p>
+                    <p v-if="client.nextFollowUpAt" class="mt-0.5 text-xs font-semibold text-violet-700 dark:text-violet-300">Relance · {{ client.nextFollowUpAt }}</p>
                   </div>
                 </div>
               </td>
@@ -635,6 +643,7 @@ onMounted(async () => {
             <p class="text-sm font-medium">{{ client.name }}</p>
             <p class="text-xs text-gray-500">{{ client.company || 'Indépendant' }}</p>
             <p class="text-xs text-gray-400 mt-1">{{ client.email }}</p>
+            <p v-if="client.nextFollowUpAt" class="mt-1 text-xs font-semibold text-violet-700 dark:text-violet-300">Relance · {{ client.nextFollowUpAt }}</p>
             <div class="mt-2 flex items-center gap-2">
               <NuxtLink :to="`/admin/clients/${client.id}`" class="text-xs text-sky-600">Voir</NuxtLink>
               <button class="text-xs text-violet-600" @click="openEdit(client)">Éditer</button>
@@ -680,6 +689,16 @@ onMounted(async () => {
             <option value="active">Actif</option>
             <option value="inactive">Inactif</option>
           </select></label>
+          <fieldset class="space-y-3 rounded-lg border border-violet-200/70 bg-violet-50/50 p-3 dark:border-violet-500/20 dark:bg-violet-500/[0.06]">
+            <legend class="px-1 text-xs font-semibold uppercase text-violet-700 dark:text-violet-300">Suivi commercial</legend>
+            <p class="text-xs leading-5 text-gray-600 dark:text-gray-300">La prochaine relance remontera automatiquement dans les actions du jour à la date choisie.</p>
+            <label class="block space-y-1 text-xs font-medium text-gray-700 dark:text-gray-200">Prochaine relance
+              <input v-model="form.nextFollowUpAt" type="date" class="input-field">
+            </label>
+            <label class="block space-y-1 text-xs font-medium text-gray-700 dark:text-gray-200">Note de relance <span class="font-normal text-gray-500">(interne)</span>
+              <textarea v-model="form.followUpNote" rows="2" maxlength="500" class="input-field" placeholder="Contexte à retrouver lors de la relance" />
+            </label>
+          </fieldset>
           <label v-if="!editing" class="flex items-start gap-3 rounded-lg border border-violet-200/70 bg-violet-50/60 p-3 text-sm dark:border-violet-500/20 dark:bg-violet-500/[0.08]">
             <input v-model="inviteAfterCreate" type="checkbox" class="mt-0.5 h-4 w-4 rounded border-gray-300 text-violet-600 focus:ring-violet-500">
             <span><strong class="block text-gray-900 dark:text-white">Inviter ce client après sa création</strong><span class="mt-0.5 block text-xs leading-5 text-gray-600 dark:text-gray-300">Il recevra un lien personnel pour choisir son mot de passe et ouvrir son espace sécurisé.</span></span>

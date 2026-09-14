@@ -1,4 +1,5 @@
 import { normalizeClientAttribution } from '../utils/clientAttribution'
+import { listChangedFollowUpFields, normalizeClientFollowUp } from '../utils/clientFollowUp'
 
 export default defineEventHandler(async (event) => {
   const { org, user } = await requireAdmin(event)
@@ -7,22 +8,46 @@ export default defineEventHandler(async (event) => {
   if (!id) throw createError({ statusCode: 400, message: 'Missing client id' })
 
   const supabase = getSupabaseAdmin()
-  const payload = {
-    name: String(body.name || '').trim(),
-    company: body.company ? String(body.company).trim() : null,
-    email: String(body.email || '').trim(),
-    phone: body.phone ? String(body.phone).trim() : null,
-    status: body.status || 'lead',
-    notes: body.notes ? String(body.notes) : null,
-    billing_street: body.billingStreet ? String(body.billingStreet).trim() : null,
-    billing_building: body.billingBuilding ? String(body.billingBuilding).trim() : null,
-    billing_postal_code: body.billingPostalCode ? String(body.billingPostalCode).trim() : null,
-    billing_city: body.billingCity ? String(body.billingCity).trim() : null,
-    billing_country: String(body.billingCountry || 'CH').trim().toUpperCase(),
-    ...normalizeClientAttribution(body),
+  const { data: existing, error: existingError } = await supabase
+    .from('clients')
+    .select('*')
+    .eq('organization_id', org.id)
+    .eq('id', id)
+    .maybeSingle()
+
+  if (existingError) throw createError({ statusCode: 500, message: existingError.message })
+  if (!existing) throw createError({ statusCode: 404, message: 'Client not found' })
+
+  const followUpPayload = normalizeClientFollowUp(body)
+  const normalizedAttribution = normalizeClientAttribution(body)
+  const payload: Record<string, unknown> = { ...followUpPayload }
+  const editableFields = [
+    ['name', 'name', (value: unknown) => String(value || '').trim()],
+    ['company', 'company', (value: unknown) => value ? String(value).trim() : null],
+    ['email', 'email', (value: unknown) => String(value || '').trim()],
+    ['phone', 'phone', (value: unknown) => value ? String(value).trim() : null],
+    ['status', 'status', (value: unknown) => value || 'lead'],
+    ['notes', 'notes', (value: unknown) => value ? String(value) : null],
+    ['billingStreet', 'billing_street', (value: unknown) => value ? String(value).trim() : null],
+    ['billingBuilding', 'billing_building', (value: unknown) => value ? String(value).trim() : null],
+    ['billingPostalCode', 'billing_postal_code', (value: unknown) => value ? String(value).trim() : null],
+    ['billingCity', 'billing_city', (value: unknown) => value ? String(value).trim() : null],
+    ['billingCountry', 'billing_country', (value: unknown) => String(value || 'CH').trim().toUpperCase()],
+  ] as const
+  const attributionFields = [
+    ['acquisitionSource', 'acquisition_source'],
+    ['acquisitionMedium', 'acquisition_medium'],
+    ['acquisitionCampaign', 'acquisition_campaign'],
+  ] as const
+
+  for (const [inputField, databaseField, normalize] of editableFields) {
+    if (Object.hasOwn(body, inputField)) payload[databaseField] = normalize(body[inputField])
+  }
+  for (const [inputField, databaseField] of attributionFields) {
+    if (Object.hasOwn(body, inputField)) payload[databaseField] = normalizedAttribution[databaseField]
   }
 
-  if (!payload.name || !payload.email) {
+  if (!(payload.name ?? existing.name) || !(payload.email ?? existing.email)) {
     throw createError({ statusCode: 400, message: 'Name and email are required' })
   }
 
@@ -42,7 +67,15 @@ export default defineEventHandler(async (event) => {
     entityType: 'client',
     entityId: data.id,
     clientId: data.id,
-    payload: { name: data.name, email: data.email, status: data.status },
+    payload: {
+      name: data.name,
+      email: data.email,
+      status: data.status,
+      followUpFieldsChanged: listChangedFollowUpFields(existing, followUpPayload),
+      nextFollowUpAt: data.next_follow_up_at,
+      hasFollowUpNote: Boolean(data.follow_up_note),
+      lastContactedAt: data.last_contacted_at,
+    },
   })
   return data
 })

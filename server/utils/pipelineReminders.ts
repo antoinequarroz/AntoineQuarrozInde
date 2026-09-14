@@ -26,10 +26,20 @@ function escapeHtml(input: string) {
     .replaceAll("'", '&#39;')
 }
 
-function reminderEmail(candidate: PipelineReminderCandidate) {
+export function buildPipelineReminderMessage(candidate: PipelineReminderCandidate) {
   const name = escapeHtml(candidate.clientName)
   const number = escapeHtml(candidate.number)
   const dueDate = escapeHtml(candidate.dueDate)
+  if (candidate.targetType === 'lead') {
+    const displayName = candidate.clientName.trim()
+    const textGreeting = displayName ? `Bonjour ${displayName},` : 'Bonjour,'
+    const htmlGreeting = name ? `Bonjour ${name},` : 'Bonjour,'
+    return {
+      subject: 'Suite à notre échange',
+      text: `${textGreeting}\n\nJe me permets de revenir vers vous pour savoir où en est votre réflexion et si je peux vous aider à avancer sur votre projet.\n\nJe reste disponible si vous souhaitez en discuter ou préciser un point.\n\nAntoine Quarroz\ninfo@antoinequarroz.ch`,
+      html: `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#111827;line-height:1.6"><p>${htmlGreeting}</p><p>Je me permets de revenir vers vous pour savoir où en est votre réflexion et si je peux vous aider à avancer sur votre projet.</p><p>Je reste disponible si vous souhaitez en discuter ou préciser un point.</p><p style="margin-top:24px">Antoine Quarroz<br>info@antoinequarroz.ch</p></div>`,
+    }
+  }
   if (candidate.targetType === 'quote') {
     return {
       subject: candidate.urgency === 'due' ? `Dernier rappel pour le devis ${candidate.number}` : `Le devis ${candidate.number} arrive à échéance`,
@@ -48,11 +58,22 @@ function reminderEmail(candidate: PipelineReminderCandidate) {
 }
 
 export function confirmationMatchesCandidate(candidate: PipelineReminderCandidate, confirmation: PipelineReminderConfirmation) {
-  const message = reminderEmail(candidate)
   return confirmation.reminderKey === candidate.reminderKey
     && confirmation.email === candidate.email
-    && confirmation.subject === message.subject
-    && confirmation.bodyText === message.text
+    && confirmation.subject.trim().length > 0
+    && confirmation.subject.length <= 200
+    && confirmation.bodyText.trim().length > 0
+    && confirmation.bodyText.length <= 5_000
+}
+
+export function buildConfirmedPipelineReminderMessage(confirmation: PipelineReminderConfirmation) {
+  const subject = confirmation.subject.trim()
+  const text = confirmation.bodyText.trim()
+  return {
+    subject,
+    text,
+    html: `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#111827;line-height:1.6;white-space:pre-wrap">${escapeHtml(text)}</div>`,
+  }
 }
 
 async function loadReminderPlan(organizationId: string) {
@@ -60,7 +81,7 @@ async function loadReminderPlan(organizationId: string) {
   const [quotesResult, invoicesResult, clientsResult, sentResult, paymentsResult] = await Promise.all([
     supabase.from('quotes').select('id,number,title,client_id,valid_until,status').eq('organization_id', organizationId).eq('status', 'sent'),
     supabase.from('invoices').select('id,number,client_id,due_at,status,total_cents,amount_cents,currency,reminders_paused').eq('organization_id', organizationId).in('status', ['sent', 'overdue']),
-    supabase.from('clients').select('id,name,email').eq('organization_id', organizationId),
+    supabase.from('clients').select('id,name,email,status,next_follow_up_at,follow_up_note').eq('organization_id', organizationId),
     supabase.from('audit_logs').select('payload').eq('organization_id', organizationId).eq('action', 'pipeline_reminder_email').limit(10_000),
     supabase.from('invoice_payments').select('invoice_id,amount_cents,voided_at').eq('organization_id', organizationId),
   ])
@@ -89,13 +110,17 @@ export function selectPipelineReminderCandidates(candidates: PipelineReminderCan
   return candidates.filter(candidate => requestedKeys.has(candidate.reminderKey))
 }
 
+export function selectPipelineReminderCandidatesForTrigger(candidates: PipelineReminderCandidate[], trigger: 'manual' | 'scheduled') {
+  return trigger === 'scheduled' ? candidates.filter(candidate => candidate.targetType !== 'lead') : candidates
+}
+
 export async function previewPipelineReminders(organizationId: string) {
   const plan = await loadReminderPlan(organizationId)
   return {
     automationEnabled: Boolean(process.env.PIPELINE_AUTOMATION_SECRET),
     generatedAt: new Date().toISOString(),
     candidates: plan.candidates.map((candidate) => {
-      const message = reminderEmail(candidate)
+      const message = buildPipelineReminderMessage(candidate)
       return {
         reminderKey: candidate.reminderKey,
         targetType: candidate.targetType,
@@ -115,6 +140,64 @@ export async function previewPipelineReminders(organizationId: string) {
     }),
     skipped: plan.skipped,
   }
+}
+
+type ProspectContactWriter = (input: {
+  organizationId: string
+  clientId: number
+  expectedFollowUpDate: string
+  contactedAt: string
+}) => Promise<boolean>
+
+type ProspectContactAuditWriter = (input: Parameters<typeof logAudit>[0]) => Promise<void>
+
+async function updateProspectLastContacted(input: Parameters<ProspectContactWriter>[0]) {
+  const supabase = getSupabaseAdmin()
+  const { data, error } = await supabase
+    .from('clients')
+    .update({ last_contacted_at: input.contactedAt, next_follow_up_at: null })
+    .eq('organization_id', input.organizationId)
+    .eq('id', input.clientId)
+    .eq('status', 'lead')
+    .eq('next_follow_up_at', input.expectedFollowUpDate)
+    .select('id')
+    .maybeSingle()
+  if (error) throw createError({ statusCode: 500, message: error.message })
+  return Boolean(data)
+}
+
+export async function recordProspectReminderSuccess(input: {
+  organizationId: string
+  actorUserId?: string | null
+  candidate: PipelineReminderCandidate
+  contactedAt?: string
+}, dependencies: {
+  updateContact?: ProspectContactWriter
+  writeAudit?: ProspectContactAuditWriter
+} = {}) {
+  if (input.candidate.targetType !== 'lead') return
+  const contactedAt = input.contactedAt || new Date().toISOString()
+  const updated = await (dependencies.updateContact || updateProspectLastContacted)({
+    organizationId: input.organizationId,
+    clientId: input.candidate.clientId,
+    expectedFollowUpDate: input.candidate.dueDate,
+    contactedAt,
+  })
+  if (!updated) throw createError({ statusCode: 409, message: 'Le prospect a changé depuis la prévisualisation.' })
+
+  await (dependencies.writeAudit || logAudit)({
+    organizationId: input.organizationId,
+    actorUserId: input.actorUserId || null,
+    action: 'prospect.follow_up_contacted',
+    entityType: 'client',
+    entityId: input.candidate.clientId,
+    clientId: input.candidate.clientId,
+    payload: {
+      source: 'pipeline_reminder_email',
+      reminderKey: input.candidate.reminderKey,
+      contactedAt,
+    },
+  })
 }
 
 export async function runPipelineReminders(input: {
@@ -146,7 +229,8 @@ export async function runPipelineReminders(input: {
   const plan = await loadReminderPlan(input.organizationId)
   const confirmedByKey = new Map((input.confirmedReminders || []).map(item => [item.reminderKey, item]))
   const requestedKeys = input.confirmedReminders?.map(item => item.reminderKey) ?? input.reminderKeys
-  const candidates = selectPipelineReminderCandidates(plan.candidates, requestedKeys)
+  const eligibleCandidates = selectPipelineReminderCandidatesForTrigger(plan.candidates, input.trigger)
+  const candidates = selectPipelineReminderCandidates(eligibleCandidates, requestedKeys)
   if (input.trigger === 'manual') {
     if (!input.confirmedReminders || candidates.length !== confirmedByKey.size) {
       throw createError({ statusCode: 409, message: 'La prévisualisation a changé. Vérifie de nouveau les relances.' })
@@ -160,9 +244,14 @@ export async function runPipelineReminders(input: {
   }
   let sentCount = 0
   let failedCount = 0
+  let followUpUpdateFailedCount = 0
 
   for (const candidate of candidates) {
-    const email = reminderEmail(candidate)
+    const confirmation = input.trigger === 'manual' ? confirmedByKey.get(candidate.reminderKey) : null
+    const email = confirmation
+      ? buildConfirmedPipelineReminderMessage(confirmation)
+      : buildPipelineReminderMessage(candidate)
+    const contactedAt = candidate.targetType === 'lead' ? new Date().toISOString() : null
     try {
       await sendAppEmail({
         to: candidate.email,
@@ -192,14 +281,30 @@ export async function runPipelineReminders(input: {
         number: candidate.number,
         milestone: candidate.milestone,
         trigger: input.trigger,
+        contactedAt,
       },
     })
+    if (candidate.targetType === 'lead') {
+      try {
+        await recordProspectReminderSuccess({
+          organizationId: input.organizationId,
+          actorUserId: input.actorUserId || null,
+          candidate,
+          contactedAt: contactedAt || undefined,
+        })
+      }
+      catch (error) {
+        followUpUpdateFailedCount += 1
+        console.error('[pipeline-reminders] prospect contact update failed', error)
+      }
+    }
   }
 
   const skippedCount = plan.skipped.alreadySent + plan.skipped.missingContact + plan.skipped.outsideMilestone + plan.skipped.paused
   const result = {
     sentCount,
     failedCount,
+    followUpUpdateFailedCount,
     skippedCount,
     candidateCount: candidates.length,
     overdueMarkedCount: newlyOverdue?.length || 0,

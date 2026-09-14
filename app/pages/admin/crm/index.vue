@@ -4,7 +4,7 @@ import AdminAdminIcon from '~/components/admin/AdminIcon.vue'
 import AdminAdminEmptyState from '~/components/admin/AdminEmptyState.vue'
 import AdminViewSkeleton from '~/components/admin/AdminViewSkeleton.vue'
 import { isCommercialActionVisible, type CommercialActionState, type CommercialActionStatus } from '~/utils/commercialActionState'
-import { buildCommercialTaskSuggestions, type CommercialTaskSuggestion } from '~/utils/commercialTaskPlan'
+import { buildCommercialTaskSuggestions, summarizeCommercialFollowUps, type CommercialTaskSuggestion } from '~/utils/commercialTaskPlan'
 import { CLIENT_WORKFLOW_STAGES, resolveClientWorkflow } from '~/utils/clientWorkflow'
 
 definePageMeta({ layout: 'admin', middleware: 'admin' })
@@ -28,10 +28,15 @@ const commercialActionStates = ref<Record<string, CommercialActionState>>({})
 const commercialActionStatesStatus = ref<'loading' | 'ready' | 'error'>('loading')
 const updatingCommercialActionKey = ref<string | null>(null)
 const commercialActionFeedback = ref('')
+const undoCommercialActionButton = ref<HTMLButtonElement | null>(null)
+const lastUndoableCommercialAction = ref<{
+  action: CommercialTaskSuggestion
+  message: string
+} | null>(null)
 
 type ReminderCandidate = {
   reminderKey: string
-  targetType: 'quote' | 'invoice'
+  targetType: 'lead' | 'quote' | 'invoice'
   targetId: number
   clientId: number
   clientName: string
@@ -67,6 +72,19 @@ const closeReminderConfirm = () => {
   reminderDialogStatus.value = 'idle'
 }
 const { dialogRef: reminderDialogRef, handleDialogKeydown: handleReminderDialogKeydown } = useAccessibleDialog(showReminderConfirm, closeReminderConfirm, '[data-reminder-cancel]')
+
+const showFollowUpPlanner = ref(false)
+const followUpPlannerAction = ref<CommercialTaskSuggestion | null>(null)
+const followUpPlannerDate = ref('')
+const followUpPlannerNote = ref('')
+const followUpPlannerError = ref('')
+const savingFollowUpPlan = ref(false)
+const closeFollowUpPlanner = () => {
+  if (savingFollowUpPlan.value) return
+  showFollowUpPlanner.value = false
+  followUpPlannerError.value = ''
+}
+const { dialogRef: followUpPlannerDialogRef, handleDialogKeydown: handleFollowUpPlannerKeydown } = useAccessibleDialog(showFollowUpPlanner, closeFollowUpPlanner, '[data-follow-up-date]')
 
 const AVATAR_TONES = [
   'bg-violet-500',
@@ -175,6 +193,11 @@ const todayIso = computed(() => new Intl.DateTimeFormat('en-CA', {
   day: '2-digit',
 }).format(new Date()))
 
+const followUpMetrics = computed(() => summarizeCommercialFollowUps({
+  today: todayIso.value,
+  clients: store.clients,
+}))
+
 const rawActionsToday = computed(() => buildCommercialTaskSuggestions({
   today: todayIso.value,
   clients: store.clients,
@@ -225,6 +248,42 @@ function actionTone(action: CommercialTaskSuggestion) {
   return 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'
 }
 
+function openFollowUpPlanner(action: CommercialTaskSuggestion) {
+  if (action.kind !== 'lead') return
+  const client = store.clients.find(item => item.id === action.clientId)
+  if (!client) return
+  followUpPlannerAction.value = action
+  followUpPlannerDate.value = client.nextFollowUpAt || addDaysToIsoDate(todayIso.value, 1)
+  followUpPlannerNote.value = client.followUpNote || ''
+  followUpPlannerError.value = ''
+  showFollowUpPlanner.value = true
+}
+
+async function saveFollowUpPlan() {
+  const action = followUpPlannerAction.value
+  if (!action?.clientId || savingFollowUpPlan.value) return
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(followUpPlannerDate.value)) {
+    followUpPlannerError.value = 'Choisis une date de relance valide.'
+    return
+  }
+  savingFollowUpPlan.value = true
+  followUpPlannerError.value = ''
+  try {
+    await store.update(action.clientId, {
+      nextFollowUpAt: followUpPlannerDate.value,
+      followUpNote: followUpPlannerNote.value.trim() || null,
+    })
+    toast.success(`${actionName(action)} sera relancé le ${new Date(`${followUpPlannerDate.value}T12:00:00`).toLocaleDateString('fr-CH')}`)
+    showFollowUpPlanner.value = false
+  }
+  catch (error) {
+    followUpPlannerError.value = readableError(error)
+  }
+  finally {
+    savingFollowUpPlan.value = false
+  }
+}
+
 async function persistCommercialAction(action: CommercialTaskSuggestion, status: CommercialActionStatus, snoozedUntil: string | null = null) {
   const state = await $fetch<CommercialActionState>('/api/admin/commercial-actions', {
     method: 'POST',
@@ -236,14 +295,21 @@ async function persistCommercialAction(action: CommercialTaskSuggestion, status:
       targetPath: action.to,
     },
   })
-  commercialActionStates.value = { ...commercialActionStates.value, [action.key]: state }
+  const nextStates = { ...commercialActionStates.value, [action.key]: state }
+  if (state.aliasActionKey) nextStates[state.aliasActionKey] = { ...state, actionKey: state.aliasActionKey }
+  commercialActionStates.value = nextStates
   commercialActionStatesStatus.value = 'ready'
+  if (action.kind === 'lead' && action.clientId && action.key.includes('_')) {
+    const client = store.clients.find(item => item.id === action.clientId)
+    if (client) client.nextFollowUpAt = status === 'snoozed' ? snoozedUntil : status === 'restored' ? action.dueDate : null
+  }
 }
 
 async function updateCommercialAction(action: CommercialTaskSuggestion, status: CommercialActionStatus, snoozedUntil: string | null = null) {
   if (updatingCommercialActionKey.value || commercialActionStatesStatus.value !== 'ready') return
   updatingCommercialActionKey.value = action.key
   commercialActionFeedback.value = ''
+  let shouldFocusUndo = false
   try {
     await persistCommercialAction(action, status, snoozedUntil)
     const message = status === 'handled'
@@ -252,7 +318,9 @@ async function updateCommercialAction(action: CommercialTaskSuggestion, status: 
         ? `${actionName(action)} retiré des actions du jour`
         : `${actionName(action)} reporté au ${new Date(`${snoozedUntil}T12:00:00`).toLocaleDateString('fr-CH')}`
     commercialActionFeedback.value = message
+    lastUndoableCommercialAction.value = { action, message }
     toast.success(message)
+    shouldFocusUndo = true
   }
   catch (error) {
     const message = readableError(error)
@@ -262,10 +330,43 @@ async function updateCommercialAction(action: CommercialTaskSuggestion, status: 
   finally {
     updatingCommercialActionKey.value = null
   }
+  if (shouldFocusUndo) {
+    await nextTick()
+    undoCommercialActionButton.value?.focus()
+  }
+}
+
+async function undoLastCommercialAction() {
+  const decision = lastUndoableCommercialAction.value
+  if (!decision || updatingCommercialActionKey.value || commercialActionStatesStatus.value !== 'ready') return
+  const { action } = decision
+  updatingCommercialActionKey.value = action.key
+  commercialActionFeedback.value = ''
+  let shouldFocusRestoredAction = false
+  try {
+    await persistCommercialAction(action, 'restored')
+    const message = `${actionName(action)} restauré dans les actions du jour`
+    commercialActionFeedback.value = message
+    lastUndoableCommercialAction.value = null
+    toast.success(message)
+    shouldFocusRestoredAction = true
+  }
+  catch (error) {
+    const message = readableError(error)
+    commercialActionFeedback.value = message
+    toast.error(message)
+  }
+  finally {
+    updatingCommercialActionKey.value = null
+  }
+  if (shouldFocusRestoredAction) {
+    await nextTick()
+    document.querySelector<HTMLElement>(`[data-commercial-action-key="${action.key}"] a`)?.focus()
+  }
 }
 
 async function prepareReminder(action: CommercialTaskSuggestion) {
-  if (action.kind === 'lead' || sendingReminder.value) return
+  if (sendingReminder.value) return
   const requestVersion = ++reminderPreviewRequestVersion
   selectedReminderAction.value = action
   selectedReminderCandidate.value = null
@@ -300,7 +401,7 @@ async function sendSelectedReminder() {
   reminderDialogError.value = ''
 
   try {
-    const result = await $fetch<{ sentCount: number, failedCount: number }>('/api/admin/pipeline/reminders', {
+    const result = await $fetch<{ sentCount: number, failedCount: number, followUpUpdateFailedCount?: number }>('/api/admin/pipeline/reminders', {
       method: 'POST',
       headers: auth.authHeader(),
       body: {
@@ -313,20 +414,41 @@ async function sendSelectedReminder() {
       },
     })
     if (result.sentCount !== 1 || result.failedCount) throw new Error('Lumail n’a pas confirmé l’envoi. Aucun traitement automatique n’a été appliqué.')
+    if (action.kind === 'lead' && result.followUpUpdateFailedCount) {
+      showReminderConfirm.value = false
+      toast.error('L’e-mail est parti, mais la fiche prospect a changé entre-temps. Recharge le CRM avant de poursuivre.')
+      await store.ensureLoaded(true).catch(() => undefined)
+      return
+    }
 
+    if (action.kind !== 'lead') {
+      try {
+        await persistCommercialAction(action, 'handled')
+      }
+      catch {
+        toast.error('L’e-mail est parti, mais la carte n’a pas pu être retirée. Recharge le CRM avant toute nouvelle tentative.')
+        showReminderConfirm.value = false
+        return
+      }
+    }
+
+    let followUpStateReloaded = true
     try {
-      await persistCommercialAction(action, 'handled')
+      await store.ensureLoaded(true)
     }
     catch {
-      toast.error('L’e-mail est parti, mais la carte n’a pas pu être retirée. Recharge le CRM avant toute nouvelle tentative.')
-      showReminderConfirm.value = false
-      return
+      followUpStateReloaded = false
+      toast.error('L’e-mail est parti, mais le suivi client doit être rechargé pour afficher son nouvel état.')
     }
 
     const message = `Relance ${candidate.number} envoyée avec Lumail à ${candidate.email}`
     commercialActionFeedback.value = message
     toast.success(message)
     showReminderConfirm.value = false
+    if (action.kind === 'lead' && followUpStateReloaded) {
+      await nextTick()
+      openFollowUpPlanner(action)
+    }
   }
   catch (error) {
     reminderDialogError.value = readableError(error)
@@ -453,10 +575,45 @@ onMounted(() => { void loadCrm() })
         </NuxtLink>
       </div>
 
+      <dl class="grid grid-cols-3 border-b border-gray-100 bg-gray-50/70 dark:border-white/[0.06] dark:bg-white/[0.025]">
+        <div class="px-3 py-3 text-center sm:px-4">
+          <dt class="text-[11px] font-medium text-gray-500 dark:text-gray-400">Aujourd’hui</dt>
+          <dd class="mt-0.5 font-display text-lg font-semibold tabular-nums text-gray-950 dark:text-white">{{ followUpMetrics.today }}</dd>
+        </div>
+        <div class="border-x border-gray-100 px-3 py-3 text-center dark:border-white/[0.06] sm:px-4">
+          <dt class="text-[11px] font-medium text-gray-500 dark:text-gray-400">En retard</dt>
+          <dd class="mt-0.5 font-display text-lg font-semibold tabular-nums" :class="followUpMetrics.overdue ? 'text-rose-700 dark:text-rose-300' : 'text-gray-950 dark:text-white'">{{ followUpMetrics.overdue }}</dd>
+        </div>
+        <div class="px-3 py-3 text-center sm:px-4">
+          <dt class="text-[11px] font-medium text-gray-500 dark:text-gray-400">À venir</dt>
+          <dd class="mt-0.5 font-display text-lg font-semibold tabular-nums text-gray-950 dark:text-white">{{ followUpMetrics.scheduled }}</dd>
+        </div>
+      </dl>
+
+      <div
+        v-if="lastUndoableCommercialAction"
+        role="group"
+        aria-label="Dernière décision commerciale"
+        class="flex flex-col gap-3 border-b border-violet-100 bg-violet-50 px-4 py-3 text-sm text-violet-950 dark:border-violet-500/15 dark:bg-violet-500/10 dark:text-violet-100 sm:flex-row sm:items-center sm:justify-between sm:px-5"
+      >
+        <p class="font-medium">{{ lastUndoableCommercialAction.message }}</p>
+        <button
+          ref="undoCommercialActionButton"
+          type="button"
+          class="inline-flex min-h-11 shrink-0 items-center justify-center rounded-lg border border-violet-200 bg-white px-4 text-sm font-semibold text-violet-800 transition-[background-color,transform] duration-150 hover:bg-violet-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-50 dark:border-violet-400/25 dark:bg-violet-500/10 dark:text-violet-100 dark:hover:bg-violet-500/20"
+          :disabled="Boolean(updatingCommercialActionKey)"
+          :aria-label="`Annuler la dernière décision pour ${actionName(lastUndoableCommercialAction.action)}`"
+          @click="undoLastCommercialAction"
+        >
+          {{ updatingCommercialActionKey === lastUndoableCommercialAction.action.key ? 'Restauration…' : 'Annuler' }}
+        </button>
+      </div>
+
       <div v-if="visibleActionsToday.length" class="divide-y divide-gray-100 dark:divide-white/[0.06] sm:grid sm:grid-cols-2 sm:divide-x sm:divide-y-0 sm:divide-gray-100 dark:sm:divide-white/[0.06] xl:grid-cols-4">
         <article
           v-for="action in visibleActionsToday"
           :key="action.key"
+          :data-commercial-action-key="action.key"
           class="flex min-h-[196px] flex-col px-4 py-3 transition-colors duration-150 hover:bg-gray-50 dark:hover:bg-white/[0.03] sm:px-5"
         >
           <NuxtLink
@@ -475,7 +632,6 @@ onMounted(() => { void loadCrm() })
           </NuxtLink>
 
           <button
-            v-if="action.kind !== 'lead'"
             type="button"
             class="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-gray-950 px-3 text-xs font-semibold text-white transition-[background-color,transform] duration-150 hover:bg-gray-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-gray-950 dark:hover:bg-gray-100 dark:focus-visible:ring-offset-[#111118]"
             :disabled="reminderDialogStatus === 'loading' || Boolean(updatingCommercialActionKey)"
@@ -484,6 +640,17 @@ onMounted(() => { void loadCrm() })
           >
             <AdminAdminIcon icon="send" class="h-4 w-4" />
             Préparer la relance
+          </button>
+
+          <button
+            v-if="action.kind === 'lead'"
+            type="button"
+            class="mt-2 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-violet-200 bg-violet-50 px-3 text-xs font-semibold text-violet-800 transition-[background-color,transform] duration-150 hover:bg-violet-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 active:scale-[0.96] dark:border-violet-400/20 dark:bg-violet-500/10 dark:text-violet-200 dark:hover:bg-violet-500/20"
+            :aria-label="`Planifier la prochaine relance de ${actionName(action)}`"
+            @click="openFollowUpPlanner(action)"
+          >
+            <AdminAdminIcon icon="calendar" class="h-4 w-4" />
+            Planifier la suite
           </button>
 
           <div class="mt-2 grid grid-cols-3 overflow-visible rounded-lg border border-gray-200 dark:border-white/[0.1]">
@@ -858,6 +1025,34 @@ onMounted(() => { void loadCrm() })
     </div>
 
     <Transition name="fade">
+      <div v-if="showFollowUpPlanner && followUpPlannerAction" class="fixed inset-0 z-[90] flex items-center justify-center bg-black/55 p-3 sm:p-6" @click.self="closeFollowUpPlanner">
+        <form ref="followUpPlannerDialogRef" role="dialog" aria-modal="true" aria-labelledby="follow-up-planner-title" tabindex="-1" class="max-h-[90vh] w-full max-w-lg overflow-y-auto overscroll-contain rounded-2xl border border-gray-200 bg-white p-4 shadow-2xl dark:border-white/[0.1] dark:bg-[#151522] sm:p-5" :aria-busy="savingFollowUpPlan" @keydown="handleFollowUpPlannerKeydown" @submit.prevent="saveFollowUpPlan">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-[0.12em] text-violet-600 dark:text-violet-300">Prochaine action</p>
+              <h2 id="follow-up-planner-title" class="mt-1 font-display text-xl font-semibold text-gray-950 dark:text-white">Planifier {{ actionName(followUpPlannerAction) }}</h2>
+              <p class="mt-1 text-sm leading-6 text-gray-600 dark:text-gray-300">La relance apparaîtra automatiquement dans les actions du jour.</p>
+            </div>
+            <button type="button" class="grid h-11 w-11 shrink-0 place-items-center rounded-lg text-gray-500 transition-colors duration-150 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 disabled:opacity-50 dark:hover:bg-white/[0.06]" :disabled="savingFollowUpPlan" aria-label="Fermer la planification" @click="closeFollowUpPlanner">×</button>
+          </div>
+          <div class="mt-5 space-y-4">
+            <label class="block space-y-1.5 text-sm font-semibold text-gray-800 dark:text-gray-100">Date de relance
+              <input v-model="followUpPlannerDate" data-follow-up-date type="date" class="input-field" required>
+            </label>
+            <label class="block space-y-1.5 text-sm font-semibold text-gray-800 dark:text-gray-100">Note interne <span class="font-normal text-gray-500">(facultatif)</span>
+              <textarea v-model="followUpPlannerNote" rows="3" maxlength="500" class="input-field" placeholder="Contexte utile pour la prochaine prise de contact" />
+            </label>
+            <p v-if="followUpPlannerError" role="alert" class="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-800 dark:bg-rose-500/10 dark:text-rose-200">{{ followUpPlannerError }}</p>
+          </div>
+          <div class="mt-5 flex flex-col-reverse gap-2 border-t border-gray-100 pt-4 dark:border-white/[0.08] sm:flex-row sm:justify-end">
+            <button type="button" class="min-h-11 rounded-lg border border-gray-200 px-4 text-sm font-semibold text-gray-700 transition-[background-color,transform] duration-150 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 active:scale-[0.96] disabled:opacity-50 dark:border-white/[0.12] dark:text-gray-200 dark:hover:bg-white/[0.04]" :disabled="savingFollowUpPlan" @click="closeFollowUpPlanner">Annuler</button>
+            <button type="submit" class="min-h-11 rounded-lg bg-violet-600 px-4 text-sm font-semibold text-white transition-[background-color,transform] duration-150 hover:bg-violet-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 active:scale-[0.96] disabled:cursor-wait disabled:opacity-60 dark:focus-visible:ring-offset-[#151522]" :disabled="savingFollowUpPlan">{{ savingFollowUpPlan ? 'Enregistrement…' : 'Planifier la relance' }}</button>
+          </div>
+        </form>
+      </div>
+    </Transition>
+
+    <Transition name="fade">
       <div v-if="showReminderConfirm" class="fixed inset-0 z-[90] flex items-center justify-center bg-black/55 p-3 sm:p-6" @click.self="closeReminderConfirm">
         <div ref="reminderDialogRef" role="dialog" aria-modal="true" aria-labelledby="crm-reminder-title" tabindex="-1" class="max-h-[90vh] w-full max-w-xl overflow-y-auto overscroll-contain rounded-2xl border border-gray-200 bg-white p-4 shadow-2xl dark:border-white/[0.1] dark:bg-[#151522] sm:p-5" @keydown="handleReminderDialogKeydown">
           <div class="flex items-start justify-between gap-4">
@@ -882,12 +1077,16 @@ onMounted(() => { void loadCrm() })
           <template v-else-if="selectedReminderCandidate">
             <dl class="mt-5 grid gap-2 rounded-xl bg-gray-50 p-3 text-sm dark:bg-white/[0.04] sm:grid-cols-2 sm:p-4">
               <div><dt class="text-xs text-gray-500 dark:text-gray-400">Destinataire</dt><dd class="mt-1 break-all font-semibold text-gray-950 dark:text-white">{{ selectedReminderCandidate.clientName }} · {{ selectedReminderCandidate.email }}</dd></div>
-              <div><dt class="text-xs text-gray-500 dark:text-gray-400">Document</dt><dd class="mt-1 font-semibold text-gray-950 dark:text-white">{{ selectedReminderCandidate.number }} · échéance {{ selectedReminderCandidate.dueDate }}</dd></div>
+              <div><dt class="text-xs text-gray-500 dark:text-gray-400">{{ selectedReminderCandidate.targetType === 'lead' ? 'Relance' : 'Document' }}</dt><dd class="mt-1 font-semibold text-gray-950 dark:text-white">{{ selectedReminderCandidate.number }} · {{ selectedReminderCandidate.targetType === 'lead' ? 'prévue le' : 'échéance' }} {{ selectedReminderCandidate.dueDate }}</dd></div>
             </dl>
-            <div class="mt-3 rounded-xl border border-gray-200 p-3 dark:border-white/[0.1] sm:p-4">
-              <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Objet</p>
-              <p class="mt-1 text-sm font-semibold text-gray-950 dark:text-white">{{ selectedReminderCandidate.subject }}</p>
-              <p class="mt-4 whitespace-pre-line text-sm leading-6 text-gray-600 dark:text-gray-300">{{ selectedReminderCandidate.bodyText }}</p>
+            <div class="mt-3 space-y-4 rounded-xl border border-gray-200 p-3 dark:border-white/[0.1] sm:p-4">
+              <label class="block space-y-1.5 text-xs font-medium text-gray-600 dark:text-gray-300">Objet
+                <input v-model="selectedReminderCandidate.subject" type="text" maxlength="200" class="input-field text-sm font-semibold" required>
+              </label>
+              <label class="block space-y-1.5 text-xs font-medium text-gray-600 dark:text-gray-300">Message
+                <textarea v-model="selectedReminderCandidate.bodyText" rows="10" maxlength="5000" class="input-field resize-y whitespace-pre-wrap text-sm leading-6" required />
+              </label>
+              <p class="text-xs text-gray-500 dark:text-gray-400">Tu peux personnaliser le texte. Le destinataire et la relance restent verrouillés pour éviter une erreur d’envoi.</p>
             </div>
             <p v-if="reminderDialogError" role="alert" class="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-800 dark:bg-rose-500/10 dark:text-rose-200">{{ reminderDialogError }}</p>
           </template>

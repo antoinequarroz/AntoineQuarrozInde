@@ -12,8 +12,8 @@ export default defineEventHandler(async (event) => {
       const candidate = item as Record<string, unknown>
       return typeof candidate.reminderKey === 'string' && candidate.reminderKey.length <= 160
         && typeof candidate.email === 'string' && candidate.email.length <= 320
-        && typeof candidate.subject === 'string' && candidate.subject.length <= 300
-        && typeof candidate.bodyText === 'string' && candidate.bodyText.length <= 20_000
+        && typeof candidate.subject === 'string' && candidate.subject.trim().length > 0 && candidate.subject.length <= 200
+        && typeof candidate.bodyText === 'string' && candidate.bodyText.trim().length > 0 && candidate.bodyText.length <= 5_000
     })
     .slice(0, 100)
   if (confirmedReminders.length !== body.confirmedReminders.length) {

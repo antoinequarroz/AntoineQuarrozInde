@@ -1,7 +1,8 @@
-export type CommercialActionStatus = 'handled' | 'snoozed' | 'ignored'
+export type CommercialActionStatus = 'handled' | 'snoozed' | 'ignored' | 'restored'
 
 export type CommercialActionState = {
   actionKey: string
+  aliasActionKey?: string | null
   status: CommercialActionStatus
   snoozedUntil: string | null
   updatedAt: string
@@ -12,7 +13,7 @@ type AuditStateRow = {
   created_at?: unknown
 }
 
-const validStatuses = new Set<CommercialActionStatus>(['handled', 'snoozed', 'ignored'])
+const validStatuses = new Set<CommercialActionStatus>(['handled', 'snoozed', 'ignored', 'restored'])
 const isoDatePattern = /^\d{4}-\d{2}-\d{2}$/
 
 export function isCommercialActionStatus(value: unknown): value is CommercialActionStatus {
@@ -32,14 +33,23 @@ export function normalizeCommercialActionStates(rows: AuditStateRow[]) {
       : null
     const updatedAt = typeof row.created_at === 'string' ? row.created_at : ''
 
-    if (!actionKey || states[actionKey] || !isCommercialActionStatus(status)) continue
+    const leadActionMatch = actionKey.match(/^lead:(\d+)_\d{4}-\d{2}-\d{2}$/)
+    const expectedAliasActionKey = leadActionMatch ? `lead:${leadActionMatch[1]}` : ''
+    const aliasActionKey = typeof payload.aliasActionKey === 'string' && payload.aliasActionKey.trim() === expectedAliasActionKey
+      ? expectedAliasActionKey
+      : ''
+    if (!actionKey || !isCommercialActionStatus(status)) continue
     if (status === 'snoozed' && !snoozedUntil) continue
 
-    states[actionKey] = {
-      actionKey,
-      status,
-      snoozedUntil: status === 'snoozed' ? snoozedUntil : null,
-      updatedAt,
+    for (const stateKey of [actionKey, aliasActionKey].filter(Boolean)) {
+      if (states[stateKey]) continue
+      states[stateKey] = {
+        actionKey: stateKey,
+        aliasActionKey: aliasActionKey || null,
+        status,
+        snoozedUntil: status === 'snoozed' ? snoozedUntil : null,
+        updatedAt,
+      }
     }
   }
 
@@ -53,6 +63,7 @@ export function isCommercialActionVisible(
 ) {
   const state = states[actionKey]
   if (!state) return true
+  if (state.status === 'restored') return true
   if (state.status === 'handled' || state.status === 'ignored') return false
   return !state.snoozedUntil || state.snoozedUntil <= today
 }

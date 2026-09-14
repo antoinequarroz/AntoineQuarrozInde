@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isCommercialActionVisible, normalizeCommercialActionStates } from '../app/utils/commercialActionState'
+import { isCommercialActionStatus, isCommercialActionVisible, normalizeCommercialActionStates } from '../app/utils/commercialActionState'
 
 describe('commercial action state', () => {
   it('keeps the latest valid state for each action', () => {
@@ -28,5 +28,43 @@ describe('commercial action state', () => {
     }
     expect(isCommercialActionVisible('message:4', states, '2026-09-08')).toBe(false)
     expect(isCommercialActionVisible('message:4', states, '2026-09-09')).toBe(true)
+  })
+
+  it('shows an action again when its latest decision is restored', () => {
+    expect(isCommercialActionStatus('restored')).toBe(true)
+    const states = normalizeCommercialActionStates([
+      { payload: { actionKey: 'quote:8', status: 'restored' }, created_at: '2026-09-07T10:00:00Z' },
+      { payload: { actionKey: 'quote:8', status: 'handled' }, created_at: '2026-09-06T10:00:00Z' },
+    ])
+
+    expect(states['quote:8']).toMatchObject({ status: 'restored', snoozedUntil: null })
+    expect(isCommercialActionVisible('quote:8', states, '2026-09-07')).toBe(true)
+  })
+
+  it('does not hide a newly dated prospect follow-up after an older one was handled', () => {
+    const states = normalizeCommercialActionStates([
+      { payload: { actionKey: 'lead:9_2026-09-14', status: 'handled' }, created_at: '2026-09-14T10:00:00Z' },
+    ])
+
+    expect(isCommercialActionVisible('lead:9_2026-09-14', states, '2026-09-14')).toBe(false)
+    expect(isCommercialActionVisible('lead:9_2026-09-21', states, '2026-09-21')).toBe(true)
+  })
+
+  it('applies a dated prospect decision to the undated inactivity fallback only', () => {
+    const states = normalizeCommercialActionStates([
+      { payload: { actionKey: 'lead:9_2026-09-14', aliasActionKey: 'lead:9', status: 'handled' }, created_at: '2026-09-14T10:00:00Z' },
+    ])
+
+    expect(isCommercialActionVisible('lead:9', states, '2026-09-15')).toBe(false)
+    expect(isCommercialActionVisible('lead:9_2026-09-21', states, '2026-09-21')).toBe(true)
+  })
+
+  it('rejects an alias that does not belong to the dated prospect action', () => {
+    const states = normalizeCommercialActionStates([
+      { payload: { actionKey: 'lead:9_2026-09-14', aliasActionKey: 'lead:10', status: 'handled' }, created_at: '2026-09-14T10:00:00Z' },
+    ])
+
+    expect(states['lead:9_2026-09-14']).toBeDefined()
+    expect(states['lead:10']).toBeUndefined()
   })
 })

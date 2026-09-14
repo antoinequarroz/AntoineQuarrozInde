@@ -3,6 +3,9 @@ type CommercialClient = {
   name: string
   status: 'lead' | 'active' | 'inactive'
   createdAt: string
+  nextFollowUpAt?: string | null
+  followUpNote?: string | null
+  lastContactedAt?: string | null
 }
 
 type CommercialQuote = {
@@ -51,6 +54,27 @@ function daysBetween(today: string, date: string) {
   return Math.round((dateTime - todayTime) / 86_400_000)
 }
 
+export type CommercialFollowUpSummary = {
+  scheduled: number
+  today: number
+  overdue: number
+}
+
+export function summarizeCommercialFollowUps(input: {
+  today: string
+  clients: CommercialClient[]
+}): CommercialFollowUpSummary {
+  return input.clients.reduce<CommercialFollowUpSummary>((summary, client) => {
+    if (client.status !== 'lead' || !client.nextFollowUpAt) return summary
+    const days = daysBetween(input.today, client.nextFollowUpAt)
+    if (days === null) return summary
+    if (days > 0) summary.scheduled += 1
+    else if (days === 0) summary.today += 1
+    else summary.overdue += 1
+    return summary
+  }, { scheduled: 0, today: 0, overdue: 0 })
+}
+
 export function buildCommercialTaskSuggestions(input: {
   today: string
   clients: CommercialClient[]
@@ -68,9 +92,39 @@ export function buildCommercialTaskSuggestions(input: {
   )
 
   for (const client of input.clients) {
-    const age = daysBetween(client.createdAt, input.today)
-    const title = `[RELANCE PROSPECT ${client.id}]`
-    if (client.status !== 'lead' || age === null || age < 7 || clientsWithActiveQuote.has(client.id) || existingTitles.has(title)) continue
+    const explicitFollowUpDays = client.nextFollowUpAt
+      ? daysBetween(input.today, client.nextFollowUpAt)
+      : null
+    const title = explicitFollowUpDays !== null
+      ? `[RELANCE PROSPECT ${client.id} ${client.nextFollowUpAt}]`
+      : `[RELANCE PROSPECT ${client.id}]`
+    if (client.status !== 'lead' || existingTitles.has(title)) continue
+
+    if (explicitFollowUpDays !== null) {
+      if (explicitFollowUpDays > 0) continue
+      suggestions.push({
+        key: `lead:${client.id}_${client.nextFollowUpAt}`,
+        kind: 'lead',
+        sourceId: client.id,
+        title,
+        description: `Reprendre contact avec ${client.name}, relance planifiée le ${client.nextFollowUpAt}.`,
+        priority: explicitFollowUpDays < 0 ? 'high' : 'medium',
+        dueDate: client.nextFollowUpAt as string,
+        clientId: client.id,
+        projectId: null,
+        label: explicitFollowUpDays < 0 ? 'Relance en retard' : 'Relance aujourd’hui',
+        reason: explicitFollowUpDays < 0
+          ? `${Math.abs(explicitFollowUpDays)} jour(s) de retard`
+          : 'Planifiée aujourd’hui',
+        to: `/admin/clients/${client.id}`,
+        daysDelta: explicitFollowUpDays,
+      })
+      continue
+    }
+
+    const inactivityReference = client.lastContactedAt?.slice(0, 10) || client.createdAt
+    const age = daysBetween(inactivityReference, input.today)
+    if (age === null || age < 7 || clientsWithActiveQuote.has(client.id)) continue
     suggestions.push({
       key: `lead:${client.id}`,
       kind: 'lead',

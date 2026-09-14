@@ -35,6 +35,7 @@
   { "filename": "20260906104808_enforce_tenant_relationships.sql", "sha256": "665afc95427245735ed2aa763334b49619cd32154aa931ef7013f7e4aa5b84d2" },
   { "filename": "20260906105439_harden_media_bucket.sql", "sha256": "2fb2c367f32a09d1bd88f6b0c8bceaa307edb8fa5c0139bbcb1cfaf6e703989c" },
   { "filename": "20260910000500_repair_legacy_article_slug.sql", "sha256": "f48d79e9650b3bd8e2bec5683060939b9d2c2af45810aefea512843c76759f99" },
+  { "filename": "20260914071424_add_client_follow_up_fields.sql", "sha256": "0bfbcf5efe122399257559d886284cf8cd627ea5565a58920999ccd05086ec85" },
   { "filename": "20260914071740_add_social_publication_queue.sql", "sha256": "3483017300d74c8c1150ea2793a42b638e57a0735ce7d118b21fc916d5645a12" },
   { "filename": "20260914080000_fix_social_post_source_path.sql", "sha256": "2d1e43499b4f542ae957854d5f29f2b4f15deed7cdaa0cd691a2bdbc6f8045d3" },
   { "filename": "20260914083000_allow_social_homepage_destination.sql", "sha256": "88583f40c3869cd26e8603c44baa24b3aa5e42fc59359748f49287c5ea74db5e" }
