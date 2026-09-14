@@ -64,10 +64,14 @@ export function resolvePublicSocialImage(
 
     const url = new URL(value)
     const isSameOrigin = url.origin === origin
+    const isApprovedSupabaseMedia = url.protocol === 'https:'
+      && /^[a-z0-9-]+\.supabase\.co$/i.test(url.hostname)
+      && url.pathname.startsWith('/storage/v1/object/public/media/')
     if (
       url.username
       || url.password
       || url.hash
+      || (!isSameOrigin && !isApprovedSupabaseMedia)
       || (url.protocol !== 'https:' && !(isSameOrigin && url.protocol === 'http:'))
     ) {
       return { url: fallback, isFallback: true }

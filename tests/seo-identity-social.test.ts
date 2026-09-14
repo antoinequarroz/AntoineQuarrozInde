@@ -134,7 +134,7 @@ describe('AQ-SEO-008 public identity and social previews', () => {
       url: 'https://project.supabase.co/storage/v1/object/public/media/image.jpg',
       isFallback: false,
     })
-    for (const value of [undefined, '', 'javascript:alert(1)', 'data:image/png;base64,test', '//evil.test/a.jpg', 'http://evil.test/a.jpg', 'https://user:pass@evil.test/a.jpg', 'not a URL']) {
+    for (const value of [undefined, '', 'javascript:alert(1)', 'data:image/png;base64,test', '//evil.test/a.jpg', 'http://evil.test/a.jpg', 'https://evil.test/a.jpg', 'https://user:pass@evil.test/a.jpg', 'not a URL']) {
       expect(resolvePublicSocialImage(origin, value)).toEqual({
         url: `${origin}/about.jpg`,
         isFallback: true,
