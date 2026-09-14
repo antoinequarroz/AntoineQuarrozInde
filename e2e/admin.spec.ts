@@ -37,6 +37,16 @@ test('authenticated admin can reach CRM, quotes and invoices', async ({ page }) 
     await reminderDialog.getByRole('button', { name: 'Annuler' }).click()
     await expect(reminderDialog).toBeHidden()
   }
+  const followUpButtons = page.getByRole('button', { name: /Planifier la prochaine relance de/ })
+  if (await followUpButtons.count()) {
+    await followUpButtons.first().click()
+    const followUpDialog = page.getByRole('dialog', { name: /Planifier/ })
+    await expect(followUpDialog).toBeVisible()
+    await followUpDialog.getByLabel('Date de relance').fill('2099-12-31')
+    await followUpDialog.getByLabel(/Note interne/).fill('Relance E2E isolée')
+    await followUpDialog.getByRole('button', { name: 'Planifier la relance' }).click()
+    await expect(followUpDialog).toBeHidden()
+  }
   const handledButtons = page.getByRole('button', { name: /Marquer .* comme traité/ })
   if (await handledButtons.count()) {
     await handledButtons.first().click()

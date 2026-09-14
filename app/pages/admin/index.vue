@@ -33,7 +33,7 @@ const reminderRunsStatus = ref<'loading' | 'ready' | 'error'>('loading')
 const reminderPreview = ref<{
   automationEnabled: boolean
   generatedAt: string
-  candidates: Array<{ reminderKey: string, targetType: 'quote' | 'invoice', targetId: number, clientId: number, clientName: string, email: string, subject: string, bodyText: string, number: string, dueDate: string, milestone: string, urgency: 'upcoming' | 'due' | 'overdue', balanceCents?: number, currency?: string }>
+  candidates: Array<{ reminderKey: string, targetType: 'lead' | 'quote' | 'invoice', targetId: number, clientId: number, clientName: string, email: string, subject: string, bodyText: string, number: string, dueDate: string, milestone: string, urgency: 'upcoming' | 'due' | 'overdue', balanceCents?: number, currency?: string }>
   skipped: { alreadySent: number, missingContact: number, outsideMilestone: number, paused: number }
 } | null>(null)
 const reminderPreviewStatus = ref<'loading' | 'ready' | 'error'>('loading')
@@ -590,7 +590,10 @@ async function loadReminderPreview() {
   try {
     const preview = await $fetch<NonNullable<typeof reminderPreview.value>>('/api/admin/pipeline/reminders', { headers: auth.authHeader() })
     if (requestVersion !== reminderPreviewRequestVersion || organizationId !== auth.currentOrganizationId) return
-    reminderPreview.value = preview
+    reminderPreview.value = {
+      ...preview,
+      candidates: preview.candidates.filter(candidate => candidate.targetType !== 'lead'),
+    }
     selectedReminderKeys.value = []
     reminderPreviewStatus.value = 'ready'
   }
@@ -1228,7 +1231,7 @@ watch(() => auth.currentOrganizationId, (organizationId, previousOrganizationId)
       <div class="grid gap-4 px-4 py-4 sm:px-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(280px,0.8fr)]">
         <div>
           <div class="mb-3 flex items-center justify-between gap-3">
-            <div><h3 class="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500 dark:text-gray-400">Prochaines relances</h3><p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Avant échéance, jour J, puis relances mesurées à J+3, J+10 et J+20.</p></div>
+            <div><h3 class="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500 dark:text-gray-400">Prochaines relances</h3><p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Devis et factures aux jalons J+3, J+10 et J+20. Les prospects se relancent individuellement depuis le CRM.</p></div>
             <strong class="font-display text-xl text-gray-950 dark:text-white">{{ reminderPreviewStatus === 'ready' ? (reminderPreview?.candidates.length || 0) : '—' }}</strong>
           </div>
           <div v-if="reminderPreviewStatus === 'loading'" role="status" class="grid min-h-28 place-items-center rounded-lg border border-gray-100 text-center dark:border-white/[0.08]"><div><span class="mx-auto block h-6 w-6 animate-spin rounded-full border-2 border-violet-200 border-t-violet-600" /><p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Analyse des échéances…</p></div></div>
@@ -1236,7 +1239,7 @@ watch(() => auth.currentOrganizationId, (organizationId, previousOrganizationId)
           <div v-else-if="reminderPreview?.candidates.length" class="divide-y divide-gray-100 rounded-lg border border-gray-100 dark:divide-white/[0.06] dark:border-white/[0.08]">
             <div v-for="candidate in reminderPreview.candidates.slice(0, 6)" :key="candidate.reminderKey" class="flex items-center gap-3 px-3 py-2.5">
               <span class="shrink-0 rounded-md px-2 py-1 text-xs font-semibold" :class="candidate.urgency === 'overdue' ? 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300' : candidate.urgency === 'due' ? 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300' : 'bg-cyan-50 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300'">{{ urgencyLabel(candidate.urgency) }}</span>
-              <div class="min-w-0 flex-1"><p class="truncate text-xs font-semibold text-gray-800 dark:text-gray-100">{{ candidate.clientName }} · {{ candidate.number }}</p><p class="mt-0.5 truncate text-xs text-gray-500 dark:text-gray-400">{{ candidate.email }} · échéance {{ candidate.dueDate }}<template v-if="candidate.targetType === 'invoice'"> · solde {{ reminderMoney(candidate.balanceCents, candidate.currency) }}</template></p></div>
+              <div class="min-w-0 flex-1"><p class="truncate text-xs font-semibold text-gray-800 dark:text-gray-100">{{ candidate.clientName }} · {{ candidate.number }}</p><p class="mt-0.5 truncate text-xs text-gray-500 dark:text-gray-400">{{ candidate.email }} · {{ candidate.targetType === 'lead' ? 'relance' : 'échéance' }} {{ candidate.dueDate }}<template v-if="candidate.targetType === 'invoice'"> · solde {{ reminderMoney(candidate.balanceCents, candidate.currency) }}</template></p></div>
             </div>
           </div>
           <div v-else class="rounded-lg border border-dashed border-gray-200 px-4 py-6 text-center dark:border-white/[0.1]"><p class="text-sm font-medium text-gray-800 dark:text-gray-100">Aucune relance à envoyer</p><p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Le moteur surveille les prochaines échéances.</p></div>

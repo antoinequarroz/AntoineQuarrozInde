@@ -1,4 +1,5 @@
 import { normalizeClientAttribution } from '../utils/clientAttribution'
+import { normalizeClientFollowUp } from '../utils/clientFollowUp'
 
 export default defineEventHandler(async (event) => {
   const { org, user } = await requireAdmin(event)
@@ -19,6 +20,7 @@ export default defineEventHandler(async (event) => {
     billing_city: body.billingCity ? String(body.billingCity).trim() : null,
     billing_country: String(body.billingCountry || 'CH').trim().toUpperCase(),
     ...normalizeClientAttribution(body),
+    ...normalizeClientFollowUp(body),
   }
 
   if (!payload.name || !payload.email) {
@@ -39,7 +41,19 @@ export default defineEventHandler(async (event) => {
     entityType: 'client',
     entityId: data.id,
     clientId: data.id,
-    payload: { name: data.name, email: data.email, status: data.status },
+    payload: {
+      name: data.name,
+      email: data.email,
+      status: data.status,
+      followUpFieldsSet: [
+        data.next_follow_up_at ? 'next_follow_up_at' : null,
+        data.follow_up_note ? 'follow_up_note' : null,
+        data.last_contacted_at ? 'last_contacted_at' : null,
+      ].filter(Boolean),
+      nextFollowUpAt: data.next_follow_up_at,
+      hasFollowUpNote: Boolean(data.follow_up_note),
+      lastContactedAt: data.last_contacted_at,
+    },
   })
   return data
 })

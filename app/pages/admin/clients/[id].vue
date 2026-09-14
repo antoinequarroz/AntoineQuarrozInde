@@ -84,6 +84,24 @@ const timeline = computed(() => {
         sortDate: log.created_at || '',
       }
     }
+    if (log.action === 'prospect.follow_up_contacted') {
+      return {
+        key: `audit-${log.id}`,
+        title: 'Relance prospect envoyée avec Lumail',
+        meta: payload.contactedAt ? `Contact enregistré le ${formatDate(payload.contactedAt)}` : '',
+        date: log.created_at?.slice(0, 19).replace('T', ' ') || '',
+        sortDate: log.created_at || '',
+      }
+    }
+    if (log.action === 'client.update' && Array.isArray(payload.followUpFieldsChanged) && payload.followUpFieldsChanged.includes('next_follow_up_at')) {
+      return {
+        key: `audit-${log.id}`,
+        title: payload.nextFollowUpAt ? 'Prochaine relance planifiée' : 'Planification de relance terminée',
+        meta: payload.nextFollowUpAt ? `Prévue le ${formatDate(payload.nextFollowUpAt)}` : '',
+        date: log.created_at?.slice(0, 19).replace('T', ' ') || '',
+        sortDate: log.created_at || '',
+      }
+    }
     const title = payload.title || payload.name || payload.number || `${log.entity_type} ${log.entity_id || ''}`.trim()
     const status = payload.status ? ` · ${statusLabel(payload.status)}` : ''
     const meta = payload.amount_cents != null

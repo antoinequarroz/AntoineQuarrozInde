@@ -20,6 +20,15 @@ describe('admin client workflow UI', () => {
     expect(page).toContain('<option value="lead">Prospect</option>')
   })
 
+  it('lets an operator schedule a bounded internal prospect follow-up', async () => {
+    const page = await readFile('app/pages/admin/clients/index.vue', 'utf8')
+    expect(page).toContain('Suivi commercial')
+    expect(page).toContain('v-model="form.nextFollowUpAt"')
+    expect(page).toContain('v-model="form.followUpNote"')
+    expect(page).toContain('maxlength="500"')
+    expect(page).toContain('nextFollowUpAt: form.nextFollowUpAt || null')
+  })
+
   it('uses real send actions as primary commercial actions', async () => {
     const [quotes, invoices] = await Promise.all([
       readFile('app/pages/admin/quotes/index.vue', 'utf8'),
