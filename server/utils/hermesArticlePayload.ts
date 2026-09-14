@@ -2,6 +2,7 @@ import { MAX_IMAGE_REQUEST_BYTES } from './imageUpload'
 
 export const MAX_HERMES_ARTICLE_REQUEST_BYTES = MAX_IMAGE_REQUEST_BYTES + 512 * 1024
 export const HERMES_PUBLICATION_SITE = 'https://www.antoinequarroz.ch'
+export const HERMES_EDITORIAL_COVER_STYLE = 'aq-editorial-photorealistic-v1'
 
 const ALLOWED_FIELDS = new Set([
   'site',
@@ -14,6 +15,14 @@ const ALLOWED_FIELDS = new Set([
   'published',
   'coverImageDataUrl',
   'sourceUrls',
+  'coverStyle',
+])
+
+const COVER_UPDATE_FIELDS = new Set([
+  'site',
+  'articleId',
+  'coverImageDataUrl',
+  'coverStyle',
 ])
 
 function requiredString(body: Record<string, unknown>, field: string, min: number, max: number) {
@@ -45,6 +54,9 @@ export function validateHermesArticlePayload(body: Record<string, unknown>) {
   }
   if (body.published !== true) {
     throw createError({ statusCode: 400, message: 'Hermes articles must be explicitly published' })
+  }
+  if (body.coverStyle !== HERMES_EDITORIAL_COVER_STYLE) {
+    throw createError({ statusCode: 400, message: 'The approved editorial cover style must be explicit' })
   }
 
   const title = requiredString(body, 'title', 10, 160)
@@ -96,5 +108,30 @@ export function validateHermesArticlePayload(body: Record<string, unknown>) {
     tags: body.tags.map(tag => String(tag).trim()),
     readTime,
     sourceUrls,
+    coverStyle: HERMES_EDITORIAL_COVER_STYLE,
+  }
+}
+
+export function validateHermesCoverUpdatePayload(body: Record<string, unknown>) {
+  const unknownFields = Object.keys(body).filter(field => !COVER_UPDATE_FIELDS.has(field))
+  if (unknownFields.length) {
+    throw createError({ statusCode: 400, message: 'Unknown cover update fields are not accepted' })
+  }
+  if (body.site !== HERMES_PUBLICATION_SITE) {
+    throw createError({ statusCode: 400, message: 'Publication site is not allowed' })
+  }
+  if (body.coverStyle !== HERMES_EDITORIAL_COVER_STYLE) {
+    throw createError({ statusCode: 400, message: 'The approved editorial cover style must be explicit' })
+  }
+
+  const articleId = Number(body.articleId)
+  if (!Number.isInteger(articleId) || articleId < 1) {
+    throw createError({ statusCode: 400, message: 'articleId must be a positive integer' })
+  }
+
+  return {
+    articleId,
+    coverImageDataUrl: requiredString(body, 'coverImageDataUrl', 32, MAX_IMAGE_REQUEST_BYTES),
+    coverStyle: HERMES_EDITORIAL_COVER_STYLE,
   }
 }

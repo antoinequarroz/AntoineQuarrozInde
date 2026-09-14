@@ -3,7 +3,9 @@ import { describe, expect, it } from 'vitest'
 import { isHermesPublishRequestAuthorized } from '../server/utils/hermesPublishAuth'
 import {
   HERMES_PUBLICATION_SITE,
+  HERMES_EDITORIAL_COVER_STYLE,
   validateHermesArticlePayload,
+  validateHermesCoverUpdatePayload,
   validateHermesIdempotencyKey,
 } from '../server/utils/hermesArticlePayload'
 
@@ -18,6 +20,7 @@ const validBody = {
   published: true,
   coverImageDataUrl: `data:image/png;base64,${'A'.repeat(64)}`,
   sourceUrls: ['https://developers.google.com/search/docs', 'https://www.kmu.admin.ch/'],
+  coverStyle: HERMES_EDITORIAL_COVER_STYLE,
 }
 
 describe('Hermes article publication access', () => {
@@ -39,6 +42,27 @@ describe('Hermes article publication access', () => {
     expect(() => validateHermesArticlePayload({ ...validBody, published: false })).toThrow()
     expect(() => validateHermesArticlePayload({ ...validBody, delete: true })).toThrow()
     expect(() => validateHermesArticlePayload({ ...validBody, sourceUrls: ['http://example.com', 'https://example.org'] })).toThrow()
+    expect(() => validateHermesArticlePayload({ ...validBody, coverStyle: 'pixel-art' })).toThrow()
+  })
+
+  it('accepts only a bounded image-only cover update for the approved style', () => {
+    const update = validateHermesCoverUpdatePayload({
+      site: HERMES_PUBLICATION_SITE,
+      articleId: 14,
+      coverImageDataUrl: validBody.coverImageDataUrl,
+      coverStyle: HERMES_EDITORIAL_COVER_STYLE,
+    })
+    expect(update.articleId).toBe(14)
+    expect(() => validateHermesCoverUpdatePayload({ ...update, title: 'unexpected' })).toThrow()
+    expect(() => validateHermesCoverUpdatePayload({ ...update, coverStyle: 'pixel-art' })).toThrow()
+  })
+
+  it('keeps the cover update endpoint image-only and audited', () => {
+    const source = readFileSync(new URL('../server/api/hermes/articles.put.ts', import.meta.url), 'utf8')
+    expect(source).toContain('requireHermesPublishAccess(event)')
+    expect(source).toContain("action: 'hermes.article.cover_updated'")
+    expect(source).toContain(".update({ cover_image:")
+    expect(source).not.toMatch(/\.delete\s*\(/)
   })
 
   it('keeps the endpoint creation-only and bounded', () => {
