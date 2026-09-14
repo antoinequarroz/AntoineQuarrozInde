@@ -12,6 +12,7 @@ export default defineEventHandler(async (event) => {
     messagesRes,
     applicationErrorsRes,
     socialPostsRes,
+    commercialEventsRes,
   ] = await Promise.all([
     supabase.from('invoices')
       .select('number', { count: 'exact', head: false })
@@ -45,9 +46,16 @@ export default defineEventHandler(async (event) => {
       .select('id,status')
       .eq('organization_id', org.id)
       .in('status', ['draft', 'failed']),
+    supabase.from('audit_logs')
+      .select('action,entity_type,entity_id,payload,created_at')
+      .eq('organization_id', org.id)
+      .in('action', ['commercial_workflow.success', 'commercial_workflow.failure', 'commercial_workflow.recovered'])
+      .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+      .order('created_at', { ascending: false })
+      .limit(500),
   ])
 
-  const errors = [invoicesRes.error, quotesRes.error, tasksRes.error, appointmentsRes.error, messagesRes.error, applicationErrorsRes.error, socialPostsRes.error].filter(Boolean)
+  const errors = [invoicesRes.error, quotesRes.error, tasksRes.error, appointmentsRes.error, messagesRes.error, applicationErrorsRes.error, socialPostsRes.error, commercialEventsRes.error].filter(Boolean)
   if (errors.length) {
     throw createError({ statusCode: 500, message: errors[0]!.message })
   }
@@ -61,6 +69,7 @@ export default defineEventHandler(async (event) => {
   const applicationErrors = applicationErrorsRes.count || 0
   const socialDrafts = (socialPostsRes.data || []).filter(post => post.status === 'draft').length
   const socialFailures = (socialPostsRes.data || []).filter(post => post.status === 'failed').length
+  const commercialHealth = summarizeCommercialWorkflow(commercialEventsRes.data || [])
 
   if (overdueCount > 0) alerts.push({ id: 'overdue', text: `${overdueCount} facture(s) en retard`, to: '/admin/invoices' })
   if (newMessages > 0) alerts.push({ id: 'messages', text: `${newMessages} nouveau(x) message(s)`, to: '/admin/messages' })
@@ -70,6 +79,7 @@ export default defineEventHandler(async (event) => {
   if (applicationErrors > 0) alerts.push({ id: 'app-errors', text: `${applicationErrors} erreur(s) applicative(s) à traiter`, to: '/admin/errors' })
   if (socialDrafts > 0) alerts.push({ id: 'social-drafts', text: `${socialDrafts} publication(s) sociale(s) à valider`, to: '/admin/social' })
   if (socialFailures > 0) alerts.push({ id: 'social-failures', text: `${socialFailures} publication(s) sociale(s) en échec`, to: '/admin/social' })
+  if (commercialHealth.totals.unresolved > 0) alerts.push({ id: 'commercial-health', text: `${commercialHealth.totals.unresolved} rupture(s) du parcours commercial à vérifier`, to: '/admin/errors' })
 
   return alerts
 })

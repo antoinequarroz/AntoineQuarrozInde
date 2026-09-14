@@ -1,4 +1,5 @@
 export default defineEventHandler(async (event) => {
+  const correlationId = resolveCommercialCorrelationId(event)
   const { org, user } = await requireAdmin(event)
   const body = await readBody(event)
   const quoteId = Number(body?.id)
@@ -25,11 +26,33 @@ export default defineEventHandler(async (event) => {
     if (reason.includes('quote_not_convertible')) {
       throw createError({ statusCode: 409, message: 'Seul un devis envoyé ou accepté peut être facturé.' })
     }
+    await recordCommercialWorkflowEvent({
+      event,
+      correlationId,
+      organizationId: org.id,
+      actorUserId: user?.id,
+      stage: 'quote',
+      outcome: 'failure',
+      entityType: 'quote',
+      entityId: quoteId,
+      code: 'quote_conversion_failed',
+    })
     throw createError({ statusCode: 500, message: 'La conversion transactionnelle du devis a échoué.' })
   }
 
   const result = data as { created?: boolean, invoice?: Record<string, any> } | null
   if (!result?.invoice?.id) {
+    await recordCommercialWorkflowEvent({
+      event,
+      correlationId,
+      organizationId: org.id,
+      actorUserId: user?.id,
+      stage: 'quote',
+      outcome: 'failure',
+      entityType: 'quote',
+      entityId: quoteId,
+      code: 'quote_conversion_empty',
+    })
     throw createError({ statusCode: 500, message: 'La conversion n’a retourné aucune facture.' })
   }
 
@@ -48,6 +71,19 @@ export default defineEventHandler(async (event) => {
       },
     })
   }
+
+  await recordCommercialWorkflowEvent({
+    event,
+    correlationId,
+    organizationId: org.id,
+    actorUserId: user?.id,
+    stage: 'quote',
+    outcome: result.created ? 'success' : 'recovered',
+    entityType: 'invoice',
+    entityId: result.invoice.id,
+    clientId: result.invoice.client_id,
+    code: result.created ? null : 'invoice_already_created',
+  })
 
   return { created: Boolean(result.created), invoice: result.invoice }
 })

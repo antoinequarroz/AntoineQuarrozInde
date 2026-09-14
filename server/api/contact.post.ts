@@ -23,6 +23,7 @@ function escapeHtml(input: string) {
 }
 
 export default defineEventHandler(async (event) => {
+  const correlationId = resolveCommercialCorrelationId(event)
   const ip = getRequestIP(event, { xForwardedFor: true }) || 'unknown'
   const now = Date.now()
   if (!contactRequests.isAllowed(ip, now)) {
@@ -121,6 +122,17 @@ export default defineEventHandler(async (event) => {
 
     if (existingClient) {
       linkedClientId = Number(existingClient.id)
+      await recordCommercialWorkflowEvent({
+        event,
+        correlationId,
+        organizationId: org.id,
+        stage: 'lead',
+        outcome: 'recovered',
+        entityType: 'client',
+        entityId: linkedClientId,
+        clientId: linkedClientId,
+        code: 'lead_already_exists',
+      })
     } else {
       const { data: createdClient, error: clientError } = await supabase
         .from('clients')
@@ -140,7 +152,16 @@ export default defineEventHandler(async (event) => {
         .single()
 
       if (clientError) {
-        console.warn('[contact] unable to create lead client:', clientError.message)
+        console.warn('[contact] unable to create lead client')
+        await recordCommercialWorkflowEvent({
+          event,
+          correlationId,
+          organizationId: org.id,
+          stage: 'lead',
+          outcome: 'failure',
+          entityType: 'client',
+          code: 'lead_creation_failed',
+        })
       } else if (createdClient) {
         linkedClientId = Number(createdClient.id)
         await logAudit({
@@ -156,6 +177,16 @@ export default defineEventHandler(async (event) => {
             source: 'contact_form',
             subject: safeSubject,
           },
+        })
+        await recordCommercialWorkflowEvent({
+          event,
+          correlationId,
+          organizationId: org.id,
+          stage: 'lead',
+          outcome: 'success',
+          entityType: 'client',
+          entityId: linkedClientId,
+          clientId: linkedClientId,
         })
       }
     }
