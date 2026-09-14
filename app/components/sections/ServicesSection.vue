@@ -94,7 +94,7 @@ function selectService(service: { key: ServiceKey }) {
             :key="service.key"
             v-motion
             data-service-motion
-            :initial="{ opacity: 0, y: 36 }"
+            :initial="{ opacity: 0, y: 0 }"
             :visible="{ opacity: 1, y: 0, transition: { delay: index * 90, duration: 520 } }"
             class="relative"
           >
