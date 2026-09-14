@@ -656,6 +656,9 @@ Les identifiants Playwright sont conservés localement dans `.env.e2e`, ignoré
 par Git. Le compte de production dédié doit être membre `manager` uniquement
 dans l'organisation isolée `aq-e2e-sandbox`. Le test crée son parcours métier
 dans cette organisation puis supprime toutes les données temporaires.
+Lorsque `ADMIN_EMAIL` restreint l'administration locale, `E2E_ADMIN_EMAIL` est
+accepté uniquement pour cette organisation sandbox exacte ; il reste refusé
+pour toutes les autres organisations.
 
 ```dotenv
 E2E_BASE_URL=https://www.antoinequarroz.ch
@@ -665,11 +668,15 @@ E2E_ADMIN_PASSWORD=...
 E2E_ADMIN_TOTP_SECRET=...
 ```
 
-Lancer le parcours public et administrateur :
+Lancer le parcours contre le serveur local déjà géré par Portly :
 
 ```bash
-npm run test:e2e
+E2E_BASE_URL=http://127.0.0.1:3104 node --env-file=.env node_modules/@playwright/test/cli.js test e2e/business-flow.spec.ts
 ```
+
+La migration locale doit apparaître dans la colonne distante de
+`supabase migration list --linked` avant de lancer ce même scénario contre la
+production. Une migration uniquement locale bloque volontairement la porte E2E.
 
 ## Google Places
 

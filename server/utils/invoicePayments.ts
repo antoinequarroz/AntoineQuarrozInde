@@ -10,15 +10,21 @@ export function normalizeInvoicePayment(input: Record<string, unknown>) {
   if (!PAYMENT_METHODS.has(method)) throw new Error('Mode de paiement invalide.')
 
   const rawPaidAt = String(input.paidAt || new Date().toISOString().slice(0, 10))
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(rawPaidAt)) throw new Error('Date de paiement invalide.')
   const paidAt = new Date(`${rawPaidAt}T12:00:00.000Z`)
-  if (Number.isNaN(paidAt.getTime())) throw new Error('Date de paiement invalide.')
+  if (Number.isNaN(paidAt.getTime()) || paidAt.toISOString().slice(0, 10) !== rawPaidAt) throw new Error('Date de paiement invalide.')
+
+  const reference = String(input.reference || '').trim()
+  const notes = String(input.notes || '').trim()
+  if (reference.length > 160) throw new Error('La référence du paiement est trop longue.')
+  if (notes.length > 1000) throw new Error('La note du paiement est trop longue.')
 
   return {
     amountCents,
     method: method as 'bank_transfer' | 'swiss_qr' | 'twint' | 'cash' | 'other',
     paidAt: paidAt.toISOString().slice(0, 10),
-    reference: String(input.reference || '').trim() || null,
-    notes: String(input.notes || '').trim() || null,
+    reference: reference || null,
+    notes: notes || null,
   }
 }
 

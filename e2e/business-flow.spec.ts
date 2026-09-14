@@ -53,6 +53,7 @@ test('sandbox covers client to paid invoice and cleans up business data', async 
 
   const runId = `${Date.now()}-${test.info().retry}`
   const ids: { client?: number, project?: number, quote?: number, invoice?: number, standaloneInvoice?: number } = {}
+  const conversionInvoiceIds = new Set<number>()
   const item = { label: 'Audit E2E', description: 'Donnee temporaire automatiquement supprimee', quantity: 1, unitPriceCents: 12500, taxRate: 8.1 }
 
   try {
@@ -67,8 +68,12 @@ test('sandbox covers client to paid invoice and cleans up business data', async 
         items: [{ label: 'Prestation', quantity: 1, unitPriceCents: 0, taxRate: 8.1 }],
       },
     })
-    expect(standaloneInvoiceResponse.ok()).toBeTruthy()
-    ids.standaloneInvoice = (await standaloneInvoiceResponse.json()).id
+    const standaloneInvoice = await standaloneInvoiceResponse.json()
+    expect(
+      standaloneInvoiceResponse.ok(),
+      `Standalone invoice creation failed (${standaloneInvoiceResponse.status()}): ${standaloneInvoice?.message || 'unknown error'}`,
+    ).toBeTruthy()
+    ids.standaloneInvoice = standaloneInvoice.id
 
     const incompatibleQrrResponse = await request.post('/api/invoices', {
       headers,
@@ -141,7 +146,7 @@ test('sandbox covers client to paid invoice and cleans up business data', async 
         number: quoteNumber,
         title: `Devis E2E ${runId}`,
         currency: 'CHF',
-        status: 'draft',
+        status: 'sent',
         issuedAt: new Date().toISOString().slice(0, 10),
         items: [item],
       },
@@ -151,15 +156,32 @@ test('sandbox covers client to paid invoice and cleans up business data', async 
     ids.quote = quote.id
     expect(quote.total_cents).toBe(13513)
 
-    const conversionResponse = await request.post('/api/quotes/convert', {
+    const unconfirmedConversionResponse = await request.post('/api/quotes/convert', {
       headers,
       data: { id: ids.quote },
     })
-    expect(conversionResponse.ok()).toBeTruthy()
-    const conversion = await conversionResponse.json()
+    expect(unconfirmedConversionResponse.status()).toBe(400)
+    expect((await unconfirmedConversionResponse.json()).message).toContain('Confirme explicitement')
+
+    const conversionResponses = await Promise.all([
+      request.post('/api/quotes/convert', { headers, data: { id: ids.quote, confirmation: 'ACCEPTER_ET_FACTURER' } }),
+      request.post('/api/quotes/convert', { headers, data: { id: ids.quote, confirmation: 'ACCEPTER_ET_FACTURER' } }),
+    ])
+    expect(conversionResponses.every(response => response.ok())).toBeTruthy()
+    const conversions = await Promise.all(conversionResponses.map(response => response.json()))
+    for (const result of conversions) conversionInvoiceIds.add(result.invoice.id)
+    expect(conversions.filter(result => result.created)).toHaveLength(1)
+    expect(conversions.filter(result => !result.created)).toHaveLength(1)
+    expect(conversionInvoiceIds.size).toBe(1)
+    const conversion = conversions.find(result => result.created) || conversions[0]
     ids.invoice = conversion.invoice.id
     expect(conversion.invoice.quote_id).toBe(ids.quote)
     expect(conversion.invoice.project_id).toBe(ids.project)
+
+    const invoicesAfterConversionResponse = await request.get('/api/invoices', { headers })
+    expect(invoicesAfterConversionResponse.ok()).toBeTruthy()
+    const invoicesForQuote = (await invoicesAfterConversionResponse.json()).filter((invoice: { quote_id: number }) => invoice.quote_id === ids.quote)
+    expect(invoicesForQuote).toHaveLength(1)
 
     const pdfResponse = await request.get(`/api/invoices/pdf?id=${ids.invoice}`, { headers })
     expect(pdfResponse.ok()).toBeTruthy()
@@ -169,20 +191,43 @@ test('sandbox covers client to paid invoice and cleans up business data', async 
     expect(pdf.subarray(0, 4).toString()).toBe('%PDF')
     expect(pdf.byteLength).toBeGreaterThan(1_000)
 
-    const paidResponse = await request.post('/api/invoices/payments', {
+    const unconfirmedPaymentResponse = await request.post('/api/invoices/payments', {
       headers,
-      data: {
-        invoiceId: ids.invoice,
-        amountCents: conversion.invoice.total_cents,
-        method: 'bank_transfer',
-        paidAt: new Date().toISOString().slice(0, 10),
-        reference: `E2E-${runId}`,
-      },
+      data: { invoiceId: ids.invoice, amountCents: conversion.invoice.total_cents, method: 'bank_transfer' },
     })
+    expect(unconfirmedPaymentResponse.status()).toBe(400)
+    expect((await unconfirmedPaymentResponse.json()).message).toContain('Confirme explicitement')
+
+    await page.goto(`/admin/invoices?invoiceId=${ids.invoice}&clientId=${ids.client}&quoteId=${ids.quote}&journey=converted`)
+    await expect(page.getByText(`La facture ${conversion.invoice.number} a été créée depuis le devis.`)).toBeVisible()
+    const invoiceRow = page.getByRole('row').filter({ hasText: conversion.invoice.number })
+    await invoiceRow.getByRole('button', { name: 'Paiement', exact: true }).click()
+    const paymentDialog = page.getByRole('dialog', { name: 'Enregistrer un paiement' })
+    await expect(paymentDialog).toBeVisible()
+    await expect(paymentDialog.getByLabel(/Montant/)).toHaveValue('135.13')
+    await paymentDialog.getByLabel('Référence').fill(`E2E-${runId}`)
+    const paymentRequestPromise = page.waitForRequest(request => request.url().endsWith('/api/invoices/payments') && request.method() === 'POST')
+    const paymentResponsePromise = page.waitForResponse(response => response.url().endsWith('/api/invoices/payments') && response.request().method() === 'POST')
+    await paymentDialog.getByRole('button', { name: 'Enregistrer le paiement' }).click()
+    const [browserPaymentRequest, paidResponse] = await Promise.all([paymentRequestPromise, paymentResponsePromise])
     expect(paidResponse.ok()).toBeTruthy()
     const paymentResult = await paidResponse.json()
     expect(paymentResult.status).toBe('paid')
     expect(paymentResult.paidAmountCents).toBe(conversion.invoice.total_cents)
+    expect(paymentResult.created).toBe(true)
+    await expect(paymentDialog).toBeHidden()
+    await expect(page.getByText(`La facture ${conversion.invoice.number} est entièrement payée.`)).toBeVisible()
+
+    const submittedPayment = browserPaymentRequest.postDataJSON()
+
+    const repeatedPaymentResponse = await request.post('/api/invoices/payments', {
+      headers,
+      data: submittedPayment,
+    })
+    expect(repeatedPaymentResponse.ok()).toBeTruthy()
+    const repeatedPaymentResult = await repeatedPaymentResponse.json()
+    expect(repeatedPaymentResult.created).toBe(false)
+    expect(repeatedPaymentResult.payment.id).toBe(paymentResult.payment.id)
 
     const invoicesResponse = await request.get('/api/invoices', { headers })
     expect(invoicesResponse.ok()).toBeTruthy()
@@ -190,6 +235,15 @@ test('sandbox covers client to paid invoice and cleans up business data', async 
     expect(paidInvoice.status).toBe('paid')
     expect(paidInvoice.paid_at).toMatch(/^\d{4}-\d{2}-\d{2}$/)
     expect(paidInvoice.payments).toHaveLength(1)
+
+    await page.goto(`/admin/payments?invoiceId=${ids.invoice}`)
+    await expect(page.getByText(`Le paiement de la facture ${conversion.invoice.number} est bien présent dans le journal et le CRM est à jour.`)).toBeVisible()
+    const commercialJourney = page.getByRole('navigation', { name: 'Progression du parcours commercial' })
+    await expect(commercialJourney).toBeVisible()
+    await commercialJourney.getByRole('link', { name: 'Facture' }).click()
+    await expect(page).toHaveURL(new RegExp(`/admin/invoices\\?invoiceId=${ids.invoice}`))
+    await page.goBack()
+    await expect(page.getByText(`Le paiement de la facture ${conversion.invoice.number} est bien présent dans le journal et le CRM est à jour.`)).toBeVisible()
 
     const cockpitResponse = await request.get(`/api/project-cockpit?projectId=${ids.project}`, { headers })
     expect(cockpitResponse.ok()).toBeTruthy()
@@ -199,7 +253,7 @@ test('sandbox covers client to paid invoice and cleans up business data', async 
     expect(cockpit.totals.finance.collectedCents).toBe(13513)
   }
   finally {
-    if (ids.invoice) await request.delete(`/api/invoices?id=${ids.invoice}`, { headers })
+    for (const invoiceId of conversionInvoiceIds) await request.delete(`/api/invoices?id=${invoiceId}`, { headers })
     if (ids.standaloneInvoice) await request.delete(`/api/invoices?id=${ids.standaloneInvoice}`, { headers })
     if (ids.quote) await request.delete(`/api/quotes?id=${ids.quote}`, { headers })
     if (ids.project) await request.delete(`/api/projects?id=${ids.project}`, { headers })

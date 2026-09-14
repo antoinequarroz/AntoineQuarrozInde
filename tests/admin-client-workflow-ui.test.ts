@@ -47,4 +47,48 @@ describe('admin client workflow UI', () => {
     expect(toast).toContain('aria-live="polite"')
     expect(toast).toContain(`:role="toast.type === 'error' ? 'alert' : 'status'"`)
   })
+
+  it('keeps one visible commercial journey from prospect to payment', async () => {
+    const [client, quotes, invoices, payments, journey] = await Promise.all([
+      readFile('app/pages/admin/clients/[id].vue', 'utf8'),
+      readFile('app/pages/admin/quotes/index.vue', 'utf8'),
+      readFile('app/pages/admin/invoices/index.vue', 'utf8'),
+      readFile('app/pages/admin/payments/index.vue', 'utf8'),
+      readFile('app/components/admin/CommercialJourney.vue', 'utf8'),
+    ])
+    expect(client).toContain('<AdminCommercialJourney current="crm"')
+    expect(quotes).toContain('<AdminCommercialJourney current="quote"')
+    expect(invoices).toContain('<AdminCommercialJourney current="invoice"')
+    expect(payments).toContain('<AdminCommercialJourney v-if="requestedInvoiceId"')
+    expect(payments).toContain(":current=\"contextualEntry ? 'payment' : 'invoice'\"")
+    expect(journey).toContain('aria-label="Progression du parcours commercial"')
+    expect(journey).toContain('aria-current="step"')
+    expect(journey).toContain('aria-disabled="true"')
+    expect(journey).toContain('min-h-11')
+  })
+
+  it('requires explicit, idempotent commercial transitions without financial audit amounts', async () => {
+    const [quotesPage, convertRoute, invoicesPage, paymentRoute, paymentRecorder] = await Promise.all([
+      readFile('app/pages/admin/quotes/index.vue', 'utf8'),
+      readFile('server/api/quotes/convert.post.ts', 'utf8'),
+      readFile('app/pages/admin/invoices/index.vue', 'utf8'),
+      readFile('server/api/invoices/payments.post.ts', 'utf8'),
+      readFile('server/utils/recordInvoicePayment.ts', 'utf8'),
+    ])
+    expect(quotesPage).toContain("confirmation: 'ACCEPTER_ET_FACTURER'")
+    expect(convertRoute).toContain("body?.confirmation !== 'ACCEPTER_ET_FACTURER'")
+    expect(convertRoute).toContain("supabase.rpc('convert_quote_to_invoice_atomic'")
+    expect(convertRoute).toContain('if (result.created)')
+    expect(convertRoute).not.toContain(".from('invoices').insert")
+    expect(invoicesPage).toContain("confirmation: 'ENREGISTRER_PAIEMENT'")
+    expect(invoicesPage).toContain('crypto.randomUUID()')
+    expect(paymentRoute).toContain("body.confirmation !== 'ENREGISTRER_PAIEMENT'")
+    expect(paymentRoute).toContain("update(`manual:${org.id}:${invoiceId}:${idempotencyKey}`)")
+    expect(paymentRecorder).toContain('created: false')
+    expect(paymentRecorder).toContain('created: true')
+    expect(paymentRecorder).toContain('if (!sameSubmission)')
+    expect(paymentRecorder).toContain('Cette clé de soumission a déjà été utilisée avec un autre paiement.')
+    expect(paymentRecorder).toContain("payload: { payment_id: inserted.id, method: input.payment.method, source: input.source || 'manual' }")
+    expect(paymentRecorder).not.toContain('payload: { payment_id: inserted.id, amount_cents:')
+  })
 })

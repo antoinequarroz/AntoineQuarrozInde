@@ -14,6 +14,40 @@ type RecordInvoicePaymentInput = {
 
 export async function recordInvoicePayment(input: RecordInvoicePaymentInput) {
   const supabase = getSupabaseAdmin()
+  async function findExistingManualPayment() {
+    if (input.source !== 'manual' || !input.bankImportFingerprint) return null
+    const { data: existingPayment, error: existingPaymentError } = await supabase
+      .from('invoice_payments')
+      .select('*')
+      .eq('organization_id', input.organizationId)
+      .eq('invoice_id', input.invoiceId)
+      .eq('bank_import_fingerprint', input.bankImportFingerprint)
+      .maybeSingle()
+    if (existingPaymentError) throw createError({ statusCode: 500, message: 'Impossible de vérifier cette soumission de paiement.' })
+    if (!existingPayment) return null
+    const sameSubmission = Number(existingPayment.amount_cents) === input.payment.amountCents
+      && existingPayment.method === input.payment.method
+      && existingPayment.paid_at === input.payment.paidAt
+      && (existingPayment.reference || null) === input.payment.reference
+      && (existingPayment.notes || null) === input.payment.notes
+    if (!sameSubmission) throw createError({ statusCode: 409, message: 'Cette clé de soumission a déjà été utilisée avec un autre paiement.' })
+    const [paymentsResult, invoiceResult] = await Promise.all([
+      supabase.from('invoice_payments').select('amount_cents,voided_at').eq('organization_id', input.organizationId).eq('invoice_id', input.invoiceId),
+      supabase.from('invoices').select('status').eq('organization_id', input.organizationId).eq('id', input.invoiceId).single(),
+    ])
+    if (paymentsResult.error || invoiceResult.error) throw createError({ statusCode: 500, message: 'Impossible de relire le paiement déjà enregistré.' })
+    const payments = paymentsResult.data
+    const currentInvoice = invoiceResult.data
+    return {
+      created: false,
+      payment: existingPayment,
+      paidAmountCents: (payments || []).reduce((sum, payment) => sum + (payment.voided_at ? 0 : Number(payment.amount_cents)), 0),
+      status: currentInvoice?.status || 'sent',
+    }
+  }
+
+  const existingManualPayment = await findExistingManualPayment()
+  if (existingManualPayment) return existingManualPayment
   const { data: invoice } = await supabase
     .from('invoices')
     .select('id,number,client_id,total_cents,amount_cents,currency,due_at,status')
@@ -36,6 +70,8 @@ export async function recordInvoicePayment(input: RecordInvoicePaymentInput) {
     p_bank_import_fingerprint: input.bankImportFingerprint || null,
   })
   if (error) {
+    const duplicateManualPayment = await findExistingManualPayment()
+    if (duplicateManualPayment) return duplicateManualPayment
     if (input.bankImportFingerprint && (error.code === '23505' || error.message.includes('idx_invoice_payments_bank_import_unique'))) {
       throw createError({ statusCode: 409, message: 'Ce mouvement bancaire a déjà été rapproché.' })
     }
@@ -61,7 +97,7 @@ export async function recordInvoicePayment(input: RecordInvoicePaymentInput) {
     entityType: 'invoice',
     entityId: input.invoiceId,
     clientId: invoice.client_id,
-    payload: { payment_id: inserted.id, amount_cents: input.payment.amountCents, method: input.payment.method },
+    payload: { payment_id: inserted.id, method: input.payment.method, source: input.source || 'manual' },
   })
   if (invoice.client_id) {
     const { data: client } = await supabase.from('clients').select('id,name,email').eq('organization_id', input.organizationId).eq('id', invoice.client_id).maybeSingle()
@@ -90,5 +126,5 @@ export async function recordInvoicePayment(input: RecordInvoicePaymentInput) {
       }
     }
   }
-  return { payment: inserted, paidAmountCents, status }
+  return { created: true, payment: inserted, paidAmountCents, status }
 }

@@ -56,6 +56,7 @@ type PaymentOperations = {
 }
 
 const auth = useAuthStore()
+const route = useRoute()
 const toast = useToast()
 const data = ref<PaymentOperations | null>(null)
 const loading = ref(true)
@@ -63,6 +64,13 @@ const loadError = ref('')
 const query = ref('')
 const entryFilter = ref<'all' | 'attention' | 'payments' | 'twint'>('all')
 const showReconciliation = ref(false)
+const requestedInvoiceId = computed(() => {
+  const value = Number(route.query.invoiceId || 0)
+  return Number.isInteger(value) && value > 0 ? value : null
+})
+const contextualEntry = computed(() => requestedInvoiceId.value
+  ? data.value?.entries.find(entry => entry.invoiceId === requestedInvoiceId.value && entry.status === 'confirmed') ?? null
+  : null)
 
 const methodLabels: Record<string, string> = {
   bank_transfer: 'Virement',
@@ -163,6 +171,8 @@ onMounted(loadPayments)
       </div>
     </section>
 
+    <AdminCommercialJourney v-if="requestedInvoiceId" :current="contextualEntry ? 'payment' : 'invoice'" :invoice-id="requestedInvoiceId" />
+
     <div v-if="loading" role="status" aria-live="polite" class="space-y-5">
       <span class="sr-only">Chargement du journal des encaissements</span>
       <div class="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-gray-200 bg-gray-200 dark:border-white/[0.08] dark:bg-white/[0.08] lg:grid-cols-4">
@@ -178,6 +188,14 @@ onMounted(loadPayments)
     </div>
 
     <template v-else-if="data">
+      <section v-if="contextualEntry" role="status" aria-live="polite" class="flex flex-col gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-950 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-100 sm:flex-row sm:items-center sm:justify-between">
+        <p class="text-sm font-medium">Le paiement de la facture {{ contextualEntry.invoiceNumber }} est bien présent dans le journal et le CRM est à jour.</p>
+        <NuxtLink to="/admin/crm" class="inline-flex min-h-11 shrink-0 items-center justify-center rounded-lg bg-emerald-800 px-4 text-sm font-semibold text-white dark:bg-emerald-300 dark:text-emerald-950">Voir le pipeline</NuxtLink>
+      </section>
+      <section v-else-if="requestedInvoiceId" role="alert" class="flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-950 dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-amber-100 sm:flex-row sm:items-center sm:justify-between">
+        <p class="text-sm font-medium">Aucun encaissement de cette facture n’est visible dans l’organisation active.</p>
+        <NuxtLink :to="`/admin/invoices?invoiceId=${requestedInvoiceId}`" class="inline-flex min-h-11 shrink-0 items-center justify-center rounded-lg bg-amber-900 px-4 text-sm font-semibold text-white dark:bg-amber-300 dark:text-amber-950">Retour à la facture</NuxtLink>
+      </section>
       <section aria-label="Synthèse des encaissements" class="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-gray-200 bg-gray-200 dark:border-white/[0.08] dark:bg-white/[0.08] lg:grid-cols-4">
         <article v-for="metric in metricRows" :key="metric.label" class="min-w-0 bg-white px-4 py-4 dark:bg-[#111118] sm:px-5">
           <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ metric.label }}</p>
@@ -252,7 +270,7 @@ onMounted(loadPayments)
                 <tr><th class="px-5 py-3 font-medium">Date</th><th class="px-3 py-3 font-medium">Facture</th><th class="px-3 py-3 font-medium">Client</th><th class="px-3 py-3 font-medium">Moyen</th><th class="px-3 py-3 font-medium">Statut</th><th class="px-5 py-3 text-right font-medium">Montant</th></tr>
               </thead>
               <tbody class="divide-y divide-gray-100 dark:divide-white/[0.06]">
-                <tr v-for="entry in filteredEntries" :key="entry.id" class="hover:bg-gray-50/70 dark:hover:bg-white/[0.025]">
+                <tr v-for="entry in filteredEntries" :key="entry.id" class="hover:bg-gray-50/70 dark:hover:bg-white/[0.025]" :class="contextualEntry?.id === entry.id ? 'bg-emerald-50 ring-1 ring-inset ring-emerald-300 dark:bg-emerald-400/10 dark:ring-emerald-400/30' : ''">
                   <td class="whitespace-nowrap px-5 py-3 text-gray-500 dark:text-gray-400">{{ dateTime(entry.occurredAt) }}</td>
                   <td class="px-3 py-3 font-semibold text-gray-900 dark:text-white">{{ entry.invoiceNumber }}</td>
                   <td class="max-w-52 truncate px-3 py-3 text-gray-600 dark:text-gray-300">{{ entry.clientName }}</td>
@@ -265,7 +283,7 @@ onMounted(loadPayments)
           </div>
 
           <ol class="divide-y divide-gray-100 dark:divide-white/[0.06] md:hidden">
-            <li v-for="entry in filteredEntries" :key="`mobile-${entry.id}`" class="px-4 py-4">
+            <li v-for="entry in filteredEntries" :key="`mobile-${entry.id}`" class="px-4 py-4" :class="contextualEntry?.id === entry.id ? 'bg-emerald-50 ring-1 ring-inset ring-emerald-300 dark:bg-emerald-400/10 dark:ring-emerald-400/30' : ''">
               <div class="flex items-start justify-between gap-3">
                 <div class="min-w-0"><p class="truncate font-semibold text-gray-900 dark:text-white">{{ entry.invoiceNumber }}</p><p class="mt-1 truncate text-sm text-gray-500 dark:text-gray-400">{{ entry.clientName }}</p></div>
                 <strong class="shrink-0 tabular-nums">{{ money(entry.amountCents, entry.currency) }}</strong>

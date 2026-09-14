@@ -38,5 +38,6 @@
   { "filename": "20260914071740_add_social_publication_queue.sql", "sha256": "3483017300d74c8c1150ea2793a42b638e57a0735ce7d118b21fc916d5645a12" },
   { "filename": "20260914080000_fix_social_post_source_path.sql", "sha256": "2d1e43499b4f542ae957854d5f29f2b4f15deed7cdaa0cd691a2bdbc6f8045d3" },
   { "filename": "20260914083000_allow_social_homepage_destination.sql", "sha256": "88583f40c3869cd26e8603c44baa24b3aa5e42fc59359748f49287c5ea74db5e" },
-  { "filename": "20260914084443_add_client_follow_up_fields_after_social.sql", "sha256": "0bfbcf5efe122399257559d886284cf8cd627ea5565a58920999ccd05086ec85" }
+  { "filename": "20260914084443_add_client_follow_up_fields_after_social.sql", "sha256": "0bfbcf5efe122399257559d886284cf8cd627ea5565a58920999ccd05086ec85" },
+  { "filename": "20260914165843_transactional_quote_conversion.sql", "sha256": "e44977c061eaa72c16fe9b608bc16a0f5694e0d591269fb22bda6c3d168f1f34" }
 ]
