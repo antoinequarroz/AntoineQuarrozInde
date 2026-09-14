@@ -50,12 +50,12 @@ describe('commercial action state', () => {
     expect(isCommercialActionVisible('lead:9_2026-09-21', states, '2026-09-21')).toBe(true)
   })
 
-  it('applies a dated prospect decision to the undated inactivity fallback only', () => {
+  it('does not let a handled dated follow-up hide the future inactivity fallback', () => {
     const states = normalizeCommercialActionStates([
-      { payload: { actionKey: 'lead:9_2026-09-14', aliasActionKey: 'lead:9', status: 'handled' }, created_at: '2026-09-14T10:00:00Z' },
+      { payload: { actionKey: 'lead:9_2026-09-14', aliasActionKey: null, status: 'handled' }, created_at: '2026-09-14T10:00:00Z' },
     ])
 
-    expect(isCommercialActionVisible('lead:9', states, '2026-09-15')).toBe(false)
+    expect(isCommercialActionVisible('lead:9', states, '2026-09-15')).toBe(true)
     expect(isCommercialActionVisible('lead:9_2026-09-21', states, '2026-09-21')).toBe(true)
   })
 

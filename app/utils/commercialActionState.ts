@@ -6,6 +6,8 @@ export type CommercialActionState = {
   status: CommercialActionStatus
   snoozedUntil: string | null
   updatedAt: string
+  previousLastContactedAt?: string | null
+  nextLastContactedAt?: string | null
 }
 
 type AuditStateRow = {
@@ -49,6 +51,8 @@ export function normalizeCommercialActionStates(rows: AuditStateRow[]) {
         status,
         snoozedUntil: status === 'snoozed' ? snoozedUntil : null,
         updatedAt,
+        previousLastContactedAt: typeof payload.previousLastContactedAt === 'string' ? payload.previousLastContactedAt : null,
+        nextLastContactedAt: typeof payload.nextLastContactedAt === 'string' ? payload.nextLastContactedAt : null,
       }
     }
   }

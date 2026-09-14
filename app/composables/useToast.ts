@@ -19,9 +19,12 @@ export function useToast() {
     if (!import.meta.client) return
     const id = Date.now() + Math.random()
     toasts.value = [...toasts.value, { id, message, type, actionLabel: options.actionLabel, onAction: options.onAction }]
-    setTimeout(() => {
-      dismiss(id)
-    }, options.duration ?? (options.actionLabel ? 7000 : 3500))
+    const duration = options.duration ?? (options.actionLabel ? 7000 : 3500)
+    if (duration > 0) {
+      setTimeout(() => {
+        dismiss(id)
+      }, duration)
+    }
   }
 
   async function runAction(toast: Toast) {
@@ -31,6 +34,7 @@ export function useToast() {
 
   return {
     toasts: readonly(toasts),
+    dismiss,
     success: (msg: string, options?: Parameters<typeof push>[2]) => push(msg, 'success', options),
     error: (msg: string, options?: Parameters<typeof push>[2]) => push(msg, 'error', options),
     info: (msg: string, options?: Parameters<typeof push>[2]) => push(msg, 'info', options),

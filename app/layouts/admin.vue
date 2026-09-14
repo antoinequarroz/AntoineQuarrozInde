@@ -16,7 +16,7 @@ const navGroups = [
   {
     label: 'Vendre',
     items: [
-      { label: 'Prospects', icon: 'book-open', href: '/admin/crm' },
+      { label: 'CRM', icon: 'book-open', href: '/admin/crm' },
       { label: 'Clients', icon: 'users', href: '/admin/clients' },
       { label: 'Messages', icon: 'mail', href: '/admin/messages' },
       { label: 'E-mails', icon: 'send', href: '/admin/emails' },
@@ -79,6 +79,7 @@ const searchError = ref(false)
 const alertsStatus = ref<'loading' | 'ready' | 'error'>('loading')
 const alertButtonRef = ref<HTMLElement | null>(null)
 const alertPopoverRef = ref<HTMLElement | null>(null)
+const menuButtonRef = ref<HTMLButtonElement | null>(null)
 
 let searchTimer: ReturnType<typeof setTimeout> | null = null
 let keydownHandler: ((event: KeyboardEvent) => void) | null = null
@@ -204,7 +205,11 @@ onMounted(() => {
   isMac.value = /Mac|iPhone|iPad/.test(navigator.platform)
   desktopNavigationMedia = window.matchMedia('(min-width: 1024px)')
   desktopNavigationListener = () => {
-    isDesktopNavigation.value = Boolean(desktopNavigationMedia?.matches)
+    const nextDesktopNavigation = Boolean(desktopNavigationMedia?.matches)
+    if (!nextDesktopNavigation && !isSidebarOpen.value && sidebarDialogRef.value?.contains(document.activeElement)) {
+      menuButtonRef.value?.focus()
+    }
+    isDesktopNavigation.value = nextDesktopNavigation
     if (isDesktopNavigation.value && isSidebarOpen.value) closeSidebar()
     if (isDesktopNavigation.value) document.body.style.overflow = ''
   }
@@ -298,7 +303,7 @@ watch(isSidebarOpen, (open) => {
   <div class="admin-shell flex min-h-screen w-full max-w-full overflow-x-clip bg-gray-50 text-sm dark:bg-[#0b0b12]">
     <a href="#admin-main-content" class="sr-only fixed left-3 top-3 z-[100] rounded-lg bg-gray-950 px-4 py-3 font-semibold text-white focus:not-sr-only">Aller au contenu principal</a>
     <Transition name="fade">
-      <div v-if="isSidebarOpen" class="fixed inset-0 bg-black/40 z-40 lg:hidden backdrop-blur-sm" @click="isSidebarOpen = false" />
+      <div v-if="isSidebarOpen" data-dialog-backdrop class="fixed inset-0 bg-black/40 z-40 lg:hidden backdrop-blur-sm" @click="isSidebarOpen = false" />
     </Transition>
 
     <aside
@@ -382,6 +387,7 @@ watch(isSidebarOpen, (open) => {
     <div class="flex min-h-screen min-w-0 max-w-full flex-1 flex-col lg:ml-56">
       <header class="admin-topbar sticky top-0 z-30 h-14 flex items-center gap-2 sm:gap-3 px-3 sm:px-6 bg-white/90 dark:bg-[#111118]/90 backdrop-blur-xl border-b border-gray-100 dark:border-white/[0.06]">
         <button
+          ref="menuButtonRef"
           aria-controls="admin-navigation"
           :aria-expanded="isSidebarOpen"
           aria-label="Ouvrir le menu"

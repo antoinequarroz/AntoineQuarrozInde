@@ -115,6 +115,25 @@ export const useClientsStore = defineStore('clients', () => {
     if (idx !== -1) clients.value[idx] = mapClient(row)
   }
 
+  async function updateStatus(
+    id: number,
+    data: Pick<Partial<Client>, 'status' | 'nextFollowUpAt'>,
+    expected: { status: Client['status'], nextFollowUpAt: string | null },
+  ) {
+    const row = await $fetch<ClientRow>('/api/clients', {
+      method: 'PUT',
+      body: {
+        ...data,
+        id,
+        expectedStatus: expected.status,
+        expectedNextFollowUpAt: expected.nextFollowUpAt,
+      },
+      headers: auth.authHeader(),
+    })
+    const idx = clients.value.findIndex(c => c.id === id)
+    if (idx !== -1) clients.value[idx] = mapClient(row)
+  }
+
   async function remove(id: number) {
     await $fetch('/api/clients', {
       method: 'DELETE',
@@ -125,5 +144,5 @@ export const useClientsStore = defineStore('clients', () => {
   }
 
   const active = computed(() => clients.value.filter(c => c.status === 'active'))
-  return { clients, active, loading, loaded, ensureLoaded, add, update, remove }
+  return { clients, active, loading, loaded, ensureLoaded, add, update, updateStatus, remove }
 })
