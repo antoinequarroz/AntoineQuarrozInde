@@ -46,6 +46,23 @@ function factorLabel(factor: TotpFactor, index: number) {
   return factor.friendly_name?.trim() || `Application d’authentification ${index + 1}`
 }
 
+function nextFactorName() {
+  const baseName = verifiedFactors.value.length > 0
+    ? 'Tests E2E'
+    : 'Administration Antoine Quarroz'
+  const existingNames = new Set(
+    factors.value
+      .map(factor => factor.friendly_name?.trim())
+      .filter((name): name is string => Boolean(name)),
+  )
+
+  if (!existingNames.has(baseName)) return baseName
+
+  let suffix = 2
+  while (existingNames.has(`${baseName} ${suffix}`)) suffix += 1
+  return `${baseName} ${suffix}`
+}
+
 function readableDate(value: string) {
   return new Intl.DateTimeFormat('fr-CH', { dateStyle: 'medium' }).format(new Date(value))
 }
@@ -117,7 +134,7 @@ async function startEnrollment() {
   try {
     const { data, error } = await client.auth.mfa.enroll({
       factorType: 'totp',
-      friendlyName: 'Administration Antoine Quarroz',
+      friendlyName: nextFactorName(),
       issuer: 'Antoine Quarroz',
     })
     if (error || data.type !== 'totp') throw error || new Error('Unsupported factor')
@@ -130,8 +147,11 @@ async function startEnrollment() {
     statusMessage.value = 'Scanne le QR code, puis saisis le code à six chiffres.'
     await focusElement('enrollment-title')
   }
-  catch {
-    actionError.value = 'La configuration n’a pas pu démarrer. Vérifie ta connexion puis réessaie.'
+  catch (error) {
+    const message = error instanceof Error ? error.message : ''
+    actionError.value = message
+      ? `La configuration n’a pas pu démarrer : ${message}`
+      : 'La configuration n’a pas pu démarrer. Vérifie ta connexion puis réessaie.'
   }
   finally {
     submitting.value = false

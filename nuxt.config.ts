@@ -210,6 +210,7 @@ export default defineNuxtConfig({
     stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET || '',
     supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
     adminEmail: process.env.ADMIN_EMAIL || '',
+    e2eAdminEmail: process.env.E2E_ADMIN_EMAIL || '',
     hermesReadToken: process.env.HERMES_READ_TOKEN || '',
     hermesPublishToken: process.env.HERMES_PUBLISH_TOKEN || '',
     public: {

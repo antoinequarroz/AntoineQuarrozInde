@@ -58,6 +58,16 @@ const runningAction = ref<string | null>(null)
 const loadError = ref('')
 const submitting = ref(false)
 const selectedQuote = computed(() => store.quotes.find(q => q.id === selectedId.value) ?? null)
+type QuoteNextAction = 'send' | 'convert' | 'crm'
+const workflowNotice = ref<{ quoteId: number, message: string, nextAction: QuoteNextAction } | null>(null)
+const journeyClientId = computed(() => selectedQuote.value?.clientId ?? (showForm.value ? form.clientId : null))
+const journeyQuoteId = computed(() => selectedQuote.value?.id ?? null)
+const journeyInvoiceId = computed(() => selectedQuote.value
+  ? invoices.invoices.find(invoice => invoice.documentType === 'invoice' && invoice.quoteId === selectedQuote.value?.id)?.id ?? null
+  : null)
+watch(selectedId, (id) => {
+  if (workflowNotice.value && workflowNotice.value.quoteId !== id) workflowNotice.value = null
+})
 const quoteStatuses: Array<Quote['status']> = ['draft', 'sent', 'accepted', 'rejected']
 const kanbanQuotes = computed(() =>
   quoteStatuses.map(status => ({
@@ -228,11 +238,17 @@ async function submit() {
       validUntil: form.validUntil || null,
       notes: composeNotes() || null,
     }
-    if (editing.value) await store.update(editing.value.id, payload as any)
-    else await store.add(payload as any)
+    const savedQuote = editing.value
+      ? await store.update(editing.value.id, payload as any)
+      : await store.add(payload as any)
+    selectedId.value = savedQuote.id
     showForm.value = false
     toast.success('Devis enregistré')
-    if (!selectedId.value) selectedId.value = store.quotes.at(0)?.id ?? null
+    workflowNotice.value = {
+      quoteId: savedQuote.id,
+      message: `Le devis ${savedQuote.number} est enregistré.`,
+      nextAction: savedQuote.status === 'draft' ? 'send' : savedQuote.status === 'accepted' ? 'convert' : 'crm',
+    }
   } catch {
     toast.error('Le devis n’a pas pu être enregistré')
   }
@@ -284,6 +300,7 @@ async function markQuoteEvent(q: Quote, event: 'sent_at' | 'viewed_at' | 'signed
     if (event === 'signed_at') patch.status = 'accepted'
     await store.update(q.id, patch as any)
     toast.success(`Correction manuelle enregistrée pour ${q.number}`)
+    if (event === 'signed_at') workflowNotice.value = { quoteId: q.id, message: `Le devis ${q.number} est accepté.`, nextAction: 'convert' }
   } catch {
     toast.error('L’événement n’a pas pu être enregistré')
   }
@@ -295,6 +312,7 @@ async function sendQuoteEmail(q: Quote) {
     await $fetch('/api/quotes/send', { method: 'POST', body: { id: q.id }, headers: auth.authHeader() })
     await store.ensureLoaded(true)
     toast.success(`Devis ${q.number} envoyé avec son PDF`)
+    workflowNotice.value = { quoteId: q.id, message: `Le devis ${q.number} a été envoyé.`, nextAction: 'crm' }
   } catch (error: any) {
     toast.error(error?.data?.message || 'Impossible d’envoyer le devis')
   } finally {
@@ -303,14 +321,26 @@ async function sendQuoteEmail(q: Quote) {
 }
 
 async function convertToInvoice(q: Quote) {
+  const confirmation = q.status === 'accepted'
+    ? `Créer une facture à partir du devis ${q.number} ?`
+    : `Le devis ${q.number} sera marqué comme accepté et une facture sera créée. Continuer ?`
+  if (!confirm(confirmation)) return
   runningAction.value = `convert-${q.id}`
   try {
     const result = await $fetch<{ created: boolean, invoice: { id: number, number: string, client_id?: number | null } }>('/api/quotes/convert', {
-      method: 'POST', body: { id: q.id }, headers: auth.authHeader(),
+      method: 'POST', body: { id: q.id, confirmation: 'ACCEPTER_ET_FACTURER' }, headers: auth.authHeader(),
     })
     await Promise.all([store.ensureLoaded(true), invoices.ensureLoaded(true)])
     toast.success(result.created ? `Facture ${result.invoice.number} créée` : `La facture ${result.invoice.number} existe déjà`)
-    await navigateTo({ path: '/admin/invoices', query: { invoiceId: String(result.invoice.id), clientId: String(q.clientId || result.invoice.client_id || '') } })
+    await navigateTo({
+      path: '/admin/invoices',
+      query: {
+        invoiceId: String(result.invoice.id),
+        quoteId: String(q.id),
+        clientId: String(q.clientId || result.invoice.client_id || ''),
+        journey: 'converted',
+      },
+    })
   } catch (error: any) {
     toast.error(error?.data?.message || 'Impossible de créer la facture')
   } finally {
@@ -392,7 +422,7 @@ function downloadPdf() {
 
 async function loadQuotes(force = false) {
   loadError.value = ''
-  try { await Promise.all([store.ensureLoaded(force), clients.ensureLoaded(force), projects.ensureLoaded(force)]) }
+  try { await Promise.all([store.ensureLoaded(force), clients.ensureLoaded(force), projects.ensureLoaded(force), invoices.ensureLoaded(force)]) }
   catch { loadError.value = 'Les devis ne peuvent pas être chargés. Réessaie dans quelques instants.' }
 }
 
@@ -401,11 +431,11 @@ onMounted(async () => {
   if (route.query.new === '1') {
     await openNew()
     const id = Number(route.query.clientId || 0)
-    if (id) form.clientId = id
+    if (clients.clients.some(client => client.id === id)) form.clientId = id
     const projectId = Number(route.query.projectId || 0)
-    if (projectId) {
+    const project = projects.projects.find(item => item.id === projectId)
+    if (project) {
       form.projectId = projectId
-      const project = projects.projects.find(item => item.id === projectId)
       if (project?.clientId) form.clientId = project.clientId
     }
   }
@@ -437,6 +467,13 @@ onMounted(async () => {
           <button class="inline-flex min-h-11 items-center justify-center rounded-lg bg-gradient-brand px-4 text-sm font-semibold text-white shadow-glow-sm transition hover:opacity-90" @click="openNew">Nouveau devis</button>
         </div>
       </div>
+    </section>
+    <AdminCommercialJourney current="quote" :client-id="journeyClientId" :quote-id="journeyQuoteId" :invoice-id="journeyInvoiceId" />
+    <section v-if="workflowNotice" role="status" aria-live="polite" class="flex flex-col gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-950 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-100 sm:flex-row sm:items-center sm:justify-between">
+      <p class="text-sm font-medium">{{ workflowNotice.message }}</p>
+      <button v-if="workflowNotice.nextAction === 'send' && selectedQuote?.id === workflowNotice.quoteId" type="button" class="min-h-11 shrink-0 rounded-lg bg-emerald-800 px-4 text-sm font-semibold text-white disabled:opacity-60 dark:bg-emerald-300 dark:text-emerald-950" :disabled="Boolean(runningAction)" @click="sendQuoteEmail(selectedQuote)">Envoyer le devis</button>
+      <button v-else-if="workflowNotice.nextAction === 'convert' && selectedQuote?.id === workflowNotice.quoteId" type="button" class="min-h-11 shrink-0 rounded-lg bg-emerald-800 px-4 text-sm font-semibold text-white disabled:opacity-60 dark:bg-emerald-300 dark:text-emerald-950" :disabled="Boolean(runningAction)" @click="convertToInvoice(selectedQuote)">Créer la facture</button>
+      <NuxtLink v-else to="/admin/crm" class="inline-flex min-h-11 shrink-0 items-center justify-center rounded-lg bg-emerald-800 px-4 text-sm font-semibold text-white dark:bg-emerald-300 dark:text-emerald-950">Voir le pipeline</NuxtLink>
     </section>
     <AdminViewSkeleton v-if="store.loading && !store.loaded" label="Chargement des devis" />
     <div v-else-if="loadError" role="alert" class="rounded-xl border border-red-200 bg-red-50 p-5 text-red-900 dark:border-red-400/20 dark:bg-red-400/10 dark:text-red-100"><p class="font-semibold">Les devis sont indisponibles</p><p class="mt-1 text-sm">{{ loadError }}</p><button type="button" class="mt-4 min-h-11 rounded-lg bg-red-700 px-4 text-sm font-semibold text-white" @click="loadQuotes(true)">Réessayer</button></div>
@@ -511,7 +548,11 @@ onMounted(async () => {
               :key="q.id"
               class="border-b border-gray-50 dark:border-white/[0.03] cursor-pointer"
               :class="selectedId === q.id ? 'bg-violet-50/60 dark:bg-violet-500/10' : ''"
+              tabindex="0"
+              :aria-selected="selectedId === q.id"
               @click="selectedId = q.id"
+              @keydown.enter.prevent="selectedId = q.id"
+              @keydown.space.prevent="selectedId = q.id"
             >
               <td class="px-4 py-3 text-sm">{{ q.number }}</td>
               <td class="px-4 py-3 text-sm">{{ q.clientId ? clientsById.get(q.clientId)?.name || '-' : '-' }}</td>
@@ -543,7 +584,7 @@ onMounted(async () => {
           </div>
           <div class="mt-4 space-y-2">
             <button v-if="selectedQuote.status === 'draft' || selectedQuote.status === 'sent'" class="min-h-11 w-full rounded-lg bg-violet-600 px-3 text-sm font-semibold text-white disabled:opacity-50" :disabled="runningAction === `send-${selectedQuote.id}`" @click="sendQuoteEmail(selectedQuote)">{{ runningAction === `send-${selectedQuote.id}` ? 'Envoi…' : selectedQuote.status === 'draft' ? 'Envoyer le devis avec son PDF' : 'Renvoyer le devis avec son PDF' }}</button>
-            <button v-if="selectedQuote.status === 'accepted'" class="min-h-11 w-full rounded-lg bg-violet-600 px-3 text-sm font-semibold text-white disabled:opacity-50" :disabled="runningAction === `convert-${selectedQuote.id}`" @click="convertToInvoice(selectedQuote)">{{ runningAction === `convert-${selectedQuote.id}` ? 'Création…' : 'Créer la facture' }}</button>
+            <button v-if="selectedQuote.status === 'sent' || selectedQuote.status === 'accepted'" class="min-h-11 w-full rounded-lg bg-violet-600 px-3 text-sm font-semibold text-white disabled:opacity-50" :disabled="runningAction === `convert-${selectedQuote.id}`" @click="convertToInvoice(selectedQuote)">{{ runningAction === `convert-${selectedQuote.id}` ? 'Création…' : selectedQuote.status === 'accepted' ? 'Créer la facture' : 'Accepter et créer la facture' }}</button>
             <button v-if="selectedQuote.status === 'sent'" class="min-h-11 w-full rounded-lg border border-emerald-300/60 px-3 text-sm font-semibold text-emerald-700 dark:text-emerald-300" @click="markQuoteEvent(selectedQuote, 'signed_at')">Confirmer une signature externe</button>
             <details class="rounded-lg border border-gray-200 dark:border-white/[0.12]">
               <summary class="cursor-pointer px-3 py-3 text-xs font-semibold text-gray-700 dark:text-gray-200">Plus d’actions</summary>

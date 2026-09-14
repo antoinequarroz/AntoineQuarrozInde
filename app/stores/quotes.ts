@@ -93,12 +93,16 @@ export const useQuotesStore = defineStore('quotes', () => {
   }
   async function add(payload: Omit<Quote, 'id' | 'createdAt'>) {
     const row = await $fetch<QuoteRow>('/api/quotes', { method: 'POST', body: payload, headers: auth.authHeader() })
-    quotes.value.unshift(mapQuote(row))
+    const quote = mapQuote(row)
+    quotes.value.unshift(quote)
+    return quote
   }
   async function update(id: number, payload: Partial<Quote>) {
     const row = await $fetch<QuoteRow>('/api/quotes', { method: 'PUT', body: { ...payload, id }, headers: auth.authHeader() })
+    const quote = mapQuote(row)
     const idx = quotes.value.findIndex(q => q.id === id)
-    if (idx !== -1) quotes.value[idx] = mapQuote(row)
+    if (idx !== -1) quotes.value[idx] = quote
+    return quote
   }
   async function remove(id: number) {
     await $fetch('/api/quotes', { method: 'DELETE', query: { id }, headers: auth.authHeader() })

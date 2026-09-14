@@ -1,11 +1,15 @@
 import { normalizeInvoicePayment } from '../../utils/invoicePayments'
 import { recordInvoicePayment } from '../../utils/recordInvoicePayment'
+import { createHash } from 'node:crypto'
 
 export default defineEventHandler(async (event) => {
   const { org, user } = await requireAdmin(event)
   const body = await readBody(event)
   const invoiceId = Number(body.invoiceId)
   if (!invoiceId) throw createError({ statusCode: 400, message: 'Facture invalide.' })
+  if (body.confirmation !== 'ENREGISTRER_PAIEMENT') throw createError({ statusCode: 400, message: 'Confirme explicitement l’enregistrement du paiement.' })
+  const idempotencyKey = String(body.idempotencyKey || '')
+  if (!/^[A-Za-z0-9_-]{16,100}$/.test(idempotencyKey)) throw createError({ statusCode: 400, message: 'Clé de soumission du paiement invalide.' })
 
   let payment
   try {
@@ -15,5 +19,6 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: error instanceof Error ? error.message : 'Paiement invalide.' })
   }
 
-  return recordInvoicePayment({ organizationId: org.id, actorUserId: user?.id, invoiceId, payment })
+  const fingerprint = createHash('sha256').update(`manual:${org.id}:${invoiceId}:${idempotencyKey}`).digest('hex')
+  return recordInvoicePayment({ organizationId: org.id, actorUserId: user?.id, invoiceId, payment, bankImportFingerprint: fingerprint, source: 'manual' })
 })

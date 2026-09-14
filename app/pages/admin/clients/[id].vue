@@ -47,6 +47,9 @@ const clientWorkflow = computed(() => client.value
 const pipelineIndex = computed(() => clientWorkflow.value?.stageIndex ?? 0)
 const pipelineStages = computed(() => CLIENT_WORKFLOW_STAGES.map((stage, index) => ({ ...stage, done: index < pipelineIndex.value })))
 const nextAction = computed(() => clientWorkflow.value ? { label: clientWorkflow.value.action, to: clientWorkflow.value.to } : null)
+const journeyInvoice = computed(() => clientInvoices.value.find(invoice => invoice.documentType === 'invoice') ?? null)
+const journeyQuoteId = computed(() => journeyInvoice.value?.quoteId ?? clientQuotes.value.at(0)?.id ?? null)
+const journeyInvoiceId = computed(() => journeyInvoice.value?.id ?? null)
 const nextDeadline = computed(() => {
   const values = [
     ...clientTasks.value.filter(task => task.status !== 'done' && task.dueDate).map(task => ({ date: task.dueDate!, label: task.title })),
@@ -158,11 +161,17 @@ onMounted(async () => {
           <span v-if="client.acquisitionCampaign" class="text-gray-600 dark:text-gray-300">· {{ client.acquisitionCampaign }}</span>
         </div>
       </div>
-      <div class="grid grid-cols-1 sm:flex items-stretch sm:items-center gap-2 w-full sm:w-auto">
-        <NuxtLink :to="`/admin/quotes?new=1&clientId=${client.id}`" class="px-3 py-2 rounded-lg bg-violet-600 text-white text-xs font-semibold text-center">Nouveau devis</NuxtLink>
-        <NuxtLink :to="`/admin/tasks?new=1&clientId=${client.id}`" class="inline-flex min-h-11 items-center justify-center rounded-lg border border-violet-200 px-3 py-2 text-center text-xs font-semibold text-violet-700 dark:border-violet-500/30 dark:text-violet-200">Nouvelle tâche</NuxtLink>
-        <NuxtLink :to="`/admin/invoices?new=1&clientId=${client.id}`" class="inline-flex min-h-11 items-center justify-center rounded-lg bg-sky-700 px-3 py-2 text-center text-xs font-semibold text-white">Nouvelle facture</NuxtLink>
-        <NuxtLink :to="`/admin/appointments?new=1&clientId=${client.id}`" class="inline-flex min-h-11 items-center justify-center rounded-lg bg-emerald-700 px-3 py-2 text-center text-xs font-semibold text-white">Nouveau RDV</NuxtLink>
+      <div class="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:items-end">
+        <NuxtLink v-if="nextAction" :to="nextAction.to" class="inline-flex min-h-11 items-center justify-center rounded-lg bg-violet-600 px-4 text-sm font-semibold text-white">{{ nextAction.label }}</NuxtLink>
+        <details class="relative">
+          <summary class="flex min-h-11 cursor-pointer list-none items-center justify-center rounded-lg border border-gray-200 px-3 text-xs font-semibold text-gray-700 dark:border-white/[0.12] dark:text-gray-200">Plus d’actions</summary>
+          <div class="mt-2 grid min-w-52 gap-1 rounded-xl border border-gray-200 bg-white p-2 shadow-lg dark:border-white/[0.12] dark:bg-[#111118] sm:absolute sm:right-0 sm:z-20">
+            <NuxtLink :to="`/admin/quotes?new=1&clientId=${client.id}`" class="inline-flex min-h-11 items-center rounded-lg px-3 text-xs font-semibold hover:bg-gray-50 dark:hover:bg-white/[0.05]">Nouveau devis</NuxtLink>
+            <NuxtLink :to="`/admin/tasks?new=1&clientId=${client.id}`" class="inline-flex min-h-11 items-center rounded-lg px-3 text-xs font-semibold hover:bg-gray-50 dark:hover:bg-white/[0.05]">Nouvelle tâche</NuxtLink>
+            <NuxtLink :to="`/admin/invoices?new=1&clientId=${client.id}`" class="inline-flex min-h-11 items-center rounded-lg px-3 text-xs font-semibold hover:bg-gray-50 dark:hover:bg-white/[0.05]">Nouvelle facture exceptionnelle</NuxtLink>
+            <NuxtLink :to="`/admin/appointments?new=1&clientId=${client.id}`" class="inline-flex min-h-11 items-center rounded-lg px-3 text-xs font-semibold hover:bg-gray-50 dark:hover:bg-white/[0.05]">Nouveau rendez-vous</NuxtLink>
+          </div>
+        </details>
       </div>
     </div>
 
@@ -171,6 +180,7 @@ onMounted(async () => {
     </div>
 
     <template v-if="!loading && !loadError && client">
+      <AdminCommercialJourney current="crm" :client-id="client.id" :quote-id="journeyQuoteId" :invoice-id="journeyInvoiceId" />
       <section class="rounded-xl border border-gray-100 bg-white p-4 dark:border-white/10 dark:bg-[#111118]">
         <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
           <div class="min-w-0 flex-1">
