@@ -85,7 +85,9 @@ export async function loginAdmin(page: Page) {
 
   if (new URL(page.url()).pathname === '/admin/security') {
     const challengeCode = page.getByLabel('Code à six chiffres')
-    await expect(challengeCode).toBeVisible()
+    // Factor discovery calls Supabase after the page transition and can exceed
+    // Playwright's 5 s assertion default on a cold production connection.
+    await expect(challengeCode).toBeVisible({ timeout: 20_000 })
     if (!adminTotpSecret) {
       throw new Error('This admin account requires MFA. Configure E2E_ADMIN_TOTP_SECRET with its Base32 TOTP secret.')
     }
