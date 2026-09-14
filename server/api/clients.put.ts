@@ -6,6 +6,13 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event)
   const id = Number(body.id)
   if (!id) throw createError({ statusCode: 400, message: 'Missing client id' })
+  const validStatuses = ['lead', 'active', 'inactive'] as const
+  if (Object.hasOwn(body, 'status') && !validStatuses.includes(body.status)) {
+    throw createError({ statusCode: 400, message: 'Invalid client status' })
+  }
+  if (Object.hasOwn(body, 'expectedStatus') && !validStatuses.includes(body.expectedStatus)) {
+    throw createError({ statusCode: 400, message: 'Invalid expected client status' })
+  }
 
   const supabase = getSupabaseAdmin()
   const { data: existing, error: existingError } = await supabase
@@ -51,15 +58,21 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'Name and email are required' })
   }
 
-  const { data, error } = await supabase
+  let updateQuery = supabase
     .from('clients')
     .update(payload)
     .eq('organization_id', org.id)
     .eq('id', id)
-    .select('*')
-    .single()
+  if (Object.hasOwn(body, 'expectedStatus')) updateQuery = updateQuery.eq('status', body.expectedStatus)
+  if (Object.hasOwn(body, 'expectedNextFollowUpAt')) {
+    updateQuery = body.expectedNextFollowUpAt === null
+      ? updateQuery.is('next_follow_up_at', null)
+      : updateQuery.eq('next_follow_up_at', body.expectedNextFollowUpAt)
+  }
+  const { data, error } = await updateQuery.select('*').maybeSingle()
 
   if (error) throw createError({ statusCode: 500, message: error.message })
+  if (!data) throw createError({ statusCode: 409, message: 'Client changed in another session' })
   await logAudit({
     organizationId: org.id,
     actorUserId: user?.id,

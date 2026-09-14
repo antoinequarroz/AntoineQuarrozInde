@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { toasts, runAction } = useToast()
+const { toasts, dismiss, runAction } = useToast()
 </script>
 
 <template>
@@ -31,6 +31,7 @@ const { toasts, runAction } = useToast()
           </div>
           <span class="flex-1">{{ toast.message }}</span>
           <button v-if="toast.actionLabel" type="button" class="pointer-events-auto min-h-10 rounded-lg px-2 text-xs font-bold underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current" @click="runAction(toast)">{{ toast.actionLabel }}</button>
+          <button type="button" class="pointer-events-auto grid h-10 w-10 shrink-0 place-items-center rounded-lg text-current opacity-70 hover:bg-current/10 hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current" :aria-label="`Fermer la notification : ${toast.message}`" @click="dismiss(toast.id)">×</button>
         </div>
       </TransitionGroup>
     </div>

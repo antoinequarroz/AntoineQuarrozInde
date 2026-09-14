@@ -24,7 +24,7 @@ test('authenticated admin can reach CRM, quotes and invoices', async ({ page }) 
   await selectSandboxOrganization(page)
 
   await page.goto('/admin/crm')
-  await expect(page.getByRole('heading', { name: /carnet d.adresses/i })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'CRM clients', exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Pipeline' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Actions du jour' })).toBeVisible()
   await expect(page.getByRole('link', { name: 'Relances Lumail' })).toHaveAttribute('href', '/admin#relances-clients')

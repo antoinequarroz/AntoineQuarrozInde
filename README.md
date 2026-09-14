@@ -1,41 +1,22 @@
-# Nuxt Minimal Starter
+# Antoine Quarroz — site et administration
 
 Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
 
 ## Setup
 
-Make sure to install dependencies:
+Le projet utilise exclusivement npm, comme la CI et la production. Le mode
+`legacy-peer-deps` est configuré dans `.npmrc` pour respecter le lockfile actuel.
 
 ```bash
-# npm
-npm install
-
-# pnpm
-pnpm install
-
-# yarn
-yarn install
-
-# bun
-bun install
+npm ci
 ```
 
 ## Development Server
 
-Start the development server on `http://localhost:3000`:
+Le serveur local persistant est géré avec Portly :
 
 ```bash
-# npm
-npm run dev
-
-# pnpm
-pnpm dev
-
-# yarn
-yarn dev
-
-# bun
-bun run dev
+portly start AntoineQuarrozInde/web
 ```
 
 ## Production
@@ -43,33 +24,14 @@ bun run dev
 Build the application for production:
 
 ```bash
-# npm
 npm run build
-
-# pnpm
-pnpm build
-
-# yarn
-yarn build
-
-# bun
-bun run build
 ```
 
 Locally preview production build:
 
 ```bash
-# npm
 npm run preview
-
-# pnpm
-pnpm preview
-
-# yarn
-yarn preview
-
-# bun
-bun run preview
 ```
 
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+Les procédures de livraison et de rollback sont documentées dans
+[`docs/operations.md`](docs/operations.md).

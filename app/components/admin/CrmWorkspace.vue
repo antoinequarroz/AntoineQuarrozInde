@@ -1,0 +1,1200 @@
+<script setup lang="ts">
+import type { Client } from '~/types'
+import AdminAdminIcon from '~/components/admin/AdminIcon.vue'
+import AdminAdminEmptyState from '~/components/admin/AdminEmptyState.vue'
+import AdminViewSkeleton from '~/components/admin/AdminViewSkeleton.vue'
+import { isCommercialActionVisible, type CommercialActionState, type CommercialActionStatus } from '~/utils/commercialActionState'
+import { buildCommercialTaskSuggestions, summarizeCommercialFollowUps, type CommercialTaskSuggestion } from '~/utils/commercialTaskPlan'
+import { extractLeadScore, PIPELINE_PREVIEW_LIMIT, sortCrmProspects, visiblePipelineItems, type CrmProspectSort } from '~/utils/crmClientPresentation'
+import { CLIENT_WORKFLOW_STAGES, resolveClientWorkflow } from '~/utils/clientWorkflow'
+
+const store = useClientsStore()
+const projectsStore = useProjectsStore()
+const quotesStore = useQuotesStore()
+const invoicesStore = useInvoicesStore()
+const tasksStore = useTasksStore()
+const auth = useAuthStore()
+const toast = useToast()
+
+function safeRows<T>(value: T[] | null | undefined): T[] {
+  return Array.isArray(value) ? value : []
+}
+
+// Pinia restores each store independently during client hydration. Keeping the
+// CRM projections tolerant of that brief transition prevents a render crash.
+const clientRows = computed(() => safeRows(store.clients))
+const projectRows = computed(() => safeRows(projectsStore.projects))
+const quoteRows = computed(() => safeRows(quotesStore.quotes))
+const invoiceRows = computed(() => safeRows(invoicesStore.invoices))
+const taskRows = computed(() => safeRows(tasksStore.tasks))
+
+const tab = ref<'pipeline' | 'contacts' | 'prospects'>('pipeline')
+const search = ref('')
+const viewMode = ref<'cards' | 'table'>('cards')
+const statusFilter = ref<'all' | Client['status']>('all')
+const sortBy = ref<'recent' | 'name'>('recent')
+const prospectSortBy = ref<CrmProspectSort>('priority')
+const prospectPage = ref(1)
+const PROSPECT_PAGE_SIZE = 12
+const changingClientStatusId = ref<number | null>(null)
+const expandedPipelineColumns = ref<Record<string, boolean>>({})
+const loading = ref(true)
+const loadError = ref('')
+const commercialActionStates = ref<Record<string, CommercialActionState>>({})
+const commercialActionStatesStatus = ref<'loading' | 'ready' | 'error'>('loading')
+const updatingCommercialActionKey = ref<string | null>(null)
+const commercialActionFeedback = ref('')
+const undoCommercialActionButton = ref<HTMLButtonElement | null>(null)
+const lastUndoableCommercialAction = ref<{
+  action: CommercialTaskSuggestion
+  message: string
+} | null>(null)
+
+type ReminderCandidate = {
+  reminderKey: string
+  targetType: 'lead' | 'quote' | 'invoice'
+  targetId: number
+  clientId: number
+  clientName: string
+  email: string
+  subject: string
+  bodyText: string
+  number: string
+  dueDate: string
+  milestone: string
+  urgency: 'upcoming' | 'due' | 'overdue'
+  balanceCents?: number
+  currency?: string
+}
+
+type ReminderPreview = {
+  automationEnabled: boolean
+  generatedAt: string
+  candidates: ReminderCandidate[]
+  skipped: { alreadySent: number, missingContact: number, outsideMilestone: number, paused: number }
+}
+
+const showReminderConfirm = ref(false)
+const reminderDialogStatus = ref<'idle' | 'loading' | 'ready' | 'error'>('idle')
+const reminderDialogError = ref('')
+const selectedReminderAction = ref<CommercialTaskSuggestion | null>(null)
+const selectedReminderCandidate = ref<ReminderCandidate | null>(null)
+const sendingReminder = ref(false)
+let reminderPreviewRequestVersion = 0
+const closeReminderConfirm = () => {
+  if (sendingReminder.value) return
+  reminderPreviewRequestVersion++
+  showReminderConfirm.value = false
+  reminderDialogStatus.value = 'idle'
+}
+const { dialogRef: reminderDialogRef, handleDialogKeydown: handleReminderDialogKeydown } = useAccessibleDialog(showReminderConfirm, closeReminderConfirm, '[data-reminder-cancel]')
+
+const showFollowUpPlanner = ref(false)
+const followUpPlannerAction = ref<CommercialTaskSuggestion | null>(null)
+const followUpPlannerDate = ref('')
+const followUpPlannerNote = ref('')
+const followUpPlannerError = ref('')
+const savingFollowUpPlan = ref(false)
+const closeFollowUpPlanner = () => {
+  if (savingFollowUpPlan.value) return
+  showFollowUpPlanner.value = false
+  followUpPlannerError.value = ''
+}
+const { dialogRef: followUpPlannerDialogRef, handleDialogKeydown: handleFollowUpPlannerKeydown } = useAccessibleDialog(showFollowUpPlanner, closeFollowUpPlanner, '[data-follow-up-date]')
+
+const AVATAR_TONES = [
+  'bg-violet-500',
+  'bg-fuchsia-500',
+  'bg-cyan-500',
+  'bg-emerald-500',
+  'bg-amber-500',
+  'bg-rose-500',
+  'bg-sky-500',
+  'bg-indigo-500',
+]
+
+function avatarTone(name: string) {
+  let hash = 0
+  for (let i = 0; i < name.length; i++) hash = (hash + name.charCodeAt(i)) % AVATAR_TONES.length
+  return AVATAR_TONES[hash]
+}
+
+function initials(name: string) {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(part => part[0]?.toUpperCase())
+    .join('') || '?'
+}
+
+const STATUS_TONE: Record<Client['status'], string> = {
+  lead: 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300',
+  active: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300',
+  inactive: 'bg-gray-100 text-gray-500 dark:bg-white/[0.06] dark:text-gray-400',
+}
+
+const STATUS_LABEL: Record<Client['status'], string> = {
+  lead: 'Prospect',
+  active: 'Client actif',
+  inactive: 'Inactif',
+}
+
+const searchedContacts = computed(() => {
+  const q = search.value.trim().toLowerCase()
+  const list = clientRows.value
+  if (!q) return list
+  return list.filter(client =>
+    client.name.toLowerCase().includes(q)
+    || (client.company || '').toLowerCase().includes(q)
+    || client.email.toLowerCase().includes(q),
+  )
+})
+
+function sortClients(list: Client[]) {
+  const sorted = list.slice()
+  if (sortBy.value === 'name') {
+    sorted.sort((a, b) => a.name.localeCompare(b.name))
+  } else {
+    sorted.sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+  }
+  return sorted
+}
+
+const filteredContacts = computed(() => {
+  const byStatus = statusFilter.value === 'all'
+    ? searchedContacts.value
+    : searchedContacts.value.filter(client => client.status === statusFilter.value)
+  return sortClients(byStatus)
+})
+
+function leadScore(client: Client): number | null {
+  return extractLeadScore(client.notes)
+}
+
+function leadPlace(client: Client): string | null {
+  const match = client.notes?.match(/\s[aà]\s+([A-ZÀ-Þ][^,]*?),/)
+  return match?.[1] ? match[1].trim() : null
+}
+
+function scorePriority(score: number | null) {
+  if (score === null) return { label: 'À évaluer', chip: 'bg-gray-100 text-gray-600 dark:bg-white/[0.06] dark:text-gray-300' }
+  if (score >= 80) return { label: `À contacter · ${score}`, chip: 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300' }
+  if (score >= 60) return { label: `À relancer · ${score}`, chip: 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300' }
+  if (score >= 40) return { label: `À qualifier · ${score}`, chip: 'bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300' }
+  return { label: `Faible priorité · ${score}`, chip: 'bg-gray-100 text-gray-600 dark:bg-white/[0.06] dark:text-gray-300' }
+}
+
+const todayIso = computed(() => new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Europe/Zurich',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+}).format(new Date()))
+
+const prospects = computed(() => sortCrmProspects(searchedContacts.value, prospectSortBy.value, todayIso.value))
+const prospectPageCount = computed(() => Math.max(1, Math.ceil(prospects.value.length / PROSPECT_PAGE_SIZE)))
+const displayedProspects = computed(() => {
+  const start = (prospectPage.value - 1) * PROSPECT_PAGE_SIZE
+  return prospects.value.slice(start, start + PROSPECT_PAGE_SIZE)
+})
+const prospectRangeStart = computed(() => prospects.value.length ? (prospectPage.value - 1) * PROSPECT_PAGE_SIZE + 1 : 0)
+const prospectRangeEnd = computed(() => Math.min(prospectPage.value * PROSPECT_PAGE_SIZE, prospects.value.length))
+
+watch([search, prospectSortBy], () => { prospectPage.value = 1 })
+watch(prospectPageCount, count => { prospectPage.value = Math.min(prospectPage.value, count) })
+
+const contactCount = computed(() => clientRows.value.length)
+const leadCount = computed(() => clientRows.value.filter(client => client.status === 'lead').length)
+const activeClientCount = computed(() => clientRows.value.filter(client => client.status === 'active').length)
+const conversionRate = computed(() => contactCount.value
+  ? Math.round((activeClientCount.value / contactCount.value) * 100)
+  : 0)
+
+const followUpMetrics = computed(() => summarizeCommercialFollowUps({
+  today: todayIso.value,
+  clients: clientRows.value,
+}))
+const followUpsToday = computed(() => followUpMetrics.value.today)
+const overdueFollowUps = computed(() => followUpMetrics.value.overdue)
+const scheduledFollowUps = computed(() => followUpMetrics.value.scheduled)
+
+const rawActionsToday = computed(() => buildCommercialTaskSuggestions({
+  today: todayIso.value,
+  clients: clientRows.value,
+  quotes: quoteRows.value,
+  invoices: invoiceRows.value,
+  existingTaskTitles: taskRows.value.map(task => task.title),
+}))
+
+const actionsToday = computed<CommercialTaskSuggestion[]>(() => {
+  const suggestions = safeRows(rawActionsToday.value)
+  return commercialActionStatesStatus.value === 'ready'
+    ? suggestions.filter(action => isCommercialActionVisible(action.key, commercialActionStates.value, todayIso.value))
+    : suggestions
+})
+
+const visibleActionsToday = computed<CommercialTaskSuggestion[]>(() => actionsToday.value.slice(0, 4))
+const urgentActionCount = computed(() => actionsToday.value.filter(action => action.priority === 'high').length)
+const commercialSnoozeOptions = computed(() => [
+  { label: 'Demain', date: addDaysToIsoDate(todayIso.value, 1) },
+  { label: 'Dans 3 jours', date: addDaysToIsoDate(todayIso.value, 3) },
+  { label: 'Dans 7 jours', date: addDaysToIsoDate(todayIso.value, 7) },
+])
+
+function addDaysToIsoDate(isoDate: string, days: number) {
+  const [year, month, day] = isoDate.split('-').map(Number)
+  const date = new Date(Date.UTC(year || 1970, (month || 1) - 1, day || 1))
+  date.setUTCDate(date.getUTCDate() + days)
+  return date.toISOString().slice(0, 10)
+}
+
+function readableError(error: unknown) {
+  const value = error as { data?: { message?: string }, message?: string }
+  return value?.data?.message || value?.message || 'L’action n’a pas pu être enregistrée. Réessaie dans quelques instants.'
+}
+
+function actionIcon(action: CommercialTaskSuggestion) {
+  if (action.kind === 'invoice') return 'receipt'
+  if (action.kind === 'quote') return 'file-text'
+  return 'users'
+}
+
+function actionName(action: CommercialTaskSuggestion) {
+  if (action.kind === 'lead') return clientRows.value.find(client => client.id === action.clientId)?.name || `Prospect #${action.sourceId}`
+  if (action.kind === 'quote') return quoteRows.value.find(quote => quote.id === action.sourceId)?.number || `Devis #${action.sourceId}`
+  return invoiceRows.value.find(invoice => invoice.id === action.sourceId)?.number || `Facture #${action.sourceId}`
+}
+
+function actionTone(action: CommercialTaskSuggestion) {
+  if (action.priority === 'high') return 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300'
+  if (action.kind === 'quote') return 'bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300'
+  return 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'
+}
+
+function openFollowUpPlanner(action: CommercialTaskSuggestion) {
+  if (action.kind !== 'lead') return
+  const client = clientRows.value.find(item => item.id === action.clientId)
+  if (!client) return
+  followUpPlannerAction.value = action
+  followUpPlannerDate.value = client.nextFollowUpAt || addDaysToIsoDate(todayIso.value, 1)
+  followUpPlannerNote.value = client.followUpNote || ''
+  followUpPlannerError.value = ''
+  showFollowUpPlanner.value = true
+}
+
+async function saveFollowUpPlan() {
+  const action = followUpPlannerAction.value
+  if (!action?.clientId || savingFollowUpPlan.value) return
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(followUpPlannerDate.value)) {
+    followUpPlannerError.value = 'Choisis une date de relance valide.'
+    return
+  }
+  savingFollowUpPlan.value = true
+  followUpPlannerError.value = ''
+  try {
+    await store.update(action.clientId, {
+      nextFollowUpAt: followUpPlannerDate.value,
+      followUpNote: followUpPlannerNote.value.trim() || null,
+    })
+    toast.success(`${actionName(action)} sera relancé le ${new Date(`${followUpPlannerDate.value}T12:00:00`).toLocaleDateString('fr-CH')}`)
+    showFollowUpPlanner.value = false
+  }
+  catch (error) {
+    followUpPlannerError.value = readableError(error)
+  }
+  finally {
+    savingFollowUpPlan.value = false
+  }
+}
+
+async function persistCommercialAction(action: CommercialTaskSuggestion, status: CommercialActionStatus, snoozedUntil: string | null = null) {
+  const state = await $fetch<CommercialActionState>('/api/admin/commercial-actions', {
+    method: 'POST',
+    headers: auth.authHeader(),
+    body: {
+      actionKey: action.key,
+      status,
+      snoozedUntil,
+      targetPath: action.to,
+    },
+  })
+  const nextStates = { ...commercialActionStates.value, [action.key]: state }
+  if (state.aliasActionKey) nextStates[state.aliasActionKey] = { ...state, actionKey: state.aliasActionKey }
+  commercialActionStates.value = nextStates
+  commercialActionStatesStatus.value = 'ready'
+  if (action.kind === 'lead' && action.clientId && action.key.includes('_')) {
+    const client = clientRows.value.find(item => item.id === action.clientId)
+    if (client) {
+      client.nextFollowUpAt = status === 'snoozed' ? snoozedUntil : status === 'restored' ? action.dueDate : null
+      if (status === 'handled') client.lastContactedAt = state.nextLastContactedAt || new Date().toISOString()
+      if (status === 'restored') client.lastContactedAt = state.nextLastContactedAt || null
+    }
+  }
+}
+
+async function updateCommercialAction(action: CommercialTaskSuggestion, status: CommercialActionStatus, snoozedUntil: string | null = null) {
+  if (updatingCommercialActionKey.value || commercialActionStatesStatus.value !== 'ready') return
+  updatingCommercialActionKey.value = action.key
+  commercialActionFeedback.value = ''
+  let shouldFocusUndo = false
+  try {
+    await persistCommercialAction(action, status, snoozedUntil)
+    const message = status === 'handled'
+      ? `${actionName(action)} marqué comme traité`
+      : status === 'ignored'
+        ? `${actionName(action)} retiré des actions du jour`
+        : `${actionName(action)} reporté au ${new Date(`${snoozedUntil}T12:00:00`).toLocaleDateString('fr-CH')}`
+    commercialActionFeedback.value = message
+    lastUndoableCommercialAction.value = { action, message }
+    toast.success(message)
+    shouldFocusUndo = true
+  }
+  catch (error) {
+    const message = readableError(error)
+    commercialActionFeedback.value = message
+    toast.error(message)
+  }
+  finally {
+    updatingCommercialActionKey.value = null
+  }
+  if (shouldFocusUndo) {
+    await nextTick()
+    undoCommercialActionButton.value?.focus()
+  }
+}
+
+async function undoLastCommercialAction() {
+  const decision = lastUndoableCommercialAction.value
+  if (!decision || updatingCommercialActionKey.value || commercialActionStatesStatus.value !== 'ready') return
+  const { action } = decision
+  updatingCommercialActionKey.value = action.key
+  commercialActionFeedback.value = ''
+  let shouldFocusRestoredAction = false
+  try {
+    await persistCommercialAction(action, 'restored')
+    const message = `${actionName(action)} restauré dans les actions du jour`
+    commercialActionFeedback.value = message
+    lastUndoableCommercialAction.value = null
+    toast.success(message)
+    shouldFocusRestoredAction = true
+  }
+  catch (error) {
+    const message = readableError(error)
+    commercialActionFeedback.value = message
+    toast.error(message)
+  }
+  finally {
+    updatingCommercialActionKey.value = null
+  }
+  if (shouldFocusRestoredAction) {
+    await nextTick()
+    document.querySelector<HTMLElement>(`[data-commercial-action-key="${action.key}"] a`)?.focus()
+  }
+}
+
+async function prepareReminder(action: CommercialTaskSuggestion) {
+  if (sendingReminder.value) return
+  const requestVersion = ++reminderPreviewRequestVersion
+  selectedReminderAction.value = action
+  selectedReminderCandidate.value = null
+  reminderDialogError.value = ''
+  reminderDialogStatus.value = 'loading'
+  showReminderConfirm.value = true
+
+  try {
+    const preview = await $fetch<ReminderPreview>('/api/admin/pipeline/reminders', { headers: auth.authHeader() })
+    if (requestVersion !== reminderPreviewRequestVersion || selectedReminderAction.value?.key !== action.key) return
+    const candidate = preview.candidates.find(item => item.targetType === action.kind && item.targetId === action.sourceId) || null
+    if (!candidate) {
+      reminderDialogStatus.value = 'error'
+      reminderDialogError.value = 'Aucun message ne peut être envoyé aujourd’hui pour ce dossier. Le moteur Lumail respecte les jalons et les envois déjà effectués.'
+      return
+    }
+    selectedReminderCandidate.value = candidate
+    reminderDialogStatus.value = 'ready'
+  }
+  catch (error) {
+    if (requestVersion !== reminderPreviewRequestVersion || selectedReminderAction.value?.key !== action.key) return
+    reminderDialogStatus.value = 'error'
+    reminderDialogError.value = readableError(error)
+  }
+}
+
+async function sendSelectedReminder() {
+  const action = selectedReminderAction.value
+  const candidate = selectedReminderCandidate.value
+  if (!action || !candidate || sendingReminder.value) return
+  sendingReminder.value = true
+  reminderDialogError.value = ''
+
+  try {
+    const result = await $fetch<{ sentCount: number, failedCount: number, followUpUpdateFailedCount?: number }>('/api/admin/pipeline/reminders', {
+      method: 'POST',
+      headers: auth.authHeader(),
+      body: {
+        confirmedReminders: [{
+          reminderKey: candidate.reminderKey,
+          email: candidate.email,
+          subject: candidate.subject,
+          bodyText: candidate.bodyText,
+        }],
+      },
+    })
+    if (result.sentCount !== 1 || result.failedCount) throw new Error('Lumail n’a pas confirmé l’envoi. Aucun traitement automatique n’a été appliqué.')
+    if (action.kind === 'lead' && result.followUpUpdateFailedCount) {
+      showReminderConfirm.value = false
+      toast.error('L’e-mail est parti, mais la fiche prospect a changé entre-temps. Recharge le CRM avant de poursuivre.')
+      await store.ensureLoaded(true).catch(() => undefined)
+      return
+    }
+
+    if (action.kind !== 'lead') {
+      try {
+        await persistCommercialAction(action, 'handled')
+      }
+      catch {
+        toast.error('L’e-mail est parti, mais la carte n’a pas pu être retirée. Recharge le CRM avant toute nouvelle tentative.')
+        showReminderConfirm.value = false
+        return
+      }
+    }
+
+    let followUpStateReloaded = true
+    try {
+      await store.ensureLoaded(true)
+    }
+    catch {
+      followUpStateReloaded = false
+      toast.error('L’e-mail est parti, mais le suivi client doit être rechargé pour afficher son nouvel état.')
+    }
+
+    const message = `Relance ${candidate.number} envoyée avec Lumail à ${candidate.email}`
+    commercialActionFeedback.value = message
+    toast.success(message)
+    showReminderConfirm.value = false
+    if (action.kind === 'lead' && followUpStateReloaded) {
+      await nextTick()
+      openFollowUpPlanner(action)
+    }
+  }
+  catch (error) {
+    reminderDialogError.value = readableError(error)
+  }
+  finally {
+    sendingReminder.value = false
+  }
+}
+
+const pipelineClients = computed(() => {
+  return clientRows.value.map((client) => {
+    const projects = projectRows.value.filter(project => project.clientId === client.id)
+    const quotes = quoteRows.value.filter(quote => quote.clientId === client.id)
+    const invoices = invoiceRows.value.filter(invoice => invoice.clientId === client.id)
+    const tasks = taskRows.value.filter(task => task.clientId === client.id)
+    return { client, ...resolveClientWorkflow({ client, projects, quotes, invoices, tasks }) }
+  })
+})
+
+const pipelineColumns = computed(() => CLIENT_WORKFLOW_STAGES.map(stage => ({
+  ...stage,
+  items: pipelineClients.value
+    .filter(item => item.stage === stage.id)
+    .sort((a, b) => String(a.dueDate || '9999').localeCompare(String(b.dueDate || '9999')) || a.client.name.localeCompare(b.client.name, 'fr-CH')),
+})))
+
+function pipelineItems(column: (typeof pipelineColumns.value)[number]) {
+  return visiblePipelineItems(column.items, Boolean(expandedPipelineColumns.value[column.id]))
+}
+
+function togglePipelineColumn(columnId: string) {
+  expandedPipelineColumns.value[columnId] = !expandedPipelineColumns.value[columnId]
+}
+
+function formatPipelineDate(value: string | null) {
+  if (!value) return 'Sans échéance'
+  return new Intl.DateTimeFormat('fr-CH', { day: '2-digit', month: 'short' }).format(new Date(`${value}T12:00:00`))
+}
+
+async function markStatus(client: Client, status: Client['status']) {
+  if (changingClientStatusId.value || client.status === status) return
+  const previousStatus = client.status
+  const previousFollowUpAt = client.nextFollowUpAt
+  changingClientStatusId.value = client.id
+  try {
+    await store.updateStatus(
+      client.id,
+      { status, ...(previousStatus === 'lead' ? { nextFollowUpAt: null } : {}) },
+      { status: previousStatus, nextFollowUpAt: previousFollowUpAt },
+    )
+    toast.success(`${client.name} est maintenant ${STATUS_LABEL[status].toLowerCase()}`, {
+      duration: 0,
+      actionLabel: 'Annuler',
+      onAction: async () => {
+        try {
+          changingClientStatusId.value = client.id
+          await store.updateStatus(
+            client.id,
+            { status: previousStatus, nextFollowUpAt: previousFollowUpAt },
+            { status, nextFollowUpAt: previousStatus === 'lead' ? null : client.nextFollowUpAt },
+          )
+          toast.info(`Conversion de ${client.name} annulée`)
+        }
+        catch {
+          await store.ensureLoaded(true).catch(() => undefined)
+          toast.error(`Impossible d’annuler : ${client.name} a changé dans une autre session. Le CRM a été actualisé.`)
+        }
+        finally {
+          changingClientStatusId.value = null
+        }
+      },
+    })
+  } catch {
+    toast.error('Le statut du contact n’a pas pu être mis à jour. Vérifie ta connexion puis réessaie.')
+  }
+  finally {
+    changingClientStatusId.value = null
+  }
+}
+
+async function loadCrm(force = false) {
+  loading.value = true
+  loadError.value = ''
+  commercialActionStatesStatus.value = 'loading'
+  try {
+    await Promise.all([store.ensureLoaded(force), projectsStore.ensureLoaded(force), quotesStore.ensureLoaded(force), invoicesStore.ensureLoaded(force), tasksStore.ensureLoaded(force)])
+    try {
+      commercialActionStates.value = await $fetch<Record<string, CommercialActionState>>('/api/admin/commercial-actions', { headers: auth.authHeader() })
+      commercialActionStatesStatus.value = 'ready'
+    }
+    catch {
+      commercialActionStates.value = {}
+      commercialActionStatesStatus.value = 'error'
+    }
+  }
+  catch { loadError.value = 'Le pipeline CRM ne peut pas être chargé. Réessaie dans quelques instants.' }
+  finally { loading.value = false }
+}
+
+onMounted(() => { void loadCrm() })
+</script>
+
+<template>
+  <div class="space-y-5">
+    <section class="relative overflow-hidden rounded-lg border border-gray-200 bg-white px-4 py-4 shadow-sm dark:border-white/[0.08] dark:bg-[#111118] sm:px-5">
+      <div class="pointer-events-none absolute -top-16 right-[8%] h-48 w-48 rounded-full bg-violet-500/10 blur-3xl" />
+      <div class="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div class="min-w-0">
+          <h1 class="font-display text-2xl font-semibold text-gray-950 dark:text-white sm:text-3xl">
+            CRM clients
+          </h1>
+          <p class="mt-1 max-w-2xl text-sm leading-6 text-gray-500 dark:text-gray-400">
+            Priorise les prochaines actions, puis accompagne chaque relation jusqu’au paiement.
+          </p>
+        </div>
+        <NuxtLink to="/admin/clients" class="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-lg border border-gray-200 px-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-white/[0.12] dark:text-gray-200 dark:hover:bg-white/[0.04]">
+          <AdminAdminIcon icon="users" class="h-4 w-4" />
+          Gérer les fiches clients
+        </NuxtLink>
+      </div>
+    </section>
+
+    <AdminViewSkeleton v-if="loading" variant="pipeline" label="Chargement du CRM" />
+    <div v-else-if="loadError" role="alert" class="rounded-xl border border-red-200 bg-red-50 p-5 text-red-900 dark:border-red-400/20 dark:bg-red-400/10 dark:text-red-100"><p class="font-semibold">Le CRM est indisponible</p><p class="mt-1 text-sm">{{ loadError }}</p><button type="button" class="mt-4 min-h-11 rounded-lg bg-red-700 px-4 text-sm font-semibold text-white" @click="loadCrm(true)">Réessayer</button></div>
+
+    <dl v-if="!loading && !loadError" class="grid grid-cols-2 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm dark:border-white/[0.08] dark:bg-[#111118] lg:grid-cols-4">
+      <div class="border-b border-r border-gray-100 px-4 py-3 dark:border-white/[0.06] lg:border-b-0"><dt class="text-xs font-medium text-gray-500 dark:text-gray-400">Contacts</dt><dd class="mt-1 font-display text-xl font-semibold text-gray-950 dark:text-white">{{ contactCount }}</dd></div>
+      <div class="border-b border-gray-100 px-4 py-3 dark:border-white/[0.06] lg:border-b-0 lg:border-r"><dt class="text-xs font-medium text-gray-500 dark:text-gray-400">Prospects</dt><dd class="mt-1 font-display text-xl font-semibold text-gray-950 dark:text-white">{{ leadCount }}</dd></div>
+      <div class="border-r border-gray-100 px-4 py-3 dark:border-white/[0.06]"><dt class="text-xs font-medium text-gray-500 dark:text-gray-400">Clients actifs</dt><dd class="mt-1 font-display text-xl font-semibold text-gray-950 dark:text-white">{{ activeClientCount }}</dd></div>
+      <div class="px-4 py-3"><dt class="text-xs font-medium text-gray-500 dark:text-gray-400">Conversion globale</dt><dd class="mt-1 font-display text-xl font-semibold text-gray-950 dark:text-white">{{ conversionRate }}%</dd></div>
+    </dl>
+
+    <section v-if="!loading && !loadError" aria-labelledby="actions-today-title" class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-white/[0.08] dark:bg-[#111118]">
+      <p class="sr-only" role="status" aria-live="polite">{{ commercialActionFeedback }}</p>
+      <div class="flex flex-col gap-3 border-b border-gray-100 px-4 py-3 dark:border-white/[0.06] sm:flex-row sm:items-center sm:justify-between sm:px-5">
+        <div class="min-w-0">
+          <div class="flex flex-wrap items-center gap-2">
+            <h2 id="actions-today-title" class="text-sm font-semibold text-gray-950 dark:text-white">Actions du jour</h2>
+            <span v-if="urgentActionCount" class="rounded-md bg-rose-50 px-2 py-0.5 text-xs font-semibold text-rose-700 dark:bg-rose-500/10 dark:text-rose-300">{{ urgentActionCount }} urgente{{ urgentActionCount > 1 ? 's' : '' }}</span>
+            <span v-if="commercialActionStatesStatus === 'error'" class="rounded-md bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">Suivi à vérifier</span>
+          </div>
+          <p class="mt-1 text-xs leading-5 text-gray-500 dark:text-gray-400">Prospects inactifs, devis sans réponse et factures à suivre, triés par priorité.</p>
+        </div>
+        <NuxtLink to="/admin#relances-clients" class="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-lg border border-gray-200 px-3 text-xs font-semibold text-gray-700 transition-[color,background-color,border-color,transform] duration-150 hover:border-violet-300 hover:text-violet-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 active:scale-[0.96] dark:border-white/[0.12] dark:text-gray-200 dark:hover:border-violet-500/40 dark:hover:text-violet-300">
+          <AdminAdminIcon icon="mail" class="h-4 w-4" />
+          Relances Lumail
+        </NuxtLink>
+      </div>
+
+      <dl class="grid grid-cols-3 border-b border-gray-100 bg-gray-50/70 dark:border-white/[0.06] dark:bg-white/[0.025]">
+        <div class="px-3 py-3 text-center sm:px-4">
+          <dt class="text-xs font-medium text-gray-500 dark:text-gray-400">Aujourd’hui</dt>
+          <dd class="mt-0.5 font-display text-lg font-semibold tabular-nums text-gray-950 dark:text-white">{{ followUpsToday }}</dd>
+        </div>
+        <div class="border-x border-gray-100 px-3 py-3 text-center dark:border-white/[0.06] sm:px-4">
+          <dt class="text-xs font-medium text-gray-500 dark:text-gray-400">En retard</dt>
+          <dd class="mt-0.5 font-display text-lg font-semibold tabular-nums" :class="overdueFollowUps ? 'text-rose-700 dark:text-rose-300' : 'text-gray-950 dark:text-white'">{{ overdueFollowUps }}</dd>
+        </div>
+        <div class="px-3 py-3 text-center sm:px-4">
+          <dt class="text-xs font-medium text-gray-500 dark:text-gray-400">À venir</dt>
+          <dd class="mt-0.5 font-display text-lg font-semibold tabular-nums text-gray-950 dark:text-white">{{ scheduledFollowUps }}</dd>
+        </div>
+      </dl>
+
+      <div
+        v-if="lastUndoableCommercialAction"
+        role="group"
+        aria-label="Dernière décision commerciale"
+        class="flex flex-col gap-3 border-b border-violet-100 bg-violet-50 px-4 py-3 text-sm text-violet-950 dark:border-violet-500/15 dark:bg-violet-500/10 dark:text-violet-100 sm:flex-row sm:items-center sm:justify-between sm:px-5"
+      >
+        <p class="font-medium">{{ lastUndoableCommercialAction.message }}</p>
+        <button
+          ref="undoCommercialActionButton"
+          type="button"
+          class="inline-flex min-h-11 shrink-0 items-center justify-center rounded-lg border border-violet-200 bg-white px-4 text-sm font-semibold text-violet-800 transition-[background-color,transform] duration-150 hover:bg-violet-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-50 dark:border-violet-400/25 dark:bg-violet-500/10 dark:text-violet-100 dark:hover:bg-violet-500/20"
+          :disabled="Boolean(updatingCommercialActionKey)"
+          :aria-label="`Annuler la dernière décision pour ${actionName(lastUndoableCommercialAction.action)}`"
+          @click="undoLastCommercialAction"
+        >
+          {{ updatingCommercialActionKey === lastUndoableCommercialAction.action.key ? 'Restauration…' : 'Annuler' }}
+        </button>
+      </div>
+
+      <div v-if="visibleActionsToday?.length" class="divide-y divide-gray-100 dark:divide-white/[0.06] sm:grid sm:grid-cols-2 sm:divide-x sm:divide-y-0 sm:divide-gray-100 dark:sm:divide-white/[0.06] xl:grid-cols-4">
+        <article
+          v-for="action in visibleActionsToday || []"
+          :key="action.key"
+          :data-commercial-action-key="action.key"
+          class="flex min-h-[196px] flex-col px-4 py-3 transition-colors duration-150 hover:bg-gray-50 dark:hover:bg-white/[0.03] sm:px-5"
+        >
+          <NuxtLink
+            :to="action.to"
+            class="group flex min-w-0 flex-1 items-start gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#111118]"
+          >
+            <span class="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg" :class="actionTone(action)">
+              <AdminAdminIcon :icon="actionIcon(action)" class="h-4 w-4" />
+            </span>
+            <span class="min-w-0 flex-1">
+              <span class="block truncate text-sm font-semibold text-gray-950 dark:text-white">{{ actionName(action) }}</span>
+              <span class="mt-1 inline-flex rounded-md px-2 py-0.5 text-xs font-semibold" :class="actionTone(action)">{{ action.label }}</span>
+              <span class="mt-1 block line-clamp-2 text-xs leading-5 text-gray-500 dark:text-gray-400">{{ action.reason }}</span>
+              <span class="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-violet-700 transition-colors group-hover:text-violet-800 dark:text-violet-300 dark:group-hover:text-violet-200">Ouvrir le dossier <span aria-hidden="true">›</span></span>
+            </span>
+          </NuxtLink>
+
+          <button
+            type="button"
+            class="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-gray-950 px-3 text-xs font-semibold text-white transition-[background-color,transform] duration-150 hover:bg-gray-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-gray-950 dark:hover:bg-gray-100 dark:focus-visible:ring-offset-[#111118]"
+            :disabled="reminderDialogStatus === 'loading' || Boolean(updatingCommercialActionKey)"
+            :aria-label="`Prévisualiser la relance Lumail pour ${actionName(action)}`"
+            @click="prepareReminder(action)"
+          >
+            <AdminAdminIcon icon="send" class="h-4 w-4" />
+            Préparer la relance
+          </button>
+
+          <button
+            v-if="action.kind === 'lead'"
+            type="button"
+            class="mt-2 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-violet-200 bg-violet-50 px-3 text-xs font-semibold text-violet-800 transition-[background-color,transform] duration-150 hover:bg-violet-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 active:scale-[0.96] dark:border-violet-400/20 dark:bg-violet-500/10 dark:text-violet-200 dark:hover:bg-violet-500/20"
+            :aria-label="`Planifier la prochaine relance de ${actionName(action)}`"
+            @click="openFollowUpPlanner(action)"
+          >
+            <AdminAdminIcon icon="calendar" class="h-4 w-4" />
+            Planifier la suite
+          </button>
+
+          <div class="mt-2 grid grid-cols-3 overflow-visible rounded-lg border border-gray-200 dark:border-white/[0.1]">
+            <button
+              type="button"
+              class="min-h-11 rounded-l-[7px] px-1.5 text-xs font-semibold text-emerald-700 transition-[background-color,transform] duration-150 hover:bg-emerald-50 focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-45 dark:text-emerald-300 dark:hover:bg-emerald-500/10"
+              :disabled="commercialActionStatesStatus !== 'ready' || Boolean(updatingCommercialActionKey)"
+              :aria-label="`Marquer ${actionName(action)} comme traité`"
+              @click="updateCommercialAction(action, 'handled')"
+            >
+              {{ updatingCommercialActionKey === action.key ? 'Patiente…' : 'Traité' }}
+            </button>
+            <details class="group/reporter relative border-x border-gray-200 dark:border-white/[0.1]">
+              <summary
+                class="flex min-h-11 cursor-pointer list-none items-center justify-center px-1.5 text-xs font-semibold text-gray-600 transition-colors duration-150 hover:bg-gray-100 focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:text-gray-300 dark:hover:bg-white/[0.06] [&::-webkit-details-marker]:hidden"
+                :class="commercialActionStatesStatus !== 'ready' || Boolean(updatingCommercialActionKey) ? 'pointer-events-none opacity-45' : ''"
+                :aria-disabled="commercialActionStatesStatus !== 'ready' || Boolean(updatingCommercialActionKey)"
+                @click="commercialActionStatesStatus !== 'ready' || Boolean(updatingCommercialActionKey) ? $event.preventDefault() : undefined"
+              >
+                Reporter
+              </summary>
+              <div class="absolute bottom-full left-1/2 z-20 mb-2 w-40 -translate-x-1/2 overflow-hidden rounded-lg border border-gray-200 bg-white p-1 shadow-xl dark:border-white/[0.12] dark:bg-[#181822]">
+                <button
+                  v-for="option in commercialSnoozeOptions"
+                  :key="option.date"
+                  type="button"
+                  class="flex min-h-11 w-full items-center rounded-md px-3 text-left text-xs font-semibold text-gray-700 transition-colors duration-150 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 active:scale-[0.96] dark:text-gray-200 dark:hover:bg-white/[0.06]"
+                  :aria-label="`Reporter ${actionName(action)} : ${option.label.toLowerCase()}`"
+                  @click="updateCommercialAction(action, 'snoozed', option.date)"
+                >
+                  {{ option.label }}
+                </button>
+              </div>
+            </details>
+            <button
+              type="button"
+              class="min-h-11 rounded-r-[7px] px-1.5 text-xs font-semibold text-gray-500 transition-[background-color,transform] duration-150 hover:bg-gray-100 focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-45 dark:text-gray-400 dark:hover:bg-white/[0.06]"
+              :disabled="commercialActionStatesStatus !== 'ready' || Boolean(updatingCommercialActionKey)"
+              :aria-label="`Ignorer ${actionName(action)}`"
+              @click="updateCommercialAction(action, 'ignored')"
+            >
+              Ignorer
+            </button>
+          </div>
+        </article>
+      </div>
+      <div v-else class="flex items-center gap-3 px-4 py-3 sm:px-5">
+        <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300"><AdminAdminIcon icon="check-square" class="h-4 w-4" /></span>
+        <div><p class="text-sm font-semibold text-gray-900 dark:text-white">Tout est à jour</p><p class="text-xs text-gray-500 dark:text-gray-400">Aucune action commerciale aujourd’hui.</p></div>
+      </div>
+      <div v-if="(actionsToday?.length || 0) > (visibleActionsToday?.length || 0)" class="border-t border-gray-100 px-4 py-2.5 text-center dark:border-white/[0.06] sm:px-5">
+        <NuxtLink to="/admin" class="inline-flex min-h-10 items-center text-xs font-semibold text-violet-700 hover:text-violet-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:text-violet-300 dark:hover:text-violet-200">Voir les {{ actionsToday?.length || 0 }} actions dans le cockpit</NuxtLink>
+      </div>
+    </section>
+
+    <section v-if="!loading && !loadError" class="rounded-lg border border-gray-200 bg-white p-3 shadow-sm dark:border-white/[0.08] dark:bg-[#111118] sm:p-3.5">
+      <div class="flex flex-wrap items-center gap-2.5">
+        <div role="group" aria-label="Vue du CRM" class="inline-flex w-full shrink-0 overflow-x-auto rounded-lg bg-gray-100 p-1 dark:bg-white/[0.06] sm:w-auto">
+          <button
+            class="min-h-11 rounded-md px-3 text-xs font-semibold transition"
+            :aria-pressed="tab === 'pipeline'"
+            :class="tab === 'pipeline' ? 'bg-gradient-brand text-white shadow-glow-sm' : 'text-gray-500 dark:text-gray-400'"
+            @click="tab = 'pipeline'"
+          >
+            Pipeline
+          </button>
+          <button
+            class="min-h-11 rounded-md px-3 text-xs font-semibold transition"
+            :aria-pressed="tab === 'contacts'"
+            :class="tab === 'contacts' ? 'bg-gradient-brand text-white shadow-glow-sm' : 'text-gray-500 dark:text-gray-400'"
+            @click="tab = 'contacts'"
+          >
+            Tous les contacts
+          </button>
+          <button
+            class="min-h-11 rounded-md px-3 text-xs font-semibold transition"
+            :aria-pressed="tab === 'prospects'"
+            :class="tab === 'prospects' ? 'bg-gradient-brand text-white shadow-glow-sm' : 'text-gray-500 dark:text-gray-400'"
+            @click="tab = 'prospects'"
+          >
+            Prospects ({{ leadCount }})
+          </button>
+        </div>
+
+        <div class="hidden h-6 w-px shrink-0 bg-gray-200 dark:bg-white/[0.08] sm:block" />
+
+        <label v-if="tab !== 'pipeline'" for="crm-search" class="sr-only">Rechercher un contact</label>
+        <input
+          v-if="tab !== 'pipeline'"
+          id="crm-search"
+          v-model="search"
+          type="text"
+          class="input-field min-w-[180px] flex-1 sm:max-w-xs"
+          placeholder="Rechercher nom, société, email…"
+        >
+
+        <label v-if="tab === 'contacts'" for="crm-status" class="sr-only">Filtrer par statut</label>
+        <select v-if="tab === 'contacts'" id="crm-status" v-model="statusFilter" class="input-field w-auto shrink-0">
+          <option value="all">Tous les statuts</option>
+          <option value="lead">Prospect</option>
+          <option value="active">Client actif</option>
+          <option value="inactive">Inactif</option>
+        </select>
+
+        <label v-if="tab === 'contacts'" for="crm-sort" class="sr-only">Trier les contacts</label>
+        <select v-if="tab === 'contacts'" id="crm-sort" v-model="sortBy" class="input-field w-auto shrink-0">
+          <option value="recent">Plus récents</option>
+          <option value="name">Nom (A-Z)</option>
+        </select>
+
+        <label v-if="tab === 'prospects'" for="crm-prospect-sort" class="sr-only">Trier les prospects</label>
+        <select v-if="tab === 'prospects'" id="crm-prospect-sort" v-model="prospectSortBy" class="input-field w-auto shrink-0">
+          <option value="priority">Action prioritaire</option>
+          <option value="follow_up">Prochaine relance</option>
+          <option value="recent">Plus récents</option>
+          <option value="name">Nom (A-Z)</option>
+        </select>
+
+        <div v-if="tab !== 'pipeline'" role="group" aria-label="Mode d’affichage" class="hidden shrink-0 rounded-lg border border-gray-200 p-1 dark:border-white/[0.12] sm:ml-auto sm:inline-flex">
+          <button
+            class="inline-flex min-h-11 items-center gap-1.5 rounded-md px-3 text-xs font-semibold transition"
+            :aria-pressed="viewMode === 'cards'"
+            :class="viewMode === 'cards' ? 'bg-violet-600 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'"
+            @click="viewMode = 'cards'"
+          >
+            <AdminAdminIcon icon="grid" class="h-3.5 w-3.5" />
+            Cartes
+          </button>
+          <button
+            class="inline-flex min-h-11 items-center gap-1.5 rounded-md px-3 text-xs font-semibold transition"
+            :aria-pressed="viewMode === 'table'"
+            :class="viewMode === 'table' ? 'bg-violet-600 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'"
+            @click="viewMode = 'table'"
+          >
+            <AdminAdminIcon icon="file-text" class="h-3.5 w-3.5" />
+            Tableau
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <details v-if="!loading && !loadError && tab === 'prospects'" class="rounded-lg border border-violet-200/70 bg-violet-50/60 px-3 py-2 dark:border-violet-500/20 dark:bg-violet-500/[0.08]">
+      <summary class="min-h-11 cursor-pointer py-3 text-sm font-semibold text-violet-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:text-violet-100">Comment sont classés les prospects ?</summary>
+      <div class="space-y-2 pb-3 text-sm leading-6 text-violet-800 dark:text-violet-200"><p>« Action prioritaire » place d’abord les relances en retard ou prévues aujourd’hui, puis utilise le score et la date d’ajout. Vérifie toujours la fiche avant de convertir.</p><p><strong>Raccourcis :</strong> Ctrl/⌘ K ouvre la recherche globale. Tape G puis C pour ouvrir les fiches clients.</p></div>
+    </details>
+
+    <div v-if="!loading && !loadError && tab === 'prospects'" class="flex flex-wrap items-center justify-between gap-2 text-sm">
+      <p role="status" aria-live="polite" class="text-gray-600 dark:text-gray-300">{{ prospects.length }} résultat{{ prospects.length > 1 ? 's' : '' }} sur {{ leadCount }} prospect{{ leadCount > 1 ? 's' : '' }}</p>
+      <button v-if="search" type="button" class="inline-flex min-h-11 items-center rounded-lg px-3 font-semibold text-violet-700 hover:bg-violet-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:text-violet-300 dark:hover:bg-violet-500/10" @click="search = ''">Effacer la recherche</button>
+    </div>
+
+    <section v-if="!loading && !loadError && tab === 'pipeline'" aria-labelledby="pipeline-title">
+      <div class="mb-3 flex flex-wrap items-end justify-between gap-2">
+        <div>
+          <h2 id="pipeline-title" class="font-display text-xl font-semibold text-gray-950 dark:text-white">Du premier contact au paiement</h2>
+          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Chaque fiche montre la prochaine action utile, sans dupliquer les données du client.</p>
+        </div>
+        <span class="text-xs font-medium text-gray-400">{{ pipelineClients.length }} relation{{ pipelineClients.length > 1 ? 's' : '' }}</span>
+      </div>
+      <details class="mb-3 rounded-lg border border-violet-200/70 bg-violet-50/60 px-3 py-2 dark:border-violet-500/20 dark:bg-violet-500/[0.08]">
+        <summary class="cursor-pointer text-xs font-semibold text-violet-900 dark:text-violet-100">Comment le pipeline se met-il à jour ?</summary>
+        <p class="mt-2 text-xs leading-5 text-violet-800 dark:text-violet-200">L’étape avance à partir des preuves du dossier : devis envoyé ou accepté, projet lié, facture émise puis paiement enregistré. Chaque carte ouvre directement l’élément qui demande ton attention.</p>
+      </details>
+      <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
+          <div v-for="column in pipelineColumns" :key="column.id" class="min-w-0 rounded-xl border border-gray-200 bg-gray-50/70 p-2.5 dark:border-white/[0.08] dark:bg-white/[0.025]">
+            <div class="mb-3 flex items-center justify-between gap-2 px-1">
+              <div class="flex min-w-0 items-center gap-2">
+                <span class="h-2 w-2 shrink-0 rounded-full" :class="column.tone" />
+                <h3 class="truncate text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">{{ column.label }}</h3>
+              </div>
+              <span class="rounded-md bg-white px-1.5 py-0.5 text-xs font-semibold text-gray-500 shadow-sm dark:bg-white/[0.07] dark:text-gray-300">{{ column.items.length }}</span>
+            </div>
+            <div class="space-y-2">
+              <div :id="`pipeline-column-${column.id}`" class="space-y-2">
+              <NuxtLink v-for="item in pipelineItems(column)" :key="item.client.id" :to="item.to" class="group block rounded-lg border border-gray-200 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:border-white/[0.08] dark:bg-[#111118] dark:hover:border-violet-500/40">
+                <div class="flex items-start gap-2.5">
+                  <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white" :class="avatarTone(item.client.name)">{{ initials(item.client.name) }}</span>
+                  <div class="min-w-0">
+                    <p class="truncate text-sm font-semibold text-gray-950 dark:text-white">{{ item.client.name }}</p>
+                    <p class="truncate text-xs text-gray-400">{{ item.client.company || 'Indépendant' }}</p>
+                  </div>
+                </div>
+                <p class="mt-3 line-clamp-2 text-xs font-medium text-gray-700 dark:text-gray-200">{{ item.action }}</p>
+                <p class="mt-1 text-xs" :class="item.dueDate && item.dueDate < new Date().toISOString().slice(0, 10) ? 'text-rose-600 dark:text-rose-300' : 'text-gray-400'">{{ formatPipelineDate(item.dueDate) }}</p>
+              </NuxtLink>
+              <div v-if="!column.items.length" class="rounded-lg border border-dashed border-gray-200 px-3 py-6 text-center text-xs text-gray-400 dark:border-white/[0.08]">Aucun dossier</div>
+              </div>
+              <button
+                v-if="column.items.length > PIPELINE_PREVIEW_LIMIT"
+                type="button"
+                class="inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-gray-200 bg-white px-3 text-sm font-semibold text-violet-700 transition hover:border-violet-300 hover:bg-violet-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:border-white/[0.1] dark:bg-[#111118] dark:text-violet-300 dark:hover:bg-violet-500/10"
+                :aria-expanded="Boolean(expandedPipelineColumns[column.id])"
+                :aria-controls="`pipeline-column-${column.id}`"
+                @click="togglePipelineColumn(column.id)"
+              >
+                {{ expandedPipelineColumns[column.id] ? 'Réduire la liste' : `Voir les ${column.items.length - PIPELINE_PREVIEW_LIMIT} autres` }}
+              </button>
+            </div>
+          </div>
+      </div>
+    </section>
+
+    <section v-if="!loading && !loadError && tab === 'contacts' && viewMode === 'cards'" class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      <article
+        v-for="client in filteredContacts"
+        :key="client.id"
+        class="group rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-violet-200 hover:shadow-md dark:border-white/[0.08] dark:bg-[#111118] dark:hover:border-violet-500/30"
+      >
+        <div class="flex items-start gap-3">
+          <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full font-display text-sm font-semibold text-white" :class="avatarTone(client.name)">
+            {{ initials(client.name) }}
+          </span>
+          <NuxtLink :to="`/admin/clients/${client.id}`" class="min-w-0 flex-1 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"><span class="block truncate text-sm font-semibold text-gray-950 dark:text-white">{{ client.name }}</span><span class="block truncate text-xs text-gray-400">{{ client.company || 'Indépendant' }}</span></NuxtLink>
+          <span class="shrink-0 rounded-md px-2 py-0.5 text-xs font-semibold" :class="STATUS_TONE[client.status]">
+            {{ STATUS_LABEL[client.status] }}
+          </span>
+        </div>
+        <div class="mt-3 space-y-1.5 border-t border-gray-100 pt-3 text-xs text-gray-500 dark:border-white/[0.06] dark:text-gray-400">
+          <a :href="`mailto:${client.email}`" class="flex items-center gap-1.5 hover:text-violet-600 dark:hover:text-violet-400" @click.stop>
+            <AdminAdminIcon icon="mail" class="h-3.5 w-3.5" />
+            <span class="truncate">{{ client.email }}</span>
+          </a>
+          <a v-if="client.phone" :href="`tel:${client.phone}`" class="flex items-center gap-1.5 hover:text-violet-600 dark:hover:text-violet-400" @click.stop>
+            <AdminAdminIcon icon="phone" class="h-3.5 w-3.5" />
+            <span>{{ client.phone }}</span>
+          </a>
+        </div>
+        <p v-if="client.notes" class="mt-2 line-clamp-2 text-xs text-gray-400">{{ client.notes }}</p>
+      </article>
+
+      <AdminAdminEmptyState
+        v-if="!filteredContacts.length"
+        title="Aucun contact"
+        body="Ajoute un client ou ajuste ta recherche."
+        class="sm:col-span-2 xl:col-span-3"
+      />
+    </section>
+
+    <div v-if="!loading && !loadError && tab === 'contacts' && viewMode === 'table'" class="admin-scrollbar overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm dark:border-white/[0.08] dark:bg-[#111118]">
+      <table class="w-full">
+        <caption class="sr-only">Liste de {{ filteredContacts.length }} contact{{ filteredContacts.length > 1 ? 's' : '' }}</caption>
+        <thead class="border-b border-gray-100 dark:border-white/[0.06]">
+          <tr>
+            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Nom</th>
+            <th class="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400 sm:table-cell">Société</th>
+            <th class="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400 lg:table-cell">Lieu</th>
+            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Statut</th>
+            <th class="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400 md:table-cell">Email</th>
+            <th class="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400 md:table-cell">Téléphone</th>
+            <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-400">Fiche</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="client in filteredContacts" :key="client.id" class="border-b border-gray-50 last:border-0 hover:bg-gray-50/60 dark:border-white/[0.03] dark:hover:bg-white/[0.02]">
+            <td class="px-4 py-3">
+              <div class="flex items-center gap-2.5">
+                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full font-display text-xs font-semibold text-white" :class="avatarTone(client.name)">
+                  {{ initials(client.name) }}
+                </span>
+                <span class="truncate text-sm font-medium text-gray-950 dark:text-white">{{ client.name }}</span>
+              </div>
+            </td>
+            <td class="hidden px-4 py-3 text-xs text-gray-500 dark:text-gray-400 sm:table-cell">{{ client.company || 'Indépendant' }}</td>
+            <td class="hidden px-4 py-3 text-xs text-gray-500 dark:text-gray-400 lg:table-cell">
+              <span v-if="leadPlace(client)" class="inline-flex items-center gap-1">
+                <AdminAdminIcon icon="map-pin" class="h-3.5 w-3.5 text-gray-400" />
+                {{ leadPlace(client) }}
+              </span>
+              <span v-else>—</span>
+            </td>
+            <td class="px-4 py-3">
+              <span class="rounded-md px-2 py-0.5 text-xs font-semibold" :class="STATUS_TONE[client.status]">{{ STATUS_LABEL[client.status] }}</span>
+            </td>
+            <td class="hidden px-4 py-3 text-xs text-gray-500 dark:text-gray-400 md:table-cell">
+              <a :href="`mailto:${client.email}`" class="hover:text-violet-600 dark:hover:text-violet-400">{{ client.email }}</a>
+            </td>
+            <td class="hidden px-4 py-3 text-xs text-gray-500 dark:text-gray-400 md:table-cell">
+              <a v-if="client.phone" :href="`tel:${client.phone}`" class="hover:text-violet-600 dark:hover:text-violet-400">{{ client.phone }}</a>
+              <span v-else>-</span>
+            </td>
+            <td class="px-4 py-3 text-right">
+              <NuxtLink :to="`/admin/clients/${client.id}`" class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md px-2 text-xs font-semibold text-violet-600 hover:bg-violet-50 hover:text-violet-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:text-violet-400 dark:hover:bg-violet-500/10">Voir</NuxtLink>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <AdminAdminEmptyState
+        v-if="!filteredContacts.length"
+        title="Aucun contact"
+        body="Ajuste ta recherche ou tes filtres."
+        class="border-t border-gray-100 dark:border-white/[0.06]"
+      />
+    </div>
+
+    <section v-if="!loading && !loadError && tab === 'prospects' && viewMode === 'cards'" class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      <div
+        v-for="client in displayedProspects"
+        :key="client.id"
+        class="rounded-lg border border-amber-200/60 bg-amber-50/40 p-4 shadow-sm dark:border-amber-500/20 dark:bg-amber-500/[0.04]"
+      >
+        <div class="flex items-start gap-3">
+          <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full font-display text-sm font-semibold text-white" :class="avatarTone(client.name)">
+            {{ initials(client.name) }}
+          </span>
+          <div class="min-w-0 flex-1">
+            <p class="truncate text-sm font-semibold text-gray-950 dark:text-white">{{ client.name }}</p>
+            <p class="truncate text-xs text-gray-400">{{ client.company || 'Indépendant' }}</p>
+          </div>
+          <span class="shrink-0 rounded-md px-2 py-0.5 text-xs font-semibold" :class="scorePriority(leadScore(client)).chip">
+            {{ scorePriority(leadScore(client)).label }}
+          </span>
+        </div>
+        <div class="mt-3 space-y-1.5 border-t border-amber-200/60 pt-3 text-xs text-gray-600 dark:border-amber-500/20 dark:text-gray-300">
+          <a :href="`mailto:${client.email}`" class="flex items-center gap-1.5 hover:text-violet-600 dark:hover:text-violet-400">
+            <AdminAdminIcon icon="mail" class="h-3.5 w-3.5" />
+            <span class="truncate">{{ client.email }}</span>
+          </a>
+          <a v-if="client.phone" :href="`tel:${client.phone}`" class="flex items-center gap-1.5 hover:text-violet-600 dark:hover:text-violet-400">
+            <AdminAdminIcon icon="phone" class="h-3.5 w-3.5" />
+            <span>{{ client.phone }}</span>
+          </a>
+        </div>
+        <p v-if="client.followUpNote" class="mt-2 line-clamp-2 text-sm text-gray-600 dark:text-gray-300">{{ client.followUpNote }}</p>
+        <details v-if="client.notes || client.acquisitionSource" class="mt-2 rounded-lg border border-amber-200/60 px-2.5 dark:border-amber-500/20">
+          <summary class="min-h-11 cursor-pointer py-3 text-xs font-semibold text-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:text-gray-300">Contexte de qualification</summary>
+          <div class="space-y-1 pb-3 text-xs leading-5 text-gray-600 dark:text-gray-300"><p v-if="client.acquisitionSource"><strong>Source :</strong> {{ client.acquisitionSource }}</p><p v-if="client.notes" class="whitespace-pre-wrap break-words">{{ client.notes }}</p></div>
+        </details>
+        <div class="mt-3 flex items-center gap-2">
+          <button
+            class="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-lg bg-emerald-600 text-xs font-semibold text-white transition hover:bg-emerald-700"
+            :disabled="Boolean(changingClientStatusId)"
+            @click="markStatus(client, 'active')"
+          >
+            <AdminAdminIcon icon="check-square" class="h-3.5 w-3.5" />
+            {{ changingClientStatusId === client.id ? 'Conversion…' : 'Convertir en client' }}
+          </button>
+          <NuxtLink :to="`/admin/clients/${client.id}`" class="inline-flex min-h-11 shrink-0 items-center justify-center rounded-lg border border-gray-200 px-3 text-xs font-semibold text-gray-600 transition hover:bg-white dark:border-white/[0.12] dark:text-gray-300 dark:hover:bg-white/[0.04]">
+            Fiche
+          </NuxtLink>
+        </div>
+      </div>
+
+      <AdminAdminEmptyState
+        v-if="!prospects.length"
+        title="Aucun prospect"
+        body="Les nouveaux prospects qualifiés depuis les messages apparaîtront ici."
+        class="sm:col-span-2 xl:col-span-3"
+      />
+    </section>
+
+    <div v-if="!loading && !loadError && tab === 'prospects' && viewMode === 'table'" class="admin-scrollbar overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm dark:border-white/[0.08] dark:bg-[#111118]">
+      <table class="w-full">
+        <caption class="sr-only">Prospects {{ prospectRangeStart }} à {{ prospectRangeEnd }} sur {{ prospects.length }}</caption>
+        <thead class="border-b border-gray-100 dark:border-white/[0.06]">
+          <tr>
+            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Nom</th>
+            <th class="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400 sm:table-cell">Société</th>
+            <th class="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400 lg:table-cell">Lieu</th>
+            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Priorité</th>
+            <th class="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400 md:table-cell">Email</th>
+            <th class="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400 md:table-cell">Téléphone</th>
+            <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-400">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="client in displayedProspects" :key="client.id" class="border-b border-gray-50 last:border-0 hover:bg-amber-50/40 dark:border-white/[0.03] dark:hover:bg-amber-500/[0.04]">
+            <td class="px-4 py-3">
+              <div class="flex items-center gap-2.5">
+                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full font-display text-xs font-semibold text-white" :class="avatarTone(client.name)">
+                  {{ initials(client.name) }}
+                </span>
+                <span class="truncate text-sm font-medium text-gray-950 dark:text-white">{{ client.name }}</span>
+              </div>
+            </td>
+            <td class="hidden px-4 py-3 text-xs text-gray-500 dark:text-gray-400 sm:table-cell">{{ client.company || 'Indépendant' }}</td>
+            <td class="hidden px-4 py-3 text-xs text-gray-500 dark:text-gray-400 lg:table-cell">
+              <span v-if="leadPlace(client)" class="inline-flex items-center gap-1">
+                <AdminAdminIcon icon="map-pin" class="h-3.5 w-3.5 text-gray-400" />
+                {{ leadPlace(client) }}
+              </span>
+              <span v-else>—</span>
+            </td>
+            <td class="px-4 py-3">
+              <span class="rounded-md px-2 py-0.5 text-xs font-semibold" :class="scorePriority(leadScore(client)).chip">{{ scorePriority(leadScore(client)).label }}</span>
+            </td>
+            <td class="hidden px-4 py-3 text-xs text-gray-500 dark:text-gray-400 md:table-cell">
+              <a :href="`mailto:${client.email}`" class="hover:text-violet-600 dark:hover:text-violet-400">{{ client.email }}</a>
+            </td>
+            <td class="hidden px-4 py-3 text-xs text-gray-500 dark:text-gray-400 md:table-cell">
+              <a v-if="client.phone" :href="`tel:${client.phone}`" class="hover:text-violet-600 dark:hover:text-violet-400">{{ client.phone }}</a>
+              <span v-else>-</span>
+            </td>
+            <td class="px-4 py-3 text-right">
+              <div class="flex items-center justify-end gap-2">
+                <button class="inline-flex min-h-11 items-center rounded-md px-2 text-xs font-semibold text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:opacity-50 dark:text-emerald-400 dark:hover:bg-emerald-500/10" :disabled="Boolean(changingClientStatusId)" @click="markStatus(client, 'active')">{{ changingClientStatusId === client.id ? 'Conversion…' : 'Convertir' }}</button>
+                <NuxtLink :to="`/admin/clients/${client.id}`" class="inline-flex min-h-11 items-center rounded-md px-2 text-xs font-semibold text-gray-500 hover:bg-gray-100 hover:text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:text-gray-400 dark:hover:bg-white/[0.06]">Fiche</NuxtLink>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <AdminAdminEmptyState
+        v-if="!prospects.length"
+        title="Aucun prospect"
+        body="Les nouveaux prospects qualifiés depuis les messages apparaîtront ici."
+        class="border-t border-gray-100 dark:border-white/[0.06]"
+      />
+    </div>
+
+    <nav v-if="!loading && !loadError && tab === 'prospects' && prospects.length > PROSPECT_PAGE_SIZE" class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-sm dark:border-white/[0.08] dark:bg-[#111118]" aria-label="Pagination des prospects">
+      <p role="status" aria-live="polite" class="text-sm text-gray-600 dark:text-gray-300">{{ prospectRangeStart }}–{{ prospectRangeEnd }} sur {{ prospects.length }}</p>
+      <div class="flex items-center gap-2">
+        <button type="button" class="inline-flex min-h-11 items-center rounded-lg border border-gray-200 px-3 text-sm font-semibold text-gray-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/[0.12] dark:text-gray-200" :disabled="prospectPage === 1" @click="prospectPage--">Précédents</button>
+        <button type="button" class="inline-flex min-h-11 items-center rounded-lg bg-violet-600 px-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40" :disabled="prospectPage === prospectPageCount" @click="prospectPage++">Suivants</button>
+      </div>
+    </nav>
+
+    <Transition name="fade">
+      <div v-if="showFollowUpPlanner && followUpPlannerAction" class="fixed inset-0 z-[90] flex items-center justify-center bg-black/55 p-3 sm:p-6" @click.self="closeFollowUpPlanner">
+        <form ref="followUpPlannerDialogRef" role="dialog" aria-modal="true" aria-labelledby="follow-up-planner-title" tabindex="-1" class="max-h-[90vh] w-full max-w-lg overflow-y-auto overscroll-contain rounded-2xl border border-gray-200 bg-white p-4 shadow-2xl dark:border-white/[0.1] dark:bg-[#151522] sm:p-5" :aria-busy="savingFollowUpPlan" @keydown="handleFollowUpPlannerKeydown" @submit.prevent="saveFollowUpPlan">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-[0.12em] text-violet-600 dark:text-violet-300">Prochaine action</p>
+              <h2 id="follow-up-planner-title" class="mt-1 font-display text-xl font-semibold text-gray-950 dark:text-white">Planifier {{ actionName(followUpPlannerAction) }}</h2>
+              <p class="mt-1 text-sm leading-6 text-gray-600 dark:text-gray-300">La relance apparaîtra automatiquement dans les actions du jour.</p>
+            </div>
+            <button type="button" class="grid h-11 w-11 shrink-0 place-items-center rounded-lg text-gray-500 transition-colors duration-150 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 disabled:opacity-50 dark:hover:bg-white/[0.06]" :disabled="savingFollowUpPlan" aria-label="Fermer la planification" @click="closeFollowUpPlanner">×</button>
+          </div>
+          <div class="mt-5 space-y-4">
+            <label class="block space-y-1.5 text-sm font-semibold text-gray-800 dark:text-gray-100">Date de relance
+              <input v-model="followUpPlannerDate" data-follow-up-date type="date" class="input-field" required>
+            </label>
+            <label class="block space-y-1.5 text-sm font-semibold text-gray-800 dark:text-gray-100">Note interne <span class="font-normal text-gray-500">(facultatif)</span>
+              <textarea v-model="followUpPlannerNote" rows="3" maxlength="500" class="input-field" placeholder="Contexte utile pour la prochaine prise de contact" />
+            </label>
+            <p v-if="followUpPlannerError" role="alert" class="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-800 dark:bg-rose-500/10 dark:text-rose-200">{{ followUpPlannerError }}</p>
+          </div>
+          <div class="mt-5 flex flex-col-reverse gap-2 border-t border-gray-100 pt-4 dark:border-white/[0.08] sm:flex-row sm:justify-end">
+            <button type="button" class="min-h-11 rounded-lg border border-gray-200 px-4 text-sm font-semibold text-gray-700 transition-[background-color,transform] duration-150 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 active:scale-[0.96] disabled:opacity-50 dark:border-white/[0.12] dark:text-gray-200 dark:hover:bg-white/[0.04]" :disabled="savingFollowUpPlan" @click="closeFollowUpPlanner">Annuler</button>
+            <button type="submit" class="min-h-11 rounded-lg bg-violet-600 px-4 text-sm font-semibold text-white transition-[background-color,transform] duration-150 hover:bg-violet-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 active:scale-[0.96] disabled:cursor-wait disabled:opacity-60 dark:focus-visible:ring-offset-[#151522]" :disabled="savingFollowUpPlan">{{ savingFollowUpPlan ? 'Enregistrement…' : 'Planifier la relance' }}</button>
+          </div>
+        </form>
+      </div>
+    </Transition>
+
+    <Transition name="fade">
+      <div v-if="showReminderConfirm" class="fixed inset-0 z-[90] flex items-center justify-center bg-black/55 p-3 sm:p-6" @click.self="closeReminderConfirm">
+        <div ref="reminderDialogRef" role="dialog" aria-modal="true" aria-labelledby="crm-reminder-title" tabindex="-1" class="max-h-[90vh] w-full max-w-xl overflow-y-auto overscroll-contain rounded-2xl border border-gray-200 bg-white p-4 shadow-2xl dark:border-white/[0.1] dark:bg-[#151522] sm:p-5" @keydown="handleReminderDialogKeydown">
+          <div class="flex items-start justify-between gap-4">
+            <div class="min-w-0">
+              <p class="text-xs font-semibold uppercase tracking-[0.12em] text-violet-600 dark:text-violet-300">Lumail</p>
+              <h2 id="crm-reminder-title" class="mt-1 font-display text-xl font-semibold text-gray-950 dark:text-white">Vérifier avant l’envoi</h2>
+              <p class="mt-1 text-sm leading-6 text-gray-600 dark:text-gray-300">Aucun message ne part sans ta confirmation.</p>
+            </div>
+            <button type="button" class="grid h-11 w-11 shrink-0 place-items-center rounded-lg text-gray-500 transition-colors duration-150 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 disabled:opacity-50 dark:hover:bg-white/[0.06]" :disabled="sendingReminder" aria-label="Fermer la prévisualisation" @click="closeReminderConfirm">×</button>
+          </div>
+
+          <div v-if="reminderDialogStatus === 'loading'" role="status" class="grid min-h-52 place-items-center text-center">
+            <div><span class="mx-auto block h-7 w-7 animate-spin rounded-full border-2 border-violet-200 border-t-violet-600" /><p class="mt-3 text-sm text-gray-500 dark:text-gray-400">Préparation du message sécurisé…</p></div>
+          </div>
+
+          <div v-else-if="reminderDialogStatus === 'error'" role="alert" class="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-100">
+            <p class="text-sm font-semibold">Relance indisponible</p>
+            <p class="mt-1 text-sm leading-6">{{ reminderDialogError }}</p>
+            <NuxtLink to="/admin#relances-clients" class="mt-3 inline-flex min-h-11 items-center font-semibold underline underline-offset-4">Voir toutes les relances</NuxtLink>
+          </div>
+
+          <template v-else-if="selectedReminderCandidate">
+            <dl class="mt-5 grid gap-2 rounded-xl bg-gray-50 p-3 text-sm dark:bg-white/[0.04] sm:grid-cols-2 sm:p-4">
+              <div><dt class="text-xs text-gray-500 dark:text-gray-400">Destinataire</dt><dd class="mt-1 break-all font-semibold text-gray-950 dark:text-white">{{ selectedReminderCandidate.clientName }} · {{ selectedReminderCandidate.email }}</dd></div>
+              <div><dt class="text-xs text-gray-500 dark:text-gray-400">{{ selectedReminderCandidate.targetType === 'lead' ? 'Relance' : 'Document' }}</dt><dd class="mt-1 font-semibold text-gray-950 dark:text-white">{{ selectedReminderCandidate.number }} · {{ selectedReminderCandidate.targetType === 'lead' ? 'prévue le' : 'échéance' }} {{ selectedReminderCandidate.dueDate }}</dd></div>
+            </dl>
+            <div class="mt-3 space-y-4 rounded-xl border border-gray-200 p-3 dark:border-white/[0.1] sm:p-4">
+              <label class="block space-y-1.5 text-xs font-medium text-gray-600 dark:text-gray-300">Objet
+                <input v-model="selectedReminderCandidate.subject" type="text" maxlength="200" class="input-field text-sm font-semibold" required>
+              </label>
+              <label class="block space-y-1.5 text-xs font-medium text-gray-600 dark:text-gray-300">Message
+                <textarea v-model="selectedReminderCandidate.bodyText" rows="10" maxlength="5000" class="input-field resize-y whitespace-pre-wrap text-sm leading-6" required />
+              </label>
+              <p class="text-xs text-gray-500 dark:text-gray-400">Tu peux personnaliser le texte. Le destinataire et la relance restent verrouillés pour éviter une erreur d’envoi.</p>
+            </div>
+            <p v-if="reminderDialogError" role="alert" class="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-800 dark:bg-rose-500/10 dark:text-rose-200">{{ reminderDialogError }}</p>
+          </template>
+
+          <div class="mt-5 flex flex-col-reverse gap-2 border-t border-gray-100 pt-4 dark:border-white/[0.08] sm:flex-row sm:justify-end">
+            <button data-reminder-cancel type="button" class="min-h-11 rounded-lg border border-gray-200 px-4 text-sm font-semibold text-gray-700 transition-[background-color,transform] duration-150 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 active:scale-[0.96] disabled:opacity-50 dark:border-white/[0.12] dark:text-gray-200 dark:hover:bg-white/[0.04]" :disabled="sendingReminder" @click="closeReminderConfirm">Annuler</button>
+            <button v-if="reminderDialogStatus === 'ready'" type="button" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-violet-600 px-4 text-sm font-semibold text-white transition-[background-color,transform] duration-150 hover:bg-violet-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-50 dark:focus-visible:ring-offset-[#151522]" :disabled="sendingReminder || !selectedReminderCandidate" @click="sendSelectedReminder">
+              <AdminAdminIcon icon="send" class="h-4 w-4" />
+              {{ sendingReminder ? 'Envoi en cours…' : 'Confirmer l’envoi' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+  </div>
+</template>

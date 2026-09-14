@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 describe('admin CRM daily actions', () => {
   it('keeps every action executable with accessible mobile controls', async () => {
-    const page = await readFile('app/pages/admin/crm/index.vue', 'utf8')
+    const page = await readFile('app/components/admin/CrmWorkspace.vue', 'utf8')
     expect(page).toContain("updateCommercialAction(action, 'handled')")
     expect(page).toContain("updateCommercialAction(action, 'snoozed', option.date)")
     expect(page).toContain("updateCommercialAction(action, 'ignored')")
@@ -13,7 +13,7 @@ describe('admin CRM daily actions', () => {
   })
 
   it('requires an explicit Lumail preview confirmation', async () => {
-    const page = await readFile('app/pages/admin/crm/index.vue', 'utf8')
+    const page = await readFile('app/components/admin/CrmWorkspace.vue', 'utf8')
     expect(page).toContain('@click="prepareReminder(action)"')
     expect(page).toContain('role="dialog" aria-modal="true" aria-labelledby="crm-reminder-title"')
     expect(page).toContain('Aucun message ne part sans ta confirmation.')
@@ -30,15 +30,19 @@ describe('admin CRM daily actions', () => {
     ])
     expect(endpoint).toContain(".eq('organization_id', org.id)")
     expect(endpoint).toContain('client_id: clientId')
-    expect(endpoint).toContain(".update({ next_follow_up_at: nextDate })")
+    expect(endpoint).toContain(".update({ next_follow_up_at: nextDate, last_contacted_at: nextLastContactedAt })")
     expect(endpoint).toContain('aliasActionKey')
+    expect(endpoint).toContain("status === 'ignored'")
+    expect(endpoint).toContain('previousLastContactedAt')
+    expect(endpoint).toContain("previousPayload?.status === 'restored'")
+    expect(endpoint).toContain('alreadyRestored: true')
     expect(clientPage).toContain("log.action === 'commercial_action.state_changed'")
     expect(clientPage).toContain('Action commerciale traitée')
   })
 
   it('restores the latest decision without deleting its audit history', async () => {
     const [page, endpoint, clientPage] = await Promise.all([
-      readFile('app/pages/admin/crm/index.vue', 'utf8'),
+      readFile('app/components/admin/CrmWorkspace.vue', 'utf8'),
       readFile('server/api/admin/commercial-actions.post.ts', 'utf8'),
       readFile('app/pages/admin/clients/[id].vue', 'utf8'),
     ])
@@ -51,7 +55,7 @@ describe('admin CRM daily actions', () => {
 
   it('plans and summarizes prospect follow-ups with accessible controls', async () => {
     const [page, clientPage] = await Promise.all([
-      readFile('app/pages/admin/crm/index.vue', 'utf8'),
+      readFile('app/components/admin/CrmWorkspace.vue', 'utf8'),
       readFile('app/pages/admin/clients/[id].vue', 'utf8'),
     ])
     expect(page).toContain('summarizeCommercialFollowUps')
@@ -64,5 +68,33 @@ describe('admin CRM daily actions', () => {
     expect(page).toContain("if (action.kind !== 'lead')")
     expect(clientPage).toContain('Relance prospect envoyée avec Lumail')
     expect(clientPage).toContain('Prochaine relance planifiée')
+  })
+
+  it('keeps prospect sorting, conversion undo, and pipeline disclosure honest', async () => {
+    const page = await readFile('app/components/admin/CrmWorkspace.vue', 'utf8')
+    expect(page).toContain('sortCrmProspects(searchedContacts.value, prospectSortBy.value, todayIso.value)')
+    expect(page).toContain('<option value="priority">Action prioritaire</option>')
+    expect(page).toContain("actionLabel: 'Annuler'")
+    expect(page).toContain('previousFollowUpAt')
+    expect(page).toContain('store.updateStatus(')
+    expect(page).toContain(':disabled="Boolean(changingClientStatusId)"')
+    expect(page).toContain('duration: 0')
+    expect(page).toContain(':aria-expanded="Boolean(expandedPipelineColumns[column.id])"')
+    expect(page).toContain(':aria-controls="`pipeline-column-${column.id}`"')
+    expect(page).toContain('role="group" aria-label="Mode d’affichage"')
+    expect(page).toContain(':aria-pressed="viewMode === \'cards\'"')
+    expect(page).toContain('<caption class="sr-only">')
+    expect(page).not.toContain('min-w-[1100px]')
+  })
+
+  it('initializes the business date before the watched prospect projections', async () => {
+    const page = await readFile('app/components/admin/CrmWorkspace.vue', 'utf8')
+    const todayDeclaration = page.indexOf('const todayIso = computed')
+    const prospectProjection = page.indexOf('const prospects = computed')
+    const watchedPagination = page.indexOf('watch(prospectPageCount')
+
+    expect(todayDeclaration).toBeGreaterThan(-1)
+    expect(todayDeclaration).toBeLessThan(prospectProjection)
+    expect(prospectProjection).toBeLessThan(watchedPagination)
   })
 })

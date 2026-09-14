@@ -14,7 +14,7 @@ describe('admin loading previews', () => {
 
   it('covers every core client workflow view', async () => {
     const pages = await Promise.all([
-      'app/pages/admin/crm/index.vue',
+      'app/components/admin/CrmWorkspace.vue',
       'app/pages/admin/clients/index.vue',
       'app/pages/admin/clients/[id].vue',
       'app/pages/admin/tasks/index.vue',
