@@ -91,6 +91,20 @@ validated: yes
   les conversions restent fonctionnelles si Plausible ou l'API marketing est
   indisponible.
 
+- [x] **6. Intégrer la réservation Cal.com directement dans la carte.** Objectif :
+  ouvrir l'événement public de 30 minutes dans un sélecteur embarqué, conserver
+  l'URL Cal.com comme repli sans JavaScript et expliquer que le lien de visio est
+  créé automatiquement. Fichiers attendus : `BookingCalendar.vue`,
+  `nuxt.config.ts`, `.env.example`, CSP Caddy, tests de sécurité et mobile.
+  Autorisé : script officiel `app.cal.com`, frame `cal.com`, URL publique de
+  l'événement et traductions locales dans le composant. Interdit : exposer une
+  clé API Cal.com, créer un calendrier propriétaire ou transmettre des données
+  de formulaire à Cal.com avant un clic explicite. Tests : configuration sans
+  ancien nom de variable, attributs d'embed, URL de repli, CSP exacte,
+  typecheck et parcours navigateur. Validation : Vitest, typecheck, build et
+  ouverture visible du calendrier en local. Sécurité/rollback : domaines CSP
+  bornés; suppression des attributs d'embed restaure l'ouverture externe.
+
 ## Correspondance critères → tâches
 
 | Critère ANT-21 | Tâches |
@@ -100,7 +114,7 @@ validated: yes
 | Règles client/serveur identiques | 2 |
 | Message, prospect et notification sans doublon | 2, 3, 4 |
 | Lumail vers `info@antoinequarroz.ch`, `replyTo`, aucun faux succès | 4, 5 |
-| Réservation Cal.com ou fallback focalisé | 1, 5 |
+| Réservation Cal.com intégrée ou fallback focalisé | 1, 5, 6 |
 | FR/EN/DE, clavier, lecteur d'écran et 320 px | 1, 5 |
 | Analytics sans donnée personnelle | 5 |
 | Turnstile, honeypot, limites, rate limit et isolation | 2 à 5 |
@@ -110,7 +124,7 @@ validated: yes
 - Créer une branche dédiée `codex/ant-21-contact-booking` depuis la base de
   livraison validée. Ne pas ajouter ANT-21 à la PR ANT-5 actuellement ouverte.
 - Dépendances runtime : Lumail configuré, organisation publique résoluble et
-  URL Cal.com optionnelle. Aucun nouveau paquet n'est prévu.
+  URL publique Cal.com. Aucun nouveau paquet n'est prévu.
 - Une migration Supabase additive est requise pour l'idempotence durable et le
   suivi de la notification.
 
@@ -124,6 +138,7 @@ validated: yes
 
 ## Validation humaine requise
 
-Plan validé explicitement par Antoine le 15 septembre 2026 (« go »). Cette
-validation autorise la migration append-only et les changements listés, mais
-aucun déploiement en production.
+Plan validé explicitement par Antoine le 15 septembre 2026 (« go »), puis étendu
+à sa demande avant fusion pour intégrer directement le calendrier. Le
+déploiement en production a été autorisé, mais reste bloqué jusqu'à la nouvelle
+validation locale et aux portes GitHub vertes.

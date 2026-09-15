@@ -14,6 +14,14 @@ bien dans le CRM, mais que la notification correspondante n'arrive pas dans sa
 boîte mail. La persistance CRM n'est donc pas le symptôme à corriger; la preuve
 doit cibler la configuration et la livraison Lumail.
 
+Avant la fusion, la configuration locale a révélé qu'une clé API Cal.com avait
+été placée par erreur dans l'ancienne variable publique destinée à une URL. La
+clé n'est pas nécessaire à l'embed : l'événement public existant de 30 minutes
+fournit une URL de réservation et une visio Cal.com. La configuration applicative
+doit donc utiliser uniquement `NUXT_PUBLIC_BOOKING_URL`; l'ancienne variable ne
+doit plus être lue ni documentée et la clé concernée doit être révoquée dans
+Cal.com.
+
 ## Flux représentatif actuel
 
 1. `ContactSection` rend immédiatement le nom, l'e-mail, le sujet, le budget,
@@ -107,6 +115,10 @@ doit cibler la configuration et la livraison Lumail.
 6. Valider `LUMAIL_API_KEY`, `EMAIL_FROM` et `CONTACT_EMAIL` avant toute
    soumission de production, corriger le repli Compose et ne retourner succès
    qu'après acceptation Lumail et enregistrement cohérent.
+7. Charger l'embed officiel Cal.com seulement lorsqu'une URL publique valide est
+   disponible. Un clic ouvre le calendrier embarqué; l'attribut `href` conserve
+   une navigation directe si le script ne se charge pas. La CSP n'autorise que
+   `app.cal.com` pour le script et `cal.com` pour la frame et les connexions.
 
 ## Tests, sécurité et exploitation
 

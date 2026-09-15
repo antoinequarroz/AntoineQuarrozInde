@@ -6,7 +6,7 @@
   validé `docs/plans/AQ-CONTACT-001.md`.
 - Branche isolée `codex/ant-21-contact-booking`, basée sur `origin/main` au
   commit `fe8c44bae90e65433de46a99458dd6bfecc515f8`.
-- Parcours contact public, réservation/fallback, contrat de soumission,
+- Parcours contact public, réservation Cal.com intégrée/fallback, contrat de soumission,
   persistance CRM, idempotence, transport et suivi Lumail, reprise admin,
   migration Supabase, traductions, analytics et tests associés.
 
@@ -32,6 +32,9 @@ Aucun finding critical, major ou minor ne reste ouvert dans l'état revu.
 - Le destinataire de production revient explicitement à
   `info@antoinequarroz.ch` lorsque `CONTACT_EMAIL` n'est pas défini, et le
   prospect est transmis uniquement en `replyTo`.
+- L'événement Cal.com public de 30 minutes s'ouvre dans une modale embarquée;
+  l'URL directe reste le repli natif si le script ne se charge pas. La clé API
+  découverte dans l'ancienne variable publique n'est plus lue par Nuxt.
 
 ## Sécurité observée
 
@@ -48,6 +51,9 @@ Aucun finding critical, major ou minor ne reste ouvert dans l'état revu.
 - Seuls les états `failed` sont relançables; `pending`, `sent`, `suppressed` et
   `uncertain` restent fermés à la reprise. Le plafond existant de vingt
   tentatives est conservé.
+- La CSP autorise uniquement `app.cal.com` pour le script et la frame Cal.com,
+  ainsi que `cal.com` pour le repli et les connexions nécessaires; aucune clé
+  Cal.com n'est nécessaire dans le navigateur.
 
 ## Vérifications exécutées
 
@@ -56,14 +62,17 @@ Aucun finding critical, major ou minor ne reste ouvert dans l'état revu.
 - `npm run typecheck` via Portly : succès.
 - Tests ciblés via Portly : 8 fichiers et 32 assertions réussis.
 - `npm test` via Portly avec le Python isolé du workspace : 103 fichiers et
-  668 assertions réussis. Le premier lancement avec `/usr/bin/python3` a été
+  669 assertions réussis. Le premier lancement avec `/usr/bin/python3` a été
   bloqué uniquement par la licence Xcode locale; aucun test produit n'était en
   cause.
 - `npm run build && npm run quality:budgets` via Portly : succès; 91 chunks,
-  1 501 170 octets au total, plus gros chunk 199 657 octets, scène robot
+  1 502 537 octets au total, plus gros chunk 199 657 octets, scène robot
   1 010 718 octets sous le plafond de 1 500 000.
-- Playwright ciblé sur `http://127.0.0.1:3114` : CTA, focus et détails
-  facultatifs à 320 px réussis.
+- Playwright ciblé sur `http://127.0.0.1:3114` : 2 scénarios réussis pour
+  l'URL/les attributs Cal.com, le CTA, le focus et les détails facultatifs à
+  320 px.
+- Contrôle navigateur local : URL publique, attributs d'embed, ouverture de la
+  modale et frame Cal.com vérifiés sans soumettre de réservation.
 - `git diff --check` : succès.
 
 Max severity: none

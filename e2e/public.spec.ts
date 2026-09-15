@@ -118,6 +118,15 @@ test('analytics failure never blocks the primary contact path', async ({ page })
   await expect(page.locator('#contact-form')).toBeVisible()
 })
 
+test('contact exposes the integrated Cal.com booking with a direct fallback URL', async ({ page }) => {
+  await page.goto('/#contact')
+
+  const booking = page.getByRole('link', { name: /choisir un créneau|choose a time|termin auswählen/i })
+  await expect(booking).toHaveAttribute('href', 'https://cal.com/antoine-quarroz-ilnim4/30min')
+  await expect(booking).toHaveAttribute('data-cal-link', 'antoine-quarroz-ilnim4/30min')
+  await expect(booking).toHaveAttribute('data-cal-namespace', 'portfolio-contact')
+})
+
 test('contact form progressively reveals optional project details at 320px', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 720 })
   await page.goto('/#contact')

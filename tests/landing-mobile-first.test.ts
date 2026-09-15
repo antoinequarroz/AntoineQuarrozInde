@@ -42,4 +42,20 @@ describe('landing page mobile-first refinements', () => {
     expect(styles).toContain(':where(a, button, input, select, textarea, summary, [role="button"])')
     expect(styles).toContain('transition-duration: 120ms !important')
   })
+
+  it('opens the public 30-minute Cal.com scheduler without exposing an API key', async () => {
+    const [booking, config, envExample] = await Promise.all([
+      readFile('app/components/ui/BookingCalendar.vue', 'utf8'),
+      readFile('nuxt.config.ts', 'utf8'),
+      readFile('.env.example', 'utf8'),
+    ])
+
+    expect(config).toContain("bookingUrl: process.env.NUXT_PUBLIC_BOOKING_URL")
+    expect(config).not.toContain('NUXT_PUBLIC_CAL_LINK')
+    expect(envExample).toContain('NUXT_PUBLIC_BOOKING_URL=https://cal.com/your-name/30min')
+    expect(booking).toContain("script.src = 'https://app.cal.com/embed/embed.js'")
+    expect(booking).toContain(':data-cal-link="bookingPath"')
+    expect(booking).toContain(':data-cal-namespace="CAL_NAMESPACE"')
+    expect(booking).toContain(':href="bookingUrl"')
+  })
 })
