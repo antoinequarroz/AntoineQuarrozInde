@@ -11,19 +11,22 @@ const facts = computed(() => [
 ])
 
 const tools = [
-  { label: 'Vue 3 / Nuxt', icons: ['vue', 'nuxt'] },
+  { label: 'Vue 3', icons: ['vue'] },
+  { label: 'Nuxt', icons: ['nuxt'] },
   { label: 'React', icons: ['react'] },
   { label: 'Next.js', icons: ['nextjs'] },
   { label: 'TypeScript', icons: ['typescript'] },
   { label: 'SwiftUI', icons: ['swiftui'] },
-  { label: 'Flutter / Dart', icons: ['flutter', 'dart'] },
+  { label: 'Flutter', icons: ['flutter'] },
+  { label: 'Dart', icons: ['dart'] },
   { label: 'Rust', icons: ['rust'] },
   { label: 'Supabase', icons: ['supabase'] },
   { label: 'PostgreSQL', icons: ['postgresql'] },
   { label: 'Node.js', icons: ['nodejs'] },
   { label: 'Three.js', icons: ['threejs'] },
   { label: 'Figma', icons: ['figma'] },
-  { label: 'Git / GitHub', icons: ['git', 'github'] },
+  { label: 'Git', icons: ['git'] },
+  { label: 'GitHub', icons: ['github'] },
 ] as const
 </script>
 

@@ -68,11 +68,15 @@ describe('landing page mobile-first refinements', () => {
     for (const technology of ['React', 'Next.js', 'SwiftUI', 'Rust']) {
       expect(about).toContain(`label: '${technology}'`)
     }
-    expect(footer).toContain("label: 'React / Next.js'")
+    expect(footer).toContain("label: 'React'")
+    expect(footer).toContain("label: 'Next.js'")
     expect(footer).toContain("label: 'SwiftUI'")
     expect(footer).toContain("label: 'Rust'")
     expect(about).not.toContain("'Tailwind CSS'")
     expect(footer).not.toContain("'Tailwind CSS'")
+    expect(about).not.toContain("label: 'Vue 3 / Nuxt'")
+    expect(about).not.toContain("label: 'Flutter / Dart'")
+    expect(about).not.toContain("label: 'Git / GitHub'")
   })
 
   it('renders consistent technology pictograms beside stack labels', async () => {

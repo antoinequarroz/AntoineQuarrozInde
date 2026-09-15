@@ -20,10 +20,13 @@ const navLinks = computed(() => [
 ])
 
 const stack = [
-  { label: 'Vue 3 / Nuxt', icons: ['vue', 'nuxt'] },
-  { label: 'React / Next.js', icons: ['react', 'nextjs'] },
+  { label: 'Vue 3', icons: ['vue'] },
+  { label: 'Nuxt', icons: ['nuxt'] },
+  { label: 'React', icons: ['react'] },
+  { label: 'Next.js', icons: ['nextjs'] },
   { label: 'SwiftUI', icons: ['swiftui'] },
-  { label: 'Flutter / Dart', icons: ['flutter', 'dart'] },
+  { label: 'Flutter', icons: ['flutter'] },
+  { label: 'Dart', icons: ['dart'] },
   { label: 'Rust', icons: ['rust'] },
   { label: 'Supabase', icons: ['supabase'] },
 ] as const
