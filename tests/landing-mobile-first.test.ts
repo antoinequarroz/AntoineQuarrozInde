@@ -22,6 +22,16 @@ describe('landing page mobile-first refinements', () => {
     }
   })
 
+  it('uses an accurate heading for the broader technology set', async () => {
+    const [fr, en, de] = await Promise.all(
+      ['fr', 'en', 'de'].map(async locale => JSON.parse(await readFile(`i18n/locales/${locale}.json`, 'utf8'))),
+    )
+
+    expect(fr.about.tools_title).toBe('Technologies et outils')
+    expect(en.about.tools_title).toBe('Technologies & tools')
+    expect(de.about.tools_title).toBe('Technologien & Tools')
+  })
+
   it('keeps secondary landing actions comfortable to tap', async () => {
     const [footer, blog, contact, styles] = await Promise.all([
       readFile('app/components/layout/AppFooter.vue', 'utf8'),
