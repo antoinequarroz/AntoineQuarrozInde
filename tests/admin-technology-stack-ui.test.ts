@@ -2,6 +2,12 @@ import { describe, expect, it } from 'vitest'
 import { readFile } from 'node:fs/promises'
 
 describe('admin technology stack editor', () => {
+  it('locks editing while a save or publication is pending', async () => {
+    const page = await readFile('app/pages/admin/stack/index.vue', 'utf8')
+    expect(page).toContain('loading.value || saving.value || publishing.value')
+    expect(page).toContain('<fieldset :disabled="busy" :aria-busy="busy"')
+    expect(page).toContain('if (busy.value || !isDirty.value) return')
+  })
   it('supports the complete draft and publish workflow without pointer-only controls', async () => {
     const page = await readFile('app/pages/admin/stack/index.vue', 'utf8')
 

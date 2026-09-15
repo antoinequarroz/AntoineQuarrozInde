@@ -30,6 +30,7 @@ const publishedAt = ref<string | null>(null)
 const loading = ref(true)
 const saving = ref(false)
 const publishing = ref(false)
+const busy = computed(() => loading.value || saving.value || publishing.value)
 const loadError = ref('')
 const confirmPublish = ref(false)
 const previewLocale = ref<'fr' | 'en' | 'de'>('fr')
@@ -114,6 +115,7 @@ function removeItem(index: number) {
 }
 
 async function saveDraft() {
+  if (busy.value || !isDirty.value) return
   saving.value = true
   try {
     const data = await $fetch<StackSettings>('/api/admin/technology-stack', {
@@ -206,7 +208,7 @@ onMounted(load)
     </div>
 
     <div v-else class="grid items-start gap-5 xl:grid-cols-[minmax(0,1.25fr)_minmax(320px,0.75fr)]">
-      <section class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-white/[0.08] dark:bg-[#111118] sm:p-5">
+      <fieldset :disabled="busy" :aria-busy="busy" class="min-w-0 rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-white/[0.08] dark:bg-[#111118] sm:p-5">
         <div class="flex flex-col gap-3 border-b border-gray-100 pb-4 dark:border-white/[0.07] sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 class="text-base font-semibold text-gray-950 dark:text-white">Technologies</h2>
@@ -217,7 +219,7 @@ onMounted(load)
 
         <div v-if="items.length" class="mt-4 space-y-3">
           <article v-for="(item, index) in items" :key="item.key" class="rounded-xl border border-gray-200 p-3 dark:border-white/[0.09] sm:p-4">
-            <div class="grid gap-3 sm:grid-cols-[minmax(150px,1fr)_minmax(130px,0.7fr)_minmax(145px,0.7fr)_auto] sm:items-end">
+            <div class="grid grid-cols-[repeat(auto-fit,minmax(min(100%,180px),1fr))] items-end gap-3">
               <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300">Nom
                 <input v-model="item.label" maxlength="40" class="mt-1 min-h-11 w-full rounded-xl border border-gray-300 bg-white px-3 text-sm text-gray-950 outline-none transition-shadow focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 dark:border-white/15 dark:bg-white/[0.04] dark:text-white" />
               </label>
@@ -247,7 +249,7 @@ onMounted(load)
           <p class="font-medium text-gray-900 dark:text-white">Ta stack est vide.</p>
           <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Ajoute une technologie pour commencer. Le site conservera sa version publiée tant que tu ne publies pas.</p>
         </div>
-      </section>
+      </fieldset>
 
       <aside class="space-y-4 xl:sticky xl:top-20">
         <section class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-white/[0.08] dark:bg-[#111118] sm:p-5">

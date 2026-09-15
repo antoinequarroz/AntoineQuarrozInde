@@ -52,7 +52,7 @@ validated_at: 2026-09-15
   `anon`/`authenticated` révoqués, accès `service_role` uniquement. Rollback :
   migration additive ignorée par l'ancienne image, sans suppression automatique.
 
-- [x] **3. Exposer les contrats serveur privé et public.** Objectif : fournir
+- [ ] **3. Exposer les contrats serveur privé et public.** Objectif : fournir
   lecture/sauvegarde du brouillon, publication explicite et lecture publique de
   la seule version publiée. Fichiers attendus : utilitaire serveur de stack,
   `server/api/admin/technology-stack.get.ts`, `.put.ts`,
@@ -65,7 +65,7 @@ validated_at: 2026-09-15
   publication atomique et fallback. Validation : tests ciblés puis
   `npm run typecheck`. Rollback : le public conserve le catalogue initial.
 
-- [x] **4. Construire l'éditeur mobile-first avec prévisualisation.** Objectif :
+- [ ] **4. Construire l'éditeur mobile-first avec prévisualisation.** Objectif :
   ajouter `/admin/stack` au groupe `Publier`, avec liste ordonnable au clavier,
   ajout/édition, visibilités, niveau, choix d'icône, aperçu FR/EN/DE, sauvegarde
   et confirmation de publication. Fichiers attendus :
@@ -77,7 +77,7 @@ validated_at: 2026-09-15
   focus, thèmes et 320 px. Validation : tests ciblés et inspection locale.
   Rollback : la route peut être retirée sans toucher aux données publiées.
 
-- [x] **5. Brancher le rendu public SSR sans dupliquer la source.** Objectif :
+- [ ] **5. Brancher le rendu public SSR sans dupliquer la source.** Objectif :
   remplacer les deux tableaux statiques par une source publiée partagée,
   présenter clairement les niveaux sur la landing et respecter la visibilité
   plus concise du footer. Fichiers attendus : composable public,
@@ -111,6 +111,19 @@ validated_at: 2026-09-15
   consomment ces contrats et l'étape 6 vérifie le parcours entier.
 
 ## Preuves locales
+
+Les étapes 2 à 5 sont implémentées mais restent ouvertes jusqu'à validation
+complète. Les tests API/UI actuels comportent des assertions de source : ils
+ne constituent pas une preuve du parcours authentifié ni de l'isolation réelle.
+Restent notamment les tests DB, les scénarios API exécutés, le parcours sandbox
+et l'inspection responsive/thèmes. La PR doit rester en brouillon sans fusion.
+
+- Dernière sonde Docker : expiration après 30 secondes (code 124).
+- Nouvelle validation : 697 tests Vitest et typecheck réussis via Portly
+  (`tmp_453b25ee`). La correction CSS auto-fit postérieure reste à vérifier
+  visuellement dans le parcours authentifié.
+- Éditeur verrouillé pendant les requêtes pour éviter d'écraser une saisie
+  concurrente ; grille adaptée à la largeur du panneau avec auto-fit.
 
 - 693 tests Vitest passés, puis 31 tests ciblés passés après la dernière
   adaptation des rôles de navigation.
