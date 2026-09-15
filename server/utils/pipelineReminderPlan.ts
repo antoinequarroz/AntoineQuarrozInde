@@ -7,6 +7,7 @@ export type ReminderPlanClient = {
   status?: string | null
   next_follow_up_at?: string | null
   follow_up_note?: string | null
+  preferred_locale?: 'fr' | 'en' | 'de' | null
 }
 export type ReminderPlanQuote = { id: number, number: string, title?: string | null, client_id?: number | null, valid_until?: string | null, status: string }
 export type ReminderPlanInvoice = { id: number, number: string, client_id?: number | null, due_at?: string | null, status: string, reminders_paused?: boolean, balance_cents?: number, currency?: string }
@@ -26,6 +27,7 @@ export type PipelineReminderCandidate = {
   balanceCents?: number
   currency?: string
   hasInternalNote?: boolean
+  locale: 'fr' | 'en' | 'de'
 }
 
 function calendarDayDifference(fromIso: string, toIso: string) {
@@ -34,19 +36,18 @@ function calendarDayDifference(fromIso: string, toIso: string) {
   return Math.round((Date.UTC(toYear!, toMonth! - 1, toDay!) - Date.UTC(fromYear!, fromMonth! - 1, fromDay!)) / 86_400_000)
 }
 
-function quoteMilestone(daysUntilDue: number) {
-  if (daysUntilDue === 3) return { milestone: 'avant-echeance-3j', urgency: 'upcoming' as const }
+function quoteMilestone(daysUntilDue: number, offsets: number[]) {
+  if (!offsets.includes(daysUntilDue)) return null
+  if (daysUntilDue > 0) return { milestone: `avant-echeance-${daysUntilDue}j`, urgency: 'upcoming' as const }
   if (daysUntilDue === 0) return { milestone: 'echeance', urgency: 'due' as const }
   return null
 }
 
-function invoiceMilestone(daysUntilDue: number) {
-  if (daysUntilDue === 2) return { milestone: 'avant-echeance-2j', urgency: 'upcoming' as const }
+function invoiceMilestone(daysUntilDue: number, offsets: number[]) {
+  if (!offsets.includes(daysUntilDue)) return null
+  if (daysUntilDue > 0) return { milestone: `avant-echeance-${daysUntilDue}j`, urgency: 'upcoming' as const }
   if (daysUntilDue === 0) return { milestone: 'echeance', urgency: 'due' as const }
-  const overdueDays = Math.abs(daysUntilDue)
-  if (daysUntilDue < 0 && [3, 10, 20].includes(overdueDays)) {
-    return { milestone: `retard-${overdueDays}j`, urgency: 'overdue' as const }
-  }
+  if (daysUntilDue < 0) return { milestone: `retard-${Math.abs(daysUntilDue)}j`, urgency: 'overdue' as const }
   return null
 }
 
@@ -56,6 +57,8 @@ export function buildPipelineReminderPlan(input: {
   quotes: ReminderPlanQuote[]
   invoices: ReminderPlanInvoice[]
   sentReminderKeys?: Iterable<string>
+  quoteOffsets?: number[]
+  invoiceOffsets?: number[]
 }) {
   const clientsById = new Map(input.clients.map(client => [Number(client.id), client]))
   const sentKeys = new Set(input.sentReminderKeys || [])
@@ -88,6 +91,7 @@ export function buildPipelineReminderPlan(input: {
       urgency: milestone.urgency,
       balanceCents: target === 'invoice' ? Number((row as ReminderPlanInvoice).balance_cents || 0) : undefined,
       currency: target === 'invoice' ? String((row as ReminderPlanInvoice).currency || 'CHF') : undefined,
+      locale: client.preferred_locale === 'en' || client.preferred_locale === 'de' ? client.preferred_locale : 'fr',
     })
   }
 
@@ -120,12 +124,13 @@ export function buildPipelineReminderPlan(input: {
       milestone: 'relance-prospect',
       urgency: daysUntilDue < 0 ? 'overdue' : 'due',
       hasInternalNote: Boolean(client.follow_up_note?.trim()),
+      locale: client.preferred_locale === 'en' || client.preferred_locale === 'de' ? client.preferred_locale : 'fr',
     })
   }
 
   for (const quote of input.quotes) {
     if (quote.status !== 'sent' || !quote.valid_until) continue
-    const milestone = quoteMilestone(calendarDayDifference(input.today, quote.valid_until))
+    const milestone = quoteMilestone(calendarDayDifference(input.today, quote.valid_until), input.quoteOffsets || [3, 0])
     if (!milestone) {
       skipped.outsideMilestone += 1
       continue
@@ -137,7 +142,7 @@ export function buildPipelineReminderPlan(input: {
     if (!['sent', 'overdue'].includes(invoice.status) || !invoice.due_at) continue
     if (invoice.reminders_paused) { skipped.paused += 1; continue }
     if (Number(invoice.balance_cents || 0) <= 0) continue
-    const milestone = invoiceMilestone(calendarDayDifference(input.today, invoice.due_at))
+    const milestone = invoiceMilestone(calendarDayDifference(input.today, invoice.due_at), input.invoiceOffsets || [2, 0, -3, -10, -20])
     if (!milestone) {
       skipped.outsideMilestone += 1
       continue

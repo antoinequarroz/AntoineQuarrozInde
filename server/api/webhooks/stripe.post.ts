@@ -117,7 +117,7 @@ export default defineEventHandler(async (event) => {
       clientId,
       payload: { payment_id: paymentId, stripe_session_id: session.id, amount_cents: amountCents },
     })
-    const { data: client } = await supabase.from('clients').select('id,name,email').eq('organization_id', organizationId).eq('id', clientId).maybeSingle()
+    const { data: client } = await supabase.from('clients').select('id,name,email,preferred_locale').eq('organization_id', organizationId).eq('id', clientId).maybeSingle()
     const amountLabel = new Intl.NumberFormat('fr-CH', { style: 'currency', currency: 'CHF' }).format(amountCents / 100)
     await notifyOperationalEvent({
       organizationId,
@@ -133,18 +133,12 @@ export default defineEventHandler(async (event) => {
     if (client?.email) {
       try {
         const siteUrl = String(config.public.siteUrl || '').replace(/\/+$/, '')
-        const receipt = await sendTransactionalEmail({
-          to: client.email,
-          subject: `Paiement reçu — facture ${invoice.number}`,
-          html: portalEmailLayout({
-            preview: `Votre paiement de ${amountLabel} a été reçu.`,
-            title: 'Paiement bien reçu',
-            body: `<p>Bonjour ${escapeEmailHtml(client.name)},</p><p>Votre paiement TWINT de <strong>${escapeEmailHtml(amountLabel)}</strong> pour la facture <strong>${escapeEmailHtml(invoice.number)}</strong> est confirmé.</p>`,
-            actionLabel: 'Consulter mes paiements',
-            actionUrl: `${siteUrl}/portal#factures`,
-          }),
+        const clientAmountLabel = formatCommercialAmount(amountCents, invoice.currency || 'CHF', client.preferred_locale)
+        const content = buildCommercialEmail({ template: 'payment_received', locale: client.preferred_locale, recipientName: client.name, documentNumber: invoice.number, amountLabel: clientAmountLabel, portalUrl: `${siteUrl}/portal#factures` })
+        const receipt = await sendTrackedEmail({
+          organizationId, clientId: client.id, category: 'transactional', templateKey: 'payment_received', recipient: client.email, entityType: 'payment', entityId: paymentId,
           idempotencyKey: `twint-client-${providerPaymentId}`,
-          tags: [{ name: 'category', value: 'payment_receipt' }],
+          ...content,
         })
         await logAudit({ organizationId, action: 'invoice.twint_receipt_sent', entityType: 'invoice', entityId: invoiceId, clientId, payload: { email_id: receipt.emailId, payment_id: paymentId } })
       }

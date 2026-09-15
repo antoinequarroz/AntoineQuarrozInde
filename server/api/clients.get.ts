@@ -64,6 +64,8 @@ export default defineEventHandler(async (event) => {
         nextFollowUpAt: row.next_follow_up_at,
         followUpNote: row.follow_up_note,
         lastContactedAt: row.last_contacted_at,
+        preferredLocale: row.preferred_locale || 'fr',
+        marketingOptOutAt: row.marketing_opt_out_at,
         portalUserId: row.portal_user_id,
         portalInvitedAt: row.portal_invited_at,
         portalActivatedAt: row.portal_activated_at,

@@ -100,23 +100,16 @@ export async function recordInvoicePayment(input: RecordInvoicePaymentInput) {
     payload: { payment_id: inserted.id, method: input.payment.method, source: input.source || 'manual' },
   })
   if (invoice.client_id) {
-    const { data: client } = await supabase.from('clients').select('id,name,email').eq('organization_id', input.organizationId).eq('id', invoice.client_id).maybeSingle()
+    const { data: client } = await supabase.from('clients').select('id,name,email,preferred_locale').eq('organization_id', input.organizationId).eq('id', invoice.client_id).maybeSingle()
     if (client?.email) {
       try {
         const siteUrl = String(useRuntimeConfig().public.siteUrl || '').replace(/\/+$/, '')
-        const amountLabel = new Intl.NumberFormat('fr-CH', { style: 'currency', currency: invoice.currency }).format(input.payment.amountCents / 100)
-        const receipt = await sendTransactionalEmail({
-          to: client.email,
-          subject: `Paiement enregistré — facture ${invoice.number}`,
-          html: portalEmailLayout({
-            preview: `Votre paiement de ${amountLabel} a été enregistré.`,
-            title: 'Paiement enregistré',
-            body: `<p>Bonjour ${escapeEmailHtml(client.name)},</p><p>Votre paiement de <strong>${escapeEmailHtml(amountLabel)}</strong> pour la facture <strong>${escapeEmailHtml(invoice.number)}</strong> a été enregistré.</p>`,
-            actionLabel: 'Consulter mes paiements',
-            actionUrl: `${siteUrl}/portal#factures`,
-          }),
+        const amountLabel = formatCommercialAmount(input.payment.amountCents, invoice.currency, client.preferred_locale)
+        const content = buildCommercialEmail({ template: 'payment_received', locale: client.preferred_locale, recipientName: client.name, documentNumber: invoice.number, amountLabel, portalUrl: `${siteUrl}/portal#factures` })
+        const receipt = await sendTrackedEmail({
+          organizationId: input.organizationId, clientId: client.id, category: 'transactional', templateKey: 'payment_received', recipient: client.email, entityType: 'payment', entityId: inserted.id,
           idempotencyKey: `payment-client-${inserted.id}`,
-          tags: [{ name: 'category', value: 'payment_receipt' }],
+          ...content,
         })
         await logAudit({ organizationId: input.organizationId, actorUserId: input.actorUserId, action: 'invoice.payment_receipt_sent', entityType: 'invoice', entityId: input.invoiceId, clientId: client.id, payload: { payment_id: inserted.id, email_id: receipt.emailId } })
       }

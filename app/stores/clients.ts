@@ -19,6 +19,8 @@ type ClientRow = {
   next_follow_up_at: string | null
   follow_up_note: string | null
   last_contacted_at: string | null
+  preferred_locale?: 'fr' | 'en' | 'de'
+  marketing_opt_out_at?: string | null
   portal_user_id?: string | null
   portal_invited_at?: string | null
   portal_activated_at?: string | null
@@ -46,6 +48,8 @@ function mapClient(row: ClientRow): Client {
     nextFollowUpAt: row.next_follow_up_at,
     followUpNote: row.follow_up_note,
     lastContactedAt: row.last_contacted_at,
+    preferredLocale: row.preferred_locale || 'fr',
+    marketingOptOutAt: row.marketing_opt_out_at || null,
     portalUserId: row.portal_user_id || null,
     portalInvitedAt: row.portal_invited_at || null,
     portalActivatedAt: row.portal_activated_at || null,

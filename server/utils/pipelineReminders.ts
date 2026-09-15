@@ -78,14 +78,15 @@ export function buildConfirmedPipelineReminderMessage(confirmation: PipelineRemi
 
 async function loadReminderPlan(organizationId: string) {
   const supabase = getSupabaseAdmin()
-  const [quotesResult, invoicesResult, clientsResult, sentResult, paymentsResult] = await Promise.all([
+  const [quotesResult, invoicesResult, clientsResult, sentResult, paymentsResult, settingsResult] = await Promise.all([
     supabase.from('quotes').select('id,number,title,client_id,valid_until,status').eq('organization_id', organizationId).eq('status', 'sent'),
     supabase.from('invoices').select('id,number,client_id,due_at,status,total_cents,amount_cents,currency,reminders_paused').eq('organization_id', organizationId).in('status', ['sent', 'overdue']),
-    supabase.from('clients').select('id,name,email,status,next_follow_up_at,follow_up_note').eq('organization_id', organizationId),
+    supabase.from('clients').select('id,name,email,status,next_follow_up_at,follow_up_note,preferred_locale').eq('organization_id', organizationId),
     supabase.from('audit_logs').select('payload').eq('organization_id', organizationId).eq('action', 'pipeline_reminder_email').limit(10_000),
     supabase.from('invoice_payments').select('invoice_id,amount_cents,voided_at').eq('organization_id', organizationId),
+    supabase.from('email_delivery_settings').select('automation_enabled,quote_offsets,invoice_offsets').eq('organization_id', organizationId).maybeSingle(),
   ])
-  const error = [quotesResult.error, invoicesResult.error, clientsResult.error, sentResult.error, paymentsResult.error].find(Boolean)
+  const error = [quotesResult.error, invoicesResult.error, clientsResult.error, sentResult.error, paymentsResult.error, settingsResult.error].find(Boolean)
   if (error) throw createError({ statusCode: 500, message: error.message })
 
   const sentReminderKeys = (sentResult.data || [])
@@ -95,13 +96,34 @@ async function loadReminderPlan(organizationId: string) {
   const paid = new Map<number, number>()
   for (const payment of paymentsResult.data || []) if (!payment.voided_at) paid.set(payment.invoice_id, (paid.get(payment.invoice_id) || 0) + Number(payment.amount_cents))
   const invoices = (invoicesResult.data || []).map(invoice => ({ ...invoice, balance_cents: Math.max(0, Number(invoice.total_cents ?? invoice.amount_cents ?? 0) - (paid.get(invoice.id) || 0)) }))
-  return buildPipelineReminderPlan({
+  const plan = buildPipelineReminderPlan({
     today: todayInZurich(),
     clients: clientsResult.data || [],
     quotes: quotesResult.data || [],
     invoices,
     sentReminderKeys,
+    quoteOffsets: settingsResult.data?.quote_offsets || [3, 0],
+    invoiceOffsets: settingsResult.data?.invoice_offsets || [2, 0, -3, -10, -20],
   })
+  return { ...plan, automationEnabled: settingsResult.data?.automation_enabled ?? true }
+}
+
+async function isCommercialReminderStillEligible(organizationId: string, candidate: PipelineReminderCandidate) {
+  if (candidate.targetType === 'lead') return true
+  const supabase = getSupabaseAdmin()
+  const { data: client, error: clientError } = await supabase.from('clients').select('email').eq('organization_id', organizationId).eq('id', candidate.clientId).maybeSingle()
+  if (clientError || String(client?.email || '').trim().toLowerCase() !== candidate.email.trim().toLowerCase()) return false
+  if (candidate.targetType === 'quote') {
+    const { data, error } = await supabase.from('quotes').select('status,valid_until,client_id').eq('organization_id', organizationId).eq('id', candidate.targetId).maybeSingle()
+    return !error && data?.status === 'sent' && data.valid_until === candidate.dueDate && Number(data.client_id) === candidate.clientId
+  }
+  const [{ data: invoice, error }, { data: payments, error: paymentError }] = await Promise.all([
+    supabase.from('invoices').select('status,due_at,client_id,total_cents,amount_cents,reminders_paused').eq('organization_id', organizationId).eq('id', candidate.targetId).maybeSingle(),
+    supabase.from('invoice_payments').select('amount_cents,voided_at').eq('organization_id', organizationId).eq('invoice_id', candidate.targetId),
+  ])
+  if (error || paymentError || !invoice || !['sent', 'overdue'].includes(invoice.status) || invoice.reminders_paused || invoice.due_at !== candidate.dueDate || Number(invoice.client_id) !== candidate.clientId) return false
+  const paid = (payments || []).filter(payment => !payment.voided_at).reduce((total, payment) => total + Number(payment.amount_cents), 0)
+  return Number(invoice.total_cents ?? invoice.amount_cents ?? 0) - paid > 0
 }
 
 export function selectPipelineReminderCandidates(candidates: PipelineReminderCandidate[], reminderKeys?: string[]) {
@@ -117,7 +139,7 @@ export function selectPipelineReminderCandidatesForTrigger(candidates: PipelineR
 export async function previewPipelineReminders(organizationId: string) {
   const plan = await loadReminderPlan(organizationId)
   return {
-    automationEnabled: Boolean(process.env.PIPELINE_AUTOMATION_SECRET),
+    automationEnabled: plan.automationEnabled && Boolean(process.env.PIPELINE_AUTOMATION_SECRET),
     generatedAt: new Date().toISOString(),
     candidates: plan.candidates.map((candidate) => {
       const message = buildPipelineReminderMessage(candidate)
@@ -227,6 +249,9 @@ export async function runPipelineReminders(input: {
   }
 
   const plan = await loadReminderPlan(input.organizationId)
+  if (input.trigger === 'scheduled' && !plan.automationEnabled) {
+    return { sentCount: 0, failedCount: 0, followUpUpdateFailedCount: 0, skippedCount: plan.candidates.length, candidateCount: 0, overdueMarkedCount: newlyOverdue.length, trigger: input.trigger }
+  }
   const confirmedByKey = new Map((input.confirmedReminders || []).map(item => [item.reminderKey, item]))
   const requestedKeys = input.confirmedReminders?.map(item => item.reminderKey) ?? input.reminderKeys
   const eligibleCandidates = selectPipelineReminderCandidatesForTrigger(plan.candidates, input.trigger)
@@ -247,20 +272,20 @@ export async function runPipelineReminders(input: {
   let followUpUpdateFailedCount = 0
 
   for (const candidate of candidates) {
+    if (!(await isCommercialReminderStillEligible(input.organizationId, candidate))) continue
     const confirmation = input.trigger === 'manual' ? confirmedByKey.get(candidate.reminderKey) : null
     const email = confirmation
       ? buildConfirmedPipelineReminderMessage(confirmation)
       : buildPipelineReminderMessage(candidate)
     const contactedAt = candidate.targetType === 'lead' ? new Date().toISOString() : null
     try {
-      await sendAppEmail({
-        to: candidate.email,
-        subject: email.subject,
-        text: email.text,
-        html: email.html,
-        idempotencyKey: `${input.organizationId}:${candidate.reminderKey}`,
-        tags: [{ name: 'category', value: 'pipeline_reminder' }],
-      })
+      if (candidate.targetType === 'lead') {
+        await sendAppEmail({ to: candidate.email, subject: email.subject, text: email.text, html: email.html, idempotencyKey: `${input.organizationId}:${candidate.reminderKey}`, tags: [{ name: 'category', value: 'pipeline_reminder' }] })
+      }
+      else {
+        const content = buildCommercialEmail({ template: candidate.targetType === 'quote' ? 'quote_reminder' : 'invoice_reminder', locale: candidate.locale, recipientName: candidate.clientName, documentNumber: candidate.number, amountLabel: candidate.targetType === 'invoice' ? formatCommercialAmount(candidate.balanceCents || 0, candidate.currency || 'CHF', candidate.locale) : undefined, portalUrl: 'https://www.antoinequarroz.ch/portal' })
+        await sendTrackedEmail({ organizationId: input.organizationId, clientId: candidate.clientId, category: 'transactional', templateKey: candidate.targetType === 'quote' ? 'quote_reminder' : 'invoice_reminder', recipient: candidate.email, entityType: candidate.targetType, entityId: candidate.targetId, idempotencyKey: `${input.organizationId}:${candidate.reminderKey}`, ...content })
+      }
     }
     catch {
       failedCount += 1
