@@ -33,12 +33,12 @@ const closeConfirmation = () => { confirmationPost.value = null; confirmationAcc
 const { dialogRef, handleDialogKeydown } = useAccessibleDialog(computed(() => Boolean(confirmationPost.value)), closeConfirmation, '[data-confirm-close]')
 
 const filteredPosts = computed(() => posts.value.filter((post) => {
-  if (tab.value === 'review') return ['draft', 'failed', 'rejected'].includes(post.status)
+  if (tab.value === 'review') return ['draft', 'failed'].includes(post.status)
   if (tab.value === 'waiting') return ['approved', 'publishing'].includes(post.status)
   return post.status === 'published'
 }))
 const counts = computed(() => ({
-  review: posts.value.filter(post => ['draft', 'failed', 'rejected'].includes(post.status)).length,
+  review: posts.value.filter(post => ['draft', 'failed'].includes(post.status)).length,
   waiting: posts.value.filter(post => ['approved', 'publishing'].includes(post.status)).length,
   published: posts.value.filter(post => post.status === 'published').length,
 }))
@@ -76,7 +76,7 @@ async function update(post: SocialPost, action: 'save' | 'reject' | 'restore') {
       method: 'PUT', headers: auth.authHeader(), body: { action, content: post.content, version: post.version },
     })
     replacePost(result)
-    toast.success(action === 'save' ? 'Brouillon enregistré' : action === 'reject' ? 'Publication refusée' : 'Brouillon restauré')
+    toast.success(action === 'save' ? 'Brouillon enregistré' : action === 'reject' ? 'Publication refusée et retirée du tableau' : 'Brouillon restauré')
   }
   catch (error: any) { toast.error(error?.data?.message || 'La modification a échoué') }
   finally { busyId.value = '' }

@@ -47,4 +47,15 @@ describe('social publication queue', () => {
     expect(adminPage).toContain('publication prévue à 18 h')
     expect(adminPage).not.toContain('Approuver et publier')
   })
+
+  it('removes rejected proposals from the social dashboard while keeping their audit record', () => {
+    const adminPage = read('app/pages/admin/social/index.vue')
+    const listRoute = read('server/api/admin/social-posts.get.ts')
+    const updateRoute = read('server/api/admin/social-posts/[id].put.ts')
+
+    expect(adminPage).not.toContain("['draft', 'failed', 'rejected']")
+    expect(adminPage).toContain('Publication refusée et retirée du tableau')
+    expect(listRoute).toContain(".neq('status', 'rejected')")
+    expect(updateRoute).toContain("updates.status = 'rejected'")
+  })
 })
