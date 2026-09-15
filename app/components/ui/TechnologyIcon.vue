@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import {
+  siCloudflare,
   siDart,
+  siDocker,
   siFigma,
   siFlutter,
   siGit,
@@ -12,6 +14,7 @@ import {
   siReact,
   siRust,
   siSupabase,
+  siStripe,
   siSwift,
   siThreedotjs,
   siTypescript,
@@ -19,7 +22,9 @@ import {
 } from 'simple-icons'
 
 type TechnologyIconName =
+  | 'cloudflare'
   | 'dart'
+  | 'docker'
   | 'figma'
   | 'flutter'
   | 'git'
@@ -31,6 +36,7 @@ type TechnologyIconName =
   | 'react'
   | 'rust'
   | 'supabase'
+  | 'stripe'
   | 'swiftui'
   | 'threejs'
   | 'typescript'
@@ -41,7 +47,9 @@ const props = defineProps<{
 }>()
 
 const paths: Record<TechnologyIconName, string> = {
+  cloudflare: siCloudflare.path,
   dart: siDart.path,
+  docker: siDocker.path,
   figma: siFigma.path,
   flutter: siFlutter.path,
   git: siGit.path,
@@ -53,6 +61,7 @@ const paths: Record<TechnologyIconName, string> = {
   react: siReact.path,
   rust: siRust.path,
   supabase: siSupabase.path,
+  stripe: siStripe.path,
   swiftui: siSwift.path,
   threejs: siThreedotjs.path,
   typescript: siTypescript.path,

@@ -27,6 +27,9 @@ const tools = [
   { label: 'Figma', icons: ['figma'] },
   { label: 'Git', icons: ['git'] },
   { label: 'GitHub', icons: ['github'] },
+  { label: 'Docker', icons: ['docker'] },
+  { label: 'Stripe', icons: ['stripe'] },
+  { label: 'Cloudflare', icons: ['cloudflare'] },
 ] as const
 </script>
 
