@@ -65,7 +65,7 @@ describe('landing page mobile-first refinements', () => {
       readFile('app/components/layout/AppFooter.vue', 'utf8'),
     ])
 
-    for (const technology of ['React', 'Next.js', 'SwiftUI', 'Rust', 'Docker', 'Stripe', 'Cloudflare']) {
+    for (const technology of ['React', 'Next.js', 'SwiftUI', 'Rust', 'Docker', 'Stripe', 'Cloudflare', 'Caddy']) {
       expect(about).toContain(`label: '${technology}'`)
     }
     expect(footer).toContain("label: 'React'")

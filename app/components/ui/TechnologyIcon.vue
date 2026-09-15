@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {
+  siCaddy,
   siCloudflare,
   siDart,
   siDocker,
@@ -22,6 +23,7 @@ import {
 } from 'simple-icons'
 
 type TechnologyIconName =
+  | 'caddy'
   | 'cloudflare'
   | 'dart'
   | 'docker'
@@ -47,6 +49,7 @@ const props = defineProps<{
 }>()
 
 const paths: Record<TechnologyIconName, string> = {
+  caddy: siCaddy.path,
   cloudflare: siCloudflare.path,
   dart: siDart.path,
   docker: siDocker.path,

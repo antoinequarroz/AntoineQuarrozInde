@@ -30,6 +30,7 @@ const tools = [
   { label: 'Docker', icons: ['docker'] },
   { label: 'Stripe', icons: ['stripe'] },
   { label: 'Cloudflare', icons: ['cloudflare'] },
+  { label: 'Caddy', icons: ['caddy'] },
 ] as const
 </script>
 
