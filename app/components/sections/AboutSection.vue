@@ -3,6 +3,7 @@ const { t } = useI18n()
 
 const imageError = ref(false)
 const photoSrc = '/about.jpg'
+const { data: technologyStack } = await usePublicTechnologyStack()
 
 const facts = computed(() => [
   { emoji: '📍', label: t('about.fact_location') },
@@ -10,28 +11,11 @@ const facts = computed(() => [
   { emoji: '🚀', label: t('about.fact_since') },
 ])
 
-const tools = [
-  { label: 'Vue 3', icons: ['vue'] },
-  { label: 'Nuxt', icons: ['nuxt'] },
-  { label: 'React', icons: ['react'] },
-  { label: 'Next.js', icons: ['nextjs'] },
-  { label: 'TypeScript', icons: ['typescript'] },
-  { label: 'SwiftUI', icons: ['swiftui'] },
-  { label: 'Flutter', icons: ['flutter'] },
-  { label: 'Dart', icons: ['dart'] },
-  { label: 'Rust', icons: ['rust'] },
-  { label: 'Supabase', icons: ['supabase'] },
-  { label: 'PostgreSQL', icons: ['postgresql'] },
-  { label: 'Node.js', icons: ['nodejs'] },
-  { label: 'Three.js', icons: ['threejs'] },
-  { label: 'Figma', icons: ['figma'] },
-  { label: 'Git', icons: ['git'] },
-  { label: 'GitHub', icons: ['github'] },
-  { label: 'Docker', icons: ['docker'] },
-  { label: 'Stripe', icons: ['stripe'] },
-  { label: 'Cloudflare', icons: ['cloudflare'] },
-  { label: 'Caddy', icons: ['caddy'] },
-] as const
+const levelOrder = ['daily', 'mastered', 'used'] as const
+const toolGroups = computed(() => levelOrder.map(level => ({
+  level,
+  items: technologyStack.value.items.filter(item => item.showAbout && item.level === level),
+})).filter(group => group.items.length > 0))
 </script>
 
 <template>
@@ -184,22 +168,20 @@ const tools = [
             <h3 class="mb-4 text-xs font-semibold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">
               {{ t('about.tools_title') }}
             </h3>
-            <div class="flex flex-wrap gap-2">
-              <span
-                v-for="tool in tools"
-                :key="tool.label"
-                class="group inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-md dark:border-white/10 dark:bg-white/[0.04] dark:text-gray-300 dark:hover:border-violet-500/40"
-              >
-                <span class="flex shrink-0 items-center gap-1 text-violet-500/80 transition-colors group-hover:text-violet-600 dark:text-violet-300/75 dark:group-hover:text-violet-300">
-                  <UiTechnologyIcon
-                    v-for="icon in tool.icons"
-                    :key="icon"
-                    :name="icon"
-                    class="h-3.5 w-3.5"
-                  />
-                </span>
-                {{ tool.label }}
-              </span>
+            <div class="space-y-4">
+              <div v-for="group in toolGroups" :key="group.level">
+                <p class="mb-2 text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-gray-400 dark:text-gray-500">{{ t(`about.tools_levels.${group.level}`) }}</p>
+                <div class="flex flex-wrap gap-2">
+                  <span
+                    v-for="tool in group.items"
+                    :key="tool.key"
+                    class="group inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-md dark:border-white/10 dark:bg-white/[0.04] dark:text-gray-300 dark:hover:border-violet-500/40"
+                  >
+                    <UiTechnologyIcon :name="tool.icon" class="h-3.5 w-3.5 shrink-0 text-violet-500/80 transition-colors group-hover:text-violet-600 dark:text-violet-300/75 dark:group-hover:text-violet-300" />
+                    {{ tool.label }}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         </div>

@@ -47,6 +47,11 @@
     "fact_title": "Mediamatiker",
     "fact_since": "Freelancer seit 2026",
     "tools_title": "Technologien & Tools",
+    "tools_levels": {
+      "daily": "Täglich im Einsatz",
+      "mastered": "Sicher beherrscht",
+      "used": "Bereits eingesetzt"
+    },
     "label_1": "Werdegang",
     "label_2": "Mission",
     "photo_soon": "Foto folgt"

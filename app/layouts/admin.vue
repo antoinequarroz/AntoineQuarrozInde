@@ -5,7 +5,9 @@ const auth = useAuthStore()
 const router = useRouter()
 const route = useRoute()
 
-const navGroups = [
+const currentOrganizationRole = computed(() => auth.organizations.find(organization => organization.id === auth.currentOrganizationId)?.role)
+
+const navGroups = computed(() => [
   {
     label: 'Piloter',
     items: [
@@ -42,6 +44,7 @@ const navGroups = [
   {
     label: 'Publier',
     items: [
+      ...(['owner', 'admin'].includes(String(currentOrganizationRole.value)) ? [{ label: 'Stack', icon: 'settings', href: '/admin/stack' }] : []),
       { label: 'Articles', icon: 'file-text', href: '/admin/articles' },
       { label: 'Réseaux sociaux', icon: 'share-2', href: '/admin/social' },
       { label: 'Avis', icon: 'star', href: '/admin/reviews' },
@@ -55,9 +58,9 @@ const navGroups = [
       { label: 'Erreurs', icon: 'alert-triangle', href: '/admin/errors' },
     ],
   },
-]
+])
 
-const navItems = navGroups.flatMap(group => group.items)
+const navItems = computed(() => navGroups.value.flatMap(group => group.items))
 
 const isSidebarOpen = ref(false)
 const hasMounted = ref(false)
@@ -111,7 +114,7 @@ function handleOrganizationChange(event: Event) {
 const adminOrganizations = computed(() => auth.organizations.filter(organization => ['owner', 'admin', 'manager'].includes(organization.role)))
 
 const currentPageLabel = computed(() => {
-  const matchingItems = navItems
+  const matchingItems = navItems.value
     .filter(item => item.href === '/admin' ? route.path === '/admin' : route.path.startsWith(item.href))
     .sort((a, b) => b.href.length - a.href.length)
   return matchingItems[0]?.label || 'Administration'

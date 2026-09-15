@@ -47,6 +47,11 @@
     "fact_title": "Médiamaticien",
     "fact_since": "Freelance depuis 2026",
     "tools_title": "Technologies et outils",
+    "tools_levels": {
+      "daily": "Au quotidien",
+      "mastered": "Maîtrisé",
+      "used": "Déjà utilisé"
+    },
     "label_1": "Parcours",
     "label_2": "Mission",
     "photo_soon": "Photo à venir"
