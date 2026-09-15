@@ -22,6 +22,16 @@ describe('landing page mobile-first refinements', () => {
     }
   })
 
+  it('uses an accurate heading for the broader technology set', async () => {
+    const [fr, en, de] = await Promise.all(
+      ['fr', 'en', 'de'].map(async locale => JSON.parse(await readFile(`i18n/locales/${locale}.json`, 'utf8'))),
+    )
+
+    expect(fr.about.tools_title).toBe('Technologies et outils')
+    expect(en.about.tools_title).toBe('Technologies & tools')
+    expect(de.about.tools_title).toBe('Technologien & Tools')
+  })
+
   it('keeps secondary landing actions comfortable to tap', async () => {
     const [footer, blog, contact, styles] = await Promise.all([
       readFile('app/components/layout/AppFooter.vue', 'utf8'),
@@ -57,5 +67,38 @@ describe('landing page mobile-first refinements', () => {
     expect(booking).toContain(':data-cal-link="bookingPath"')
     expect(booking).toContain(':data-cal-namespace="CAL_NAMESPACE"')
     expect(booking).toContain(':href="bookingUrl"')
+  })
+
+  it('shows the current public stack without the retired Tailwind label', async () => {
+    const [about, footer] = await Promise.all([
+      readFile('app/components/sections/AboutSection.vue', 'utf8'),
+      readFile('app/components/layout/AppFooter.vue', 'utf8'),
+    ])
+
+    for (const technology of ['React', 'Next.js', 'SwiftUI', 'Rust', 'Docker', 'Stripe', 'Cloudflare', 'Caddy']) {
+      expect(about).toContain(`label: '${technology}'`)
+    }
+    expect(footer).toContain("label: 'React'")
+    expect(footer).toContain("label: 'Next.js'")
+    expect(footer).toContain("label: 'SwiftUI'")
+    expect(footer).toContain("label: 'Rust'")
+    expect(about).not.toContain("'Tailwind CSS'")
+    expect(footer).not.toContain("'Tailwind CSS'")
+    expect(about).not.toContain("label: 'Vue 3 / Nuxt'")
+    expect(about).not.toContain("label: 'Flutter / Dart'")
+    expect(about).not.toContain("label: 'Git / GitHub'")
+  })
+
+  it('renders consistent technology pictograms beside stack labels', async () => {
+    const [about, footer, icon] = await Promise.all([
+      readFile('app/components/sections/AboutSection.vue', 'utf8'),
+      readFile('app/components/layout/AppFooter.vue', 'utf8'),
+      readFile('app/components/ui/TechnologyIcon.vue', 'utf8'),
+    ])
+
+    expect(about).toContain('<UiTechnologyIcon')
+    expect(footer).toContain('<UiTechnologyIcon')
+    expect(icon).toContain("from 'simple-icons'")
+    expect(icon).toContain('aria-hidden="true"')
   })
 })

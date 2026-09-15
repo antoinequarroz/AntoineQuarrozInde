@@ -11,17 +11,27 @@ const facts = computed(() => [
 ])
 
 const tools = [
-  'Vue 3 / Nuxt',
-  'TypeScript',
-  'Flutter / Dart',
-  'Tailwind CSS',
-  'Supabase',
-  'PostgreSQL',
-  'Node.js',
-  'Three.js',
-  'Figma',
-  'Git / GitHub',
-]
+  { label: 'Vue 3', icons: ['vue'] },
+  { label: 'Nuxt', icons: ['nuxt'] },
+  { label: 'React', icons: ['react'] },
+  { label: 'Next.js', icons: ['nextjs'] },
+  { label: 'TypeScript', icons: ['typescript'] },
+  { label: 'SwiftUI', icons: ['swiftui'] },
+  { label: 'Flutter', icons: ['flutter'] },
+  { label: 'Dart', icons: ['dart'] },
+  { label: 'Rust', icons: ['rust'] },
+  { label: 'Supabase', icons: ['supabase'] },
+  { label: 'PostgreSQL', icons: ['postgresql'] },
+  { label: 'Node.js', icons: ['nodejs'] },
+  { label: 'Three.js', icons: ['threejs'] },
+  { label: 'Figma', icons: ['figma'] },
+  { label: 'Git', icons: ['git'] },
+  { label: 'GitHub', icons: ['github'] },
+  { label: 'Docker', icons: ['docker'] },
+  { label: 'Stripe', icons: ['stripe'] },
+  { label: 'Cloudflare', icons: ['cloudflare'] },
+  { label: 'Caddy', icons: ['caddy'] },
+] as const
 </script>
 
 <template>
@@ -177,10 +187,18 @@ const tools = [
             <div class="flex flex-wrap gap-2">
               <span
                 v-for="tool in tools"
-                :key="tool"
-                class="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-md dark:border-white/10 dark:bg-white/[0.04] dark:text-gray-300 dark:hover:border-violet-500/40"
+                :key="tool.label"
+                class="group inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-md dark:border-white/10 dark:bg-white/[0.04] dark:text-gray-300 dark:hover:border-violet-500/40"
               >
-                {{ tool }}
+                <span class="flex shrink-0 items-center gap-1 text-violet-500/80 transition-colors group-hover:text-violet-600 dark:text-violet-300/75 dark:group-hover:text-violet-300">
+                  <UiTechnologyIcon
+                    v-for="icon in tool.icons"
+                    :key="icon"
+                    :name="icon"
+                    class="h-3.5 w-3.5"
+                  />
+                </span>
+                {{ tool.label }}
               </span>
             </div>
           </div>
