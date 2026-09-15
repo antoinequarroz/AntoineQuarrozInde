@@ -58,4 +58,20 @@ describe('landing page mobile-first refinements', () => {
     expect(booking).toContain(':data-cal-namespace="CAL_NAMESPACE"')
     expect(booking).toContain(':href="bookingUrl"')
   })
+
+  it('shows the current public stack without the retired Tailwind label', async () => {
+    const [about, footer] = await Promise.all([
+      readFile('app/components/sections/AboutSection.vue', 'utf8'),
+      readFile('app/components/layout/AppFooter.vue', 'utf8'),
+    ])
+
+    for (const technology of ['React', 'Next.js', 'SwiftUI', 'Rust']) {
+      expect(about).toContain(`'${technology}'`)
+    }
+    expect(footer).toContain("'React / Next.js'")
+    expect(footer).toContain("'SwiftUI'")
+    expect(footer).toContain("'Rust'")
+    expect(about).not.toContain("'Tailwind CSS'")
+    expect(footer).not.toContain("'Tailwind CSS'")
+  })
 })

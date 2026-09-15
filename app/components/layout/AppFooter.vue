@@ -19,7 +19,7 @@ const navLinks = computed(() => [
   { key: 'contact', href: `${localePath('/')}#contact` },
 ])
 
-const stack = ['Vue 3 / Nuxt', 'TypeScript', 'Flutter', 'Tailwind CSS', 'Supabase']
+const stack = ['Vue 3 / Nuxt', 'React / Next.js', 'SwiftUI', 'Flutter / Dart', 'Rust', 'Supabase']
 
 const localSeoLinks = [
   { label: 'Cas clients en Valais', href: '/cas-clients-valais' },

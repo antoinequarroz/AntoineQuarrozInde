@@ -12,9 +12,12 @@ const facts = computed(() => [
 
 const tools = [
   'Vue 3 / Nuxt',
+  'React',
+  'Next.js',
   'TypeScript',
+  'SwiftUI',
   'Flutter / Dart',
-  'Tailwind CSS',
+  'Rust',
   'Supabase',
   'PostgreSQL',
   'Node.js',
