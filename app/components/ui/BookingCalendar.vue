@@ -42,13 +42,13 @@ function openContactFallback() {
 </script>
 
 <template>
-  <div class="card-glass flex h-full flex-col gap-5 p-4 max-[390px]:p-3.5">
+  <div class="card-glass flex h-full flex-col gap-5 p-4 md:gap-6 md:p-8">
     <div>
       <h3 class="font-display text-base font-semibold leading-tight text-gray-900 dark:text-white md:text-lg">{{ content.title }}</h3>
       <p class="mt-2 text-sm leading-relaxed text-gray-500 dark:text-gray-400">{{ content.desc }}</p>
     </div>
 
-    <div class="relative flex flex-1 flex-col justify-between overflow-hidden rounded-2xl border border-violet-500/15 bg-white/60 p-4 dark:border-violet-400/20 dark:bg-white/[0.04]">
+    <div class="relative space-y-5 overflow-hidden rounded-2xl border border-violet-500/15 bg-white/60 p-4 dark:border-violet-400/20 dark:bg-white/[0.04]">
       <div class="pointer-events-none absolute -right-12 -top-14 h-36 w-36 rounded-full bg-violet-500/15 blur-3xl" />
       <div class="relative grid grid-cols-3 gap-2">
         <div class="rounded-xl bg-violet-500/[0.07] px-2.5 py-3 text-center dark:bg-violet-400/10">
@@ -70,8 +70,8 @@ function openContactFallback() {
       </div>
     </div>
 
-    <a v-if="bookingUrl" :href="bookingUrl" target="_blank" rel="noopener noreferrer" class="btn-primary w-full justify-center rounded-xl py-3 text-sm" @click="track('booking_calendar_click')">{{ content.cta }}</a>
-    <a v-else href="#contact-form" class="btn-primary w-full justify-center rounded-xl py-3 text-sm active:scale-[0.96]" @click="openContactFallback">{{ content.fallbackCta }}</a>
+    <a v-if="bookingUrl" :href="bookingUrl" target="_blank" rel="noopener noreferrer" class="btn-primary mt-auto w-full justify-center rounded-xl py-3 text-sm" @click="track('booking_calendar_click')">{{ content.cta }}</a>
+    <a v-else href="#contact-form" class="btn-primary mt-auto w-full justify-center rounded-xl py-3 text-sm active:scale-[0.96]" @click="openContactFallback">{{ content.fallbackCta }}</a>
     <a href="mailto:info@antoinequarroz.ch" class="flex min-h-11 items-center justify-center gap-2 text-xs text-gray-500 transition-colors duration-150 hover:text-violet-600 dark:text-gray-400 dark:hover:text-violet-300" @click="track('contact_email_click')">info@antoinequarroz.ch</a>
   </div>
 </template>

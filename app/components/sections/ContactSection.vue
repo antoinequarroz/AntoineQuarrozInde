@@ -255,18 +255,18 @@ const contactInfo = computed(() => [
         <p class="section-subtitle mx-auto text-center">{{ t('contact.subtitle') }}</p>
       </div>
 
-      <div class="grid lg:grid-cols-5 gap-6 lg:gap-12">
+      <div class="grid items-stretch gap-6 lg:grid-cols-5 lg:gap-8 xl:gap-10">
         <!-- Calendrier de réservation -->
         <div
           v-motion
           :initial="{ opacity: 0, x: -30 }"
           :visible="{ opacity: 1, x: 0, transition: { duration: 600 } }"
-          class="lg:col-span-2"
+          class="min-w-0 lg:col-span-2 lg:h-full"
         >
           <ClientOnly>
             <UiBookingCalendar />
             <template #fallback>
-              <div class="card-glass p-4 max-[390px]:p-3.5 h-full min-h-[360px]" />
+              <div class="card-glass h-full min-h-[360px] p-4 md:p-8" />
             </template>
           </ClientOnly>
         </div>
@@ -276,23 +276,23 @@ const contactInfo = computed(() => [
           v-motion
           :initial="{ opacity: 0, x: 30 }"
           :visible="{ opacity: 1, x: 0, transition: { delay: 100, duration: 600 } }"
-          class="lg:col-span-3"
+          class="min-w-0 lg:col-span-3 lg:h-full"
         >
-          <div id="contact-form" ref="formContainerRef" class="scroll-mt-24">
-          <Transition name="contact-reveal" mode="out-in" @after-enter="focusContactForm">
-          <div v-if="!formOpen" key="contact-cta" class="card-glass flex min-h-[360px] flex-col items-start justify-between p-5 max-[390px]:p-4 md:min-h-[430px] md:p-8">
-            <div>
-              <span class="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-violet-500/10 text-violet-700 dark:bg-violet-400/10 dark:text-violet-200" aria-hidden="true">
-                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 15a4 4 0 01-4 4H8l-5 3V7a4 4 0 014-4h10a4 4 0 014 4v8z" /></svg>
-              </span>
-              <h3 class="mt-5 font-display text-2xl font-semibold text-gray-950 dark:text-white">{{ t('contact.form.open_title') }}</h3>
-              <p class="mt-3 max-w-lg text-sm leading-6 text-gray-600 dark:text-gray-300">{{ t('contact.form.open_description') }}</p>
-            </div>
-            <button type="button" class="btn-primary mt-8 min-h-11 w-full justify-center active:scale-[0.96]" @click="openContactForm('primary_cta')">
-              {{ t('contact.form.open_cta') }}
-            </button>
-          </div>
-          <form v-else key="contact-form" class="card-glass p-4 max-[390px]:p-3.5 md:p-8 space-y-4 md:space-y-5" @submit.prevent="handleSubmit">
+          <div id="contact-form" ref="formContainerRef" class="h-full scroll-mt-24">
+            <Transition name="contact-reveal" mode="out-in" @after-enter="focusContactForm">
+              <div v-if="!formOpen" key="contact-cta" class="card-glass flex h-full min-h-[280px] flex-col items-start justify-between p-4 sm:min-h-[320px] md:p-8">
+                <div>
+                  <span class="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-violet-500/10 text-violet-700 dark:bg-violet-400/10 dark:text-violet-200" aria-hidden="true">
+                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 15a4 4 0 01-4 4H8l-5 3V7a4 4 0 014-4h10a4 4 0 014 4v8z" /></svg>
+                  </span>
+                  <h3 class="mt-5 font-display text-2xl font-semibold text-gray-950 dark:text-white">{{ t('contact.form.open_title') }}</h3>
+                  <p class="mt-3 max-w-lg text-sm leading-6 text-gray-600 dark:text-gray-300">{{ t('contact.form.open_description') }}</p>
+                </div>
+                <button type="button" class="btn-primary mt-8 min-h-11 w-full justify-center active:scale-[0.96]" @click="openContactForm('primary_cta')">
+                  {{ t('contact.form.open_cta') }}
+                </button>
+              </div>
+              <form v-else key="contact-form" class="card-glass h-full space-y-4 p-4 md:space-y-5 md:p-8" @submit.prevent="handleSubmit">
             <div v-if="selectedService" role="status" class="flex items-center gap-2 rounded-xl bg-violet-500/10 px-3 py-2.5 text-sm text-violet-800 dark:text-violet-100">
               <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
               <span><strong>{{ t('contact.form.selected_service') }}</strong> {{ selectedService }}</span>
@@ -442,8 +442,8 @@ const contactInfo = computed(() => [
               {{ t('contact.quick_reply_at') }}
               <a :href="`mailto:${EMAIL}`" class="inline-flex min-h-11 items-center text-violet-600 underline dark:text-violet-300" @click="track('contact_email_click')">{{ EMAIL }}</a>
             </p>
-          </form>
-          </Transition>
+              </form>
+            </Transition>
           </div>
         </div>
       </div>
