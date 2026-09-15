@@ -32,4 +32,21 @@ describe('email transport', () => {
     await expect(sendAppEmail({ to: 'client@example.com', subject: 'Bonjour', text: 'Bonjour' }))
       .rejects.toMatchObject({ statusCode: 503 })
   })
+
+  it('rejects an empty or invalid recipient before calling Lumail', async () => {
+    vi.stubGlobal('useRuntimeConfig', () => ({ lumailApiKey: 'lum_key', emailFrom: 'info@antoinequarroz.ch' }))
+    const { sendAppEmail } = await import('../server/utils/emailTransport')
+
+    await expect(sendAppEmail({ to: '', subject: 'Bonjour', text: 'Bonjour' })).rejects.toMatchObject({ statusCode: 503 })
+    await expect(sendAppEmail({ to: 'invalid', subject: 'Bonjour', text: 'Bonjour' })).rejects.toMatchObject({ statusCode: 503 })
+    expect(lumailSend).not.toHaveBeenCalled()
+  })
+
+  it('rejects an invalid sender before calling Lumail', async () => {
+    vi.stubGlobal('useRuntimeConfig', () => ({ lumailApiKey: 'lum_key', emailFrom: 'invalid' }))
+    const { sendAppEmail } = await import('../server/utils/emailTransport')
+
+    await expect(sendAppEmail({ to: 'client@example.com', subject: 'Bonjour', text: 'Bonjour' })).rejects.toMatchObject({ statusCode: 503 })
+    expect(lumailSend).not.toHaveBeenCalled()
+  })
 })

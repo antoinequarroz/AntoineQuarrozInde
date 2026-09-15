@@ -16,6 +16,9 @@ describe('landing page mobile-first refinements', () => {
       expect(catalog.services.mobile.best_for).toBeTruthy()
       expect(catalog.contact.form.selected_service).toBeTruthy()
       expect(catalog.contact.form.captcha_error).toBeTruthy()
+      expect(catalog.contact.form.open_cta).toBeTruthy()
+      expect(catalog.contact.form.details_show).toBeTruthy()
+      expect(catalog.contact.form.details_hint).toBeTruthy()
     }
   })
 
@@ -32,6 +35,10 @@ describe('landing page mobile-first refinements', () => {
     expect(await readFile('app/components/ui/BookingCalendar.vue', 'utf8')).toContain('flex min-h-11 items-center justify-center')
     expect(blog).toContain('btn-secondary mt-5 min-h-11')
     expect(contact).toContain('inline-flex min-h-11 items-center text-violet-600')
+    expect(contact).toContain(':aria-expanded="detailsOpen"')
+    expect(contact).toContain('aria-controls="contact-project-details"')
+    expect(contact).toContain("window.addEventListener('aq:contact-open', handleContactOpen)")
+    expect(contact).toContain('nameInputRef.value?.focus')
     expect(styles).toContain(':where(a, button, input, select, textarea, summary, [role="button"])')
     expect(styles).toContain('transition-duration: 120ms !important')
   })

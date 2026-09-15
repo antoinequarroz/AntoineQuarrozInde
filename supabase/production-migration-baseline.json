@@ -41,5 +41,6 @@
   { "filename": "20260914084443_add_client_follow_up_fields_after_social.sql", "sha256": "0bfbcf5efe122399257559d886284cf8cd627ea5565a58920999ccd05086ec85" },
   { "filename": "20260914165843_transactional_quote_conversion.sql", "sha256": "e44977c061eaa72c16fe9b608bc16a0f5694e0d591269fb22bda6c3d168f1f34" },
   { "filename": "20260914195144_allow_project_github_only.sql", "sha256": "d9b55c1a1355590c74d137ce8f0da5088e47711b2c617464326a0d9d4594627b" },
-  { "filename": "20260915072438_add_lumail_delivery_automation.sql", "sha256": "3160b3a493195e2403b60514178c65e8bcb0452c74cfded95ea058dc7cf485ad" }
+  { "filename": "20260915072438_add_lumail_delivery_automation.sql", "sha256": "3160b3a493195e2403b60514178c65e8bcb0452c74cfded95ea058dc7cf485ad" },
+  { "filename": "20260915180656_add_contact_submission_delivery.sql", "sha256": "467fb11ce5da8ca22c7ade3a9544a2f3d14233368e560ae43d4ff12fd8c58028" }
 ]

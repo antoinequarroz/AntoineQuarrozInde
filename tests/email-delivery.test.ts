@@ -46,9 +46,10 @@ describe('tracked email delivery', () => {
   it('reserves before sending and records provider success', async () => {
     const db = database()
     const send = vi.fn().mockResolvedValue({ emailId: 'mail-1' })
-    const result = await sendTrackedEmail(base, { supabase: db, send })
+    const result = await sendTrackedEmail({ ...base, replyTo: 'prospect@example.com' }, { supabase: db, send })
     expect(db.inserts[0]).toMatchObject({ organization_id: 'org-1', recipient: 'client@example.com', status: 'pending' })
     expect(send).toHaveBeenCalledOnce()
+    expect(send).toHaveBeenCalledWith(expect.objectContaining({ replyTo: 'prospect@example.com' }))
     expect(db.updates).toContainEqual(expect.objectContaining({ status: 'sent', provider_id: 'mail-1' }))
     expect(result.status).toBe('sent')
   })
@@ -124,8 +125,8 @@ describe('tracked email delivery', () => {
       },
     }
     const send = vi.fn().mockResolvedValue({ emailId: 'mail-retry' })
-    const result = await retryTrackedEmail({ organizationId: 'org-1', deliveryId: 9, recipient: 'a@example.com', subject: 'Facture', text: 'T', html: '<p>T</p>' }, { supabase: db, send })
-    expect(send).toHaveBeenCalledWith(expect.objectContaining({ idempotencyKey: 'safe-key' }))
+    const result = await retryTrackedEmail({ organizationId: 'org-1', deliveryId: 9, recipient: 'a@example.com', subject: 'Facture', text: 'T', html: '<p>T</p>', replyTo: 'prospect@example.com' }, { supabase: db, send })
+    expect(send).toHaveBeenCalledWith(expect.objectContaining({ idempotencyKey: 'safe-key', replyTo: 'prospect@example.com' }))
     expect(updates).toContainEqual(expect.objectContaining({ attempt_count: 2 }))
     expect(result.status).toBe('sent')
   })

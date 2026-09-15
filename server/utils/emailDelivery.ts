@@ -2,8 +2,9 @@ import type { CommercialLocale, CommercialTemplateKey } from './commercialEmailT
 
 export type DeliveryCategory = 'transactional' | 'marketing'
 type DeliveryDependencies = { supabase?: any, send?: typeof sendAppEmail }
+type DeliveryTemplateKey = CommercialTemplateKey | 'contact_notification'
 
-function errorCode(error: unknown) {
+export function emailDeliveryErrorCode(error: unknown) {
   const value = error as { statusCode?: number, name?: string, message?: string }
   if (value?.statusCode === 503) return 'not_configured'
   if (/timeout|abort/i.test(`${value?.name || ''} ${value?.message || ''}`)) return 'timeout_ambiguous'
@@ -15,15 +16,16 @@ export async function sendTrackedEmail(input: {
   organizationId: string
   clientId?: number | null
   category: DeliveryCategory
-  templateKey: CommercialTemplateKey
+  templateKey: DeliveryTemplateKey
   locale: CommercialLocale
   recipient: string
-  entityType?: 'quote' | 'invoice' | 'payment'
+  entityType?: 'quote' | 'invoice' | 'payment' | 'contact_message'
   entityId?: string | number | null
   idempotencyKey: string
   subject: string
   text: string
   html: string
+  replyTo?: string | string[]
   beforeSend?: (deliveryId: number) => Promise<boolean>
 }, dependencies: DeliveryDependencies = {}) {
   const supabase = dependencies.supabase || getSupabaseAdmin()
@@ -66,10 +68,10 @@ export async function sendTrackedEmail(input: {
 
   let result: Awaited<ReturnType<typeof sendAppEmail>>
   try {
-    result = await send({ to: input.recipient, subject: input.subject, text: input.text, html: input.html, idempotencyKey: delivery.idempotency_key, tags: [{ name: 'category', value: input.templateKey }] })
+    result = await send({ to: input.recipient, subject: input.subject, text: input.text, html: input.html, replyTo: input.replyTo, idempotencyKey: delivery.idempotency_key, tags: [{ name: 'category', value: input.templateKey }] })
   }
   catch (error) {
-    const code = errorCode(error)
+    const code = emailDeliveryErrorCode(error)
     await supabase.from('email_deliveries').update({ status: code === 'timeout_ambiguous' ? 'uncertain' : 'failed', error_code: code, last_attempt_at: new Date().toISOString() }).eq('organization_id', input.organizationId).eq('id', reserved.id).eq('status', 'pending')
     throw error
   }
@@ -86,6 +88,7 @@ export async function retryTrackedEmail(input: {
   subject: string
   text: string
   html: string
+  replyTo?: string | string[]
   beforeSend?: (deliveryId: number) => Promise<boolean>
 }, dependencies: DeliveryDependencies = {}) {
   const supabase = dependencies.supabase || getSupabaseAdmin()
@@ -111,10 +114,10 @@ export async function retryTrackedEmail(input: {
   }
   let result: Awaited<ReturnType<typeof sendAppEmail>>
   try {
-    result = await send({ to: input.recipient, subject: input.subject, text: input.text, html: input.html, idempotencyKey: delivery.idempotency_key, tags: [{ name: 'category', value: delivery.template_key }] })
+    result = await send({ to: input.recipient, subject: input.subject, text: input.text, html: input.html, replyTo: input.replyTo, idempotencyKey: delivery.idempotency_key, tags: [{ name: 'category', value: delivery.template_key }] })
   }
   catch (error) {
-    const code = errorCode(error)
+    const code = emailDeliveryErrorCode(error)
     await supabase.from('email_deliveries').update({ status: code === 'timeout_ambiguous' ? 'uncertain' : 'failed', error_code: code, last_attempt_at: new Date().toISOString() }).eq('organization_id', input.organizationId).eq('id', delivery.id).eq('status', 'pending')
     throw error
   }

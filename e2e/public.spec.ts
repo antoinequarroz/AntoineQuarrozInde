@@ -118,6 +118,32 @@ test('analytics failure never blocks the primary contact path', async ({ page })
   await expect(page.locator('#contact-form')).toBeVisible()
 })
 
+test('contact form progressively reveals optional project details at 320px', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 720 })
+  await page.goto('/#contact')
+
+  const form = page.locator('#contact-form form')
+  await expect(form).toHaveCount(0)
+  const openForm = page.getByRole('button', { name: /travailler avec moi|work with me|mit mir arbeiten/i })
+  await expect(openForm).toBeEnabled()
+  await page.waitForTimeout(500)
+  await openForm.click()
+  await expect(form).toBeVisible()
+  await expect(page.getByLabel(/nom|name/i)).toBeFocused()
+  await expect(page.getByLabel(/nom|name/i)).toHaveAttribute('required', '')
+  await expect(page.getByLabel(/e-?mail/i)).toHaveAttribute('required', '')
+  await expect(page.getByLabel(/message|nachricht/i)).toHaveAttribute('required', '')
+
+  const details = page.locator('button[aria-controls="contact-project-details"]')
+  await expect(details).toHaveAttribute('aria-expanded', 'false')
+  await expect(page.getByLabel(/budget indicatif|estimated budget|budgetrahmen/i)).toHaveCount(0)
+  await details.click()
+  await expect(details).toHaveAttribute('aria-expanded', 'true')
+  await expect(page.getByLabel(/budget indicatif|estimated budget|budgetrahmen/i)).toBeVisible()
+  await expect(page.getByLabel(/budget indicatif|estimated budget|budgetrahmen/i)).not.toHaveAttribute('required', '')
+  await expect(page.getByLabel(/délai cible|target timeline|gewünschter zeitrahmen/i)).not.toHaveAttribute('required', '')
+})
+
 test('mobile portfolio makes horizontal browsing and project actions explicit', { tag: '@live-data' }, async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/#portfolio')

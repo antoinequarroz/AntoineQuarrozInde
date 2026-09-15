@@ -690,3 +690,23 @@ GOOGLE_PLACE_ID=...
 
 La clé Google doit être restreinte à l'API Places et, si possible, aux adresses IP
 du VPS. Ne jamais la versionner dans Git.
+
+## Notifications du formulaire de contact
+
+Le formulaire public enregistre toujours le message dans le CRM avant de
+réserver la notification Lumail. La production doit définir une clé Lumail
+valide et utiliser la boîte canonique suivante :
+
+```dotenv
+LUMAIL_API_KEY=...
+EMAIL_FROM=info@antoinequarroz.ch
+CONTACT_EMAIL=info@antoinequarroz.ch
+```
+
+Un succès public signifie que Lumail a accepté la notification. Si le CRM
+contient le message mais que la boîte ne l'a pas reçu, consulter
+`/admin/emails` : un état `failed` peut être relancé manuellement après
+correction de la configuration, tandis qu'un état `uncertain` doit d'abord être
+vérifié chez Lumail pour éviter un double envoi. Le corps du message reste dans
+`contact_messages`; le registre `email_deliveries` ne conserve que les
+métadonnées de livraison et l'identifiant fournisseur.

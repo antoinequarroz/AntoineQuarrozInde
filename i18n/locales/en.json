@@ -220,7 +220,13 @@
       "error": "Error sending message. Please try again or contact me directly.",
       "project_prefix": "Project:",
       "selected_service": "Selected service:",
-      "captcha_error": "The anti-spam check is not ready yet. Please wait a moment or contact me by email."
+      "captcha_error": "The anti-spam check is not ready yet. Please wait a moment or contact me by email.",
+      "open_title": "Let’s discuss your project",
+      "open_description": "A few lines are enough to get started. Budget and timing remain completely optional.",
+      "open_cta": "Work with me",
+      "details_show": "Add project details",
+      "details_hide": "Hide project details",
+      "details_hint": "Subject, budget and timing — optional"
     },
     "info": {
       "email": "contact-email",

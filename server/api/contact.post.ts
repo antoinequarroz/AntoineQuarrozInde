@@ -1,9 +1,10 @@
+import { buildContactNotification, ContactSubmissionError, contactPayloadFingerprint, isValidMailbox, normalizeContactSubmission } from '../utils/contactSubmission'
+import { emailDeliveryErrorCode, sendTrackedEmail } from '../utils/emailDelivery'
+import { isEmailConfigured } from '../utils/emailTransport'
+
 const RATE_WINDOW_MS = 60_000
 const RATE_LIMIT_MAX = 5
 const MIN_FORM_FILL_MS = 1200
-const MAX_NAME_LENGTH = 120
-const MAX_SUBJECT_LENGTH = 180
-const MAX_MESSAGE_LENGTH = 10_000
 // A JavaScript character may occupy up to four UTF-8 bytes. Keep enough room
 // for the documented 10,000-character message plus the remaining JSON fields.
 const MAX_CONTACT_REQUEST_BYTES = 48 * 1024
@@ -13,13 +14,8 @@ const contactRequests = createBoundedRateLimiter({
   maxKeys: 500,
 })
 
-function escapeHtml(input: string) {
-  return input
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;')
+function publicContactError(statusCode: number, message: string) {
+  return createError({ statusCode, message })
 }
 
 export default defineEventHandler(async (event) => {
@@ -27,44 +23,30 @@ export default defineEventHandler(async (event) => {
   const ip = getRequestIP(event, { xForwardedFor: true }) || 'unknown'
   const now = Date.now()
   if (!contactRequests.isAllowed(ip, now)) {
-    throw createError({ statusCode: 429, message: 'Trop de requetes, reessayez plus tard.' })
+    throw publicContactError(429, 'Trop de requêtes, réessayez plus tard.')
   }
 
   const body = await readJsonBodyLimited(event, MAX_CONTACT_REQUEST_BYTES)
-  const { name, email, subject, message, website, startedAt, turnstileToken, attribution } = body
-
-  if (!name || !email || !message) {
-    throw createError({ statusCode: 400, message: 'Champs requis manquants' })
+  let contact: ReturnType<typeof normalizeContactSubmission>
+  try {
+    contact = normalizeContactSubmission(body)
   }
-  const normalizedName = String(name).trim()
-  const normalizedEmail = String(email).trim().toLowerCase()
-  const normalizedSubject = String(subject || '').trim()
-  const normalizedMessage = String(message).trim()
-  if (!normalizedName || normalizedName.length > MAX_NAME_LENGTH) {
-    throw createError({ statusCode: 400, message: 'Le nom est invalide.' })
-  }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail) || normalizedEmail.length > 254) {
-    throw createError({ statusCode: 400, message: 'L’adresse e-mail est invalide.' })
-  }
-  if (normalizedSubject.length > MAX_SUBJECT_LENGTH || !normalizedMessage || normalizedMessage.length > MAX_MESSAGE_LENGTH) {
-    throw createError({ statusCode: 400, message: 'Le message est vide ou trop long.' })
-  }
-  if (website && String(website).trim().length > 0) {
-    throw createError({ statusCode: 400, message: 'Requete invalide' })
+  catch (error) {
+    if (error instanceof ContactSubmissionError) {
+      throw publicContactError(400, 'Le formulaire contient une valeur invalide.')
+    }
+    throw error
   }
 
-  const started = Number(startedAt)
+  const started = Number(body.startedAt)
   if (!Number.isFinite(started) || now - started < MIN_FORM_FILL_MS) {
-    throw createError({ statusCode: 400, message: 'Soumission trop rapide' })
+    throw publicContactError(400, 'Soumission trop rapide.')
   }
 
   const config = useRuntimeConfig()
-  const cleanAttribution = leadAttributionPayload(attribution)
-  const acquisitionChannel = leadAcquisitionChannel(attribution)
-
   if (config.turnstileSecretKey) {
-    if (!turnstileToken || typeof turnstileToken !== 'string') {
-      throw createError({ statusCode: 400, message: 'Validation anti-bot manquante' })
+    if (!body.turnstileToken || typeof body.turnstileToken !== 'string') {
+      throw publicContactError(400, 'Validation anti-bot manquante.')
     }
 
     const verifyResponse = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
@@ -72,145 +54,188 @@ export default defineEventHandler(async (event) => {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
         secret: config.turnstileSecretKey,
-        response: turnstileToken,
+        response: body.turnstileToken,
         remoteip: ip,
       }),
     })
-
     const verifyData = await verifyResponse.json() as { success?: boolean }
-    if (!verifyData?.success) {
-      throw createError({ statusCode: 400, message: 'Echec de validation anti-bot' })
-    }
-  }
-
-  // If no API key configured, return success anyway (dev mode)
-  if (!isEmailConfigured(config)) {
-    console.warn('[contact] no email provider configured — email not actually sent')
-    return { success: true, acquisitionChannel }
+    if (!verifyData?.success) throw publicContactError(400, 'Échec de validation anti-bot.')
   }
 
   const org = await resolveOrganizationContext(event)
+  if (!org?.id) throw publicContactError(503, 'Le service de contact est temporairement indisponible.')
+
   const supabase = getSupabaseAdmin()
+  const cleanAttribution = leadAttributionPayload(body.attribution)
+  const acquisitionChannel = leadAcquisitionChannel(body.attribution)
+  const fingerprint = contactPayloadFingerprint(contact)
 
-  const safeSubject = normalizedSubject || 'Nouveau message'
-  const safeName = escapeHtml(normalizedName)
-  const safeEmail = escapeHtml(normalizedEmail)
-  const safeMessage = escapeHtml(normalizedMessage)
-  const safeSubjectHtml = escapeHtml(safeSubject)
+  const { data: insertedMessage, error: saveError } = await supabase
+    .from('contact_messages')
+    .insert({
+      organization_id: org.id,
+      submission_id: contact.submissionId,
+      payload_fingerprint: fingerprint,
+      name: contact.name,
+      email: contact.email,
+      subject: contact.subject,
+      message: contact.message,
+      locale: contact.locale,
+      budget: contact.budget,
+      timeline: contact.timeline,
+      notification_status: 'pending',
+      status: 'new',
+      ...cleanAttribution,
+    })
+    .select('id,payload_fingerprint,notification_status,notification_provider_id')
+    .single()
 
-  const { error: saveError } = await supabase.from('contact_messages').insert({
-    organization_id: org?.id ?? null,
-    name: normalizedName,
-    email: normalizedEmail,
-    subject: safeSubject,
-    message: normalizedMessage,
-    status: 'new',
-    ...cleanAttribution,
-  })
-  if (saveError) {
-    console.warn('[contact] unable to persist contact_messages:', saveError.message)
+  let messageRow = insertedMessage
+  if (saveError?.code === '23505') {
+    const { data: existing, error } = await supabase
+      .from('contact_messages')
+      .select('id,payload_fingerprint,notification_status,notification_provider_id')
+      .eq('organization_id', org.id)
+      .eq('submission_id', contact.submissionId)
+      .maybeSingle()
+    if (error || !existing || existing.payload_fingerprint !== fingerprint) {
+      throw publicContactError(409, 'Cette soumission ne peut pas être rejouée.')
+    }
+    if (existing.notification_status === 'sent') {
+      return { success: true, duplicate: true, acquisitionChannel }
+    }
+    throw publicContactError(409, existing.notification_status === 'uncertain'
+      ? 'La livraison précédente doit être vérifiée avant une nouvelle tentative.'
+      : 'Cette demande est déjà enregistrée et sa notification nécessite une reprise contrôlée.')
+  }
+  if (saveError || !messageRow) {
+    console.warn('[contact] unable to persist contact message', { correlationId, code: saveError?.code || 'missing_row' })
+    throw publicContactError(500, 'Le message ne peut pas être enregistré pour le moment.')
   }
 
   let linkedClientId: number | null = null
-  if (org?.id) {
-    const { data: existingClient } = await supabase
-      .from('clients')
-      .select('id,name,email,status')
-      .eq('organization_id', org.id)
-      .ilike('email', normalizedEmail)
-      .maybeSingle()
+  const { data: existingClient, error: existingClientError } = await supabase
+    .from('clients')
+    .select('id,name,email,status')
+    .eq('organization_id', org.id)
+    .ilike('email', contact.email)
+    .maybeSingle()
 
-    if (existingClient) {
-      linkedClientId = Number(existingClient.id)
+  if (existingClientError) {
+    console.warn('[contact] unable to look up lead', { correlationId })
+  }
+  else if (existingClient) {
+    linkedClientId = Number(existingClient.id)
+    await recordCommercialWorkflowEvent({
+      event,
+      correlationId,
+      organizationId: org.id,
+      stage: 'lead',
+      outcome: 'recovered',
+      entityType: 'client',
+      entityId: linkedClientId,
+      clientId: linkedClientId,
+      code: 'lead_already_exists',
+    })
+  }
+  else {
+    const { data: createdClient, error: clientError } = await supabase
+      .from('clients')
+      .insert({
+        organization_id: org.id,
+        name: contact.name,
+        company: null,
+        email: contact.email,
+        phone: null,
+        status: 'lead',
+        notes: `Lead créé automatiquement depuis le formulaire de contact.\nSujet: ${contact.subject}\n\n${contact.message}`,
+        acquisition_source: cleanAttribution.utm_source || cleanAttribution.referrer_host || 'direct',
+        acquisition_medium: cleanAttribution.utm_medium,
+        acquisition_campaign: cleanAttribution.utm_campaign,
+      })
+      .select('id,name,email,status')
+      .single()
+
+    if (clientError) {
+      console.warn('[contact] unable to create lead client', { correlationId })
       await recordCommercialWorkflowEvent({
         event,
         correlationId,
         organizationId: org.id,
         stage: 'lead',
-        outcome: 'recovered',
+        outcome: 'failure',
+        entityType: 'client',
+        code: 'lead_creation_failed',
+      })
+    }
+    else if (createdClient) {
+      linkedClientId = Number(createdClient.id)
+      await logAudit({
+        organizationId: org.id,
+        action: 'lead_created_from_contact',
+        entityType: 'client',
+        entityId: createdClient.id,
+        clientId: linkedClientId,
+        payload: { name: createdClient.name, email: createdClient.email, status: createdClient.status, source: 'contact_form', subject: contact.subject },
+      })
+      await recordCommercialWorkflowEvent({
+        event,
+        correlationId,
+        organizationId: org.id,
+        stage: 'lead',
+        outcome: 'success',
         entityType: 'client',
         entityId: linkedClientId,
         clientId: linkedClientId,
-        code: 'lead_already_exists',
       })
-    } else {
-      const { data: createdClient, error: clientError } = await supabase
-        .from('clients')
-        .insert({
-          organization_id: org.id,
-          name: normalizedName,
-          company: null,
-          email: normalizedEmail,
-          phone: null,
-          status: 'lead',
-          notes: `Lead créé automatiquement depuis le formulaire de contact.\nSujet: ${safeSubject}\n\n${normalizedMessage}`,
-          acquisition_source: cleanAttribution.utm_source || cleanAttribution.referrer_host || 'direct',
-          acquisition_medium: cleanAttribution.utm_medium,
-          acquisition_campaign: cleanAttribution.utm_campaign,
-        })
-        .select('id,name,email,status')
-        .single()
-
-      if (clientError) {
-        console.warn('[contact] unable to create lead client')
-        await recordCommercialWorkflowEvent({
-          event,
-          correlationId,
-          organizationId: org.id,
-          stage: 'lead',
-          outcome: 'failure',
-          entityType: 'client',
-          code: 'lead_creation_failed',
-        })
-      } else if (createdClient) {
-        linkedClientId = Number(createdClient.id)
-        await logAudit({
-          organizationId: org.id,
-          action: 'lead_created_from_contact',
-          entityType: 'client',
-          entityId: createdClient.id,
-          clientId: linkedClientId,
-          payload: {
-            name: createdClient.name,
-            email: createdClient.email,
-            status: createdClient.status,
-            source: 'contact_form',
-            subject: safeSubject,
-          },
-        })
-        await recordCommercialWorkflowEvent({
-          event,
-          correlationId,
-          organizationId: org.id,
-          stage: 'lead',
-          outcome: 'success',
-          entityType: 'client',
-          entityId: linkedClientId,
-          clientId: linkedClientId,
-        })
-      }
     }
   }
 
-  await sendAppEmail({
-    to: config.contactEmail,
-    replyTo: normalizedEmail,
-    subject: `[Portfolio] ${safeSubject}`,
-    html: `
-      <div style="font-family:sans-serif;max-width:560px;margin:0 auto">
-        <h2 style="color:#7c3aed">Nouveau message depuis le portfolio</h2>
-        <table style="width:100%;border-collapse:collapse">
-          <tr><td style="padding:8px 0;color:#6b7280;width:100px">De</td><td style="padding:8px 0;font-weight:600">${safeName}</td></tr>
-          <tr><td style="padding:8px 0;color:#6b7280">Email</td><td style="padding:8px 0"><a href="mailto:${safeEmail}">${safeEmail}</a></td></tr>
-          <tr><td style="padding:8px 0;color:#6b7280">Sujet</td><td style="padding:8px 0">${safeSubjectHtml}</td></tr>
-        </table>
-        <hr style="border:none;border-top:1px solid #e5e7eb;margin:16px 0">
-        <p style="color:#374151;line-height:1.6;white-space:pre-wrap">${safeMessage}</p>
-      </div>
-    `,
-    idempotencyKey: `contact-${linkedClientId || normalizedEmail}-${now}`,
-    tags: [{ name: 'category', value: 'contact_notification' }],
-  })
+  if (linkedClientId) {
+    const { error } = await supabase.from('contact_messages').update({ client_id: linkedClientId }).eq('organization_id', org.id).eq('id', messageRow.id)
+    if (error) console.warn('[contact] unable to link contact message to lead', { correlationId })
+  }
+
+  const recipient = String(config.contactEmail || '').trim().toLowerCase()
+  if (!isEmailConfigured(config) || !isValidMailbox(recipient)) {
+    const errorCode = isEmailConfigured(config) ? 'invalid_recipient' : 'not_configured'
+    await supabase.from('contact_messages').update({ notification_status: 'failed', notification_error_code: errorCode }).eq('organization_id', org.id).eq('id', messageRow.id)
+    console.error('[contact] notification configuration unavailable', { correlationId, code: errorCode })
+    throw publicContactError(503, 'Le message est enregistré, mais la notification e-mail est temporairement indisponible.')
+  }
+
+  const notification = buildContactNotification(contact)
+  try {
+    const delivery = await sendTrackedEmail({
+      organizationId: org.id,
+      category: 'transactional',
+      templateKey: 'contact_notification',
+      locale: contact.locale,
+      recipient,
+      entityType: 'contact_message',
+      entityId: messageRow.id,
+      idempotencyKey: `contact:${contact.submissionId}`,
+      subject: notification.subject,
+      text: notification.text,
+      html: notification.html,
+      replyTo: contact.email,
+    })
+    const { error } = await supabase.from('contact_messages').update({
+      notification_status: 'sent',
+      notification_provider_id: delivery.emailId,
+      notification_error_code: null,
+    }).eq('organization_id', org.id).eq('id', messageRow.id)
+    if (error) console.warn('[contact] Lumail accepted the notification but message tracking could not be updated', { correlationId })
+  }
+  catch (error) {
+    const code = emailDeliveryErrorCode(error)
+    await supabase.from('contact_messages').update({
+      notification_status: code === 'timeout_ambiguous' ? 'uncertain' : 'failed',
+      notification_error_code: code,
+    }).eq('organization_id', org.id).eq('id', messageRow.id)
+    console.error('[contact] notification failed', { correlationId, code })
+    throw publicContactError(code === 'timeout_ambiguous' ? 409 : 502, 'Le message est enregistré, mais sa notification e-mail n’a pas abouti.')
+  }
 
   return { success: true, clientId: linkedClientId, acquisitionChannel }
 })
