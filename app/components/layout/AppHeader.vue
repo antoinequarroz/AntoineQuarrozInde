@@ -6,6 +6,7 @@ const isScrolled = computed(() => scrollY.value > 70)
 const activeSection = ref('hero')
 
 const isMenuOpen = ref(false)
+const isMenuHydrated = ref(false)
 let activeSectionFrame = 0
 
 const menuLabels = computed(() => ({
@@ -57,6 +58,7 @@ watch(isMenuOpen, (open) => {
 })
 
 onMounted(() => {
+  isMenuHydrated.value = true
   scheduleActiveSectionUpdate()
   window.addEventListener('scroll', scheduleActiveSectionUpdate, { passive: true })
   window.addEventListener('resize', scheduleActiveSectionUpdate, { passive: true })
@@ -136,6 +138,7 @@ onBeforeUnmount(() => {
             :aria-label="isMenuOpen ? menuLabels.close : menuLabels.open"
             :aria-expanded="isMenuOpen"
             aria-controls="mobile-navigation"
+            :disabled="!isMenuHydrated"
             @click="isMenuOpen = !isMenuOpen"
           >
             <Transition name="menu-icon" mode="out-in">
