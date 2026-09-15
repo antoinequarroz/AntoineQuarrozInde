@@ -21,6 +21,8 @@ export default defineEventHandler(async (event) => {
     billing_country: String(body.billingCountry || 'CH').trim().toUpperCase(),
     ...normalizeClientAttribution(body),
     ...normalizeClientFollowUp(body),
+    preferred_locale: body.preferredLocale === 'en' || body.preferredLocale === 'de' ? body.preferredLocale : 'fr',
+    marketing_opt_out_at: body.marketingOptOutAt ? String(body.marketingOptOutAt) : null,
   }
 
   if (!payload.name || !payload.email) {

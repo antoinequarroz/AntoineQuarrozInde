@@ -40,6 +40,8 @@ export default defineEventHandler(async (event) => {
     ['billingPostalCode', 'billing_postal_code', (value: unknown) => value ? String(value).trim() : null],
     ['billingCity', 'billing_city', (value: unknown) => value ? String(value).trim() : null],
     ['billingCountry', 'billing_country', (value: unknown) => String(value || 'CH').trim().toUpperCase()],
+    ['preferredLocale', 'preferred_locale', (value: unknown) => value === 'en' || value === 'de' ? value : 'fr'],
+    ['marketingOptOutAt', 'marketing_opt_out_at', (value: unknown) => value ? String(value) : null],
   ] as const
   const attributionFields = [
     ['acquisitionSource', 'acquisition_source'],

@@ -71,6 +71,8 @@ const form = reactive({
   acquisitionCampaign: '',
   nextFollowUpAt: '',
   followUpNote: '',
+  preferredLocale: 'fr' as 'fr' | 'en' | 'de',
+  marketingOptOut: false,
 })
 
 const queryState = computed(() => {
@@ -162,7 +164,7 @@ async function runPortalAction(client: Client, action: 'invite' | 'resend' | 're
 }
 
 function resetForm() {
-  Object.assign(form, { name: '', company: '', email: '', phone: '', status: 'active', notes: '', billingStreet: '', billingBuilding: '', billingPostalCode: '', billingCity: '', billingCountry: 'CH', acquisitionSource: '', acquisitionMedium: '', acquisitionCampaign: '', nextFollowUpAt: '', followUpNote: '' })
+  Object.assign(form, { name: '', company: '', email: '', phone: '', status: 'active', notes: '', billingStreet: '', billingBuilding: '', billingPostalCode: '', billingCity: '', billingCountry: 'CH', acquisitionSource: '', acquisitionMedium: '', acquisitionCampaign: '', nextFollowUpAt: '', followUpNote: '', preferredLocale: 'fr', marketingOptOut: false })
   inviteAfterCreate.value = false
 }
 
@@ -191,6 +193,8 @@ function openEdit(client: Client) {
     acquisitionCampaign: client.acquisitionCampaign || '',
     nextFollowUpAt: client.nextFollowUpAt || '',
     followUpNote: client.followUpNote || '',
+    preferredLocale: client.preferredLocale || 'fr',
+    marketingOptOut: Boolean(client.marketingOptOutAt),
   })
   showForm.value = true
 }
@@ -319,6 +323,8 @@ async function handleSubmit() {
     acquisitionCampaign: form.acquisitionCampaign || null,
     nextFollowUpAt: form.nextFollowUpAt || null,
     followUpNote: form.followUpNote || null,
+    preferredLocale: form.preferredLocale,
+    marketingOptOutAt: form.marketingOptOut ? (editing.value?.marketingOptOutAt || new Date().toISOString()) : null,
   }
 
   try {
@@ -689,6 +695,13 @@ onMounted(async () => {
             <option value="active">Actif</option>
             <option value="inactive">Inactif</option>
           </select></label>
+          <fieldset class="space-y-3 rounded-lg border border-gray-200 p-3 dark:border-white/[0.08]">
+            <legend class="px-1 text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">Préférences e-mail</legend>
+            <label class="block space-y-1 text-xs font-medium text-gray-700 dark:text-gray-200">Langue des documents
+              <select v-model="form.preferredLocale" class="input-field"><option value="fr">Français</option><option value="en">English</option><option value="de">Deutsch</option></select>
+            </label>
+            <label class="flex items-start gap-3 text-sm text-gray-700 dark:text-gray-200"><input v-model="form.marketingOptOut" type="checkbox" class="mt-0.5 h-4 w-4 rounded border-gray-300 text-violet-600"><span><strong class="block">Désinscrit du marketing</strong><span class="block text-xs text-gray-500">Les devis, factures, reçus et relances contractuelles restent envoyés.</span></span></label>
+          </fieldset>
           <fieldset class="space-y-3 rounded-lg border border-violet-200/70 bg-violet-50/50 p-3 dark:border-violet-500/20 dark:bg-violet-500/[0.06]">
             <legend class="px-1 text-xs font-semibold uppercase text-violet-700 dark:text-violet-300">Suivi commercial</legend>
             <p class="text-xs leading-5 text-gray-600 dark:text-gray-300">La prochaine relance remontera automatiquement dans les actions du jour à la date choisie.</p>

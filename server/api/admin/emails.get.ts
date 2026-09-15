@@ -1,66 +1,53 @@
-import { Lumail } from 'lumail'
-
-const EMAIL_STATUSES = new Set([
-  'queued',
-  'sent',
-  'delivered',
-  'opened',
-  'clicked',
-  'bounced',
-  'complained',
-  'failed',
-])
-
-function safeCursor(value: unknown) {
-  const cursor = typeof value === 'string' ? value.trim() : ''
-  return cursor && cursor.length <= 200 ? cursor : undefined
-}
+const DELIVERY_STATUSES = new Set(['pending', 'sent', 'failed', 'uncertain', 'suppressed'])
 
 export default defineEventHandler(async (event) => {
-  await requireAdmin(event)
-
-  const config = useRuntimeConfig()
-  const apiKey = String(config.lumailApiKey || '')
-  if (!apiKey) {
-    throw createError({ statusCode: 503, message: 'Le suivi Lumail n’est pas configuré.' })
-  }
-
+  const { org } = await requireAdmin(event)
   const query = getQuery(event)
   const limit = Math.min(Math.max(Number(query.limit) || 40, 1), 100)
-  const after = safeCursor(query.after)
-  const before = after ? undefined : safeCursor(query.before)
+  const page = Math.max(Number(query.page) || 0, 0)
+  const status = typeof query.status === 'string' && DELIVERY_STATUSES.has(query.status) ? query.status : null
+  const from = page * limit
 
-  const lumail = new Lumail({ apiKey })
-  const { data, error } = await lumail.emails.list({ limit, after, before })
+  let request = getSupabaseAdmin()
+    .from('email_deliveries')
+    .select('id,client_id,category,template_key,locale,recipient,entity_type,entity_id,status,provider_id,attempt_count,error_code,created_at,last_attempt_at,sent_at', { count: 'exact' })
+    .eq('organization_id', org.id)
+    .order('created_at', { ascending: false })
+    .range(from, from + limit - 1)
+  if (status) request = request.eq('status', status)
+  const { data, count, error } = await request
+  if (error) throw createError({ statusCode: 500, message: 'L’historique des e-mails ne peut pas être chargé.' })
 
-  if (error) {
-    throw createError({ statusCode: 502, message: 'Lumail ne peut pas fournir l’historique pour le moment.' })
-  }
-
-  const emails = (data?.data || []).map(email => ({
-    id: email.id,
-    messageId: email.message_id,
-    to: email.to,
-    from: email.from,
-    subject: email.subject,
-    createdAt: email.created_at,
-    status: EMAIL_STATUSES.has(email.last_event) ? email.last_event : 'sent',
-    tags: (email.tags || []).map(tag => ({ name: tag.name, value: tag.value })),
+  const emails = (data || []).map(row => ({
+    id: String(row.id),
+    messageId: row.provider_id,
+    to: [row.recipient],
+    from: 'info@antoinequarroz.ch',
+    subject: String(row.template_key).replaceAll('_', ' '),
+    createdAt: row.created_at,
+    lastAttemptAt: row.last_attempt_at,
+    sentAt: row.sent_at,
+    status: row.status,
+    attempts: row.attempt_count,
+    errorCode: row.error_code,
+    locale: row.locale,
+    entityType: row.entity_type,
+    entityId: row.entity_id,
+    canRetry: row.status === 'failed' && Number(row.attempt_count) < 20,
+    tags: [
+      { name: 'category', value: row.category },
+      { name: 'template', value: row.template_key },
+      { name: 'locale', value: row.locale },
+    ],
   }))
-
   const counts = emails.reduce((summary, email) => {
     summary.total += 1
-    if (['delivered', 'opened', 'clicked'].includes(email.status)) summary.delivered += 1
-    if (['opened', 'clicked'].includes(email.status)) summary.engaged += 1
-    if (['bounced', 'complained', 'failed'].includes(email.status)) summary.attention += 1
-    if (['queued', 'sent'].includes(email.status)) summary.pending += 1
+    if (email.status === 'sent') summary.sent += 1
+    if (email.status === 'failed' || email.status === 'uncertain') summary.attention += 1
+    if (email.status === 'pending') summary.pending += 1
+    if (email.status === 'suppressed') summary.suppressed += 1
     return summary
-  }, { total: 0, delivered: 0, engaged: 0, attention: 0, pending: 0 })
+  }, { total: 0, sent: 0, attention: 0, pending: 0, suppressed: 0 })
 
-  return {
-    emails,
-    counts,
-    hasMore: Boolean(data?.has_more),
-    nextCursor: data?.has_more ? emails.at(-1)?.id || null : null,
-  }
+  return { emails, counts, total: count || 0, hasMore: from + emails.length < (count || 0), nextPage: from + emails.length < (count || 0) ? page + 1 : null }
 })

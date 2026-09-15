@@ -97,6 +97,8 @@ export interface Client {
   nextFollowUpAt: string | null
   followUpNote: string | null
   lastContactedAt: string | null
+  preferredLocale?: Locale
+  marketingOptOutAt?: string | null
   portalUserId?: string | null
   portalInvitedAt?: string | null
   portalActivatedAt?: string | null

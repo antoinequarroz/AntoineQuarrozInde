@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { buildPipelineReminderPlan } from '../server/utils/pipelineReminderPlan'
-import { buildConfirmedPipelineReminderMessage, buildPipelineReminderMessage, confirmationMatchesCandidate, recordProspectReminderSuccess, selectPipelineReminderCandidates, selectPipelineReminderCandidatesForTrigger } from '../server/utils/pipelineReminders'
+import { buildCommercialReminderDelivery, buildConfirmedPipelineReminderMessage, buildPipelineReminderMessage, confirmationMatchesCandidate, recordProspectReminderSuccess, selectPipelineReminderCandidates, selectPipelineReminderCandidatesForTrigger } from '../server/utils/pipelineReminders'
 
 const clients = [{ id: 1, name: 'Client Test', email: 'client@example.com' }]
 
@@ -26,6 +26,15 @@ describe('pipeline reminder plan', () => {
       'quote:10:avant-echeance-3j',
     ])
     expect(result.skipped.outsideMilestone).toBe(1)
+  })
+
+  it('uses organization-specific reminder offsets within the safe plan', () => {
+    const result = buildPipelineReminderPlan({
+      today: '2026-08-10', clients, quoteOffsets: [7], invoiceOffsets: [-5],
+      quotes: [{ id: 12, number: 'DEV-12', client_id: 1, valid_until: '2026-08-17', status: 'sent' }],
+      invoices: [{ id: 23, number: 'FAC-23', client_id: 1, due_at: '2026-08-05', status: 'overdue', balance_cents: 1000 }],
+    })
+    expect(result.candidates.map(candidate => candidate.reminderKey)).toEqual(['invoice:23:retard-5j', 'quote:12:avant-echeance-7j'])
   })
 
   it('deduplicates milestones and reports missing contacts', () => {
@@ -100,6 +109,27 @@ describe('pipeline reminder plan', () => {
     expect(message.text).toContain('<script>')
     expect(message.html).not.toContain('<script>')
     expect(message.html).toContain('&lt;script&gt;')
+  })
+
+  it('preserves the exact manually confirmed subject and body for commercial reminders', () => {
+    const candidate = buildPipelineReminderPlan({
+      today: '2026-08-10', clients, quotes: [{ id: 10, number: 'DEV-10', client_id: 1, valid_until: '2026-08-10', status: 'sent' }], invoices: [],
+    }).candidates[0]!
+    const content = buildCommercialReminderDelivery(candidate, { reminderKey: candidate.reminderKey, email: candidate.email, subject: 'Objet validé', bodyText: 'Texte validé <sans HTML>' })
+    expect(content.subject).toBe('Objet validé')
+    expect(content.text).toBe('Texte validé <sans HTML>')
+    expect(content.html).toContain('&lt;sans HTML&gt;')
+  })
+
+  it('builds localized commercial reminder previews in the client language', () => {
+    const candidate = buildPipelineReminderPlan({
+      today: '2026-08-10', clients: [{ ...clients[0], preferred_locale: 'en' }], quotes: [{ id: 10, number: 'DEV-10', client_id: 1, valid_until: '2026-08-10', status: 'sent' }], invoices: [],
+    }).candidates[0]!
+    const content = buildCommercialReminderDelivery(candidate)
+    expect(content.locale).toBe('en')
+    expect(content.subject).toContain('Quote DEV-10')
+    expect(content.text).toContain('Hello Client Test')
+    expect(content.text).toContain('/portal#devis')
   })
 
   it('offers due prospects only as manually confirmable reminders', () => {
