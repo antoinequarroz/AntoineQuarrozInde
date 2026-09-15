@@ -19,7 +19,14 @@ const navLinks = computed(() => [
   { key: 'contact', href: `${localePath('/')}#contact` },
 ])
 
-const stack = ['Vue 3 / Nuxt', 'React / Next.js', 'SwiftUI', 'Flutter / Dart', 'Rust', 'Supabase']
+const stack = [
+  { label: 'Vue 3 / Nuxt', icons: ['vue', 'nuxt'] },
+  { label: 'React / Next.js', icons: ['react', 'nextjs'] },
+  { label: 'SwiftUI', icons: ['swiftui'] },
+  { label: 'Flutter / Dart', icons: ['flutter', 'dart'] },
+  { label: 'Rust', icons: ['rust'] },
+  { label: 'Supabase', icons: ['supabase'] },
+] as const
 
 const localSeoLinks = [
   { label: 'Cas clients en Valais', href: '/cas-clients-valais' },
@@ -115,10 +122,18 @@ const localSeoLinks = [
               <ul class="space-y-3">
                 <li
                   v-for="tech in stack"
-                  :key="tech"
-                  class="text-sm text-gray-600 dark:text-white/60"
+                  :key="tech.label"
+                  class="flex items-center gap-2 text-sm text-gray-600 dark:text-white/60"
                 >
-                  {{ tech }}
+                  <span class="flex shrink-0 items-center gap-1 text-fuchsia-500/75 dark:text-fuchsia-300/70">
+                    <UiTechnologyIcon
+                      v-for="icon in tech.icons"
+                      :key="icon"
+                      :name="icon"
+                      class="h-3.5 w-3.5"
+                    />
+                  </span>
+                  {{ tech.label }}
                 </li>
               </ul>
             </div>

@@ -66,12 +66,25 @@ describe('landing page mobile-first refinements', () => {
     ])
 
     for (const technology of ['React', 'Next.js', 'SwiftUI', 'Rust']) {
-      expect(about).toContain(`'${technology}'`)
+      expect(about).toContain(`label: '${technology}'`)
     }
-    expect(footer).toContain("'React / Next.js'")
-    expect(footer).toContain("'SwiftUI'")
-    expect(footer).toContain("'Rust'")
+    expect(footer).toContain("label: 'React / Next.js'")
+    expect(footer).toContain("label: 'SwiftUI'")
+    expect(footer).toContain("label: 'Rust'")
     expect(about).not.toContain("'Tailwind CSS'")
     expect(footer).not.toContain("'Tailwind CSS'")
+  })
+
+  it('renders consistent technology pictograms beside stack labels', async () => {
+    const [about, footer, icon] = await Promise.all([
+      readFile('app/components/sections/AboutSection.vue', 'utf8'),
+      readFile('app/components/layout/AppFooter.vue', 'utf8'),
+      readFile('app/components/ui/TechnologyIcon.vue', 'utf8'),
+    ])
+
+    expect(about).toContain('<UiTechnologyIcon')
+    expect(footer).toContain('<UiTechnologyIcon')
+    expect(icon).toContain("from 'simple-icons'")
+    expect(icon).toContain('aria-hidden="true"')
   })
 })
