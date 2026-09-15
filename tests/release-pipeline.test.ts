@@ -70,6 +70,12 @@ describe('AQ-058 release pipeline', () => {
     expect(workflow).not.toContain('SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}')
   })
 
+  it('keeps the pull-request accessibility gate credential-free and skip-free', async () => {
+    const workflow = await readFile(workflowPath, 'utf8')
+
+    expect(workflow).toContain('npx playwright test e2e/accessibility.spec.ts --project=chromium --grep @credential-free')
+  })
+
   it('requires the TOTP secret only for the post-production E2E gate', async () => {
     const workflow = await readFile(workflowPath, 'utf8')
 

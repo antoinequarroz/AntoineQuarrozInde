@@ -26,7 +26,7 @@ async function selectSandboxOrganization(page: Page) {
   await expect(organizationSelect).toHaveValue(sandboxId)
 }
 
-test('landing and admin login remain accessible without credentials', async ({ page }) => {
+test('landing and admin login remain accessible without credentials', { tag: '@credential-free' }, async ({ page }) => {
   test.setTimeout(90_000)
   await page.goto('/')
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible()

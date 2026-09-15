@@ -56,7 +56,7 @@ jobs:
         run: |
           sudo rm -f /etc/apt/sources.list.d/google-chrome.list /etc/apt/sources.list.d/google-chrome.sources
           npx playwright install --with-deps chromium
-      - run: npx playwright test e2e/accessibility.spec.ts --project=chromium
+      - run: npx playwright test e2e/accessibility.spec.ts --project=chromium --grep @credential-free
 
   seo-quality:
     needs: quality
