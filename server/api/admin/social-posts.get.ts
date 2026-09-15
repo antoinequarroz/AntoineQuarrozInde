@@ -5,6 +5,7 @@ export default defineEventHandler(async (event) => {
     supabase.from('social_posts')
       .select('id,platform,article_title,article_url,content,status,external_post_url,last_error,published_at,version,created_at,updated_at')
       .eq('organization_id', org.id)
+      .neq('status', 'rejected')
       .order('created_at', { ascending: false })
       .limit(100),
     supabase.from('social_platform_connections')
