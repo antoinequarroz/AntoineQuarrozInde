@@ -1,4 +1,5 @@
 import { Lumail } from 'lumail'
+import { isValidMailbox } from './contactSubmission'
 
 export type AppEmailInput = {
   to: string
@@ -26,6 +27,7 @@ export async function sendAppEmail(input: AppEmailInput): Promise<AppEmailResult
   const config = useRuntimeConfig()
   const from = input.from || String(config.emailFrom || DEFAULT_FROM)
   if (!config.lumailApiKey) throw createError({ statusCode: 503, message: 'Le service e-mail Lumail n’est pas configuré.' })
+  if (!isValidMailbox(input.to) || !isValidMailbox(from)) throw createError({ statusCode: 503, message: 'La configuration e-mail est invalide.' })
 
   const lumail = new Lumail({ apiKey: config.lumailApiKey })
   const { data, error } = await lumail.emails.send({

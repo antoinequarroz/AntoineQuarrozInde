@@ -220,7 +220,13 @@
       "error": "Erreur lors de l'envoi. Réessayez ou contactez-moi directement.",
       "project_prefix": "Projet :",
       "selected_service": "Service sélectionné :",
-      "captcha_error": "La vérification anti-spam n’est pas encore prête. Patientez un instant ou contactez-moi par email."
+      "captcha_error": "La vérification anti-spam n’est pas encore prête. Patientez un instant ou contactez-moi par email.",
+      "open_title": "Parlons de votre projet",
+      "open_description": "Quelques lignes suffisent pour commencer. Le budget et le délai restent entièrement facultatifs.",
+      "open_cta": "Travailler avec moi",
+      "details_show": "Préciser mon projet",
+      "details_hide": "Masquer les précisions",
+      "details_hint": "Sujet, budget et délai — facultatifs"
     },
     "info": {
       "email": "contact-email",

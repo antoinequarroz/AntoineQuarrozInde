@@ -220,7 +220,13 @@
       "error": "Fehler beim Senden. Versuchen Sie es erneut oder kontaktieren Sie mich direkt.",
       "project_prefix": "Projekt:",
       "selected_service": "Gewählte Leistung:",
-      "captcha_error": "Die Anti-Spam-Prüfung ist noch nicht bereit. Warten Sie kurz oder kontaktieren Sie mich per E-Mail."
+      "captcha_error": "Die Anti-Spam-Prüfung ist noch nicht bereit. Warten Sie kurz oder kontaktieren Sie mich per E-Mail.",
+      "open_title": "Sprechen wir über Ihr Projekt",
+      "open_description": "Ein paar Zeilen genügen für den Anfang. Budget und Zeitrahmen bleiben vollständig freiwillig.",
+      "open_cta": "Mit mir arbeiten",
+      "details_show": "Projektdetails ergänzen",
+      "details_hide": "Projektdetails ausblenden",
+      "details_hint": "Betreff, Budget und Zeitrahmen — freiwillig"
     },
     "info": {
       "email": "contact-email",

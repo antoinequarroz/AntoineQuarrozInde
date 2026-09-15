@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { classifyAcquisition } from '~~/shared/utils/acquisitionChannel'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const { track } = useMarketing()
 const { trackPlausible } = usePlausibleEvent()
 const runtimeConfig = useRuntimeConfig()
@@ -16,6 +16,11 @@ const turnstileShouldLoad = ref(false)
 const sectionRef = shallowRef<HTMLElement | null>(null)
 const selectedService = ref('')
 const errorMessage = ref('')
+const formOpen = ref(false)
+const detailsOpen = ref(false)
+const formContainerRef = ref<HTMLElement | null>(null)
+const nameInputRef = ref<HTMLInputElement | null>(null)
+const submissionId = ref('')
 
 const form = reactive({
   name: '',
@@ -68,6 +73,35 @@ function handleServiceSelected(event: Event) {
 
   selectedService.value = title
   if (!form.subject.trim()) form.subject = `${t('contact.form.project_prefix')} ${title}`
+  openContactForm('service')
+}
+
+async function openContactForm(source = 'cta') {
+  const wasClosed = !formOpen.value
+  formOpen.value = true
+  if (wasClosed) track('contact_form_open', { source })
+  await nextTick()
+  focusContactForm()
+}
+
+function focusContactForm() {
+  nameInputRef.value?.focus({ preventScroll: true })
+  formContainerRef.value?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+}
+
+function handleContactOpen(event: Event) {
+  const source = (event as CustomEvent<{ source?: string }>).detail?.source || 'fallback'
+  openContactForm(source)
+}
+
+function toggleProjectDetails() {
+  detailsOpen.value = !detailsOpen.value
+  if (detailsOpen.value) track('contact_details_open')
+}
+
+function currentSubmissionId() {
+  if (!submissionId.value) submissionId.value = crypto.randomUUID()
+  return submissionId.value
 }
 
 const renderTurnstile = () => {
@@ -91,6 +125,8 @@ const renderTurnstile = () => {
 
 onMounted(() => {
   window.addEventListener('aq:service-selected', handleServiceSelected)
+  window.addEventListener('aq:contact-open', handleContactOpen)
+  if (window.location.hash === '#contact-form') openContactForm('direct_link')
   if (!shouldUseTurnstile) return
 
   turnstileObserver = new IntersectionObserver(([entry]) => {
@@ -105,6 +141,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('aq:service-selected', handleServiceSelected)
+  window.removeEventListener('aq:contact-open', handleContactOpen)
   turnstileObserver?.disconnect()
   if (turnstilePollTimer) clearTimeout(turnstilePollTimer)
 })
@@ -124,10 +161,14 @@ async function handleSubmit() {
     const contactResult = await $fetch<{ acquisitionChannel?: string }>('/api/contact', {
       method: 'POST',
       body: {
+        submissionId: currentSubmissionId(),
         name: form.name,
         email: form.email,
-        subject: form.subject?.trim() || 'Nouveau projet',
-        message: `${form.message}\n\n---\nBudget: ${form.budget || '-'}\nDelai: ${form.timeline || '-'}`,
+        subject: form.subject,
+        budget: form.budget || null,
+        timeline: form.timeline || null,
+        message: form.message,
+        locale: locale.value,
         website: form.website,
         startedAt: form.startedAt,
         turnstileToken: turnstileToken.value,
@@ -150,6 +191,8 @@ async function handleSubmit() {
     form.message = ''
     form.website = ''
     form.startedAt = Date.now()
+    submissionId.value = ''
+    detailsOpen.value = false
     turnstileToken.value = ''
     if (turnstileWidgetId.value && (window as any).turnstile) {
       (window as any).turnstile.reset(turnstileWidgetId.value)
@@ -212,18 +255,18 @@ const contactInfo = computed(() => [
         <p class="section-subtitle mx-auto text-center">{{ t('contact.subtitle') }}</p>
       </div>
 
-      <div class="grid lg:grid-cols-5 gap-6 lg:gap-12">
+      <div class="grid items-stretch gap-6 lg:grid-cols-5 lg:gap-8 xl:gap-10">
         <!-- Calendrier de réservation -->
         <div
           v-motion
           :initial="{ opacity: 0, x: -30 }"
           :visible="{ opacity: 1, x: 0, transition: { duration: 600 } }"
-          class="lg:col-span-2"
+          class="min-w-0 lg:col-span-2 lg:h-full"
         >
           <ClientOnly>
             <UiBookingCalendar />
             <template #fallback>
-              <div class="card-glass p-4 max-[390px]:p-3.5 h-full min-h-[360px]" />
+              <div class="card-glass h-full min-h-[360px] p-4 md:p-8" />
             </template>
           </ClientOnly>
         </div>
@@ -233,9 +276,23 @@ const contactInfo = computed(() => [
           v-motion
           :initial="{ opacity: 0, x: 30 }"
           :visible="{ opacity: 1, x: 0, transition: { delay: 100, duration: 600 } }"
-          class="lg:col-span-3"
+          class="min-w-0 lg:col-span-3 lg:h-full"
         >
-          <form id="contact-form" class="card-glass scroll-mt-24 p-4 max-[390px]:p-3.5 md:p-8 space-y-4 md:space-y-5" @submit.prevent="handleSubmit">
+          <div id="contact-form" ref="formContainerRef" class="h-full scroll-mt-24">
+            <Transition name="contact-reveal" mode="out-in" @after-enter="focusContactForm">
+              <div v-if="!formOpen" key="contact-cta" class="card-glass flex h-full min-h-[280px] flex-col items-start justify-between p-4 sm:min-h-[320px] md:p-8">
+                <div>
+                  <span class="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-violet-500/10 text-violet-700 dark:bg-violet-400/10 dark:text-violet-200" aria-hidden="true">
+                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 15a4 4 0 01-4 4H8l-5 3V7a4 4 0 014-4h10a4 4 0 014 4v8z" /></svg>
+                  </span>
+                  <h3 class="mt-5 font-display text-2xl font-semibold text-gray-950 dark:text-white">{{ t('contact.form.open_title') }}</h3>
+                  <p class="mt-3 max-w-lg text-sm leading-6 text-gray-600 dark:text-gray-300">{{ t('contact.form.open_description') }}</p>
+                </div>
+                <button type="button" class="btn-primary mt-8 min-h-11 w-full justify-center active:scale-[0.96]" @click="openContactForm('primary_cta')">
+                  {{ t('contact.form.open_cta') }}
+                </button>
+              </div>
+              <form v-else key="contact-form" class="card-glass h-full space-y-4 p-4 md:space-y-5 md:p-8" @submit.prevent="handleSubmit">
             <div v-if="selectedService" role="status" class="flex items-center gap-2 rounded-xl bg-violet-500/10 px-3 py-2.5 text-sm text-violet-800 dark:text-violet-100">
               <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
               <span><strong>{{ t('contact.form.selected_service') }}</strong> {{ selectedService }}</span>
@@ -257,6 +314,7 @@ const contactInfo = computed(() => [
                 </label>
                 <input
                   id="contact-name"
+                  ref="nameInputRef"
                   v-model="form.name"
                   name="name"
                   type="text"
@@ -283,47 +341,6 @@ const contactInfo = computed(() => [
               </div>
             </div>
 
-              <div>
-                <label for="contact-subject" class="block text-xs font-semibold text-gray-500 dark:text-white/50 uppercase tracking-wider mb-1.5">
-                  {{ t('contact.form.subject') }}
-                </label>
-                <input
-                  id="contact-subject"
-                  v-model="form.subject"
-                  name="subject"
-                  type="text"
-                  autocomplete="off"
-                  class="input-field"
-                  :placeholder="t('contact.form.subject')"
-                >
-            </div>
-            <div class="grid sm:grid-cols-2 gap-4 md:gap-5">
-              <div>
-                <label for="contact-budget" class="block text-xs font-semibold text-gray-500 dark:text-white/50 uppercase tracking-wider mb-1.5">
-                  {{ t('contact.form.budget') }}
-                </label>
-                <select id="contact-budget" v-model="form.budget" name="budget" class="input-field" autocomplete="off">
-                  <option value="">{{ t('contact.form.budget_select') }}</option>
-                  <option value="<2k">{{ t('contact.form.budget_under_2k') }}</option>
-                  <option value="2k-5k">{{ t('contact.form.budget_2_5k') }}</option>
-                  <option value="5k-10k">{{ t('contact.form.budget_5_10k') }}</option>
-                  <option value="10k+">{{ t('contact.form.budget_over_10k') }}</option>
-                </select>
-              </div>
-              <div>
-                <label for="contact-timeline" class="block text-xs font-semibold text-gray-500 dark:text-white/50 uppercase tracking-wider mb-1.5">
-                  {{ t('contact.form.timeline') }}
-                </label>
-                <select id="contact-timeline" v-model="form.timeline" name="timeline" class="input-field" autocomplete="off">
-                  <option value="">{{ t('contact.form.timeline_select') }}</option>
-                  <option value="urgent">{{ t('contact.form.timeline_urgent') }}</option>
-                  <option value="1mois">{{ t('contact.form.timeline_month') }}</option>
-                  <option value="2-3mois">{{ t('contact.form.timeline_quarter') }}</option>
-                  <option value="flexible">{{ t('contact.form.timeline_flexible') }}</option>
-                </select>
-              </div>
-            </div>
-
             <div>
               <ClientOnly>
                 <div v-if="shouldUseTurnstile && turnstileReady" class="mb-3">
@@ -342,6 +359,52 @@ const contactInfo = computed(() => [
                 class="input-field resize-none"
                 :placeholder="t('contact.form.message')"
               />
+            </div>
+
+            <div class="rounded-2xl border border-violet-500/15 bg-violet-500/[0.035] p-3 dark:border-violet-300/15 dark:bg-white/[0.025]">
+              <button
+                type="button"
+                class="flex min-h-11 w-full items-center justify-between gap-3 rounded-xl px-2 text-left text-sm font-semibold text-gray-800 transition-[background-color,color,transform] hover:bg-violet-500/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 active:scale-[0.96] dark:text-gray-100 dark:hover:bg-white/[0.05]"
+                :aria-expanded="detailsOpen"
+                aria-controls="contact-project-details"
+                @click="toggleProjectDetails"
+              >
+                <span>
+                  {{ detailsOpen ? t('contact.form.details_hide') : t('contact.form.details_show') }}
+                  <span class="block text-xs font-normal text-gray-500 dark:text-gray-400">{{ t('contact.form.details_hint') }}</span>
+                </span>
+                <svg class="h-4 w-4 shrink-0 transition-transform duration-150" :class="detailsOpen ? 'rotate-180' : ''" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6" /></svg>
+              </button>
+              <Transition name="details-reveal">
+                <div v-if="detailsOpen" id="contact-project-details" class="mt-3 space-y-4 border-t border-violet-500/10 pt-4 dark:border-white/[0.08]">
+                  <div>
+                    <label for="contact-subject" class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-white/50">{{ t('contact.form.subject') }}</label>
+                    <input id="contact-subject" v-model="form.subject" name="subject" type="text" autocomplete="off" class="input-field" :placeholder="t('contact.form.subject')">
+                  </div>
+                  <div class="grid gap-4 sm:grid-cols-2 md:gap-5">
+                    <div>
+                      <label for="contact-budget" class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-white/50">{{ t('contact.form.budget') }}</label>
+                      <select id="contact-budget" v-model="form.budget" name="budget" class="input-field" autocomplete="off">
+                        <option value="">{{ t('contact.form.budget_select') }}</option>
+                        <option value="<2k">{{ t('contact.form.budget_under_2k') }}</option>
+                        <option value="2k-5k">{{ t('contact.form.budget_2_5k') }}</option>
+                        <option value="5k-10k">{{ t('contact.form.budget_5_10k') }}</option>
+                        <option value="10k+">{{ t('contact.form.budget_over_10k') }}</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label for="contact-timeline" class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-white/50">{{ t('contact.form.timeline') }}</label>
+                      <select id="contact-timeline" v-model="form.timeline" name="timeline" class="input-field" autocomplete="off">
+                        <option value="">{{ t('contact.form.timeline_select') }}</option>
+                        <option value="urgent">{{ t('contact.form.timeline_urgent') }}</option>
+                        <option value="1mois">{{ t('contact.form.timeline_month') }}</option>
+                        <option value="2-3mois">{{ t('contact.form.timeline_quarter') }}</option>
+                        <option value="flexible">{{ t('contact.form.timeline_flexible') }}</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </Transition>
             </div>
 
             <!-- Status messages -->
@@ -379,7 +442,9 @@ const contactInfo = computed(() => [
               {{ t('contact.quick_reply_at') }}
               <a :href="`mailto:${EMAIL}`" class="inline-flex min-h-11 items-center text-violet-600 underline dark:text-violet-300" @click="track('contact_email_click')">{{ EMAIL }}</a>
             </p>
-          </form>
+              </form>
+            </Transition>
+          </div>
         </div>
       </div>
     </div>
@@ -395,5 +460,36 @@ const contactInfo = computed(() => [
 .fade-leave-to {
   opacity: 0;
   transform: translateY(-8px);
+}
+
+.contact-reveal-enter-active,
+.contact-reveal-leave-active,
+.details-reveal-enter-active,
+.details-reveal-leave-active {
+  transition: opacity 150ms ease-out, transform 150ms ease-out;
+}
+
+.contact-reveal-enter-from,
+.contact-reveal-leave-to,
+.details-reveal-enter-from,
+.details-reveal-leave-to {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .contact-reveal-enter-active,
+  .contact-reveal-leave-active,
+  .details-reveal-enter-active,
+  .details-reveal-leave-active {
+    transition: opacity 1ms linear;
+  }
+
+  .contact-reveal-enter-from,
+  .contact-reveal-leave-to,
+  .details-reveal-enter-from,
+  .details-reveal-leave-to {
+    transform: none;
+  }
 }
 </style>

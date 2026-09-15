@@ -8,6 +8,7 @@ describe('production email runtime configuration', () => {
     expect(compose).toContain('NUXT_LUMAIL_API_KEY: ${LUMAIL_API_KEY:-}')
     expect(compose).not.toContain('NUXT_RESEND_API_KEY')
     expect(compose).toContain('NUXT_EMAIL_FROM: ${EMAIL_FROM:-')
+    expect(compose).toContain('NUXT_CONTACT_EMAIL: ${CONTACT_EMAIL:-info@antoinequarroz.ch}')
   })
 
   it('routes billing documents and VPS alerts through Lumail', () => {

@@ -16,6 +16,9 @@ describe('landing page mobile-first refinements', () => {
       expect(catalog.services.mobile.best_for).toBeTruthy()
       expect(catalog.contact.form.selected_service).toBeTruthy()
       expect(catalog.contact.form.captcha_error).toBeTruthy()
+      expect(catalog.contact.form.open_cta).toBeTruthy()
+      expect(catalog.contact.form.details_show).toBeTruthy()
+      expect(catalog.contact.form.details_hint).toBeTruthy()
     }
   })
 
@@ -32,7 +35,27 @@ describe('landing page mobile-first refinements', () => {
     expect(await readFile('app/components/ui/BookingCalendar.vue', 'utf8')).toContain('flex min-h-11 items-center justify-center')
     expect(blog).toContain('btn-secondary mt-5 min-h-11')
     expect(contact).toContain('inline-flex min-h-11 items-center text-violet-600')
+    expect(contact).toContain(':aria-expanded="detailsOpen"')
+    expect(contact).toContain('aria-controls="contact-project-details"')
+    expect(contact).toContain("window.addEventListener('aq:contact-open', handleContactOpen)")
+    expect(contact).toContain('nameInputRef.value?.focus')
     expect(styles).toContain(':where(a, button, input, select, textarea, summary, [role="button"])')
     expect(styles).toContain('transition-duration: 120ms !important')
+  })
+
+  it('opens the public 30-minute Cal.com scheduler without exposing an API key', async () => {
+    const [booking, config, envExample] = await Promise.all([
+      readFile('app/components/ui/BookingCalendar.vue', 'utf8'),
+      readFile('nuxt.config.ts', 'utf8'),
+      readFile('.env.example', 'utf8'),
+    ])
+
+    expect(config).toContain("bookingUrl: process.env.NUXT_PUBLIC_BOOKING_URL")
+    expect(config).not.toContain('NUXT_PUBLIC_CAL_LINK')
+    expect(envExample).toContain('NUXT_PUBLIC_BOOKING_URL=https://cal.com/your-name/30min')
+    expect(booking).toContain("script.src = 'https://app.cal.com/embed/embed.js'")
+    expect(booking).toContain(':data-cal-link="bookingPath"')
+    expect(booking).toContain(':data-cal-namespace="CAL_NAMESPACE"')
+    expect(booking).toContain(':href="bookingUrl"')
   })
 })

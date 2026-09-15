@@ -2,17 +2,86 @@
 const { locale } = useI18n()
 const config = useRuntimeConfig()
 const { track } = useMarketing()
+const CAL_NAMESPACE = 'portfolio-contact'
+
+type CalQueue = ((...args: unknown[]) => void) & {
+  loaded?: boolean
+  ns?: Record<string, CalQueue>
+  q?: unknown[]
+}
 
 const bookingUrl = computed(() => {
-  const value = String(config.public.calLink || '').trim()
+  const value = String(config.public.bookingUrl || '').trim()
   return /^https:\/\/(?:www\.)?cal\.com\//i.test(value) ? value : ''
 })
+
+const bookingPath = computed(() => {
+  if (!bookingUrl.value) return ''
+  try {
+    return new URL(bookingUrl.value).pathname.replace(/^\/+|\/+$/g, '')
+  }
+  catch {
+    return ''
+  }
+})
+
+const bookingConfig = computed(() => JSON.stringify({ layout: 'month_view' }))
+
+function initializeCalEmbed() {
+  if (!bookingPath.value) return
+
+  const scope = window as typeof window & { Cal?: CalQueue }
+
+  if (!scope.Cal) {
+    const enqueue = (target: { q?: unknown[] }, args: unknown) => {
+      target.q = target.q || []
+      target.q.push(args)
+    }
+    let cal: CalQueue
+    cal = function (...args: unknown[]) {
+      if (!cal.loaded) {
+        cal.ns = {}
+        cal.q = cal.q || []
+        const script = document.createElement('script')
+        script.src = 'https://app.cal.com/embed/embed.js'
+        script.async = true
+        document.head.appendChild(script)
+        cal.loaded = true
+      }
+      if (args[0] === 'init' && typeof args[1] === 'string') {
+        const namespace = args[1]
+        let namespaced: CalQueue
+        namespaced = function (...namespacedArgs: unknown[]) {
+          enqueue(namespaced, namespacedArgs)
+        }
+        namespaced.q = []
+        cal.ns = cal.ns || {}
+        cal.ns[namespace] = cal.ns[namespace] || namespaced
+        enqueue(cal.ns[namespace], args)
+        enqueue(cal, ['initNamespace', namespace])
+        return
+      }
+      enqueue(cal, args)
+    }
+    scope.Cal = cal
+  }
+
+  scope.Cal('init', CAL_NAMESPACE, { origin: 'https://cal.com' })
+  scope.Cal.ns?.[CAL_NAMESPACE]?.('ui', {
+    hideEventTypeDetails: false,
+    layout: 'month_view',
+  })
+}
+
+onMounted(initializeCalEmbed)
 
 const content = computed(() => {
   if (locale.value === 'en') return {
     title: 'A 30-minute call about your project',
     desc: 'Tell me where you are and what you want to build. You will leave with a clear next step.',
     duration: '30 min', remote: 'Video call', noCommitment: 'No commitment', cta: 'Choose a time',
+    bookingTitle: 'Choose a time directly',
+    bookingDesc: 'Open the calendar, select an available slot and receive the video-call link automatically.',
     fallbackTitle: 'Booking opens on request',
     fallbackDesc: 'Send me a short message and I will suggest a few suitable times.',
     fallbackCta: 'Describe your project',
@@ -21,6 +90,8 @@ const content = computed(() => {
     title: '30 Minuten für Ihr Projekt',
     desc: 'Erzählen Sie mir, wo Sie stehen und was Sie umsetzen möchten. Danach ist der nächste Schritt klar.',
     duration: '30 Min.', remote: 'Videogespräch', noCommitment: 'Unverbindlich', cta: 'Termin auswählen',
+    bookingTitle: 'Termin direkt auswählen',
+    bookingDesc: 'Öffnen Sie den Kalender, wählen Sie einen freien Termin und erhalten Sie den Videolink automatisch.',
     fallbackTitle: 'Terminvereinbarung auf Anfrage',
     fallbackDesc: 'Senden Sie mir eine kurze Nachricht. Ich schlage Ihnen passende Termine vor.',
     fallbackCta: 'Projekt beschreiben',
@@ -29,21 +100,28 @@ const content = computed(() => {
     title: '30 minutes pour parler de votre projet',
     desc: 'Expliquez-moi où vous en êtes et ce que vous souhaitez créer. Vous repartirez avec une prochaine étape claire.',
     duration: '30 min', remote: 'Visio', noCommitment: 'Sans engagement', cta: 'Choisir un créneau',
+    bookingTitle: 'Choisissez directement votre créneau',
+    bookingDesc: 'Ouvrez le calendrier, sélectionnez une disponibilité et recevez automatiquement le lien de visio.',
     fallbackTitle: 'Prise de rendez-vous sur demande',
     fallbackDesc: 'Envoyez-moi un court message et je vous proposerai quelques créneaux adaptés.',
     fallbackCta: 'Décrire mon projet',
   }
 })
+
+function openContactFallback() {
+  track('booking_fallback_click')
+  window.dispatchEvent(new CustomEvent('aq:contact-open', { detail: { source: 'booking_fallback' } }))
+}
 </script>
 
 <template>
-  <div class="card-glass flex h-full flex-col gap-5 p-4 max-[390px]:p-3.5">
+  <div class="card-glass flex h-full flex-col gap-5 p-4 md:gap-6 md:p-8">
     <div>
       <h3 class="font-display text-base font-semibold leading-tight text-gray-900 dark:text-white md:text-lg">{{ content.title }}</h3>
       <p class="mt-2 text-sm leading-relaxed text-gray-500 dark:text-gray-400">{{ content.desc }}</p>
     </div>
 
-    <div class="relative flex flex-1 flex-col justify-between overflow-hidden rounded-2xl border border-violet-500/15 bg-white/60 p-4 dark:border-violet-400/20 dark:bg-white/[0.04]">
+    <div class="relative space-y-5 overflow-hidden rounded-2xl border border-violet-500/15 bg-white/60 p-4 dark:border-violet-400/20 dark:bg-white/[0.04]">
       <div class="pointer-events-none absolute -right-12 -top-14 h-36 w-36 rounded-full bg-violet-500/15 blur-3xl" />
       <div class="relative grid grid-cols-3 gap-2">
         <div class="rounded-xl bg-violet-500/[0.07] px-2.5 py-3 text-center dark:bg-violet-400/10">
@@ -59,14 +137,24 @@ const content = computed(() => {
           <p class="mt-2 text-xs font-semibold text-gray-700 dark:text-gray-200">{{ content.noCommitment }}</p>
         </div>
       </div>
-      <div v-if="!bookingUrl" class="relative mt-5 rounded-xl border border-violet-500/10 bg-white/60 p-3 dark:border-white/10 dark:bg-black/15">
-        <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ content.fallbackTitle }}</p>
-        <p class="mt-1 text-xs leading-relaxed text-gray-500 dark:text-gray-400">{{ content.fallbackDesc }}</p>
+      <div class="relative rounded-xl border border-violet-500/10 bg-white/60 p-3 dark:border-white/10 dark:bg-black/15">
+        <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ bookingUrl ? content.bookingTitle : content.fallbackTitle }}</p>
+        <p class="mt-1 text-xs leading-relaxed text-gray-500 dark:text-gray-400">{{ bookingUrl ? content.bookingDesc : content.fallbackDesc }}</p>
       </div>
     </div>
 
-    <a v-if="bookingUrl" :href="bookingUrl" target="_blank" rel="noopener noreferrer" class="btn-primary w-full justify-center rounded-xl py-3 text-sm" @click="track('booking_calendar_click')">{{ content.cta }}</a>
-    <a v-else href="#contact-form" class="btn-primary w-full justify-center rounded-xl py-3 text-sm" @click="track('booking_fallback_click')">{{ content.fallbackCta }}</a>
+    <a
+      v-if="bookingUrl"
+      :href="bookingUrl"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="btn-primary mt-auto w-full justify-center rounded-xl py-3 text-sm"
+      :data-cal-link="bookingPath"
+      :data-cal-namespace="CAL_NAMESPACE"
+      :data-cal-config="bookingConfig"
+      @click="track('booking_calendar_click')"
+    >{{ content.cta }}</a>
+    <a v-else href="#contact-form" class="btn-primary mt-auto w-full justify-center rounded-xl py-3 text-sm active:scale-[0.96]" @click="openContactFallback">{{ content.fallbackCta }}</a>
     <a href="mailto:info@antoinequarroz.ch" class="flex min-h-11 items-center justify-center gap-2 text-xs text-gray-500 transition-colors duration-150 hover:text-violet-600 dark:text-gray-400 dark:hover:text-violet-300" @click="track('contact_email_click')">info@antoinequarroz.ch</a>
   </div>
 </template>

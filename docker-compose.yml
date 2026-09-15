@@ -19,7 +19,7 @@ services:
       # required (or captured) during the image build.
       NUXT_LUMAIL_API_KEY: ${LUMAIL_API_KEY:-}
       NUXT_EMAIL_FROM: ${EMAIL_FROM:-info@antoinequarroz.ch}
-      NUXT_CONTACT_EMAIL: ${CONTACT_EMAIL:-}
+      NUXT_CONTACT_EMAIL: ${CONTACT_EMAIL:-info@antoinequarroz.ch}
       NUXT_MONITORING_ALERT_EMAIL: ${MONITORING_ALERT_EMAIL:-}
       NUXT_TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-}
       NUXT_GOOGLE_PLACES_API_KEY: ${GOOGLE_PLACES_API_KEY:-}
