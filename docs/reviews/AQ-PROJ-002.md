@@ -49,6 +49,7 @@ Aucun constat critique, majeur ou mineur ne reste ouvert après la correction.
 - `npm run build` : réussi.
 - `npm run quality:budgets` : réussi, 1 503 033 octets au total; scène robot 1 010 718 octets.
 - `git diff --check` : réussi.
+- `tests/supabase-migration-baseline.test.ts` : réussi avec le hash audité de la migration candidate.
 
 Max severity: none
 Ship allowed: yes

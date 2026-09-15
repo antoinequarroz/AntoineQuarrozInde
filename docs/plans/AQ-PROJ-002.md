@@ -104,4 +104,5 @@ Plan validé explicitement par Antoine le 15 septembre 2026 avant toute modifica
 - UI locale : formulaire existant chargé avec fallback de transition, saisie FR → EN → FR conservée, aucun débordement horizontal à 390 × 844 px.
 - Revue : le contournement des champs français historiques par un manager a été détecté, corrigé et couvert; verdict final sans constat ouvert.
 - Suivi : PR #132 liée à ANT-5, ticket passé en revue et preuves enregistrées dans Linear.
-- Restent réservés à la promotion de production : synchronisation de la baseline de migration; la suite Hermes reste bloquée sur ce Mac par la licence Xcode non acceptée.
+- La baseline versionnée contient le hash audité de la migration; l'alignement de l'historique Supabase distant reste réservé à la promotion de production.
+- La suite Hermes reste bloquée sur ce Mac par la licence Xcode non acceptée, mais s'exécute dans le workflow Linux.
