@@ -34,9 +34,17 @@ describe('social publication queue', () => {
 
   it('claims an approved post before an external platform write', () => {
     const source = read('scripts/hermes/publish_social.py')
-    expect(source.indexOf('"action": "claim"')).toBeLessThan(source.indexOf('publish_linkedin(claimed'))
+    const claim = source.indexOf('"action": "claim"')
+    expect(claim).toBeLessThan(source.indexOf('result = publish_linkedin(', claim))
     expect(source).toContain('HERMES_PUBLISH_TOKEN')
     expect(source).toContain('"action": "complete"')
     expect(source).toContain('"action": "fail"')
+  })
+
+  it('queues an approval for the 18:00 processor instead of promising an immediate post', () => {
+    const adminPage = read('app/pages/admin/social/index.vue')
+    expect(adminPage).toContain('Valider pour 18 h')
+    expect(adminPage).toContain('publication prévue à 18 h')
+    expect(adminPage).not.toContain('Approuver et publier')
   })
 })

@@ -45,6 +45,13 @@ describe('Hermes social publication helper', () => {
     expect(receipt).toMatchObject({ platform: 'linkedin', externalWrite: false, status: 'validated' })
   })
 
+  it('rejects a numbered LinkedIn post heading', () => {
+    const articleUrl = 'https://www.antoinequarroz.ch/blog/test-social'
+    const { project, path } = createDraft('APPROUVE', 'linkedin', `12. Un nouveau sujet\n\n${articleUrl}`)
+    expect(() => execFileSync('python3', [script, '--project', project, '--draft', path, '--dry-run']))
+      .toThrow(/ne doit pas commencer par un numero de post/)
+  })
+
   it('rejects an X draft longer than 280 characters', () => {
     const articleUrl = 'https://www.antoinequarroz.ch/blog/test-social'
     const { project, path } = createDraft('APPROUVE', 'x', `${'a'.repeat(260)} ${articleUrl}`)
@@ -66,5 +73,14 @@ describe('Hermes social publication helper', () => {
     expect(source).toContain('--process-approved')
     expect(source).toContain('--sync-drafts')
     expect(source).toContain('HERMES_PUBLISH_TOKEN')
+  })
+
+  it('attaches the article Open Graph image to LinkedIn posts', () => {
+    const source = readFileSync(script, 'utf8')
+    expect(source).toContain('LINKEDIN_IMAGES_ENDPOINT')
+    expect(source).toContain('article_social_image(article_url)')
+    expect(source).toContain('upload_linkedin_image(token, author, image, mime_type)')
+    expect(source).toContain('"altText": clean_social_title(article_title)[:300]')
+    expect(source).toContain('"id": image_urn')
   })
 })

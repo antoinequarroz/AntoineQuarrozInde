@@ -6,8 +6,14 @@ Le flux garde une validation humaine obligatoire :
 2. Le Centre de validation affiche leur contenu intégral.
 3. Antoine approuve explicitement un fichier précis.
 4. Hermes remplace seulement `statut: A_VALIDER` par `statut: APPROUVE` dans ce fichier.
-5. Hermes exécute `publish_social.py` pour ce fichier.
+5. Hermes exécute `publish_social.py` chaque jour à 18 h (Europe/Zurich).
+   Seuls les éléments déjà approuvés sont traités.
 6. Le script écrit un reçu dans `seo/social/receipts/`. Le même contenu ne peut pas être publié deux fois.
+
+Pour LinkedIn, le script récupère l'image Open Graph de l'article, la téléverse
+avec l'Images API puis l'attache au post. L'absence d'image bloque la publication
+au lieu de créer un post texte incomplet. Le texte LinkedIn ne doit jamais
+commencer par un numéro de post ; les numéros restent réservés aux titres du blog.
 
 Format attendu :
 
