@@ -53,6 +53,12 @@ export function projectPublicationRpcError(error: { code?: string | null, messag
       message: 'Only a current owner or administrator can approve a case study',
     })
   }
+  if (message.includes('project_case_study_localizations_forbidden')) {
+    return createError({
+      statusCode: 403,
+      message: 'Only an owner or administrator can edit case-study translations',
+    })
+  }
   if (error.code === '42501' || message.includes('project_publication_forbidden')) {
     return createError({
       statusCode: 403,

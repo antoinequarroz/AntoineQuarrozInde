@@ -118,6 +118,15 @@ export function isMissingCaseStudyApprovalSchema(error: unknown) {
     && APPROVAL_SCHEMA_FIELDS.some(field => message.includes(field))
 }
 
+export function isMissingProjectLocalizationSchema(error: unknown) {
+  if (!error || typeof error !== 'object') return false
+  const record = error as { code?: unknown, message?: unknown }
+  const code = String(record.code ?? '')
+  const message = String(record.message ?? '')
+  return ['42P01', 'PGRST200', 'PGRST204'].includes(code)
+    && message.includes('project_case_study_localizations')
+}
+
 type PublicArticleRow = Record<string, any>
 type PublicProjectRow = Record<string, any>
 

@@ -81,6 +81,58 @@ create table if not exists public.projects (
   created_at timestamptz not null default now()
 );
 
+create unique index if not exists projects_organization_id_id_unique
+  on public.projects (organization_id, id);
+
+create table if not exists public.project_case_study_localizations (
+  project_id bigint not null,
+  organization_id uuid not null,
+  locale text not null,
+  project_role text,
+  project_duration text,
+  challenge text,
+  project_scope text,
+  key_decisions text,
+  approach text,
+  solution text,
+  outcome text,
+  deliverables text[] not null default '{}',
+  results jsonb not null default '[]'::jsonb,
+  updated_by uuid references auth.users(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  primary key (project_id, locale),
+  constraint project_case_study_localizations_project_tenant_fk
+    foreign key (organization_id, project_id)
+    references public.projects (organization_id, id)
+    on delete cascade,
+  constraint project_case_study_localizations_locale_allowed
+    check (locale in ('fr', 'en', 'de')),
+  constraint project_case_study_localizations_project_role_length
+    check (project_role is null or char_length(project_role) <= 180),
+  constraint project_case_study_localizations_project_duration_length
+    check (project_duration is null or char_length(project_duration) <= 120),
+  constraint project_case_study_localizations_challenge_length
+    check (challenge is null or char_length(challenge) <= 4000),
+  constraint project_case_study_localizations_project_scope_length
+    check (project_scope is null or char_length(project_scope) <= 6000),
+  constraint project_case_study_localizations_key_decisions_length
+    check (key_decisions is null or char_length(key_decisions) <= 6000),
+  constraint project_case_study_localizations_approach_length
+    check (approach is null or char_length(approach) <= 6000),
+  constraint project_case_study_localizations_solution_length
+    check (solution is null or char_length(solution) <= 6000),
+  constraint project_case_study_localizations_outcome_length
+    check (outcome is null or char_length(outcome) <= 4000),
+  constraint project_case_study_localizations_deliverables_shape
+    check (cardinality(deliverables) <= 20 and array_position(deliverables, null) is null),
+  constraint project_case_study_localizations_results_shape
+    check (jsonb_typeof(results) = 'array' and jsonb_array_length(results) <= 6)
+);
+
+create index if not exists idx_project_case_study_localizations_organization
+  on public.project_case_study_localizations (organization_id, project_id, locale);
+
 create table if not exists public.articles (
   id bigint generated always as identity primary key,
   organization_id uuid references public.organizations(id) on delete set null,
@@ -1261,6 +1313,7 @@ create index if not exists idx_application_errors_org_unresolved on public.appli
 create index if not exists idx_application_errors_fingerprint on public.application_errors(fingerprint, created_at desc);
 
 alter table public.projects enable row level security;
+alter table public.project_case_study_localizations enable row level security;
 alter table public.articles enable row level security;
 alter table public.reviews enable row level security;
 alter table public.marketing_events enable row level security;
@@ -1278,5 +1331,7 @@ alter table public.application_errors enable row level security;
 
 revoke all on table public.application_errors from anon, authenticated;
 grant all on table public.application_errors to service_role;
+revoke all on table public.project_case_study_localizations from public, anon, authenticated;
+grant select, insert, update, delete on table public.project_case_study_localizations to service_role;
 revoke all on table public.invoice_payments from anon, authenticated;
 grant all on table public.invoice_payments to service_role;

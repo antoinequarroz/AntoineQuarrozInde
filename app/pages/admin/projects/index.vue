@@ -1,6 +1,10 @@
 <script setup lang="ts">
-import type { Project, ProjectResult } from '~/types'
+import type { Project, ProjectCaseStudyLocale, ProjectCaseStudyLocalization } from '~/types'
 import { caseStudyPublicationBlockers } from '~~/shared/utils/projectCaseStudyApproval'
+import {
+  emptyProjectCaseStudyLocalizations,
+  PROJECT_CASE_STUDY_LOCALES,
+} from '~~/shared/utils/projectCaseStudyLocalizations'
 import AdminAdminIcon from '~/components/admin/AdminIcon.vue'
 
 definePageMeta({ layout: 'admin', middleware: 'admin' })
@@ -16,6 +20,7 @@ const showForm = ref(route.query.new === '1')
 const closeForm = () => { showForm.value = false }
 const { dialogRef, handleDialogKeydown } = useAccessibleDialog(showForm, closeForm, '[data-dialog-close]')
 const editingProject = ref<Project | null>(null)
+const caseStudyFieldError = ref<{ locale: ProjectCaseStudyLocale, field: string, message: string } | null>(null)
 const canManagePublication = computed(() => {
   const organization = auth.organizations.find(item => item.id === auth.currentOrganizationId)
   return organization?.role === 'owner' || organization?.role === 'admin'
@@ -40,22 +45,13 @@ const form = reactive({
   caseStudyApprovalConfirmed: false,
   clientLabel: '',
   clientDisclosureStatus: 'pending' as Project['clientDisclosureStatus'],
-  projectRole: '',
-  projectDuration: '',
+  caseStudyLocalizations: emptyProjectCaseStudyLocalizations(),
   caseStudyTimelineApproved: false,
   completedAt: '',
-  challenge: '',
-  projectScope: '',
-  keyDecisions: '',
-  approach: '',
-  solution: '',
-  outcome: '',
   outcomeApproved: false,
   caseStudyLinksApproved: false,
   relatedServicePaths: [] as Project['relatedServicePaths'],
-  deliverables: '',
   galleryImages: [] as Array<string | null>,
-  results: [] as ProjectResult[],
   seoTitle: '',
   seoDescription: '',
 })
@@ -66,12 +62,12 @@ function openNew() {
     title: '', slug: '', category: 'web', tags: '', description: '', descriptionEn: '', descriptionDe: '', image: null,
     liveUrl: '', codeUrl: '', featured: false, portfolioVisible: false, clientId: null,
     caseStudyPublished: false, caseStudyApprovedAt: '', caseStudyApprovalConfirmed: false,
-    clientLabel: '', clientDisclosureStatus: 'pending', projectRole: '', projectDuration: '',
-    caseStudyTimelineApproved: false, completedAt: '', challenge: '', projectScope: '', keyDecisions: '',
-    approach: '', solution: '', outcome: '', outcomeApproved: false, caseStudyLinksApproved: false,
+    clientLabel: '', clientDisclosureStatus: 'pending', caseStudyLocalizations: emptyProjectCaseStudyLocalizations(),
+    caseStudyTimelineApproved: false, completedAt: '', outcomeApproved: false, caseStudyLinksApproved: false,
     relatedServicePaths: [],
-    deliverables: '', galleryImages: [], results: [], seoTitle: '', seoDescription: '',
+    galleryImages: [], seoTitle: '', seoDescription: '',
   })
+  caseStudyFieldError.value = null
   showForm.value = true
 }
 
@@ -87,26 +83,26 @@ function openEdit(project: Project) {
     caseStudyApprovalConfirmed: false,
     clientLabel: project.clientLabel || '',
     clientDisclosureStatus: project.clientDisclosureStatus,
-    projectRole: project.projectRole || '',
-    projectDuration: project.projectDuration || '',
+    caseStudyLocalizations: cloneLocalizations(project.caseStudyLocalizations),
     caseStudyTimelineApproved: project.caseStudyTimelineApproved,
     completedAt: project.completedAt || '',
-    challenge: project.challenge || '',
-    projectScope: project.projectScope || '',
-    keyDecisions: project.keyDecisions || '',
-    approach: project.approach || '',
-    solution: project.solution || '',
-    outcome: project.outcome || '',
     outcomeApproved: project.outcomeApproved,
     caseStudyLinksApproved: project.caseStudyLinksApproved,
     relatedServicePaths: [...project.relatedServicePaths],
-    deliverables: project.deliverables.join(', '),
     galleryImages: [...project.galleryImages],
-    results: project.results.map(result => ({ ...result })),
     seoTitle: project.seoTitle || '',
     seoDescription: project.seoDescription || '',
   })
+  caseStudyFieldError.value = null
   showForm.value = true
+}
+
+function cloneLocalizations(localizations: Record<ProjectCaseStudyLocale, ProjectCaseStudyLocalization>) {
+  return Object.fromEntries(PROJECT_CASE_STUDY_LOCALES.map(locale => [locale, {
+    ...localizations[locale],
+    deliverables: [...localizations[locale].deliverables],
+    results: localizations[locale].results.map(result => ({ ...result })),
+  }])) as Record<ProjectCaseStudyLocale, ProjectCaseStudyLocalization>
 }
 
 async function loadProjects(force = false) {
@@ -134,6 +130,7 @@ onMounted(async () => {
 })
 
 async function handleSubmit() {
+  caseStudyFieldError.value = null
   if (!form.image) {
     toast.error('Ajoutez une image de couverture')
     return
@@ -144,14 +141,30 @@ async function handleSubmit() {
     return
   }
 
-  const incompleteResultIndex = form.results.findIndex(result => !result.value.trim() || !result.label.trim())
-  if (incompleteResultIndex !== -1) {
-    toast.error(`Complétez ou supprimez la mesure ${incompleteResultIndex + 1}`)
+  const incompleteResult = canManagePublication.value
+    ? PROJECT_CASE_STUDY_LOCALES.flatMap(locale => (
+        form.caseStudyLocalizations[locale].results.map((result, index) => ({ locale, result, index }))
+      )).find(item => !item.result.value.trim() || !item.result.label.trim())
+    : null
+  if (incompleteResult) {
+    caseStudyFieldError.value = {
+      locale: incompleteResult.locale,
+      field: `results.${incompleteResult.index}.${incompleteResult.result.value.trim() ? 'label' : 'value'}`,
+      message: `Complétez ou supprimez la mesure ${incompleteResult.index + 1}`,
+    }
+    toast.error(caseStudyFieldError.value.message)
     return
   }
 
+  const french = form.caseStudyLocalizations.fr
   if (form.caseStudyPublished) {
-    const blockers = caseStudyPublicationBlockers(form)
+    const blockers = caseStudyPublicationBlockers({
+      ...french,
+      outcomeApproved: form.outcomeApproved,
+      clientDisclosureStatus: form.clientDisclosureStatus,
+      clientLabel: form.clientLabel,
+      relatedServicePaths: form.relatedServicePaths,
+    })
     if (blockers.length) {
       toast.error(`Publication bloquée : ${blockers.map(blocker => blocker.label).join(', ')}`)
       return
@@ -186,22 +199,25 @@ async function handleSubmit() {
     caseStudyApprovalConfirmed: form.caseStudyApprovalConfirmed,
     clientLabel: form.clientLabel || null,
     clientDisclosureStatus: form.clientDisclosureStatus,
-    projectRole: form.projectRole || null,
-    projectDuration: form.projectDuration || null,
+    projectRole: french.projectRole || null,
+    projectDuration: french.projectDuration || null,
     caseStudyTimelineApproved: form.caseStudyTimelineApproved,
     completedAt: form.completedAt || null,
-    challenge: form.challenge || null,
-    projectScope: form.projectScope || null,
-    keyDecisions: form.keyDecisions || null,
-    approach: form.approach || null,
-    solution: form.solution || null,
-    outcome: form.outcome || null,
+    challenge: french.challenge || null,
+    projectScope: french.projectScope || null,
+    keyDecisions: french.keyDecisions || null,
+    approach: french.approach || null,
+    solution: french.solution || null,
+    outcome: french.outcome || null,
     outcomeApproved: form.outcomeApproved,
     caseStudyLinksApproved: form.caseStudyLinksApproved,
     relatedServicePaths: form.relatedServicePaths,
-    deliverables: form.deliverables.split(',').map(item => item.trim()).filter(Boolean),
+    deliverables: french.deliverables,
     galleryImages: form.galleryImages.filter((image): image is string => Boolean(image)),
-    results: form.results,
+    results: french.results,
+    ...(canManagePublication.value
+      ? { caseStudyLocalizations: cloneLocalizations(form.caseStudyLocalizations) }
+      : {}),
     seoTitle: form.seoTitle || null,
     seoDescription: form.seoDescription || null,
   }
@@ -217,6 +233,10 @@ async function handleSubmit() {
     showForm.value = false
   }
   catch (error: any) {
+    const detail = error?.data?.data
+    if (detail?.locale && detail?.field) {
+      caseStudyFieldError.value = { locale: detail.locale, field: detail.field, message: error.data.message }
+    }
     toast.error(error?.data?.message || error?.data?.statusMessage || 'Erreur lors de la sauvegarde')
   }
 }
@@ -355,7 +375,7 @@ function caseStudyTone(project: Project) {
               <p class="mt-1.5 text-xs leading-relaxed text-gray-400">Pour publier le projet, renseignez au moins le site ou GitHub.</p>
             </div>
 
-            <AdminProjectCaseStudyFields v-model="form" :can-manage-publication="canManagePublication" />
+            <AdminProjectCaseStudyFields v-model="form" :can-manage-publication="canManagePublication" :field-error="caseStudyFieldError" />
 
             <label class="flex min-h-11 items-start gap-3 rounded-xl border border-gray-100 p-3 dark:border-white/[0.06]">
               <input v-model="form.featured" type="checkbox" class="mt-0.5 h-5 w-5 rounded border-gray-300 text-violet-600 focus:ring-2 focus:ring-violet-500 focus:ring-offset-2">
