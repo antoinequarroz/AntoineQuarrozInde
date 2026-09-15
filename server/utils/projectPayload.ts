@@ -2,6 +2,11 @@ import {
   isProjectCaseStudyServicePath,
   type ProjectClientDisclosureStatus,
 } from '../../shared/utils/projectCaseStudyApproval'
+import {
+  PROJECT_CASE_STUDY_LOCALES,
+  PROJECT_CASE_STUDY_LOCALE_LABELS,
+  type ProjectCaseStudyLocale,
+} from '../../shared/utils/projectCaseStudyLocalizations'
 
 const PROJECT_CATEGORIES = new Set(['web', 'mobile', 'cms'])
 const CLIENT_DISCLOSURE_STATUSES = new Set<ProjectClientDisclosureStatus>(['pending', 'anonymous', 'approved'])
@@ -69,6 +74,95 @@ function resultList(value: unknown) {
   })
 }
 
+function localizedError(locale: ProjectCaseStudyLocale, field: string, message: string): never {
+  throw createError({
+    statusCode: 400,
+    message: `${PROJECT_CASE_STUDY_LOCALE_LABELS[locale]} — ${message}`,
+    data: { locale, field },
+  })
+}
+
+function localizedOptionalText(
+  value: unknown,
+  locale: ProjectCaseStudyLocale,
+  field: string,
+  label: string,
+  maxLength: number,
+) {
+  const text = String(value ?? '').trim()
+  if (!text) return null
+  if (text.length > maxLength) localizedError(locale, field, `${label} dépasse ${maxLength} caractères`)
+  return text
+}
+
+function localizedDeliverables(value: unknown, locale: ProjectCaseStudyLocale) {
+  if (value === undefined || value === null) return []
+  if (!Array.isArray(value)) localizedError(locale, 'deliverables', 'les livrables doivent être une liste')
+  if (value.length > 20) localizedError(locale, 'deliverables', 'les livrables sont limités à 20 éléments')
+  return value.map((item, index) => {
+    const text = String(item ?? '').trim()
+    if (!text) localizedError(locale, 'deliverables', `le livrable ${index + 1} est vide`)
+    if (text.length > 120) localizedError(locale, 'deliverables', `le livrable ${index + 1} dépasse 120 caractères`)
+    return text
+  })
+}
+
+function localizedResults(value: unknown, locale: ProjectCaseStudyLocale) {
+  if (value === undefined || value === null) return []
+  if (!Array.isArray(value)) localizedError(locale, 'results', 'les résultats doivent être une liste')
+  if (value.length > 6) localizedError(locale, 'results', 'les résultats sont limités à 6 mesures')
+  return value.map((item, index) => {
+    if (!item || typeof item !== 'object') localizedError(locale, 'results', `la mesure ${index + 1} est invalide`)
+    const record = item as Record<string, unknown>
+    const valueText = String(record.value ?? '').trim()
+    const label = String(record.label ?? '').trim()
+    if (!valueText) localizedError(locale, `results.${index}.value`, `la valeur de la mesure ${index + 1} est obligatoire`)
+    if (valueText.length > 40) localizedError(locale, `results.${index}.value`, `la valeur de la mesure ${index + 1} dépasse 40 caractères`)
+    if (!label) localizedError(locale, `results.${index}.label`, `le libellé de la mesure ${index + 1} est obligatoire`)
+    if (label.length > 120) localizedError(locale, `results.${index}.label`, `le libellé de la mesure ${index + 1} dépasse 120 caractères`)
+    if (record.approved !== undefined && typeof record.approved !== 'boolean') {
+      localizedError(locale, `results.${index}.approved`, `l'approbation de la mesure ${index + 1} est invalide`)
+    }
+    return {
+      value: valueText,
+      label,
+      measurementContext: localizedOptionalText(record.measurementContext, locale, `results.${index}.measurementContext`, `le contexte de la mesure ${index + 1}`, 240),
+      evidenceNote: localizedOptionalText(record.evidenceNote, locale, `results.${index}.evidenceNote`, `la note de preuve de la mesure ${index + 1}`, 1000),
+      approved: record.approved === true,
+    }
+  })
+}
+
+function projectCaseStudyLocalizations(value: unknown) {
+  if (value === undefined) return null
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw createError({ statusCode: 400, message: 'Case-study localizations must be an object' })
+  }
+  const record = value as Record<string, unknown>
+  const unknownLocale = Object.keys(record).find(locale => !PROJECT_CASE_STUDY_LOCALES.includes(locale as ProjectCaseStudyLocale))
+  if (unknownLocale) throw createError({ statusCode: 400, message: `Unsupported case-study locale: ${unknownLocale}` })
+
+  return Object.fromEntries(PROJECT_CASE_STUDY_LOCALES.map((locale) => {
+    const raw = record[locale]
+    if (raw !== undefined && (!raw || typeof raw !== 'object' || Array.isArray(raw))) {
+      localizedError(locale, 'localization', 'le contenu de cette langue est invalide')
+    }
+    const input = (raw ?? {}) as Record<string, unknown>
+    return [locale, {
+      project_role: localizedOptionalText(input.projectRole, locale, 'projectRole', 'le rôle', 180),
+      project_duration: localizedOptionalText(input.projectDuration, locale, 'projectDuration', 'la durée', 120),
+      challenge: localizedOptionalText(input.challenge, locale, 'challenge', 'le contexte', 4000),
+      project_scope: localizedOptionalText(input.projectScope, locale, 'projectScope', 'le périmètre', 6000),
+      key_decisions: localizedOptionalText(input.keyDecisions, locale, 'keyDecisions', 'les décisions', 6000),
+      approach: localizedOptionalText(input.approach, locale, 'approach', `l'approche`, 6000),
+      solution: localizedOptionalText(input.solution, locale, 'solution', 'la solution', 6000),
+      outcome: localizedOptionalText(input.outcome, locale, 'outcome', 'le résultat qualitatif', 4000),
+      deliverables: localizedDeliverables(input.deliverables, locale),
+      results: localizedResults(input.results, locale),
+    }]
+  }))
+}
+
 function clientDisclosureStatus(value: unknown): ProjectClientDisclosureStatus {
   const status = String(value ?? 'pending') as ProjectClientDisclosureStatus
   if (!CLIENT_DISCLOSURE_STATUSES.has(status)) {
@@ -100,6 +194,7 @@ export function projectPayload(body: Record<string, unknown>, organizationId: st
   const clientId = body.clientId ? Number(body.clientId) : null
   const liveUrl = optionalUrl(body.liveUrl)
   const codeUrl = optionalUrl(body.codeUrl)
+  const localizations = projectCaseStudyLocalizations(body.caseStudyLocalizations)
 
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
     throw createError({ statusCode: 400, message: 'Project slug must contain lowercase letters, numbers and hyphens only' })
@@ -153,5 +248,6 @@ export function projectPayload(body: Record<string, unknown>, organizationId: st
     seo_title: optionalText(body.seoTitle, 70),
     seo_description: optionalText(body.seoDescription, 180),
     case_study_approval_confirmed: booleanValue(body.caseStudyApprovalConfirmed, 'caseStudyApprovalConfirmed'),
+    ...(localizations ? { case_study_localizations: localizations } : {}),
   }
 }

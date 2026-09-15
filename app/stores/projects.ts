@@ -1,4 +1,31 @@
-import type { Project, ProjectResult } from '~/types'
+import type { Project, ProjectCaseStudyLocale, ProjectCaseStudyLocalization, ProjectResult } from '~/types'
+import {
+  emptyProjectCaseStudyLocalization,
+  emptyProjectCaseStudyLocalizations,
+  PROJECT_CASE_STUDY_LOCALES,
+} from '~~/shared/utils/projectCaseStudyLocalizations'
+
+type ProjectCreateInput = Omit<
+  Project,
+  'id' | 'createdAt' | 'caseStudyApprovedAt' | 'caseStudyApprovedBy' | 'caseStudyLocalizations'
+> & {
+  caseStudyApprovalConfirmed?: boolean
+  caseStudyLocalizations?: Project['caseStudyLocalizations']
+}
+
+type ProjectCaseStudyLocalizationRow = {
+  locale: ProjectCaseStudyLocale
+  project_role?: string | null
+  project_duration?: string | null
+  challenge?: string | null
+  project_scope?: string | null
+  key_decisions?: string | null
+  approach?: string | null
+  solution?: string | null
+  outcome?: string | null
+  deliverables?: string[] | null
+  results?: ProjectResult[] | null
+}
 
 type ProjectRow = {
   id: number
@@ -38,6 +65,7 @@ type ProjectRow = {
   deliverables?: string[] | null
   gallery_images?: string[] | null
   results?: ProjectResult[] | null
+  case_study_localizations?: ProjectCaseStudyLocalizationRow[] | null
   seo_title?: string | null
   seo_description?: string | null
   workflow_status?: Project['workflowStatus']
@@ -46,6 +74,58 @@ type ProjectRow = {
   budget_cents?: number
   internal_hourly_cost_cents?: number
   created_at: string
+}
+
+function mapResults(results: ProjectResult[] | null | undefined): ProjectResult[] {
+  return Array.isArray(results)
+    ? results.map(result => ({
+        value: result.value,
+        label: result.label,
+        measurementContext: result.measurementContext ?? null,
+        evidenceNote: result.evidenceNote ?? null,
+        approved: result.approved === true,
+      }))
+    : []
+}
+
+function mapLocalization(row: ProjectCaseStudyLocalizationRow): ProjectCaseStudyLocalization {
+  return {
+    ...emptyProjectCaseStudyLocalization(row.locale),
+    projectRole: row.project_role ?? null,
+    projectDuration: row.project_duration ?? null,
+    challenge: row.challenge ?? null,
+    projectScope: row.project_scope ?? null,
+    keyDecisions: row.key_decisions ?? null,
+    approach: row.approach ?? null,
+    solution: row.solution ?? null,
+    outcome: row.outcome ?? null,
+    deliverables: row.deliverables ?? [],
+    results: mapResults(row.results),
+  }
+}
+
+function mapLocalizations(row: ProjectRow): Record<ProjectCaseStudyLocale, ProjectCaseStudyLocalization> {
+  const localizations = emptyProjectCaseStudyLocalizations()
+  const frenchFallback: ProjectCaseStudyLocalizationRow = {
+    locale: 'fr',
+    project_role: row.project_role,
+    project_duration: row.project_duration,
+    challenge: row.challenge,
+    project_scope: row.project_scope,
+    key_decisions: row.key_decisions,
+    approach: row.approach,
+    solution: row.solution,
+    outcome: row.outcome,
+    deliverables: row.deliverables,
+    results: row.results,
+  }
+  localizations.fr = mapLocalization(frenchFallback)
+  for (const localization of row.case_study_localizations ?? []) {
+    if (PROJECT_CASE_STUDY_LOCALES.includes(localization.locale)) {
+      localizations[localization.locale] = mapLocalization(localization)
+    }
+  }
+  return localizations
 }
 
 
@@ -87,15 +167,8 @@ function mapProject(row: ProjectRow): Project {
     relatedServicePaths: row.related_service_paths ?? [],
     deliverables: row.deliverables ?? [],
     galleryImages: row.gallery_images ?? [],
-    results: Array.isArray(row.results)
-      ? row.results.map(result => ({
-          value: result.value,
-          label: result.label,
-          measurementContext: result.measurementContext ?? null,
-          evidenceNote: result.evidenceNote ?? null,
-          approved: result.approved === true,
-        }))
-      : [],
+    results: mapResults(row.results),
+    caseStudyLocalizations: mapLocalizations(row),
     seoTitle: row.seo_title ?? null,
     seoDescription: row.seo_description ?? null,
     workflowStatus: row.workflow_status ?? 'planning',
@@ -148,7 +221,7 @@ export const useProjectsStore = defineStore('projects', () => {
     return load
   }
 
-  async function add(project: Omit<Project, 'id' | 'createdAt' | 'caseStudyApprovedAt' | 'caseStudyApprovedBy'> & { caseStudyApprovalConfirmed?: boolean }) {
+  async function add(project: ProjectCreateInput) {
     const row = await $fetch<ProjectRow>('/api/projects', {
       method: 'POST',
       body: project,

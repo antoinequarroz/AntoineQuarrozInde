@@ -2,6 +2,15 @@ import type {
   ProjectCaseStudyServicePath,
   ProjectClientDisclosureStatus,
 } from '~~/shared/utils/projectCaseStudyApproval'
+import type {
+  ProjectCaseStudyLocale,
+  ProjectCaseStudyLocalization,
+} from '~~/shared/utils/projectCaseStudyLocalizations'
+
+export type {
+  ProjectCaseStudyLocale,
+  ProjectCaseStudyLocalization,
+} from '~~/shared/utils/projectCaseStudyLocalizations'
 
 export interface Project {
   id: number
@@ -41,6 +50,7 @@ export interface Project {
   deliverables: string[]
   galleryImages: string[]
   results: ProjectResult[]
+  caseStudyLocalizations: Record<ProjectCaseStudyLocale, ProjectCaseStudyLocalization>
   seoTitle: string | null
   seoDescription: string | null
   workflowStatus?: 'planning' | 'active' | 'review' | 'delivered' | 'paused'

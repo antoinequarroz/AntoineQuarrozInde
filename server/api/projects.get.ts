@@ -1,6 +1,7 @@
 import {
   isPublicContentRole,
   isMissingCaseStudyApprovalSchema,
+  isMissingProjectLocalizationSchema,
   LEGACY_PUBLIC_PROJECT_COLUMNS,
   PUBLIC_PROJECT_COLUMNS,
   serializePublicProject,
@@ -15,7 +16,7 @@ export default defineEventHandler(async (event) => {
   if (!publicView) await requireAdminMfa(event, event.context.user)
   let query = supabase
     .from('projects')
-    .select(publicView ? PUBLIC_PROJECT_COLUMNS : '*')
+    .select(publicView ? PUBLIC_PROJECT_COLUMNS : '*, project_case_study_localizations(*)')
     .eq('organization_id', org.id)
     .order('created_at', { ascending: false })
   if (publicView) {
@@ -32,6 +33,16 @@ export default defineEventHandler(async (event) => {
       .order('created_at', { ascending: false })
     data = legacyResult.data
     error = legacyResult.error
+  }
+
+  if (!publicView && isMissingProjectLocalizationSchema(error)) {
+    const transitionResult = await supabase
+      .from('projects')
+      .select('*')
+      .eq('organization_id', org.id)
+      .order('created_at', { ascending: false })
+    data = transitionResult.data
+    error = transitionResult.error
   }
 
   if (error) {

@@ -30,7 +30,7 @@ function createQuery(rows: Row[]) {
     }),
     order: vi.fn(() => query),
     then: (resolve: (value: unknown) => unknown) => {
-      const columns = projection === '*' ? null : projection.split(',')
+      const columns = projection === '*' || projection.startsWith('*,') ? null : projection.split(',')
       const data = rows.filter(row => filters.every(filter => filter(row))).map((row) => {
         if (!columns) return row
         return Object.fromEntries(columns.map(column => [column, row[column]]))
@@ -60,6 +60,7 @@ async function callRoute(
   vi.stubGlobal('PUBLIC_PROJECT_COLUMNS', PUBLIC_PROJECT_COLUMNS)
   vi.stubGlobal('serializePublicArticle', serializePublicArticle)
   vi.stubGlobal('serializePublicProject', serializePublicProject)
+  vi.stubGlobal('isMissingProjectLocalizationSchema', () => false)
 
   const { default: handler } = route === 'articles'
     ? await import('../server/api/articles.get')
@@ -295,7 +296,7 @@ describe('public content APIs', () => {
   it.each(['owner', 'admin', 'manager', 'viewer'])('preserves the complete project view for %s', async (role) => {
     const { query, result } = await callRoute('projects', role, projectRows)
 
-    expect(query.select).toHaveBeenCalledWith('*')
+    expect(query.select).toHaveBeenCalledWith('*, project_case_study_localizations(*)')
     expect(query.or).not.toHaveBeenCalled()
     expect(result.map(project => project.id)).toEqual([1, 2, 3, 4])
     expect(result[0]).toMatchObject({
