@@ -1,6 +1,8 @@
 import { expect, test } from '@playwright/test'
 import { adminCredentialsConfigured, loginAdmin } from './helpers/admin-auth'
 
+test.use({ trace: 'off', screenshot: 'off', video: 'off' })
+
 test('admin invites, suspends and restores a client portal access', async ({ page }, testInfo) => {
   test.setTimeout(60_000)
   test.skip(!adminCredentialsConfigured, 'E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD are required')

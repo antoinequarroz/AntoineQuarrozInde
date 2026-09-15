@@ -47,7 +47,7 @@ watch(() => props.current, revealCurrentStep)
 </script>
 
 <template>
-  <nav ref="navRef" aria-label="Progression du parcours commercial" class="overflow-x-auto rounded-xl border border-gray-200 bg-white px-3 py-2 dark:border-white/[0.08] dark:bg-[#111118]">
+  <nav ref="navRef" tabindex="0" aria-label="Progression du parcours commercial" class="overflow-x-auto rounded-xl border border-gray-200 bg-white px-3 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:border-white/[0.08] dark:bg-[#111118]">
     <ol class="flex min-w-max items-center gap-1 text-xs sm:text-sm">
       <li v-for="(step, index) in steps" :key="step.id" class="flex items-center gap-1">
         <span v-if="index" aria-hidden="true" class="px-1 text-gray-300 dark:text-gray-600">→</span>

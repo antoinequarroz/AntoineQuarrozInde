@@ -2,6 +2,8 @@ import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
 import { adminCredentialsConfigured, loginAdmin } from './helpers/admin-auth'
 
+test.use({ trace: 'off', screenshot: 'off', video: 'off' })
+
 async function expectNoSeriousAccessibilityViolations(page: Page) {
   const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()
   const blocking = results.violations.filter(violation => violation.impact === 'critical' || violation.impact === 'serious')

@@ -2,9 +2,10 @@ import { defineConfig, devices } from '@playwright/test'
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
-const e2eEnvPath = resolve(process.cwd(), '.env.e2e')
+const e2eEnvPaths = [resolve(process.cwd(), '.env.e2e'), resolve(process.cwd(), '.env')]
 
-if (existsSync(e2eEnvPath)) {
+for (const e2eEnvPath of e2eEnvPaths) {
+  if (!existsSync(e2eEnvPath)) continue
   for (const rawLine of readFileSync(e2eEnvPath, 'utf8').split(/\r?\n/)) {
     const line = rawLine.trim()
     if (!line || line.startsWith('#')) continue
@@ -23,9 +24,12 @@ export default defineConfig({
   testDir: './e2e',
   globalSetup: './e2e/global-setup.ts',
   fullyParallel: false,
+  workers: 1,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 2 : 0,
-  reporter: process.env.CI ? 'github' : 'list',
+  reporter: process.env.CI
+    ? [['github'], ['./e2e/reporters/no-skipped.ts']]
+    : 'list',
   use: {
     baseURL: externalBaseUrl || 'http://127.0.0.1:3100',
     serviceWorkers: 'block',
@@ -33,7 +37,18 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [
+    {
+      name: 'chromium',
+      testIgnore: /mobile-admin\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'mobile-admin',
+      testMatch: /(?:mobile-admin|business-flow)\.spec\.ts/,
+      use: { ...devices['iPhone 13'], browserName: 'chromium' },
+    },
+  ],
   webServer: externalBaseUrl
     ? undefined
     : {
