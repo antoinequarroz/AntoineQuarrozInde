@@ -10,6 +10,7 @@ const localePath = useLocalePath()
 const year = new Date().getFullYear()
 const contactCountry = computed(() => PUBLIC_COUNTRY_LABELS[locale.value as PublicSeoLocale] ?? PUBLIC_COUNTRY_LABELS.fr)
 const socials = PUBLIC_SEO_IDENTITY.profiles
+const { data: technologyStack } = await usePublicTechnologyStack()
 
 const navLinks = computed(() => [
   { key: 'about', href: `${localePath('/')}#about` },
@@ -19,17 +20,7 @@ const navLinks = computed(() => [
   { key: 'contact', href: `${localePath('/')}#contact` },
 ])
 
-const stack = [
-  { label: 'Vue 3', icons: ['vue'] },
-  { label: 'Nuxt', icons: ['nuxt'] },
-  { label: 'React', icons: ['react'] },
-  { label: 'Next.js', icons: ['nextjs'] },
-  { label: 'SwiftUI', icons: ['swiftui'] },
-  { label: 'Flutter', icons: ['flutter'] },
-  { label: 'Dart', icons: ['dart'] },
-  { label: 'Rust', icons: ['rust'] },
-  { label: 'Supabase', icons: ['supabase'] },
-] as const
+const stack = computed(() => technologyStack.value.items.filter(item => item.showFooter))
 
 const localSeoLinks = [
   { label: 'Cas clients en Valais', href: '/cas-clients-valais' },
@@ -125,17 +116,10 @@ const localSeoLinks = [
               <ul class="space-y-3">
                 <li
                   v-for="tech in stack"
-                  :key="tech.label"
+                  :key="tech.key"
                   class="flex items-center gap-2 text-sm text-gray-600 dark:text-white/60"
                 >
-                  <span class="flex shrink-0 items-center gap-1 text-fuchsia-500/75 dark:text-fuchsia-300/70">
-                    <UiTechnologyIcon
-                      v-for="icon in tech.icons"
-                      :key="icon"
-                      :name="icon"
-                      class="h-3.5 w-3.5"
-                    />
-                  </span>
+                  <UiTechnologyIcon :name="tech.icon" class="h-3.5 w-3.5 shrink-0 text-fuchsia-500/75 dark:text-fuchsia-300/70" />
                   {{ tech.label }}
                 </li>
               </ul>

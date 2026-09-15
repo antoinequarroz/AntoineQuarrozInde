@@ -1230,6 +1230,18 @@ create table if not exists public.application_errors (
   resolved_at timestamptz
 );
 
+create table if not exists public.technology_stack_settings (
+  organization_id uuid primary key references public.organizations(id) on delete cascade,
+  draft_items jsonb not null default '[]'::jsonb,
+  published_items jsonb not null default '[]'::jsonb,
+  draft_revision bigint not null default 1 check (draft_revision > 0),
+  published_revision bigint not null default 1 check (published_revision > 0),
+  updated_at timestamptz not null default now(),
+  published_at timestamptz not null default now(),
+  constraint technology_stack_draft_array_check check (jsonb_typeof(draft_items) = 'array' and jsonb_array_length(draft_items) <= 40),
+  constraint technology_stack_published_array_check check (jsonb_typeof(published_items) = 'array' and jsonb_array_length(published_items) <= 40)
+);
+
 create index if not exists idx_projects_organization_id on public.projects(organization_id);
 create index if not exists idx_projects_portfolio_visible on public.projects(organization_id, portfolio_visible) where portfolio_visible = true;
 create index if not exists idx_projects_case_study_published on public.projects(organization_id, case_study_published) where case_study_published = true;
@@ -1284,8 +1296,11 @@ alter table public.invoices enable row level security;
 alter table public.invoice_payments enable row level security;
 alter table public.appointments enable row level security;
 alter table public.application_errors enable row level security;
+alter table public.technology_stack_settings enable row level security;
 
 revoke all on table public.application_errors from anon, authenticated;
 grant all on table public.application_errors to service_role;
 revoke all on table public.invoice_payments from anon, authenticated;
 grant all on table public.invoice_payments to service_role;
+revoke all on table public.technology_stack_settings from public, anon, authenticated;
+grant all on table public.technology_stack_settings to service_role;

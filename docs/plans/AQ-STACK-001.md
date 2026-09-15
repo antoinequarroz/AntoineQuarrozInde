@@ -1,7 +1,8 @@
 ---
 ticket: AQ-STACK-001
 linear: ANT-22
-validated: no
+validated: yes
+validated_at: 2026-09-15
 ---
 
 # AQ-STACK-001 — Administrer la stack technique depuis le dashboard
@@ -27,7 +28,7 @@ validated: no
 
 ## Plan ordonné
 
-- [ ] **1. Définir le contrat fermé de la stack.** Objectif : créer les types,
+- [x] **1. Définir le contrat fermé de la stack.** Objectif : créer les types,
   niveaux, clés d'icône, limites, parseur et catalogue initial partagés.
   Fichiers attendus : `shared/utils/technologyStack.ts`, adaptation ciblée de
   `app/components/ui/TechnologyIcon.vue`, tests Vitest dédiés. Autorisé : noms
@@ -51,7 +52,7 @@ validated: no
   `anon`/`authenticated` révoqués, accès `service_role` uniquement. Rollback :
   migration additive ignorée par l'ancienne image, sans suppression automatique.
 
-- [ ] **3. Exposer les contrats serveur privé et public.** Objectif : fournir
+- [x] **3. Exposer les contrats serveur privé et public.** Objectif : fournir
   lecture/sauvegarde du brouillon, publication explicite et lecture publique de
   la seule version publiée. Fichiers attendus : utilitaire serveur de stack,
   `server/api/admin/technology-stack.get.ts`, `.put.ts`,
@@ -64,7 +65,7 @@ validated: no
   publication atomique et fallback. Validation : tests ciblés puis
   `npm run typecheck`. Rollback : le public conserve le catalogue initial.
 
-- [ ] **4. Construire l'éditeur mobile-first avec prévisualisation.** Objectif :
+- [x] **4. Construire l'éditeur mobile-first avec prévisualisation.** Objectif :
   ajouter `/admin/stack` au groupe `Publier`, avec liste ordonnable au clavier,
   ajout/édition, visibilités, niveau, choix d'icône, aperçu FR/EN/DE, sauvegarde
   et confirmation de publication. Fichiers attendus :
@@ -76,7 +77,7 @@ validated: no
   focus, thèmes et 320 px. Validation : tests ciblés et inspection locale.
   Rollback : la route peut être retirée sans toucher aux données publiées.
 
-- [ ] **5. Brancher le rendu public SSR sans dupliquer la source.** Objectif :
+- [x] **5. Brancher le rendu public SSR sans dupliquer la source.** Objectif :
   remplacer les deux tableaux statiques par une source publiée partagée,
   présenter clairement les niveaux sur la landing et respecter la visibilité
   plus concise du footer. Fichiers attendus : composable public,
@@ -108,3 +109,16 @@ validated: no
 - Chaque critère est couvert par au moins une étape; les étapes 1 à 3 ferment
   les frontières de données avant les interfaces, puis les étapes 4 et 5
   consomment ces contrats et l'étape 6 vérifie le parcours entier.
+
+## Preuves locales
+
+- 693 tests Vitest passés, puis 31 tests ciblés passés après la dernière
+  adaptation des rôles de navigation.
+- `npm run typecheck`, `npm run build`, `npm run quality:budgets` et
+  `git diff --check` passés via Portly.
+- Rendu SSR FR inspecté dans le navigateur avec le catalogue de secours ;
+  aucune erreur de composant liée à la stack. Les avertissements d'hydratation
+  observés proviennent de l'en-tête existant et de son état de scroll.
+- Test Supabase/pgTAP encore ouvert : Docker Desktop est installé mais son
+  moteur local n'a pas répondu pendant la fenêtre de validation. Aucune base
+  distante n'a été touchée.
