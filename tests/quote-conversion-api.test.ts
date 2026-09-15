@@ -3,11 +3,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 describe('quote conversion API', () => {
   const rpc = vi.fn()
   const logAudit = vi.fn()
+  const recordCommercialWorkflowEvent = vi.fn()
 
   beforeEach(() => {
     vi.resetModules()
     rpc.mockReset()
     logAudit.mockReset()
+    recordCommercialWorkflowEvent.mockReset()
     vi.stubGlobal('defineEventHandler', (handler: unknown) => handler)
     vi.stubGlobal('requireAdmin', vi.fn().mockResolvedValue({
       org: { id: 'org-test' },
@@ -19,6 +21,8 @@ describe('quote conversion API', () => {
     }))
     vi.stubGlobal('getSupabaseAdmin', () => ({ rpc }))
     vi.stubGlobal('logAudit', logAudit)
+    vi.stubGlobal('resolveCommercialCorrelationId', vi.fn().mockReturnValue('0199c7a3-1b7d-7000-8000-123456789abc'))
+    vi.stubGlobal('recordCommercialWorkflowEvent', recordCommercialWorkflowEvent)
     vi.stubGlobal('createError', (input: object) => Object.assign(new Error('request failed'), input))
   })
 
@@ -39,6 +43,7 @@ describe('quote conversion API', () => {
       p_quote_id: 42,
     })
     expect(logAudit).toHaveBeenCalledOnce()
+    expect(recordCommercialWorkflowEvent).toHaveBeenCalledWith(expect.objectContaining({ stage: 'quote', outcome: 'success', entityId: 73 }))
   })
 
   it('returns an existing invoice without writing a duplicate audit', async () => {
@@ -49,6 +54,7 @@ describe('quote conversion API', () => {
 
     await expect(handler({} as never)).resolves.toEqual({ created: false, invoice })
     expect(logAudit).not.toHaveBeenCalled()
+    expect(recordCommercialWorkflowEvent).toHaveBeenCalledWith(expect.objectContaining({ stage: 'quote', outcome: 'recovered', entityId: 73 }))
   })
 
   it('rejects conversion without the explicit confirmation token', async () => {
@@ -60,6 +66,7 @@ describe('quote conversion API', () => {
       statusCode: 400,
       message: expect.stringContaining('Confirme explicitement'),
     })
+    expect(recordCommercialWorkflowEvent).not.toHaveBeenCalled()
     expect(rpc).not.toHaveBeenCalled()
     expect(logAudit).not.toHaveBeenCalled()
   })
@@ -76,6 +83,7 @@ describe('quote conversion API', () => {
       statusCode: 500,
       message: 'La conversion transactionnelle du devis a échoué.',
     })
+    expect(recordCommercialWorkflowEvent).toHaveBeenCalledWith(expect.objectContaining({ stage: 'quote', outcome: 'failure', code: 'quote_conversion_failed' }))
   })
 
   it.each([-1, 1.5, Number.MAX_SAFE_INTEGER + 1])('rejects invalid quote id %s before the database', async (id) => {

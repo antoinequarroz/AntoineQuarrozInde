@@ -3,6 +3,7 @@ import { recordInvoicePayment } from '../../utils/recordInvoicePayment'
 import { createHash } from 'node:crypto'
 
 export default defineEventHandler(async (event) => {
+  const correlationId = resolveCommercialCorrelationId(event)
   const { org, user } = await requireAdmin(event)
   const body = await readBody(event)
   const invoiceId = Number(body.invoiceId)
@@ -20,5 +21,37 @@ export default defineEventHandler(async (event) => {
   }
 
   const fingerprint = createHash('sha256').update(`manual:${org.id}:${invoiceId}:${idempotencyKey}`).digest('hex')
-  return recordInvoicePayment({ organizationId: org.id, actorUserId: user?.id, invoiceId, payment, bankImportFingerprint: fingerprint, source: 'manual' })
+  try {
+    const result = await recordInvoicePayment({ organizationId: org.id, actorUserId: user?.id, invoiceId, payment, bankImportFingerprint: fingerprint, source: 'manual' })
+    await recordCommercialWorkflowEvent({
+      event,
+      correlationId,
+      organizationId: org.id,
+      actorUserId: user?.id,
+      stage: 'payment',
+      outcome: result.created ? 'success' : 'recovered',
+      entityType: 'payment',
+      entityId: result.payment.id,
+      code: result.created ? null : 'payment_already_recorded',
+    })
+    return result
+  }
+  catch (error) {
+    const statusCode = Number((error as { statusCode?: number }).statusCode || 500)
+    if (statusCode >= 500) {
+      await recordCommercialWorkflowEvent({
+        event,
+        correlationId,
+        organizationId: org.id,
+        actorUserId: user?.id,
+        stage: 'payment',
+        outcome: 'failure',
+        entityType: 'invoice',
+        entityId: invoiceId,
+        code: 'payment_record_failed',
+      })
+      throw createError({ statusCode: 500, message: 'Le paiement n’a pas pu être enregistré.' })
+    }
+    throw error
+  }
 })

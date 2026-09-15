@@ -3,6 +3,7 @@ import { assertInvoiceStatusTransition, normalizeInvoicePaymentState } from '../
 import { getQrReferenceError, isSwissQrReferenceType, normalizeIban, validateQrReference } from '../../shared/utils/swissQr'
 
 export default defineEventHandler(async (event) => {
+  const correlationId = resolveCommercialCorrelationId(event)
   const { org, user } = await requireAdmin(event)
   const body = await readBody(event)
   const supabase = getSupabaseAdmin()
@@ -71,8 +72,10 @@ export default defineEventHandler(async (event) => {
     payment_reference: normalizedReference.reference,
   }
   if (!payload.number) throw createError({ statusCode: 400, message: 'Missing number' })
+  let usedCompatibilityRetry = false
   let { data, error } = await supabase.from('invoices').insert(payload).select('*').single()
   if (error && (error.message.includes('subtotal_cents') || error.message.includes('tax_cents') || error.message.includes('total_cents') || error.message.includes('payment_reference'))) {
+    usedCompatibilityRetry = true
     const legacyPayload = {
       organization_id: payload.organization_id,
       client_id: payload.client_id,
@@ -91,7 +94,20 @@ export default defineEventHandler(async (event) => {
     data = retry.data
     error = retry.error
   }
-  if (error) throw createError({ statusCode: 500, message: error.message })
+  if (error) {
+    await recordCommercialWorkflowEvent({
+      event,
+      correlationId,
+      organizationId: org.id,
+      actorUserId: user?.id,
+      stage: 'invoice',
+      outcome: 'failure',
+      entityType: 'invoice',
+      clientId: payload.client_id,
+      code: 'invoice_creation_failed',
+    })
+    throw createError({ statusCode: 500, message: 'La facture n’a pas pu être créée.' })
+  }
   if (items.length) {
     const rows = items.map(item => ({ ...item, organization_id: org.id, invoice_id: data.id }))
     await supabase.from('invoice_items').insert(rows)
@@ -104,6 +120,18 @@ export default defineEventHandler(async (event) => {
     entityId: data.id,
     clientId: data.client_id,
     payload: { number: data.number, status: data.status, amount_cents: data.amount_cents },
+  })
+  await recordCommercialWorkflowEvent({
+    event,
+    correlationId,
+    organizationId: org.id,
+    actorUserId: user?.id,
+    stage: 'invoice',
+    outcome: usedCompatibilityRetry ? 'recovered' : 'success',
+    entityType: 'invoice',
+    entityId: data.id,
+    clientId: data.client_id,
+    code: usedCompatibilityRetry ? 'invoice_compatibility_retry' : null,
   })
   return { ...data, items }
 })
