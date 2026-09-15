@@ -1,6 +1,8 @@
 import { expect, test } from '@playwright/test'
 import { adminCredentialsConfigured, loginAdmin } from './helpers/admin-auth'
 
+test.use({ trace: 'off', screenshot: 'off', video: 'off' })
+
 const overview = {
   organization: { name: 'AQ E2E Sandbox' },
   client: { id: 7, name: 'Camille Exemple', company: 'Atelier Exemple' },

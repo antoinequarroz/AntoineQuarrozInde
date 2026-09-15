@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Quote } from '~/types'
+import AdminAdminEmptyState from '~/components/admin/AdminEmptyState.vue'
 import AdminViewSkeleton from '~/components/admin/AdminViewSkeleton.vue'
 import { printStructuredDocument } from '~/utils/printStructuredDocument'
 
@@ -528,6 +529,7 @@ onMounted(async () => {
               <button class="min-h-11 rounded-lg text-xs font-semibold text-red-600 hover:bg-red-50 dark:text-red-400" @click="del(q.id)">Supprimer</button>
             </div>
           </article>
+          <AdminAdminEmptyState v-if="!filteredQuotes.length" title="Aucun devis" body="Ajuste les filtres ou crée un nouveau devis." />
         </div>
 
         <div v-if="viewMode==='table'" class="admin-table-wrap hidden sm:block bg-white dark:bg-[#111118] border border-gray-100 dark:border-white/[0.06] rounded-xl overflow-hidden">
@@ -563,6 +565,7 @@ onMounted(async () => {
                 <div class="flex justify-end gap-1"><button v-if="q.status === 'draft'" class="min-h-11 rounded-lg px-2 text-xs font-semibold text-violet-700 hover:bg-violet-50 dark:text-violet-300" @click.stop="sendQuoteEmail(q)">Envoyer PDF</button><button v-if="q.status === 'sent'" class="min-h-11 rounded-lg px-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 dark:text-emerald-300" @click.stop="markQuoteEvent(q, 'signed_at')">Confirmer signature</button><button v-if="q.status === 'draft'" class="min-h-11 rounded-lg px-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 dark:text-gray-300" @click.stop="openEdit(q)">Modifier</button></div>
               </td>
             </tr>
+            <tr v-if="!filteredQuotes.length"><td colspan="6" class="p-8 text-center text-sm text-gray-500 dark:text-gray-400">Aucun devis. Modifie la recherche ou crée un nouveau devis.</td></tr>
           </tbody>
           </table>
         </div>

@@ -2,6 +2,8 @@ import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
 import { adminCredentialsConfigured, loginAdmin } from './helpers/admin-auth'
 
+test.use({ trace: 'off', screenshot: 'off', video: 'off' })
+
 async function expectNoSeriousAccessibilityViolations(page: Page) {
   const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()
   const blocking = results.violations.filter(violation => violation.impact === 'critical' || violation.impact === 'serious')
@@ -24,7 +26,7 @@ async function selectSandboxOrganization(page: Page) {
   await expect(organizationSelect).toHaveValue(sandboxId)
 }
 
-test('landing and admin login remain accessible without credentials', async ({ page }) => {
+test('landing and admin login remain accessible without credentials', { tag: '@credential-free' }, async ({ page }) => {
   test.setTimeout(90_000)
   await page.goto('/')
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible()

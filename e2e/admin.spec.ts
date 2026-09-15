@@ -1,6 +1,8 @@
 import { expect, test } from '@playwright/test'
 import { adminCredentialsConfigured, loginAdmin } from './helpers/admin-auth'
 
+test.use({ trace: 'off', screenshot: 'off', video: 'off' })
+
 async function selectSandboxOrganization(page: import('@playwright/test').Page) {
   const organizationSelect = page.getByRole('combobox', { name: 'Organisation active' })
   if (!await organizationSelect.isVisible()) return

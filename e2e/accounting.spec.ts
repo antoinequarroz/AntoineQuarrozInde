@@ -1,6 +1,8 @@
 import { expect, test } from '@playwright/test'
 import { adminCredentialsConfigured, loginAdmin } from './helpers/admin-auth'
 
+test.use({ trace: 'off', screenshot: 'off', video: 'off' })
+
 const accountingSummary = {
   from: '2026-01-01',
   to: '2026-12-31',

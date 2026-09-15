@@ -10,6 +10,13 @@ export const adminStorageStatePath = resolve(process.cwd(), 'playwright/.auth/ad
 
 export const adminCredentialsConfigured = Boolean(adminEmail && adminPassword)
 
+export function requireAdminCredentials() {
+  if (!adminEmail || !adminPassword) {
+    throw new Error('E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD are required.')
+  }
+  return { email: adminEmail, password: adminPassword, totpSecret: adminTotpSecret }
+}
+
 type StoredBrowserState = Awaited<ReturnType<BrowserContext['storageState']>>
 
 async function restoreAdminStorageState(page: Page) {
@@ -70,18 +77,16 @@ export function generateTotpCode(secret: string, timestampMs = Date.now()) {
   return binary.toString().padStart(6, '0')
 }
 
-export async function loginAdmin(page: Page) {
-  if (!adminEmail || !adminPassword) {
-    throw new Error('E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD are required.')
-  }
+export async function loginAdmin(page: Page, options: { restoreStorageState?: boolean, loginPath?: string } = {}) {
+  const credentials = requireAdminCredentials()
 
-  if (await restoreAdminStorageState(page)) return
+  if (options.restoreStorageState !== false && await restoreAdminStorageState(page)) return
 
-  await page.goto('/admin/login')
-  await page.getByLabel(/email/i).fill(adminEmail)
-  await page.getByLabel(/mot de passe/i).fill(adminPassword)
+  await page.goto(options.loginPath || '/admin/login')
+  await page.getByLabel(/email/i).fill(credentials.email)
+  await page.getByLabel(/mot de passe/i).fill(credentials.password)
   await page.getByRole('button', { name: /se connecter/i }).click()
-  await page.waitForURL(url => /^\/admin(?:\/security)?\/?$/.test(url.pathname))
+  await page.waitForURL(url => url.pathname.startsWith('/admin') && !url.pathname.startsWith('/admin/login'))
 
   if (new URL(page.url()).pathname === '/admin/security') {
     const challengeCode = page.getByLabel('Code à six chiffres')
@@ -94,16 +99,16 @@ export async function loginAdmin(page: Page) {
       await continueToAdmin.click()
     }
     else {
-      if (!adminTotpSecret) {
+      if (!credentials.totpSecret) {
         throw new Error('This admin account requires MFA. Configure E2E_ADMIN_TOTP_SECRET with its Base32 TOTP secret.')
       }
 
       const remainingWindowMs = 30_000 - (Date.now() % 30_000)
       if (remainingWindowMs < 5_000) await page.waitForTimeout(remainingWindowMs + 250)
-      await challengeCode.fill(generateTotpCode(adminTotpSecret))
+      await challengeCode.fill(generateTotpCode(credentials.totpSecret))
       await page.getByRole('button', { name: 'Vérifier et continuer' }).click()
     }
   }
 
-  await expect(page).toHaveURL(/\/admin(?:\/)?$/)
+  await expect(page).toHaveURL(/\/admin(?:\/.*)?$/)
 }

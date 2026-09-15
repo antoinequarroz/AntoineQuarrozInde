@@ -56,7 +56,7 @@ jobs:
         run: |
           sudo rm -f /etc/apt/sources.list.d/google-chrome.list /etc/apt/sources.list.d/google-chrome.sources
           npx playwright install --with-deps chromium
-      - run: npx playwright test e2e/accessibility.spec.ts --project=chromium
+      - run: npx playwright test e2e/accessibility.spec.ts --project=chromium --grep @credential-free
 
   seo-quality:
     needs: quality
@@ -271,7 +271,7 @@ jobs:
           E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
           E2E_ADMIN_TOTP_SECRET: ${{ secrets.E2E_ADMIN_TOTP_SECRET }}
         run: |
-          test -n "$E2E_ADMIN_EMAIL" && test -n "$E2E_ADMIN_PASSWORD"
+          test -n "$E2E_ADMIN_EMAIL" && test -n "$E2E_ADMIN_PASSWORD" && test -n "$E2E_ADMIN_TOTP_SECRET"
           npm run test:e2e
       - if: failure()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6

@@ -1,6 +1,9 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
 import { adminCredentialsConfigured, loginAdmin } from './helpers/admin-auth'
+import { expectDialogFitsViewport, expectNoHorizontalOverflow, expectTouchTarget } from './helpers/mobile-admin'
+
+test.use({ trace: 'off', screenshot: 'off', video: 'off' })
 
 async function getAccessToken(page: Page) {
   await loginAdmin(page)
@@ -40,6 +43,7 @@ async function expectAccessibleDetailPage(page: Page) {
 }
 
 test('sandbox covers client to paid invoice and cleans up business data', async ({ page, request }) => {
+  test.setTimeout(180_000)
   test.skip(!adminCredentialsConfigured, 'E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD are required')
 
   const accessToken = await getAccessToken(page)
@@ -200,10 +204,19 @@ test('sandbox covers client to paid invoice and cleans up business data', async 
 
     await page.goto(`/admin/invoices?invoiceId=${ids.invoice}&clientId=${ids.client}&quoteId=${ids.quote}&journey=converted`)
     await expect(page.getByText(`La facture ${conversion.invoice.number} a été créée depuis le devis.`)).toBeVisible()
-    const invoiceRow = page.getByRole('row').filter({ hasText: conversion.invoice.number })
-    await invoiceRow.getByRole('button', { name: 'Paiement', exact: true }).click()
+    const paymentTrigger = test.info().project.name === 'mobile-admin'
+      ? page.locator('article').filter({ hasText: conversion.invoice.number }).getByRole('button', { name: 'Enregistrer un paiement', exact: true })
+      : page.getByRole('row').filter({ hasText: conversion.invoice.number }).getByRole('button', { name: 'Paiement', exact: true })
+    if (test.info().project.name === 'mobile-admin') {
+      await expectTouchTarget(paymentTrigger)
+      await paymentTrigger.tap()
+    }
+    else {
+      await paymentTrigger.click()
+    }
     const paymentDialog = page.getByRole('dialog', { name: 'Enregistrer un paiement' })
     await expect(paymentDialog).toBeVisible()
+    if (test.info().project.name === 'mobile-admin') await expectDialogFitsViewport(page, paymentDialog)
     await expect(paymentDialog.getByLabel(/Montant/)).toHaveValue('135.13')
     await paymentDialog.getByLabel('Référence').fill(`E2E-${runId}`)
     const paymentRequestPromise = page.waitForRequest(request => request.url().endsWith('/api/invoices/payments') && request.method() === 'POST')
@@ -238,6 +251,7 @@ test('sandbox covers client to paid invoice and cleans up business data', async 
 
     await page.goto(`/admin/payments?invoiceId=${ids.invoice}`)
     await expect(page.getByText(`Le paiement de la facture ${conversion.invoice.number} est bien présent dans le journal et le CRM est à jour.`)).toBeVisible()
+    if (test.info().project.name === 'mobile-admin') await expectNoHorizontalOverflow(page)
     const commercialJourney = page.getByRole('navigation', { name: 'Progression du parcours commercial' })
     await expect(commercialJourney).toBeVisible()
     await commercialJourney.getByRole('link', { name: 'Facture' }).click()

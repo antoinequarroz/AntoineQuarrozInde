@@ -204,17 +204,17 @@ onMounted(async () => {
         <div class="rounded-xl border border-gray-100 dark:border-white/10 bg-white dark:bg-[#111118] p-4">
           <p class="text-xs uppercase text-gray-600 dark:text-gray-300">Devis</p>
           <p class="font-display font-bold text-xl mt-1">{{ clientQuotes.length }}</p>
-          <p class="text-xs text-gray-500 mt-1">{{ (totalQuotes / 100).toFixed(2) }} CHF</p>
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ (totalQuotes / 100).toFixed(2) }} CHF</p>
         </div>
         <div class="rounded-xl border border-gray-100 dark:border-white/10 bg-white dark:bg-[#111118] p-4">
           <p class="text-xs uppercase text-gray-600 dark:text-gray-300">Factures</p>
           <p class="font-display font-bold text-xl mt-1">{{ clientInvoices.length }}</p>
-          <p class="text-xs text-gray-500 mt-1">{{ (totalInvoices / 100).toFixed(2) }} CHF</p>
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ (totalInvoices / 100).toFixed(2) }} CHF</p>
         </div>
         <div class="rounded-xl border border-gray-100 dark:border-white/10 bg-white dark:bg-[#111118] p-4">
           <p class="text-xs uppercase text-gray-600 dark:text-gray-300">Impayées</p>
           <p class="font-display font-bold text-xl mt-1">{{ overdueInvoices.length }}</p>
-          <p class="text-xs text-gray-500 mt-1">statut overdue</p>
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">statut overdue</p>
         </div>
         <div class="rounded-xl border border-gray-100 dark:border-white/10 bg-white dark:bg-[#111118] p-4">
           <p class="text-xs uppercase text-gray-600 dark:text-gray-300">Prochain RDV</p>

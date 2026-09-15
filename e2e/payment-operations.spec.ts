@@ -2,6 +2,8 @@ import { expect, test } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 import { adminCredentialsConfigured, loginAdmin } from './helpers/admin-auth'
 
+test.use({ trace: 'off', screenshot: 'off', video: 'off' })
+
 const paymentOperations = {
   generatedAt: '2026-08-10T18:00:00.000Z',
   metrics: {
