@@ -45,11 +45,13 @@ describe('Hermes social publication helper', () => {
     expect(receipt).toMatchObject({ platform: 'linkedin', externalWrite: false, status: 'validated' })
   })
 
-  it('rejects a numbered LinkedIn post heading', () => {
+  it('removes a numbered LinkedIn post heading before publication', () => {
     const articleUrl = 'https://www.antoinequarroz.ch/blog/test-social'
     const { project, path } = createDraft('APPROUVE', 'linkedin', `12. Un nouveau sujet\n\n${articleUrl}`)
-    expect(() => execFileSync('python3', [script, '--project', project, '--draft', path, '--dry-run']))
-      .toThrow(/ne doit pas commencer par un numero de post/)
+    const receipt = JSON.parse(execFileSync('python3', [
+      script, '--project', project, '--draft', path, '--dry-run',
+    ], { encoding: 'utf8' }))
+    expect(receipt.characters).toBe(`Un nouveau sujet\n\n${articleUrl}`.length)
   })
 
   it('rejects an X draft longer than 280 characters', () => {
@@ -71,6 +73,8 @@ describe('Hermes social publication helper', () => {
     expect(source).toContain('HERMES_X_MAX_USD_PER_POST')
     expect(source).toContain('X_POST_WITH_URL_ESTIMATED_USD = 0.20')
     expect(source).toContain('--process-approved')
+    expect(source).toContain('--local-hour')
+    expect(source).toContain('ZoneInfo(timezone)')
     expect(source).toContain('--sync-drafts')
     expect(source).toContain('HERMES_PUBLISH_TOKEN')
   })
