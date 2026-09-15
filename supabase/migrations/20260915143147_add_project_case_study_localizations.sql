@@ -142,6 +142,8 @@ declare
   v_input jsonb;
   v_saved jsonb;
   v_project_id bigint;
+  v_existing_project public.projects%rowtype;
+  v_candidate_project public.projects%rowtype;
   v_before public.project_case_study_localizations%rowtype;
   v_changed_fields text[];
   v_changes jsonb := '{}'::jsonb;
@@ -149,6 +151,16 @@ declare
 begin
   if p_payload is null or jsonb_typeof(p_payload) <> 'object' then
     raise exception 'project_payload_invalid' using errcode = '22023';
+  end if;
+
+  select membership.role
+  into v_actor_role
+  from public.organization_memberships membership
+  where membership.organization_id = p_organization_id
+    and membership.user_id = p_actor_user_id;
+
+  if not found then
+    raise exception 'project_actor_membership_required' using errcode = '42501';
   end if;
 
   if v_localizations is not null then
@@ -162,15 +174,6 @@ begin
       raise exception 'project_case_study_localizations_invalid' using errcode = '22023';
     end if;
 
-    select membership.role
-    into v_actor_role
-    from public.organization_memberships membership
-    where membership.organization_id = p_organization_id
-      and membership.user_id = p_actor_user_id;
-
-    if not found then
-      raise exception 'project_actor_membership_required' using errcode = '42501';
-    end if;
     if v_actor_role not in ('owner', 'admin') then
       raise exception 'project_case_study_localizations_forbidden' using errcode = '42501';
     end if;
@@ -195,11 +198,41 @@ begin
       );
   end if;
 
+  if v_actor_role not in ('owner', 'admin') then
+    v_candidate_project := jsonb_populate_record(null::public.projects, v_project_payload);
+
+    if p_project_id is not null then
+      select *
+      into v_existing_project
+      from public.projects project
+      where project.organization_id = p_organization_id
+        and project.id = p_project_id
+      for update;
+
+      if not found then
+        raise exception 'project_not_found' using errcode = 'P0002';
+      end if;
+
+      if v_existing_project.project_role is distinct from v_candidate_project.project_role
+        or v_existing_project.project_duration is distinct from v_candidate_project.project_duration
+        or v_existing_project.challenge is distinct from v_candidate_project.challenge
+        or v_existing_project.project_scope is distinct from v_candidate_project.project_scope
+        or v_existing_project.key_decisions is distinct from v_candidate_project.key_decisions
+        or v_existing_project.approach is distinct from v_candidate_project.approach
+        or v_existing_project.solution is distinct from v_candidate_project.solution
+        or v_existing_project.outcome is distinct from v_candidate_project.outcome
+        or coalesce(v_existing_project.deliverables, '{}') is distinct from coalesce(v_candidate_project.deliverables, '{}')
+        or coalesce(v_existing_project.results, '[]'::jsonb) is distinct from coalesce(v_candidate_project.results, '[]'::jsonb) then
+        raise exception 'project_case_study_localizations_forbidden' using errcode = '42501';
+      end if;
+    end if;
+  end if;
+
   v_saved := public.save_project_with_localizations_transition(
     p_organization_id,
     p_project_id,
     p_actor_user_id,
-    p_actor_role,
+    v_actor_role,
     v_project_payload
   );
   v_project_id := (v_saved ->> 'id')::bigint;

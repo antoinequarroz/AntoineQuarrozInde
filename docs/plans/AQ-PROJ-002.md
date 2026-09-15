@@ -97,9 +97,10 @@ Plan validé explicitement par Antoine le 15 septembre 2026 avant toute modifica
 
 - Contrat et routes ciblés : 35 tests Vitest verts.
 - Suite applicative hors gardes de release externes : 658 tests Vitest verts.
-- Base locale éphémère : replay complet, lint SQL et 206 assertions pgTAP vertes, dont 19 pour AQ-PROJ-002.
+- Base locale éphémère : replay complet, lint SQL et 208 assertions pgTAP vertes, dont 21 pour AQ-PROJ-002.
 - TypeScript : `npm run typecheck` vert.
 - Production Nuxt : `npm run build` vert.
-- Budgets : bundle total 1 496 889 octets, plus gros chunk 199 657 octets, scène robot 1 010 718 / 1 500 000 octets.
+- Budgets : bundle total 1 503 033 octets, plus gros chunk 199 657 octets, scène robot 1 010 718 / 1 500 000 octets.
 - UI locale : formulaire existant chargé avec fallback de transition, saisie FR → EN → FR conservée, aucun débordement horizontal à 390 × 844 px.
-- Restent ouverts avant livraison : revue indépendante, baseline de migration à synchroniser uniquement après promotion en production, et suite Hermes bloquée sur ce Mac par la licence Xcode non acceptée.
+- Revue : le contournement des champs français historiques par un manager a été détecté, corrigé et couvert; verdict final sans constat ouvert.
+- Restent ouverts avant livraison : preuve Linear, baseline de migration à synchroniser uniquement après promotion en production, et suite Hermes bloquée sur ce Mac par la licence Xcode non acceptée.

@@ -1,6 +1,6 @@
 begin;
 
-select plan(19);
+select plan(21);
 
 insert into public.organizations (id, name, slug)
 values
@@ -161,6 +161,34 @@ select throws_ok(
   '42501',
   'project_case_study_localizations_forbidden',
   'a manager cannot spoof an owner role to edit localizations'
+);
+
+select throws_ok(
+  $$
+    select public.save_project_with_publication_audit(
+      '00000000-0000-0000-0000-000000000201',
+      (select id from public.projects where slug = 'aqproj002-localized'),
+      '00000000-0000-0000-0000-000000000212',
+      'owner',
+      '{
+        "title":"Localized project","slug":"aqproj002-localized","category":"mobile","tags":[],
+        "description":"Description publique française","image":"https://example.com/localized.jpg",
+        "featured":false,"portfolio_visible":false,"case_study_published":false,
+        "client_disclosure_status":"pending","case_study_approval_confirmed":false,
+        "project_role":"Rôle FR","challenge":"Legacy spoof","deliverables":["App FR"],
+        "results":[{"value":"25 %","label":"Résultat FR","approved":true}],"gallery_images":[]
+      }'::jsonb
+    )
+  $$,
+  '42501',
+  'project_case_study_localizations_forbidden',
+  'a manager cannot bypass localized authorization through legacy French fields'
+);
+
+select is(
+  (select challenge from public.projects where slug = 'aqproj002-localized'),
+  'Contexte FR',
+  'a rejected legacy-field write leaves the French public content unchanged'
 );
 
 select is(
