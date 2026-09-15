@@ -114,6 +114,7 @@ const settings = ref<EmailSettings>({ automationEnabled: true, quoteOffsets: [3,
 const settingsSaving = ref(false)
 const quoteChoices = [14, 10, 7, 5, 3, 2, 1, 0]
 const invoiceChoices = [14, 10, 7, 5, 3, 2, 1, 0, -1, -3, -5, -7, -10, -14, -20, -30, -45, -60]
+const retryingId = ref<string | null>(null)
 
 async function fetchSettings() {
   try {
@@ -140,9 +141,16 @@ function toggleOffset(kind: 'quoteOffsets' | 'invoiceOffsets', value: number) {
 }
 
 async function retryEmail(email: EmailRow) {
-  if (!email.canRetry || !confirm(`Relancer l’envoi vers ${email.to[0]} ?`)) return
-  await $fetch('/api/admin/emails/retry', { method: 'POST', headers: auth.authHeader(), body: { id: email.id } })
-  await fetchEmails()
+  if (!email.canRetry || retryingId.value || !confirm(`Relancer l’envoi vers ${email.to[0]} ?`)) return
+  retryingId.value = email.id
+  try {
+    const result = await $fetch<{ status: 'sent' | 'suppressed', emailId: string | null }>('/api/admin/emails/retry', { method: 'POST', headers: auth.authHeader(), body: { id: email.id } })
+    if (result.status === 'suppressed') toast.info('Relance annulée : le document n’est plus éligible.')
+    else toast.success('Nouvelle tentative envoyée.')
+    await fetchEmails()
+  }
+  catch { toast.error('La reprise a échoué ou l’envoi n’est plus autorisé.') }
+  finally { retryingId.value = null }
 }
 
 onMounted(() => Promise.all([fetchEmails(), fetchSettings()]))
@@ -268,7 +276,7 @@ onMounted(() => Promise.all([fetchEmails(), fetchSettings()]))
               </div>
               <div>
                 <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold" :class="statusMeta[email.status].badge"><span class="h-1.5 w-1.5 rounded-full" :class="statusMeta[email.status].dot" />{{ statusMeta[email.status].label }}</span>
-                <button v-if="email.canRetry" type="button" class="mt-2 block min-h-9 rounded-md border border-red-200 px-2 text-xs font-semibold text-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 dark:border-red-400/20 dark:text-red-300" @click="retryEmail(email)">Réessayer</button>
+                <button v-if="email.canRetry" type="button" class="mt-2 block min-h-9 rounded-md border border-red-200 px-2 text-xs font-semibold text-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 disabled:cursor-wait disabled:opacity-60 dark:border-red-400/20 dark:text-red-300" :disabled="Boolean(retryingId)" @click="retryEmail(email)">{{ retryingId === email.id ? 'Envoi…' : 'Réessayer' }}</button>
               </div>
               <time class="text-xs text-gray-500 dark:text-gray-400" :datetime="email.createdAt">{{ formatDate(email.createdAt) }}</time>
             </div>

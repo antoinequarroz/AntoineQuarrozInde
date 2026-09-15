@@ -16,30 +16,45 @@ export default defineEventHandler(async (event) => {
   if (!client?.email || client.email.trim().toLowerCase() !== delivery.recipient.trim().toLowerCase()) throw createError({ statusCode: 409, message: 'Le destinataire a changé; crée un nouvel envoi.' })
 
   let documentNumber = ''
+  let amountLabel: string | undefined
   if (delivery.entity_type === 'quote') {
     const { data } = await supabase.from('quotes').select('number,status').eq('organization_id', org.id).eq('id', Number(delivery.entity_id)).maybeSingle()
     if (delivery.template_key === 'quote_reminder' && data?.status !== 'sent') throw createError({ statusCode: 409, message: 'Ce devis ne doit plus être relancé.' })
     documentNumber = data?.number || ''
   }
   else if (delivery.entity_type === 'invoice') {
-    const { data } = await supabase.from('invoices').select('number,status,total_cents,amount_cents,reminders_paused').eq('organization_id', org.id).eq('id', Number(delivery.entity_id)).maybeSingle()
+    const { data } = await supabase.from('invoices').select('number,status,total_cents,amount_cents,currency,reminders_paused').eq('organization_id', org.id).eq('id', Number(delivery.entity_id)).maybeSingle()
     if (delivery.template_key === 'invoice_reminder') {
       const { data: payments } = await supabase.from('invoice_payments').select('amount_cents,voided_at').eq('organization_id', org.id).eq('invoice_id', Number(delivery.entity_id))
       const paid = (payments || []).filter(payment => !payment.voided_at).reduce((total, payment) => total + Number(payment.amount_cents), 0)
-      if (!data || !['sent', 'overdue'].includes(data.status) || data.reminders_paused || Number(data.total_cents ?? data.amount_cents ?? 0) - paid <= 0) throw createError({ statusCode: 409, message: 'Cette facture ne doit plus être relancée.' })
+      const balance = Number(data?.total_cents ?? data?.amount_cents ?? 0) - paid
+      if (!data || !['sent', 'overdue'].includes(data.status) || data.reminders_paused || balance <= 0) throw createError({ statusCode: 409, message: 'Cette facture ne doit plus être relancée.' })
+      amountLabel = formatCommercialAmount(balance, data.currency || 'CHF', delivery.locale)
     }
     documentNumber = data?.number || ''
   }
   else if (delivery.entity_type === 'payment') {
-    const { data: payment } = await supabase.from('invoice_payments').select('invoice_id').eq('organization_id', org.id).eq('id', Number(delivery.entity_id)).maybeSingle()
+    const { data: payment } = await supabase.from('invoice_payments').select('invoice_id,amount_cents').eq('organization_id', org.id).eq('id', Number(delivery.entity_id)).maybeSingle()
     if (payment?.invoice_id) {
-      const { data } = await supabase.from('invoices').select('number').eq('organization_id', org.id).eq('id', payment.invoice_id).maybeSingle()
+      const { data } = await supabase.from('invoices').select('number,currency').eq('organization_id', org.id).eq('id', payment.invoice_id).maybeSingle()
       documentNumber = data?.number || ''
+      amountLabel = formatCommercialAmount(Number(payment.amount_cents), data?.currency || 'CHF', delivery.locale)
     }
   }
   if (!documentNumber) throw createError({ statusCode: 409, message: 'Le document lié n’existe plus.' })
 
   const siteUrl = String(useRuntimeConfig().public.siteUrl || 'https://www.antoinequarroz.ch').replace(/\/$/, '')
-  const content = buildCommercialEmail({ template: delivery.template_key, locale: delivery.locale, recipientName: client.name, documentNumber, portalUrl: `${siteUrl}/portal` })
-  return await retryTrackedEmail({ organizationId: org.id, deliveryId, recipient: delivery.recipient, subject: content.subject, text: content.text, html: content.html })
+  const content = buildCommercialEmail({ template: delivery.template_key, locale: delivery.locale, recipientName: client.name, documentNumber, amountLabel, portalUrl: `${siteUrl}/portal#${delivery.entity_type === 'quote' ? 'devis' : 'factures'}` })
+  const beforeSend = ['quote_reminder', 'invoice_reminder'].includes(delivery.template_key) ? async (claimedDeliveryId: number) => {
+    const { data, error: claimError } = await supabase.rpc('claim_email_reminder_delivery', {
+      p_organization_id: org.id,
+      p_delivery_id: claimedDeliveryId,
+      p_retry: true,
+      p_expected_due_date: null,
+    })
+    if (claimError) throw createError({ statusCode: 500, message: 'Impossible de réserver atomiquement la reprise.' })
+    if (data === 'conflict') throw createError({ statusCode: 409, message: 'Cet envoi est déjà en cours de reprise.' })
+    return data === 'claimed'
+  } : undefined
+  return await retryTrackedEmail({ organizationId: org.id, deliveryId, recipient: delivery.recipient, subject: content.subject, text: content.text, html: content.html, beforeSend })
 })

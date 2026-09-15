@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { retryTrackedEmail, sendTrackedEmail } from '../server/utils/emailDelivery'
 
 function query(result: any) {
@@ -10,7 +10,7 @@ function query(result: any) {
   return value
 }
 
-function database(options: { optedOut?: boolean, duplicate?: boolean } = {}) {
+function database(options: { optedOut?: boolean, duplicate?: boolean, existingStatus?: string } = {}) {
   const inserts: any[] = []
   const updates: any[] = []
   return {
@@ -18,7 +18,7 @@ function database(options: { optedOut?: boolean, duplicate?: boolean } = {}) {
     updates,
     from(table: string) {
       return {
-        select: () => query(table === 'clients' ? { data: { marketing_opt_out_at: options.optedOut ? '2026-09-15T00:00:00Z' : null }, error: null } : { data: { id: 1, status: 'sent', provider_id: 'mail-existing' }, error: null }),
+        select: () => query(table === 'clients' ? { data: { marketing_opt_out_at: options.optedOut ? '2026-09-15T00:00:00Z' : null }, error: null } : { data: { id: 1, status: options.existingStatus || 'sent', provider_id: 'mail-existing' }, error: null }),
         insert(payload: any) {
           inserts.push(payload)
           return query(options.duplicate ? { data: null, error: { code: '23505' } } : { data: { id: 1, status: payload.status, provider_id: null }, error: null })
@@ -39,6 +39,10 @@ const base = {
 }
 
 describe('tracked email delivery', () => {
+  beforeEach(() => {
+    vi.stubGlobal('createError', (input: object) => Object.assign(new Error('delivery error'), input))
+  })
+
   it('reserves before sending and records provider success', async () => {
     const db = database()
     const send = vi.fn().mockResolvedValue({ emailId: 'mail-1' })
@@ -55,6 +59,13 @@ describe('tracked email delivery', () => {
     const result = await sendTrackedEmail(base, { supabase: db, send })
     expect(send).not.toHaveBeenCalled()
     expect(result).toMatchObject({ duplicate: true, status: 'sent', emailId: 'mail-existing' })
+  })
+
+  it.each(['pending', 'failed', 'uncertain'])('never reports a replayed %s delivery as successful', async (existingStatus) => {
+    const db = database({ duplicate: true, existingStatus })
+    const send = vi.fn()
+    await expect(sendTrackedEmail(base, { supabase: db, send })).rejects.toMatchObject({ statusCode: 409 })
+    expect(send).not.toHaveBeenCalled()
   })
 
   it('marks an ambiguous timeout uncertain and does not retry automatically', async () => {
@@ -88,11 +99,22 @@ describe('tracked email delivery', () => {
     expect(send).toHaveBeenCalledOnce()
   })
 
+  it('cancels a reserved reminder when the final eligibility check changed', async () => {
+    const db = database()
+    const send = vi.fn()
+    const result = await sendTrackedEmail({ ...base, beforeSend: vi.fn().mockResolvedValue(false) }, { supabase: db, send })
+    expect(result.status).toBe('suppressed')
+    expect(send).not.toHaveBeenCalled()
+  })
+
   it('allows a controlled retry only from a claimed failed delivery', async () => {
     const updates: any[] = []
     const db = {
       from() {
         return {
+          select() {
+            return query({ data: { id: 9, idempotency_key: 'safe-key', template_key: 'invoice_available', attempt_count: 1 }, error: null })
+          },
           update(payload: any) {
             updates.push(payload)
             if (payload.status === 'pending') return query({ data: { id: 9, idempotency_key: 'safe-key', template_key: 'invoice_available', attempt_count: 1 }, error: null })
@@ -106,5 +128,27 @@ describe('tracked email delivery', () => {
     expect(send).toHaveBeenCalledWith(expect.objectContaining({ idempotencyKey: 'safe-key' }))
     expect(updates).toContainEqual(expect.objectContaining({ attempt_count: 2 }))
     expect(result.status).toBe('sent')
+  })
+
+  it('cancels a claimed retry when the final eligibility check changed', async () => {
+    const updates: any[] = []
+    const db = {
+      from() {
+        return {
+          select() {
+            return query({ data: { id: 9, idempotency_key: 'safe-key', template_key: 'invoice_reminder', attempt_count: 1 }, error: null })
+          },
+          update(payload: any) {
+            updates.push(payload)
+            if (payload.status === 'pending') return query({ data: { id: 9, idempotency_key: 'safe-key', template_key: 'invoice_reminder', attempt_count: 1 }, error: null })
+            return query({ data: null, error: null })
+          },
+        }
+      },
+    }
+    const send = vi.fn()
+    const result = await retryTrackedEmail({ organizationId: 'org-1', deliveryId: 9, recipient: 'a@example.com', subject: 'Relance', text: 'T', html: '<p>T</p>', beforeSend: vi.fn().mockResolvedValue(false) }, { supabase: db, send })
+    expect(result.status).toBe('suppressed')
+    expect(send).not.toHaveBeenCalled()
   })
 })

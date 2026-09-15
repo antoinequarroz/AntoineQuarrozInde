@@ -24,6 +24,7 @@ export async function sendTrackedEmail(input: {
   subject: string
   text: string
   html: string
+  beforeSend?: (deliveryId: number) => Promise<boolean>
 }, dependencies: DeliveryDependencies = {}) {
   const supabase = dependencies.supabase || getSupabaseAdmin()
   const send = dependencies.send || sendAppEmail
@@ -52,12 +53,16 @@ export async function sendTrackedEmail(input: {
     if (reserveError.code === '23505') {
       const { data: existing, error } = await supabase.from('email_deliveries').select('id,status,provider_id').eq('organization_id', input.organizationId).eq('idempotency_key', delivery.idempotency_key).single()
       if (error) throw createError({ statusCode: 500, message: 'Impossible de relire la livraison idempotente.' })
-      return { status: existing.status, duplicate: true, emailId: existing.provider_id || null }
+      if (existing.status === 'sent' || existing.status === 'suppressed') return { status: existing.status, duplicate: true, emailId: existing.provider_id || null }
+      throw createError({ statusCode: 409, message: existing.status === 'uncertain' ? 'Cet envoi doit être vérifié avant toute nouvelle tentative.' : 'Cet envoi nécessite une reprise contrôlée.' })
     }
     throw createError({ statusCode: 500, message: 'Impossible de réserver la livraison.' })
   }
   if (!reserved) throw createError({ statusCode: 500, message: 'Impossible de réserver la livraison.' })
   if (suppressed) return { status: 'suppressed' as const, duplicate: false, emailId: null }
+  if (input.beforeSend && !(await input.beforeSend(reserved.id))) {
+    return { status: 'suppressed' as const, duplicate: false, emailId: null }
+  }
 
   let result: Awaited<ReturnType<typeof sendAppEmail>>
   try {
@@ -81,23 +86,29 @@ export async function retryTrackedEmail(input: {
   subject: string
   text: string
   html: string
+  beforeSend?: (deliveryId: number) => Promise<boolean>
 }, dependencies: DeliveryDependencies = {}) {
   const supabase = dependencies.supabase || getSupabaseAdmin()
   const send = dependencies.send || sendAppEmail
   const { data: delivery, error: claimError } = await supabase
     .from('email_deliveries')
-    .update({ status: 'pending', error_code: null, last_attempt_at: new Date().toISOString() })
+    .select('id,idempotency_key,template_key,attempt_count')
     .eq('organization_id', input.organizationId)
     .eq('id', input.deliveryId)
     .eq('status', 'failed')
     .lt('attempt_count', 20)
-    .select('id,idempotency_key,template_key,attempt_count')
     .maybeSingle()
   if (claimError) throw createError({ statusCode: 500, message: 'Impossible de réserver la nouvelle tentative.' })
   if (!delivery) throw createError({ statusCode: 409, message: 'Cet envoi ne peut pas être relancé.' })
 
-  const { error: attemptError } = await supabase.from('email_deliveries').update({ attempt_count: Number(delivery.attempt_count) + 1 }).eq('organization_id', input.organizationId).eq('id', delivery.id).eq('status', 'pending')
-  if (attemptError) throw createError({ statusCode: 500, message: 'Impossible de comptabiliser la nouvelle tentative.' })
+  if (input.beforeSend && !(await input.beforeSend(delivery.id))) {
+    return { status: 'suppressed' as const, emailId: null }
+  }
+  if (!input.beforeSend) {
+    const { data: claimed, error: attemptError } = await supabase.from('email_deliveries').update({ status: 'pending', error_code: null, last_attempt_at: new Date().toISOString(), attempt_count: Number(delivery.attempt_count) + 1 }).eq('organization_id', input.organizationId).eq('id', delivery.id).eq('status', 'failed').select('id').maybeSingle()
+    if (attemptError) throw createError({ statusCode: 500, message: 'Impossible de comptabiliser la nouvelle tentative.' })
+    if (!claimed) throw createError({ statusCode: 409, message: 'Cet envoi est déjà en cours de reprise.' })
+  }
   let result: Awaited<ReturnType<typeof sendAppEmail>>
   try {
     result = await send({ to: input.recipient, subject: input.subject, text: input.text, html: input.html, idempotencyKey: delivery.idempotency_key, tags: [{ name: 'category', value: delivery.template_key }] })

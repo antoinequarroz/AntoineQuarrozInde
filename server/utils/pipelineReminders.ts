@@ -1,4 +1,5 @@
 import { logAudit } from './audit'
+import { buildCommercialEmail, formatCommercialAmount } from './commercialEmailTemplates'
 import { buildPipelineReminderPlan, type PipelineReminderCandidate } from './pipelineReminderPlan'
 
 export type PipelineReminderConfirmation = {
@@ -76,6 +77,18 @@ export function buildConfirmedPipelineReminderMessage(confirmation: PipelineRemi
   }
 }
 
+export function buildCommercialReminderDelivery(candidate: PipelineReminderCandidate, confirmation?: PipelineReminderConfirmation | null) {
+  if (confirmation) return { ...buildConfirmedPipelineReminderMessage(confirmation), locale: candidate.locale }
+  return buildCommercialEmail({
+    template: candidate.targetType === 'quote' ? 'quote_reminder' : 'invoice_reminder',
+    locale: candidate.locale,
+    recipientName: candidate.clientName,
+    documentNumber: candidate.number,
+    amountLabel: candidate.targetType === 'invoice' ? formatCommercialAmount(candidate.balanceCents || 0, candidate.currency || 'CHF', candidate.locale) : undefined,
+    portalUrl: `https://www.antoinequarroz.ch/portal#${candidate.targetType === 'quote' ? 'devis' : 'factures'}`,
+  })
+}
+
 async function loadReminderPlan(organizationId: string) {
   const supabase = getSupabaseAdmin()
   const [quotesResult, invoicesResult, clientsResult, sentResult, paymentsResult, settingsResult] = await Promise.all([
@@ -112,18 +125,33 @@ async function isCommercialReminderStillEligible(organizationId: string, candida
   if (candidate.targetType === 'lead') return true
   const supabase = getSupabaseAdmin()
   const { data: client, error: clientError } = await supabase.from('clients').select('email').eq('organization_id', organizationId).eq('id', candidate.clientId).maybeSingle()
-  if (clientError || String(client?.email || '').trim().toLowerCase() !== candidate.email.trim().toLowerCase()) return false
+  if (clientError) throw createError({ statusCode: 500, message: 'Impossible de vérifier le destinataire de la relance.' })
+  if (String(client?.email || '').trim().toLowerCase() !== candidate.email.trim().toLowerCase()) return false
   if (candidate.targetType === 'quote') {
     const { data, error } = await supabase.from('quotes').select('status,valid_until,client_id').eq('organization_id', organizationId).eq('id', candidate.targetId).maybeSingle()
-    return !error && data?.status === 'sent' && data.valid_until === candidate.dueDate && Number(data.client_id) === candidate.clientId
+    if (error) throw createError({ statusCode: 500, message: 'Impossible de vérifier le devis avant la relance.' })
+    return data?.status === 'sent' && data.valid_until === candidate.dueDate && Number(data.client_id) === candidate.clientId
   }
   const [{ data: invoice, error }, { data: payments, error: paymentError }] = await Promise.all([
     supabase.from('invoices').select('status,due_at,client_id,total_cents,amount_cents,reminders_paused').eq('organization_id', organizationId).eq('id', candidate.targetId).maybeSingle(),
     supabase.from('invoice_payments').select('amount_cents,voided_at').eq('organization_id', organizationId).eq('invoice_id', candidate.targetId),
   ])
-  if (error || paymentError || !invoice || !['sent', 'overdue'].includes(invoice.status) || invoice.reminders_paused || invoice.due_at !== candidate.dueDate || Number(invoice.client_id) !== candidate.clientId) return false
+  if (error || paymentError) throw createError({ statusCode: 500, message: 'Impossible de vérifier la facture avant la relance.' })
+  if (!invoice || !['sent', 'overdue'].includes(invoice.status) || invoice.reminders_paused || invoice.due_at !== candidate.dueDate || Number(invoice.client_id) !== candidate.clientId) return false
   const paid = (payments || []).filter(payment => !payment.voided_at).reduce((total, payment) => total + Number(payment.amount_cents), 0)
   return Number(invoice.total_cents ?? invoice.amount_cents ?? 0) - paid > 0
+}
+
+async function claimCommercialReminderDelivery(organizationId: string, deliveryId: number, candidate: PipelineReminderCandidate, retry = false) {
+  const { data, error } = await getSupabaseAdmin().rpc('claim_email_reminder_delivery', {
+    p_organization_id: organizationId,
+    p_delivery_id: deliveryId,
+    p_retry: retry,
+    p_expected_due_date: retry ? null : candidate.dueDate,
+  })
+  if (error) throw createError({ statusCode: 500, message: 'Impossible de réserver atomiquement la relance.' })
+  if (data === 'conflict') throw createError({ statusCode: 409, message: 'Cette relance est déjà prise en charge.' })
+  return data === 'claimed'
 }
 
 export function selectPipelineReminderCandidates(candidates: PipelineReminderCandidate[], reminderKeys?: string[]) {
@@ -142,7 +170,7 @@ export async function previewPipelineReminders(organizationId: string) {
     automationEnabled: plan.automationEnabled && Boolean(process.env.PIPELINE_AUTOMATION_SECRET),
     generatedAt: new Date().toISOString(),
     candidates: plan.candidates.map((candidate) => {
-      const message = buildPipelineReminderMessage(candidate)
+      const message = candidate.targetType === 'lead' ? buildPipelineReminderMessage(candidate) : buildCommercialReminderDelivery(candidate)
       return {
         reminderKey: candidate.reminderKey,
         targetType: candidate.targetType,
@@ -283,8 +311,9 @@ export async function runPipelineReminders(input: {
         await sendAppEmail({ to: candidate.email, subject: email.subject, text: email.text, html: email.html, idempotencyKey: `${input.organizationId}:${candidate.reminderKey}`, tags: [{ name: 'category', value: 'pipeline_reminder' }] })
       }
       else {
-        const content = buildCommercialEmail({ template: candidate.targetType === 'quote' ? 'quote_reminder' : 'invoice_reminder', locale: candidate.locale, recipientName: candidate.clientName, documentNumber: candidate.number, amountLabel: candidate.targetType === 'invoice' ? formatCommercialAmount(candidate.balanceCents || 0, candidate.currency || 'CHF', candidate.locale) : undefined, portalUrl: 'https://www.antoinequarroz.ch/portal' })
-        await sendTrackedEmail({ organizationId: input.organizationId, clientId: candidate.clientId, category: 'transactional', templateKey: candidate.targetType === 'quote' ? 'quote_reminder' : 'invoice_reminder', recipient: candidate.email, entityType: candidate.targetType, entityId: candidate.targetId, idempotencyKey: `${input.organizationId}:${candidate.reminderKey}`, ...content })
+        const content = buildCommercialReminderDelivery(candidate, confirmation)
+        const delivery = await sendTrackedEmail({ organizationId: input.organizationId, clientId: candidate.clientId, category: 'transactional', templateKey: candidate.targetType === 'quote' ? 'quote_reminder' : 'invoice_reminder', recipient: candidate.email, entityType: candidate.targetType, entityId: candidate.targetId, idempotencyKey: `${input.organizationId}:${candidate.reminderKey}`, beforeSend: deliveryId => claimCommercialReminderDelivery(input.organizationId, deliveryId, candidate), ...content })
+        if (delivery.status !== 'sent') continue
       }
     }
     catch {
