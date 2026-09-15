@@ -63,7 +63,7 @@ validated_at: 2026-09-15
   - **Validation :** Vitest ciblé et contrôle HTTP local authentifié/anonyme via Portly.
   - **Sécurité / rollback :** la sérialisation publique reste une liste fermée; l'ancienne application continue de fonctionner grâce aux colonnes historiques.
 
-- [ ] **6. Fermer les preuves et préparer AQ-PROJ-003**
+- [x] **6. Fermer les preuves et préparer AQ-PROJ-003**
   - **Objectif :** démontrer tous les critères sans implémenter la complétude, l'aperçu ou la publication par langue, puis documenter le contrat stable que ces tickets pourront consommer.
   - **Fichiers attendus :** tests AQ-PROJ-002, mise à jour du présent plan, preuve/commentaire Linear `ANT-5`; aucun fichier produit supplémentaire hors nécessité démontrée.
   - **Autorisé :** fixtures locales non sensibles, revue indépendante et vérification du dialogue mobile/desktop.
@@ -103,4 +103,5 @@ Plan validé explicitement par Antoine le 15 septembre 2026 avant toute modifica
 - Budgets : bundle total 1 503 033 octets, plus gros chunk 199 657 octets, scène robot 1 010 718 / 1 500 000 octets.
 - UI locale : formulaire existant chargé avec fallback de transition, saisie FR → EN → FR conservée, aucun débordement horizontal à 390 × 844 px.
 - Revue : le contournement des champs français historiques par un manager a été détecté, corrigé et couvert; verdict final sans constat ouvert.
-- Restent ouverts avant livraison : preuve Linear, baseline de migration à synchroniser uniquement après promotion en production, et suite Hermes bloquée sur ce Mac par la licence Xcode non acceptée.
+- Suivi : PR #132 liée à ANT-5, ticket passé en revue et preuves enregistrées dans Linear.
+- Restent réservés à la promotion de production : synchronisation de la baseline de migration; la suite Hermes reste bloquée sur ce Mac par la licence Xcode non acceptée.

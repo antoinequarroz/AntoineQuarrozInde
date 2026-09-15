@@ -4,7 +4,7 @@
 
 - Ticket Linear : `ANT-5`
 - Base : `origin/main`
-- Révision revue : `885ba51`
+- Révision finale revue : `5359afc`
 - Plan : `docs/plans/AQ-PROJ-002.md`
 - Recherche : `docs/research/AQ-PROJ-002.md`
 
