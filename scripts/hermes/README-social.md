@@ -6,7 +6,9 @@ Le flux garde une validation humaine obligatoire :
 2. Le Centre de validation affiche leur contenu intégral.
 3. Antoine approuve explicitement un fichier précis.
 4. Hermes remplace seulement `statut: A_VALIDER` par `statut: APPROUVE` dans ce fichier.
-5. Hermes exécute `publish_social.py` chaque jour à 18 h (Europe/Zurich).
+5. Hermes lance le contrôle aux heures UTC 16 et 17. Le script ne publie que
+   lorsque l'heure locale `Europe/Zurich` est exactement 18 h, y compris lors
+   des changements heure d'été / heure d'hiver.
    Seuls les éléments déjà approuvés sont traités.
 6. Le script écrit un reçu dans `seo/social/receipts/`. Le même contenu ne peut pas être publié deux fois.
 
@@ -65,7 +67,7 @@ Les accès aux plateformes restent exclusivement dans Hermes. Après une approba
 le processeur réclame atomiquement l'élément avant l'appel externe :
 
 ```bash
-python3 scripts/hermes/publish_social.py --project . --process-approved
+python3 scripts/hermes/publish_social.py --project . --process-approved --local-hour 18 --timezone Europe/Zurich
 ```
 
 Il requiert `HERMES_PUBLISH_TOKEN`. X utilise `X_API_KEY`, `X_API_SECRET`,

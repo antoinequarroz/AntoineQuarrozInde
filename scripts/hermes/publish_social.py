@@ -15,8 +15,10 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from datetime import datetime
 from html.parser import HTMLParser
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 
 LINKEDIN_POSTS_ENDPOINT = "https://api.linkedin.com/rest/posts"
@@ -31,6 +33,9 @@ X_POST_WITH_URL_ESTIMATED_USD = 0.20
 DEFAULT_SITE_URL = "https://www.antoinequarroz.ch"
 MAX_ARTICLE_HTML_BYTES = 2 * 1024 * 1024
 MAX_SOCIAL_IMAGE_BYTES = 10 * 1024 * 1024
+LINKEDIN_SEQUENCE_PREFIX = re.compile(
+    r"^\s*(?:post\s+)?(?:#|n[°o]\s*)?\d+\s*[.):-]\s+", re.IGNORECASE
+)
 SOCIAL_IMAGE_HOSTS = {
     "www.antoinequarroz.ch",
     "antoinequarroz.ch",
@@ -84,6 +89,19 @@ def parse_draft(path: Path) -> dict[str, str]:
     }
 
 
+def clean_linkedin_content(content: str) -> str:
+    """Remove an article sequence number that must stay out of LinkedIn copy."""
+    return LINKEDIN_SEQUENCE_PREFIX.sub("", content, count=1).lstrip()
+
+
+def inside_local_publication_hour(hour: int | None, timezone: str) -> bool:
+    if hour is None:
+        return True
+    if not 0 <= hour <= 23:
+        raise ValueError("L'heure locale de publication doit etre comprise entre 0 et 23.")
+    return datetime.now(ZoneInfo(timezone)).hour == hour
+
+
 def validate_draft(path: Path, project: Path) -> dict[str, str]:
     allowed_root = (project / ALLOWED_DRAFT_ROOT).resolve()
     resolved_path = path.resolve()
@@ -101,10 +119,8 @@ def validate_draft(path: Path, project: Path) -> dict[str, str]:
         raise ValueError("Le texte public doit contenir l'URL de l'article approuve.")
     if draft["platform"] == "x" and len(draft["content"]) > 280:
         raise ValueError("Le brouillon X depasse 280 caracteres.")
-    if draft["platform"] == "linkedin" and re.match(
-        r"^\s*(?:post\s+)?(?:#|n[°o]\s*)?\d+\s*[.):-]\s+", draft["content"], re.IGNORECASE
-    ):
-        raise ValueError("Le texte LinkedIn ne doit pas commencer par un numero de post.")
+    if draft["platform"] == "linkedin":
+        draft["content"] = clean_linkedin_content(draft["content"])
     if not draft["content"]:
         raise ValueError("Le brouillon est vide.")
     return draft
@@ -408,10 +424,8 @@ def sync_drafts(project: Path, site_url: str, token: str, *, dry_run: bool) -> d
             article_url = draft["article_url"]
             if platform not in {"linkedin", "x"}:
                 raise ValueError("plateforme absente ou invalide")
-            if platform == "linkedin" and re.match(
-                r"^\s*(?:post\s+)?(?:#|n[°o]\s*)?\d+\s*[.):-]\s+", content, re.IGNORECASE
-            ):
-                raise ValueError("le texte LinkedIn commence par un numero de post")
+            if platform == "linkedin":
+                content = clean_linkedin_content(content)
             if (article_url != CANONICAL_SITE_HOME and not article_url.startswith(CANONICAL_ARTICLE_PREFIX)) or article_url not in content:
                 raise ValueError("URL canonique absente du texte")
             if not content or len(content) > (280 if platform == "x" else 3000):
@@ -442,10 +456,20 @@ def main() -> int:
     mode.add_argument("--sync-drafts", action="store_true")
     parser.add_argument("--site-url", default=os.environ.get("HERMES_SITE_URL", DEFAULT_SITE_URL))
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--local-hour", type=int)
+    parser.add_argument("--timezone", default="Europe/Zurich")
     args = parser.parse_args()
 
     project = args.project.resolve()
     if args.process_approved:
+        if not inside_local_publication_hour(args.local_hour, args.timezone):
+            print(json.dumps({
+                "status": "outside_publication_hour",
+                "timezone": args.timezone,
+                "localHour": args.local_hour,
+                "externalWrite": False,
+            }, ensure_ascii=False))
+            return 0
         token = os.environ.get("HERMES_PUBLISH_TOKEN", "").strip()
         if not token:
             raise RuntimeError("HERMES_PUBLISH_TOKEN absent.")
