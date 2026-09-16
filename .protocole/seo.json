@@ -32,9 +32,9 @@
   },
   "concurrents": [],
   "geo": {
-    "profil": ".hermes/geo/profile.md",
-    "file": ".hermes/geo/queue",
-    "inventaire": ".hermes/geo/content-inventory.md",
+    "profil": ".codex/geo/profile.md",
+    "file": ".codex/geo/queue",
+    "inventaire": ".codex/geo/content-inventory.md",
     "dossier_contenu": "seo/articles",
     "cadence_par_semaine": 7,
     "publication_automatique": true,
