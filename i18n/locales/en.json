@@ -47,6 +47,11 @@
     "fact_title": "Mediamatician",
     "fact_since": "Freelancing since 2026",
     "tools_title": "Technologies & tools",
+    "tools_levels": {
+      "daily": "Daily stack",
+      "mastered": "Proficient",
+      "used": "Previously used"
+    },
     "label_1": "Background",
     "label_2": "Mission",
     "photo_soon": "Photo coming soon"

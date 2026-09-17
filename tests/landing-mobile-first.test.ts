@@ -70,23 +70,21 @@ describe('landing page mobile-first refinements', () => {
   })
 
   it('shows the current public stack without the retired Tailwind label', async () => {
-    const [about, footer] = await Promise.all([
+    const [about, footer, stackSource] = await Promise.all([
       readFile('app/components/sections/AboutSection.vue', 'utf8'),
       readFile('app/components/layout/AppFooter.vue', 'utf8'),
+      readFile('shared/utils/technologyStack.ts', 'utf8'),
     ])
 
     for (const technology of ['React', 'Next.js', 'SwiftUI', 'Rust', 'Docker', 'Stripe', 'Cloudflare', 'Caddy']) {
-      expect(about).toContain(`label: '${technology}'`)
+      expect(stackSource).toContain(`'${technology}'`)
     }
-    expect(footer).toContain("label: 'React'")
-    expect(footer).toContain("label: 'Next.js'")
-    expect(footer).toContain("label: 'SwiftUI'")
-    expect(footer).toContain("label: 'Rust'")
-    expect(about).not.toContain("'Tailwind CSS'")
-    expect(footer).not.toContain("'Tailwind CSS'")
-    expect(about).not.toContain("label: 'Vue 3 / Nuxt'")
-    expect(about).not.toContain("label: 'Flutter / Dart'")
-    expect(about).not.toContain("label: 'Git / GitHub'")
+    expect(about).toContain('usePublicTechnologyStack()')
+    expect(footer).toContain('usePublicTechnologyStack()')
+    expect(stackSource).not.toContain("'Tailwind CSS'")
+    expect(stackSource).not.toContain("'Vue 3 / Nuxt'")
+    expect(stackSource).not.toContain("'Flutter / Dart'")
+    expect(stackSource).not.toContain("'Git / GitHub'")
   })
 
   it('renders consistent technology pictograms beside stack labels', async () => {

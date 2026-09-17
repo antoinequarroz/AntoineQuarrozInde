@@ -21,28 +21,7 @@ import {
   siTypescript,
   siVuedotjs,
 } from 'simple-icons'
-
-type TechnologyIconName =
-  | 'caddy'
-  | 'cloudflare'
-  | 'dart'
-  | 'docker'
-  | 'figma'
-  | 'flutter'
-  | 'git'
-  | 'github'
-  | 'nextjs'
-  | 'nodejs'
-  | 'nuxt'
-  | 'postgresql'
-  | 'react'
-  | 'rust'
-  | 'supabase'
-  | 'stripe'
-  | 'swiftui'
-  | 'threejs'
-  | 'typescript'
-  | 'vue'
+import type { TechnologyIconName } from '~~/shared/utils/technologyStack'
 
 const props = defineProps<{
   name: TechnologyIconName
