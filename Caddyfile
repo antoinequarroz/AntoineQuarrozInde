@@ -40,3 +40,15 @@ metricove.antoinequarroz.ch {
 		-Server
 	}
 }
+
+# BEGIN ENSEMBLE API — isolated Supabase instance
+ensemble-api.antoinequarroz.ch {
+    @api path /auth/v1/* /rest/v1/* /storage/v1/* /realtime/v1/*
+    handle @api {
+        reverse_proxy ensemble-api-gw:8000
+    }
+    handle {
+        respond "Ensemble API" 200
+    }
+}
+# END ENSEMBLE API
