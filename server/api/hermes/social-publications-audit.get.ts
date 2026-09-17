@@ -16,7 +16,7 @@ export default defineEventHandler(async (event) => {
   if (error) throw createError({ statusCode: 500, message: 'Audit social indisponible.' })
   const rows = data || []
   const page = rows.slice(0, 100)
-  const nextCursor = rows.length > 100 ? page[page.length - 1].id : null
+  const nextCursor = rows.length > 100 ? (page.at(-1)?.id ?? null) : null
   return {
     schemaVersion: 1,
     generatedAt: new Date().toISOString(),
