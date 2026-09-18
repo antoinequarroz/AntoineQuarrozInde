@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const store = useProjectsStore()
 
 type PortfolioFilter = 'all' | 'web' | 'mobile' | 'cms'
@@ -101,7 +101,7 @@ const filtered = computed(() => {
         <div v-else class="mt-2 md:mt-4">
           <SectionsProjectHelixCarousel :projects="filtered" :active-category="activeFilter" />
         </div>
-        <div v-if="activeFilter === 'all'" class="relative z-20 mx-auto mt-8 max-w-4xl rounded-3xl border border-violet-500/20 bg-white/80 p-6 shadow-xl shadow-violet-500/5 dark:border-white/10 dark:bg-[#191629] md:flex md:items-center md:justify-between md:gap-8 md:p-8">
+        <div v-if="locale === 'fr' && activeFilter === 'all'" class="relative z-20 mx-auto mt-8 max-w-4xl rounded-3xl border border-violet-500/20 bg-white/80 p-6 shadow-xl shadow-violet-500/5 dark:border-white/10 dark:bg-[#191629] md:flex md:items-center md:justify-between md:gap-8 md:p-8">
           <div>
             <span class="text-xs font-bold uppercase tracking-[0.2em] text-violet-700 dark:text-violet-300">Projet personnel · macOS</span>
             <h3 class="mt-2 font-display text-2xl font-bold text-gray-950 dark:text-white">Hermes Cockpit</h3>
