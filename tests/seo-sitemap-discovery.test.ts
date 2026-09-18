@@ -175,7 +175,12 @@ describe('AQ-SEO-006 sitemap discovery', () => {
       slug: 'hermes-cockpit',
       created_at: '2026-09-18T00:00:00.000Z',
     }])
-    expect(entries.filter(entry => entry.path === '/projets/hermes-cockpit')).toHaveLength(1)
+    expect(entries.filter(entry => entry.path === '/projets/hermes-cockpit')).toEqual([{
+      path: '/projets/hermes-cockpit',
+      lastmod: '2026-09-18T00:00:00.000Z',
+      changefreq: 'monthly',
+      priority: '0.9',
+    }])
   })
 
   it('loads both public sources inside the canonical organization', async () => {
