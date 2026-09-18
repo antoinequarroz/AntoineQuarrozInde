@@ -27,7 +27,7 @@ describe('social publication queue', () => {
     const route = read('server/api/admin/social-posts/[id]/approve.post.ts')
     expect(route).toContain('requireAdmin(event)')
     expect(route).toContain('SOCIAL_APPROVAL_CONFIRMATION')
-    expect(route).toContain("connection?.state !== 'ready'")
+    expect(route).not.toContain('social_platform_connections')
     expect(route).not.toContain('linkedin.com/rest/posts')
     expect(route).not.toContain('api.x.com')
   })
@@ -43,8 +43,8 @@ describe('social publication queue', () => {
 
   it('queues an approval for the 18:00 processor instead of promising an immediate post', () => {
     const adminPage = read('app/pages/admin/social/index.vue')
-    expect(adminPage).toContain('Valider pour 18 h')
-    expect(adminPage).toContain('publication prévue à 18 h')
+    expect(adminPage).toContain('Valider la publication')
+    expect(adminPage).toContain('si la connexion est prête')
     expect(adminPage).not.toContain('Approuver et publier')
   })
 
