@@ -27,7 +27,7 @@ const workspace = computed(() => snapshot.value?.payload ?? null)
 const attention = computed(() => workspace.value?.reviews.filter(item => item.decision !== 'Relu') ?? [])
 const fresh = computed(() => {
   const date = snapshot.value?.source_fetched_at
-  return Boolean(date && now.value - Date.parse(date) < 15 * 60 * 1000)
+  return Boolean(!error.value && date && now.value - Date.parse(date) < 15 * 60 * 1000)
 })
 const groups = computed(() => {
   const current = workspace.value
@@ -104,9 +104,9 @@ onBeforeUnmount(() => { if (freshnessTimer) clearInterval(freshnessTimer); pairi
     </section>
 
     <p v-if="loading" role="status" class="admin-card p-5">Chargement de l’espace Hermes…</p>
-    <div v-else-if="error" role="alert" class="admin-card border-red-300 p-5 text-red-700 dark:text-red-200">{{ error }}</div>
     <template v-else>
-      <section class="admin-card p-5" aria-label="Fraîcheur des données">
+      <div v-if="error" role="alert" class="admin-card border-red-300 p-5 text-red-700 dark:text-red-200">{{ error }} <span v-if="snapshot">Le dernier relevé chargé reste affiché ci-dessous.</span></div>
+      <section v-if="snapshot || !error" class="admin-card p-5" aria-label="Fraîcheur des données">
         <p class="text-sm font-semibold" :class="fresh ? 'text-emerald-700 dark:text-emerald-300' : 'text-amber-700 dark:text-amber-300'">{{ snapshot ? (fresh ? 'Données récentes' : 'Données à actualiser sur le Mac') : 'Aucune synchronisation Mac' }}</p>
         <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">Dernier relevé Hermes : {{ dateLabel(snapshot?.source_fetched_at) }} · dernier partage Mac : {{ dateLabel(snapshot?.updated_at) }}</p>
         <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Le partage se fait depuis l’app Mac ouverte. Une mission peut avoir changé sur le serveur depuis ce relevé.</p>
