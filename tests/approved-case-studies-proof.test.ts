@@ -18,6 +18,8 @@ type Variant =
   | 'missing-section'
   | 'missing-service'
   | 'extra-sitemap'
+  | 'editorial-project'
+  | 'missing-editorial-project'
   | 'redirect-detail'
   | 'oversized'
 
@@ -106,8 +108,17 @@ async function serve(variant: Variant) {
     }
     if (request.url === '/sitemap.xml') {
       response.setHeader('content-type', 'application/xml')
-      const paths = variant === 'extra-sitemap' ? [...projectPaths, '/projets/non-approuve'] : projectPaths
+      const paths = variant === 'extra-sitemap'
+        ? [...projectPaths, '/projets/non-approuve']
+        : ['editorial-project', 'missing-editorial-project'].includes(variant)
+          ? [...projectPaths, '/projets/hermes-cockpit']
+          : projectPaths
       response.end(`<?xml version="1.0"?><urlset>${paths.map(path => `<url><loc>${origin}${path}</loc></url>`).join('')}</urlset>`)
+      return
+    }
+    if (request.url === '/projets/hermes-cockpit' && variant === 'editorial-project') {
+      response.setHeader('content-type', 'text/html')
+      response.end(`<html><head><link rel="canonical" href="${origin}/projets/hermes-cockpit"></head><body>Hermes Cockpit</body></html>`)
       return
     }
     if (request.url === '/cas-clients-valais') {
@@ -164,7 +175,7 @@ describe('AQ-SEO-012 anonymous approved case-study proof', () => {
     expect(source).toContain('docker run --rm -i "$fallback_node_image" node')
   })
 
-  it.each(['valid', 'empty', 'multiple', 'portfolio-project'] as const)('accepts the %s public state', async (variant) => {
+  it.each(['valid', 'empty', 'multiple', 'portfolio-project', 'editorial-project'] as const)('accepts the %s public state', async (variant) => {
     const origin = await serve(variant)
     await expect(run(origin)).resolves.toMatchObject({ stdout: expect.stringContaining('proof passed') })
   })
@@ -174,6 +185,7 @@ describe('AQ-SEO-012 anonymous approved case-study proof', () => {
     'missing-section',
     'missing-service',
     'extra-sitemap',
+    'missing-editorial-project',
     'redirect-detail',
     'oversized',
   ] as const)('rejects the %s public state', async (variant) => {

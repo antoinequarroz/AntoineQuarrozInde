@@ -30,6 +30,8 @@ const ALLOWED_SERVICES = new Set([
   '/refonte-site-web-valais',
   '/application-mobile-valais',
 ])
+// Editorial project pages live in the app, outside the database-backed portfolio API.
+const STATIC_PROJECT_PATHS = new Set(['/projets/hermes-cockpit'])
 const PRIVATE_FIELDS = new Set([
   'organization_id',
   'client_id',
@@ -221,7 +223,15 @@ async function main() {
     if (!sitemapProjectPaths.includes(path)) fail(`${path}: public project is missing from the sitemap.`)
   }
   for (const path of sitemapProjectPaths) {
-    if (!publicProjectPaths.has(path)) fail(`${path}: sitemap exposed a project absent from the public API.`)
+    if (!publicProjectPaths.has(path) && !STATIC_PROJECT_PATHS.has(path)) {
+      fail(`${path}: sitemap exposed a project absent from the public API.`)
+    }
+    if (STATIC_PROJECT_PATHS.has(path)) {
+      const html = await fetchBounded(path, 'text/html')
+      if (!html.includes(`<link rel="canonical" href="${origin}${path}"`)) {
+        fail(`${path}: the editorial project page has no matching canonical URL.`)
+      }
+    }
   }
 
   for (const [path, project] of casePaths) {
