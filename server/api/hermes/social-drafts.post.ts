@@ -13,7 +13,8 @@ export default defineEventHandler(async (event) => {
     .eq('source_key', input.sourceKey)
     .maybeSingle()
   if (existingError) throw createError({ statusCode: 500, message: existingError.message })
-  if (existing?.status === 'published' || existing?.status === 'publishing') {
+  // A daily retry must never replace an editor's changes or undo approval.
+  if (existing) {
     return { post: existing, idempotent: true }
   }
 
@@ -25,13 +26,23 @@ export default defineEventHandler(async (event) => {
     article_url: input.articleUrl,
     content: input.content,
     source_path: input.sourcePath,
-    status: existing?.status === 'rejected' ? 'rejected' : 'draft',
-    version: existing ? existing.version + 1 : 1,
+    status: 'draft',
+    version: 1,
     updated_at: new Date().toISOString(),
   }
-  const { data, error } = await supabase.from('social_posts').upsert(record, {
-    onConflict: 'organization_id,platform,source_key',
-  }).select('id,platform,status,version').single()
+  const { data, error } = await supabase.from('social_posts').insert(record)
+    .select('id,platform,status,version').single()
+  if (error?.code === '23505') {
+    const { data: concurrent, error: readError } = await supabase
+      .from('social_posts')
+      .select('id,status,version')
+      .eq('organization_id', organization.id)
+      .eq('platform', input.platform)
+      .eq('source_key', input.sourceKey)
+      .single()
+    if (readError) throw createError({ statusCode: 500, message: readError.message })
+    return { post: concurrent, idempotent: true }
+  }
   if (error) throw createError({ statusCode: 500, message: error.message })
-  return { post: data, idempotent: Boolean(existing) }
+  return { post: data, idempotent: false }
 })
