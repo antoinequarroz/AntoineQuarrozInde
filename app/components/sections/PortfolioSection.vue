@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const store = useProjectsStore()
 
 type PortfolioFilter = 'all' | 'web' | 'mobile' | 'cms'
@@ -101,11 +101,11 @@ const filtered = computed(() => {
         <div v-else class="mt-2 md:mt-4">
           <SectionsProjectHelixCarousel :projects="filtered" :active-category="activeFilter" />
         </div>
-        <div v-if="activeFilter === 'all'" class="relative z-20 mx-auto mt-8 max-w-4xl rounded-3xl border border-violet-500/20 bg-white/80 p-6 shadow-xl shadow-violet-500/5 dark:border-white/10 dark:bg-[#191629] md:flex md:items-center md:justify-between md:gap-8 md:p-8">
+        <div v-if="locale === 'fr' && activeFilter === 'all'" class="relative z-20 mx-auto mt-8 max-w-4xl rounded-3xl border border-violet-500/20 bg-white/80 p-6 shadow-xl shadow-violet-500/5 dark:border-white/10 dark:bg-[#191629] md:flex md:items-center md:justify-between md:gap-8 md:p-8">
           <div>
             <span class="text-xs font-bold uppercase tracking-[0.2em] text-violet-700 dark:text-violet-300">Projet personnel · macOS</span>
             <h3 class="mt-2 font-display text-2xl font-bold text-gray-950 dark:text-white">Hermes Cockpit</h3>
-            <p class="mt-2 max-w-xl text-sm leading-relaxed text-gray-700 dark:text-gray-300">Un cockpit pour organiser mes agents IA, suivre leurs missions et relire leurs résultats. Compagnon iPhone en préparation.</p>
+            <p class="mt-2 max-w-xl text-sm leading-relaxed text-gray-700 dark:text-gray-300">Un cockpit pour organiser mes agents IA, suivre leurs missions et relire leurs résultats. Premier compagnon web iPhone en lecture seule.</p>
           </div>
           <NuxtLink to="/projets/hermes-cockpit" class="mt-5 inline-flex min-h-11 shrink-0 items-center rounded-2xl bg-gradient-brand px-5 py-3 text-sm font-semibold text-white shadow-glow-sm transition-opacity hover:opacity-90 md:mt-0">Découvrir le projet <span class="ml-2" aria-hidden="true">→</span></NuxtLink>
         </div>

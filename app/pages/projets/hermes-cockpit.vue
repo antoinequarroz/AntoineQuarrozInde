@@ -5,7 +5,7 @@ import { resolvePublicBreadcrumbTrail } from '~~/shared/utils/publicStructuredDa
 const siteUrl = String(useRuntimeConfig().public.siteUrl).replace(/\/+$/, '')
 const path = '/projets/hermes-cockpit'
 const title = 'Hermes Cockpit — piloter des agents IA depuis un Mac'
-const description = 'Un cockpit macOS pour organiser les profils, projets, missions et validations de Hermes Agent. Découvrez aussi le compagnon iPhone en préparation.'
+const description = 'Un cockpit macOS pour organiser les profils, projets, missions et validations de Hermes Agent, avec un premier compagnon web privé en lecture seule sur iPhone.'
 const breadcrumbs = resolvePublicBreadcrumbTrail(siteUrl, [
   { name: 'Accueil', path: '/' },
   { name: 'Hermes Cockpit', path },
@@ -65,7 +65,7 @@ const macFeatures = [
               <span class="badge">Application macOS disponible</span>
             </div>
             <h1 class="mt-7 max-w-3xl font-display text-5xl font-bold leading-[1.05] text-gray-950 dark:text-white sm:text-6xl lg:text-7xl">Un poste de pilotage pour mes agents IA.</h1>
-            <p class="mt-7 max-w-xl text-lg leading-relaxed text-gray-700 dark:text-gray-300">Hermes Cockpit rassemble les projets, profils, missions et décisions qui accompagnent mon activité. Le Mac sert de centre de travail ; le téléphone prendra le relais pour suivre l’essentiel en déplacement.</p>
+            <p class="mt-7 max-w-xl text-lg leading-relaxed text-gray-700 dark:text-gray-300">Hermes Cockpit rassemble les projets, profils, missions et décisions qui accompagnent mon activité. Le Mac sert de centre de travail ; un premier compagnon web privé permet de suivre l’essentiel sur iPhone.</p>
           </div>
 
           <div class="relative mx-auto w-full max-w-2xl" aria-label="Représentation illustrative du cockpit sur Mac">
@@ -91,8 +91,8 @@ const macFeatures = [
 
     <section class="border-y border-violet-500/10 bg-violet-500/[0.04] py-16 dark:border-white/10 dark:bg-violet-400/[0.05] md:py-24">
       <div class="section-container grid items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,0.7fr)]">
-        <div><span class="badge">Compagnon iPhone · en préparation</span><h2 class="mt-5 font-display text-3xl font-bold text-gray-950 dark:text-white md:text-5xl">Les décisions utiles, même loin du Mac.</h2><p class="mt-6 max-w-2xl text-lg leading-relaxed text-gray-700 dark:text-gray-300">La prochaine étape est un accès mobile privé aux projets, résultats et validations. La synchronisation avec le Mac doit afficher sa fraîcheur, éviter les décisions en double et protéger les données du cockpit avant une utilisation quotidienne.</p><p class="mt-5 text-sm font-semibold text-violet-700 dark:text-violet-200">Le compagnon iPhone n’est pas encore distribué.</p></div>
-        <div class="mx-auto w-64 rounded-[2.5rem] border-[7px] border-[#191629] bg-[#191629] p-1 shadow-[0_30px_75px_rgba(36,16,86,0.28)]" aria-label="Concept illustratif du compagnon iPhone"><div class="min-h-[25rem] rounded-[1.8rem] bg-[#211d36] p-5"><div class="mx-auto mb-8 h-4 w-20 rounded-full bg-[#0e0c17]" /><div class="text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-300">HERMES COCKPIT</div><div class="mt-2 font-display text-2xl font-bold text-white">À suivre</div><div class="mt-6 space-y-3"><div v-for="item in ['Projets', 'Rapports à relire', 'Validations']" :key="item" class="rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-4 text-sm font-semibold text-white">{{ item }} <span class="float-right text-violet-300">→</span></div></div><div class="mt-8 text-xs text-white/45">Concept d’interface · données fictives</div></div></div>
+        <div><span class="badge">Compagnon web iPhone · lecture seule</span><h2 class="mt-5 font-display text-3xl font-bold text-gray-950 dark:text-white md:text-5xl">L’essentiel, même loin du Mac.</h2><p class="mt-6 max-w-2xl text-lg leading-relaxed text-gray-700 dark:text-gray-300">Une page privée adaptée au téléphone reçoit les projets, profils, missions et états de relecture partagés par le Mac. Elle affiche la date du relevé pour que l’on sache si les informations sont encore fraîches. Les validations des résultats du cockpit restent sur le Mac pendant que leur synchronisation sécurisée est développée.</p><p class="mt-5 text-sm font-semibold text-violet-700 dark:text-violet-200">L’application native iPhone et les validations mobiles restent à venir.</p></div>
+        <div class="mx-auto w-64 rounded-[2.5rem] border-[7px] border-[#191629] bg-[#191629] p-1 shadow-[0_30px_75px_rgba(36,16,86,0.28)]" aria-label="Concept illustratif du compagnon iPhone"><div class="min-h-[25rem] rounded-[1.8rem] bg-[#211d36] p-5"><div class="mx-auto mb-8 h-4 w-20 rounded-full bg-[#0e0c17]" /><div class="text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-300">HERMES COCKPIT</div><div class="mt-2 font-display text-2xl font-bold text-white">À suivre</div><div class="mt-6 space-y-3"><div v-for="item in ['Projets', 'Rapports à relire', 'Profils']" :key="item" class="rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-4 text-sm font-semibold text-white">{{ item }} <span class="float-right text-violet-300">→</span></div></div><div class="mt-8 text-xs text-white/45">Concept d’interface · données fictives</div></div></div>
       </div>
     </section>
 

@@ -10,6 +10,7 @@ const navGroups = [
     label: 'Piloter',
     items: [
       { label: 'Tableau de bord', icon: 'grid', href: '/admin' },
+      { label: 'Hermes mobile', icon: 'phone', href: '/admin/hermes-mobile' },
       { label: 'Analyses', icon: 'trending-up', href: '/admin/analytics' },
     ],
   },
