@@ -15,13 +15,8 @@ export default defineEventHandler(async (event) => {
   if (!content.includes(current.article_url)) {
     throw createError({ statusCode: 400, message: 'Le texte doit contenir le lien public associé.' })
   }
-  const { data: connection } = await supabase.from('social_platform_connections').select('state,checked_at')
-    .eq('organization_id', org.id).eq('platform', current.platform).maybeSingle()
-  const connectionIsFresh = connection?.checked_at
-    && Date.parse(connection.checked_at) >= Date.now() - 15 * 60 * 1000
-  if (connection?.state !== 'ready' || !connectionIsFresh) {
-    throw createError({ statusCode: 409, message: 'Connexion de la plateforme non vérifiée récemment.' })
-  }
+  // Editorial approval is independent of provider availability. The Hermes
+  // publisher checks credentials again before any external write.
   const { data, error } = await supabase.from('social_posts').update({
     content, status: 'approved', version: version + 1, updated_at: new Date().toISOString(), last_error: null,
   }).eq('organization_id', org.id).eq('id', id).eq('version', version)
