@@ -170,6 +170,14 @@ describe('AQ-SEO-006 sitemap discovery', () => {
     expect(() => buildSitemapEntries([row, row], [])).toThrow('sitemap_path_duplicate')
   })
 
+  it('keeps one Hermes location when its portfolio record is published', () => {
+    const entries = buildSitemapEntries([], [{
+      slug: 'hermes-cockpit',
+      created_at: '2026-09-18T00:00:00.000Z',
+    }])
+    expect(entries.filter(entry => entry.path === '/projets/hermes-cockpit')).toHaveLength(1)
+  })
+
   it('loads both public sources inside the canonical organization', async () => {
     const articleQuery = queryResult([{
       slug: 'article',
