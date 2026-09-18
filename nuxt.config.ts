@@ -72,6 +72,11 @@ export default defineNuxtConfig({
           short_name: 'Admin',
           url: '/admin/login',
         },
+        {
+          name: 'Hermes mobile',
+          short_name: 'Hermes',
+          url: '/admin/hermes-mobile',
+        },
       ],
     },
     workbox: {

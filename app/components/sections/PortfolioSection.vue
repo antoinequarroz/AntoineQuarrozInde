@@ -105,7 +105,7 @@ const filtered = computed(() => {
           <div>
             <span class="text-xs font-bold uppercase tracking-[0.2em] text-violet-700 dark:text-violet-300">Projet personnel · macOS</span>
             <h3 class="mt-2 font-display text-2xl font-bold text-gray-950 dark:text-white">Hermes Cockpit</h3>
-            <p class="mt-2 max-w-xl text-sm leading-relaxed text-gray-700 dark:text-gray-300">Un cockpit pour organiser mes agents IA, suivre leurs missions et relire leurs résultats. Compagnon iPhone en préparation.</p>
+            <p class="mt-2 max-w-xl text-sm leading-relaxed text-gray-700 dark:text-gray-300">Un cockpit pour organiser mes agents IA, suivre leurs missions et relire leurs résultats. Premier compagnon web iPhone en lecture seule.</p>
           </div>
           <NuxtLink to="/projets/hermes-cockpit" class="mt-5 inline-flex min-h-11 shrink-0 items-center rounded-2xl bg-gradient-brand px-5 py-3 text-sm font-semibold text-white shadow-glow-sm transition-opacity hover:opacity-90 md:mt-0">Découvrir le projet <span class="ml-2" aria-hidden="true">→</span></NuxtLink>
         </div>
