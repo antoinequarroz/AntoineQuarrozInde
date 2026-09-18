@@ -126,7 +126,7 @@ describe('AQ-SEO-006 sitemap discovery', () => {
         created_at: '2026-03-01T00:00:00.000Z',
       }],
     )
-    const dynamic = entries.filter(entry => entry.path.startsWith('/blog/') || entry.path.startsWith('/projets/'))
+    const dynamic = entries.filter(entry => !sitemapStaticPaths.some(path => path === entry.path))
 
     expect(dynamic).toEqual([
       {

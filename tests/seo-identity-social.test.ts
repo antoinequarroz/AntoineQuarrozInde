@@ -160,7 +160,7 @@ describe('AQ-SEO-008 public identity and social previews', () => {
       Promise.all(['fr', 'en', 'de'].map(locale => readFile(`i18n/locales/${locale}.json`, 'utf8').then(JSON.parse))),
     ])
 
-    expect(sitemapStaticPaths).toHaveLength(18)
+    expect(sitemapStaticPaths).toHaveLength(19)
     expect(app).toContain('resolvePublicSocialImage')
     expect(app).toContain('ogImageAlt')
     expect(app).toContain('twitterImageAlt')

@@ -31,6 +31,7 @@ export const sitemapStaticPaths = [
   '/de',
   '/blog',
   '/cas-clients-valais',
+  '/projets/hermes-cockpit',
   '/confidentialite',
   '/conditions-utilisation',
   '/mentions-legales',
