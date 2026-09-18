@@ -64,7 +64,7 @@ const macFeatures = [
               <span class="badge">Projet personnel</span>
               <span class="badge">Application macOS disponible</span>
             </div>
-            <h1 class="mt-7 max-w-3xl font-display text-5xl font-bold leading-[1.05] text-gray-950 dark:text-white sm:text-6xl lg:text-7xl">Un poste de pilotage pour mes agents IA.</h1>
+            <h1 class="mt-7 max-w-3xl font-display text-5xl font-bold leading-[1.05] text-gray-950 dark:text-white sm:text-6xl lg:text-7xl">Hermes Cockpit, un poste de pilotage pour mes agents IA.</h1>
             <p class="mt-7 max-w-xl text-lg leading-relaxed text-gray-700 dark:text-gray-300">Hermes Cockpit rassemble les projets, profils, missions et décisions qui accompagnent mon activité. Le Mac sert de centre de travail ; un premier compagnon web privé permet de suivre l’essentiel sur iPhone.</p>
           </div>
 
@@ -85,7 +85,7 @@ const macFeatures = [
     </section>
 
     <section class="section-container py-16 md:py-24">
-      <div class="max-w-3xl"><span class="badge">Sur Mac aujourd’hui</span><h2 class="mt-5 font-display text-3xl font-bold text-gray-950 dark:text-white md:text-5xl">Du travail réparti, une lecture claire.</h2><p class="mt-5 text-lg leading-relaxed text-gray-700 dark:text-gray-300">J’ai construit cette application pour suivre concrètement ce que chaque agent fait pour mon activité, retrouver ses résultats et garder la main sur les validations.</p></div>
+      <div class="max-w-3xl"><span class="badge">Sur Mac aujourd’hui</span><h2 class="mt-5 font-display text-3xl font-bold text-gray-950 dark:text-white md:text-5xl">À propos du projet : du travail réparti, une lecture claire.</h2><p class="mt-5 text-lg leading-relaxed text-gray-700 dark:text-gray-300">J’ai construit cette application pour suivre concrètement ce que chaque agent fait pour mon activité, retrouver ses résultats et garder la main sur les validations.</p></div>
       <div class="mt-10 grid gap-4 md:grid-cols-2"><article v-for="feature in macFeatures" :key="feature.title" class="rounded-3xl border border-violet-500/15 bg-white/75 p-7 shadow-lg shadow-violet-500/5 dark:border-white/10 dark:bg-white/[0.04]"><h3 class="font-display text-xl font-bold text-gray-950 dark:text-white">{{ feature.title }}</h3><p class="mt-3 leading-relaxed text-gray-700 dark:text-gray-300">{{ feature.text }}</p></article></div>
     </section>
 
