@@ -107,6 +107,9 @@ export function buildSitemapEntries(
 
   const paths = new Set(entries.map(entry => entry.path))
   for (const entry of dynamicEntries) {
+    // Hermes has a dedicated editorial page, but also appears in the project API.
+    // Keep its static sitemap location once the portfolio record is published.
+    if (entry.path === '/projets/hermes-cockpit' && paths.has(entry.path)) continue
     if (paths.has(entry.path)) throw new Error('sitemap_path_duplicate')
     paths.add(entry.path)
     entries.push(entry)
