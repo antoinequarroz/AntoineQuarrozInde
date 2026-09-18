@@ -17,6 +17,14 @@ avec l'Images API puis l'attache au post. L'absence d'image bloque la publicatio
 au lieu de créer un post texte incomplet. Le texte LinkedIn ne doit jamais
 commencer par un numéro de post ; les numéros restent réservés aux titres du blog.
 
+Pour les articles qui disposent d'exports validés dans
+`shared/utils/articleMediaVariants.ts`, Open Graph pointe sur le format LinkedIn,
+`twitter:image` sur le format X et le blog mobile choisit sa variante avec
+`<picture>`. X publie actuellement un lien, sans téléverser de média : c'est
+l'aperçu du lien qui utilise `twitter:image` si X l'affiche. Préparer les trois
+fichiers sous `public/article-media/<slug>/` et les référencer dans ce registre
+avant leur publication. Les anciens articles conservent leur couverture unique.
+
 Format attendu :
 
 ```markdown

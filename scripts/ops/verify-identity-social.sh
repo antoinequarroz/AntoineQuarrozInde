@@ -199,9 +199,9 @@ async function main() {
     const twitterImage = assertSafeImageUrl(oneMeta(page.html, 'twitter:image'), page.url)
     const ogAlt = oneMeta(page.html, 'og:image:alt')
     const twitterAlt = oneMeta(page.html, 'twitter:image:alt')
-    if (ogImage !== twitterImage) fail(`${page.url}: Open Graph and Twitter images diverge.`)
     if (ogAlt !== twitterAlt) fail(`${page.url}: Open Graph and Twitter image alts diverge.`)
     imageUrls.add(ogImage)
+    imageUrls.add(twitterImage)
   }
 
   const home = pages.find(page => page.url === `${origin}/`)
