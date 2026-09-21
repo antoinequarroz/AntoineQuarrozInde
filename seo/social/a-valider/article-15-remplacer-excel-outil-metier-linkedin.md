@@ -5,19 +5,17 @@ article_title: 15. Remplacer Excel par un outil métier : critères et étapes
 article_url: https://www.antoinequarroz.ch/blog/remplacer-excel-outil-metier-criteres-etapes
 date: 2026-09-21
 ---
-Excel n’est pas le problème. Le problème commence quand un même fichier devient à la fois une base clients, un formulaire, un suivi de tâches et un système de validation.
+Au fil de mes projets, j’ai rencontré pas mal d’entreprises qui me demandaient d’abord de « faire quelques travaux sur Excel ».
 
-Dans ce cas, l’équipe finit souvent par gérer des copies contradictoires, recopier les mêmes données ou dépendre d’une macro que personne n’ose modifier.
+Ajouter une formule. Corriger une macro. Regrouper plusieurs fichiers. Créer un suivi plus clair.
 
-J’ai préparé un guide pour décider sans remplacer Excel trop tôt :
+Mais en regardant le besoin de plus près, le problème n’était souvent plus Excel. Le fichier était devenu à la fois une base clients, un planning, un outil de suivi, un système de validation et parfois même la mémoire de l’entreprise.
 
-→ 10 critères à noter de 0 à 2 ;
-→ les cas où Excel reste la bonne solution ;
-→ le choix entre logiciel standard et application sur mesure ;
-→ une migration en 8 étapes avec pilote et retour arrière ;
-→ les points à vérifier pour les droits, les données et le cloud.
+Dans certains cas, améliorer le fichier suffit largement. Dans d’autres, continuer à ajouter des onglets et des macros rend le travail plus fragile : plusieurs versions circulent, les mêmes données sont saisies plusieurs fois et toute l’équipe dépend d’un fichier que personne n’ose vraiment modifier.
 
-L’objectif n’est pas d’acheter un nouvel outil. Il est de résoudre un processus précis et de mesurer si le travail devient réellement plus simple.
+C’est pour ces situations que j’ai préparé ce guide. Il aide à déterminer quand garder Excel, quand passer à un logiciel existant et quand une application métier sur mesure devient pertinente.
+
+J’y partage une grille de 10 critères et une méthode de migration en 8 étapes, avec un pilote et un retour arrière prévu. L’objectif reste simple : résoudre un problème concret sans remplacer un outil qui fait encore bien son travail.
 
 Le guide complet :
 https://www.antoinequarroz.ch/blog/remplacer-excel-outil-metier-criteres-etapes
