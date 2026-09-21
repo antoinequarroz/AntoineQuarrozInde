@@ -6,10 +6,12 @@ import {
 } from '~~/shared/utils/publicSeoIdentity'
 
 const { t, locale } = useI18n()
+const route = useRoute()
 const localePath = useLocalePath()
 const year = new Date().getFullYear()
 const contactCountry = computed(() => PUBLIC_COUNTRY_LABELS[locale.value as PublicSeoLocale] ?? PUBLIC_COUNTRY_LABELS.fr)
 const socials = PUBLIC_SEO_IDENTITY.profiles
+const hasInlineNewsletter = computed(() => /^\/(?:en\/|de\/)?blog\/[^/]+\/?$/.test(route.path))
 
 const navLinks = computed(() => [
   { key: 'about', href: `${localePath('/')}#about` },
@@ -189,6 +191,9 @@ const localSeoLinks = [
             </div>
           </nav>
         </div>
+
+        <!-- Compact newsletter signup for visitors who do not open an article. -->
+        <BlogNewsletterSignup v-if="!hasInlineNewsletter" variant="footer" class="relative mt-8" />
 
         <!-- Divider -->
         <div class="relative my-8 h-px bg-gradient-to-r from-violet-500/20 via-fuchsia-400/10 to-transparent" />
