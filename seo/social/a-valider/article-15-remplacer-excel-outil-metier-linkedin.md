@@ -5,7 +5,7 @@ article_title: 15. Remplacer Excel par un outil métier : critères et étapes
 article_url: https://www.antoinequarroz.ch/blog/remplacer-excel-outil-metier-criteres-etapes
 date: 2026-09-21
 ---
-Au fil de mes projets, j’ai rencontré pas mal d’entreprises qui me demandaient d’abord de « faire quelques travaux sur Excel ».
+Au fil de ma vie professionnelle, j’ai souvent rencontré ce cas : on me demandait d’abord de « faire quelques travaux sur Excel ».
 
 Ajouter une formule. Corriger une macro. Regrouper plusieurs fichiers. Créer un suivi plus clair.
 
