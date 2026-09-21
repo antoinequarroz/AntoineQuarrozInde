@@ -37,6 +37,11 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 503, message: 'La newsletter est temporairement indisponible.' })
   }
 
+  const consentedAt = new Date().toISOString()
+  const lumailSubscriber = await syncLumailNewsletterSubscriber({
+    ...subscription,
+    consentedAt,
+  })
   const supabase = getSupabaseAdmin()
   const { data: existing, error: readError } = await supabase
     .from('newsletter_subscriptions')
@@ -46,10 +51,6 @@ export default defineEventHandler(async (event) => {
     .maybeSingle()
   if (readError) throw createError({ statusCode: 500, message: 'L’inscription ne peut pas être vérifiée.' })
 
-  if (existing?.status === 'active') {
-    return { success: true, duplicate: true }
-  }
-
   if (existing) {
     const { error } = await supabase
       .from('newsletter_subscriptions')
@@ -57,14 +58,17 @@ export default defineEventHandler(async (event) => {
         locale: subscription.locale,
         source_path: subscription.sourcePath,
         status: 'active',
-        consented_at: new Date().toISOString(),
+        consented_at: consentedAt,
         unsubscribed_at: null,
-        updated_at: new Date().toISOString(),
+        updated_at: consentedAt,
+        lumail_subscriber_id: lumailSubscriber.id,
+        lumail_status: lumailSubscriber.status,
+        lumail_synced_at: consentedAt,
       })
       .eq('organization_id', org.id)
       .eq('id', existing.id)
     if (error) throw createError({ statusCode: 500, message: 'L’inscription ne peut pas être réactivée.' })
-    return { success: true, reactivated: true }
+    return { success: true, duplicate: existing.status === 'active', reactivated: existing.status !== 'active' }
   }
 
   const { error } = await supabase.from('newsletter_subscriptions').insert({
@@ -73,6 +77,10 @@ export default defineEventHandler(async (event) => {
     locale: subscription.locale,
     source_path: subscription.sourcePath,
     status: 'active',
+    consented_at: consentedAt,
+    lumail_subscriber_id: lumailSubscriber.id,
+    lumail_status: lumailSubscriber.status,
+    lumail_synced_at: consentedAt,
   })
   if (error?.code === '23505') return { success: true, duplicate: true }
   if (error) throw createError({ statusCode: 500, message: 'L’inscription ne peut pas être enregistrée.' })
