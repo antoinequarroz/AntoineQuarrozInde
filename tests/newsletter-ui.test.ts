@@ -15,5 +15,6 @@ describe('blog newsletter UI', () => {
     expect(signup).toContain("localePath('/confidentialite')")
     expect(signup).toContain('Sans séquence commerciale automatique.')
     expect(privacy).toContain("newsletterTitle: 'Newsletter'")
+    expect(privacy).toContain('transmis à Lumail')
   })
 })

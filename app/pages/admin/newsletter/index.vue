@@ -9,6 +9,9 @@ type Subscription = {
   status: 'active' | 'unsubscribed'
   consentedAt: string
   unsubscribedAt: string | null
+  lumailSubscriberId: string | null
+  lumailStatus: string | null
+  lumailSyncedAt: string | null
 }
 
 const auth = useAuthStore()
@@ -57,8 +60,8 @@ onMounted(loadSubscriptions)
       <div v-if="!subscriptions.length" class="p-8 text-center text-sm text-gray-500">Aucune inscription pour l’instant.</div>
       <div v-else class="overflow-x-auto">
         <table class="w-full text-left text-sm">
-          <thead><tr class="border-b border-gray-100 text-xs uppercase tracking-wide text-gray-500 dark:border-white/[0.06] dark:text-gray-400"><th class="px-5 py-3">E-mail</th><th class="px-5 py-3">Source</th><th class="px-5 py-3">Consentement</th><th class="px-5 py-3">Statut</th></tr></thead>
-          <tbody><tr v-for="item in subscriptions" :key="item.id" class="border-b border-gray-50 last:border-0 dark:border-white/[0.04]"><td class="px-5 py-4 font-medium text-gray-900 dark:text-white">{{ item.email }}</td><td class="px-5 py-4 text-gray-500 dark:text-gray-400">{{ item.sourcePath }}</td><td class="px-5 py-4 text-gray-500 dark:text-gray-400">{{ new Date(item.consentedAt).toLocaleDateString('fr-CH') }}</td><td class="px-5 py-4"><span class="rounded-full px-2 py-1 text-xs font-semibold" :class="item.status === 'active' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' : 'bg-gray-100 text-gray-600 dark:bg-white/[0.06] dark:text-gray-300'">{{ item.status === 'active' ? 'Actif' : 'Désinscrit' }}</span></td></tr></tbody>
+          <thead><tr class="border-b border-gray-100 text-xs uppercase tracking-wide text-gray-500 dark:border-white/[0.06] dark:text-gray-400"><th class="px-5 py-3">E-mail</th><th class="px-5 py-3">Source</th><th class="px-5 py-3">Consentement</th><th class="px-5 py-3">Lumail</th><th class="px-5 py-3">Statut</th></tr></thead>
+          <tbody><tr v-for="item in subscriptions" :key="item.id" class="border-b border-gray-50 last:border-0 dark:border-white/[0.04]"><td class="px-5 py-4 font-medium text-gray-900 dark:text-white">{{ item.email }}</td><td class="px-5 py-4 text-gray-500 dark:text-gray-400">{{ item.sourcePath }}</td><td class="px-5 py-4 text-gray-500 dark:text-gray-400">{{ new Date(item.consentedAt).toLocaleDateString('fr-CH') }}</td><td class="px-5 py-4"><span class="rounded-full px-2 py-1 text-xs font-semibold" :class="item.lumailSyncedAt ? 'bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300' : 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'">{{ item.lumailStatus || (item.lumailSyncedAt ? 'Synchronisé' : 'À synchroniser') }}</span></td><td class="px-5 py-4"><span class="rounded-full px-2 py-1 text-xs font-semibold" :class="item.status === 'active' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' : 'bg-gray-100 text-gray-600 dark:bg-white/[0.06] dark:text-gray-300'">{{ item.status === 'active' ? 'Actif' : 'Désinscrit' }}</span></td></tr></tbody>
         </table>
       </div>
     </div>

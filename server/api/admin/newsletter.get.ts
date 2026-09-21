@@ -3,7 +3,7 @@ export default defineEventHandler(async (event) => {
   const supabase = getSupabaseAdmin()
   const { data, error } = await supabase
     .from('newsletter_subscriptions')
-    .select('id,email,locale,source_path,status,consented_at,unsubscribed_at')
+    .select('id,email,locale,source_path,status,consented_at,unsubscribed_at,lumail_subscriber_id,lumail_status,lumail_synced_at')
     .eq('organization_id', org.id)
     .order('consented_at', { ascending: false })
 
@@ -17,5 +17,8 @@ export default defineEventHandler(async (event) => {
     status: item.status,
     consentedAt: item.consented_at,
     unsubscribedAt: item.unsubscribed_at,
+    lumailSubscriberId: item.lumail_subscriber_id,
+    lumailStatus: item.lumail_status,
+    lumailSyncedAt: item.lumail_synced_at,
   }))
 })

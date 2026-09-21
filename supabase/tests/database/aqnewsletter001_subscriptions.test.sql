@@ -1,6 +1,6 @@
 begin;
 
-select plan(6);
+select plan(7);
 
 insert into public.organizations (id, name, slug)
 values ('00000000-0000-0000-0000-000000000801', 'AQ Newsletter', 'aq-newsletter');
@@ -15,6 +15,25 @@ select ok(
       and c.relrowsecurity
   ),
   'newsletter subscriptions use row level security'
+);
+
+select ok(
+  exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'newsletter_subscriptions'
+      and column_name = 'lumail_subscriber_id'
+  )
+  and exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'newsletter_subscriptions'
+      and column_name = 'lumail_status'
+  )
+  and exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'newsletter_subscriptions'
+      and column_name = 'lumail_synced_at'
+  ),
+  'Lumail synchronization evidence is retained with the consent record'
 );
 
 select ok(
