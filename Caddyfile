@@ -43,6 +43,18 @@ metricove.antoinequarroz.ch {
 
 # BEGIN ENSEMBLE API — isolated Supabase instance
 ensemble-api.antoinequarroz.ch {
+    # ENSEMBLE CALENDAR
+    @calendar {
+        method GET HEAD
+        path_regexp calendar ^/calendar/([a-f0-9]{64})\.ics$
+    }
+    handle @calendar {
+        rewrite * /rest/v1/rpc/calendar_feed?p_token={re.calendar.1}
+        reverse_proxy ensemble-api-gw:8000 {
+            header_up Accept text/calendar
+            header_up apikey {$ENSEMBLE_SUPABASE_ANON_KEY}
+        }
+    }
     @api path /auth/v1/* /rest/v1/* /storage/v1/* /realtime/v1/*
     handle @api {
         reverse_proxy ensemble-api-gw:8000
