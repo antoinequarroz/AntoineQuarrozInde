@@ -102,6 +102,11 @@ install_hermes_tokens_from_stdin() {
 
 install_hermes_tokens_from_stdin
 
+# Fail before building or recreating any container when the private runtime
+# configuration is incomplete. This keeps the currently healthy release live
+# and makes the missing variable explicit in the CI log.
+bash scripts/ops/validate-production-env.sh "$PWD/.env"
+
 previous_image="$(docker inspect --format '{{.Image}}' "$container_name" 2>/dev/null || true)"
 if [[ -n "$previous_image" ]]; then
   docker image tag "$previous_image" "$image_name:$previous_tag"

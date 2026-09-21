@@ -1,6 +1,8 @@
 import { execFile } from 'node:child_process'
-import { readFile } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { createServer } from 'node:http'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { promisify } from 'node:util'
 import { afterEach, describe, expect, it } from 'vitest'
 
@@ -10,16 +12,20 @@ const verifyScript = 'scripts/ops/verify-production-release.sh'
 const deployScript = 'scripts/ops/deploy-from-ci.sh'
 const sshGateScript = 'scripts/ops/ci-ssh-gate.sh'
 const releaseScript = 'scripts/ops/deploy-release.sh'
+
+const productionEnvValidator = 'scripts/ops/validate-production-env.sh'
 const externalMonitorScript = 'scripts/ops/external-monitor.sh'
 const uptimeWorkflowPath = '.github/workflows/uptime.yml'
 const legacyShipScript = 'scripts/ship.ps1'
 const servers: ReturnType<typeof createServer>[] = []
+const temporaryDirectories: string[] = []
 const unixIt = process.platform === 'win32' ? it.skip : it
 
 afterEach(async () => {
   await Promise.all(servers.splice(0).map(server => new Promise<void>((resolve, reject) => {
     server.close(error => error ? reject(error) : resolve())
   })))
+  await Promise.all(temporaryDirectories.splice(0).map(directory => rm(directory, { recursive: true, force: true })))
 })
 
 async function serveRelease(version: string, healthy = true) {
@@ -51,6 +57,27 @@ async function serveRelease(version: string, healthy = true) {
 }
 
 describe('AQ-058 release pipeline', () => {
+  unixIt('rejects an incomplete production environment before container recreation', async () => {
+    const release = await readFile(releaseScript, 'utf8')
+    const directory = await mkdtemp(join(tmpdir(), 'aq-production-env-'))
+    const envFile = join(directory, '.env')
+    temporaryDirectories.push(directory)
+
+    await writeFile(envFile, [
+      'SUPABASE_URL=https://example.supabase.co',
+      'SUPABASE_ANON_KEY=anon',
+      `HERMES_READ_TOKEN=${'a'.repeat(64)}`,
+      `HERMES_PUBLISH_TOKEN=${'b'.repeat(64)}`,
+      'ENSEMBLE_SUPABASE_ANON_KEY=ensemble',
+    ].join('\n'))
+
+    await expect(execFileAsync('bash', [productionEnvValidator, envFile]))
+      .rejects.toMatchObject({ stderr: expect.stringContaining('SUPABASE_SERVICE_ROLE_KEY') })
+    expect(release.indexOf('validate-production-env.sh')).toBeLessThan(release.indexOf('previous_image='))
+    expect(release.indexOf('validate-production-env.sh'))
+      .toBeLessThan(release.indexOf('docker compose up -d --no-build --remove-orphans'))
+  })
+
   it('orders quality, production deployment and E2E without deploying pull requests', async () => {
     const workflow = await readFile(workflowPath, 'utf8')
 
