@@ -2,13 +2,13 @@
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 
 type TrendPoint = { date: string, visitors: number, pageviews: number }
-type SourcePoint = { source: string, visitors: number, visits: number }
+type SourcePoint = { source: string, visitors: number, pageviews: number }
 type AttributionPoint = { source: string, leads: number, activeClients: number, acceptedQuotes: number, acceptedQuoteCents: number, collectedRevenueCents: number, leadToQuoteRate: number }
 type ChannelPoint = Omit<AttributionPoint, 'source'> & { channel: string }
 
 const auth = useAuthStore()
 const data = ref<any>(null)
-const plausible = ref<any>(null)
+const posthog = ref<any>(null)
 const pending = ref(false)
 const loadError = ref('')
 
@@ -21,10 +21,10 @@ async function loadAnalytics() {
     const headers = auth.authHeader()
     const [internal, external] = await Promise.all([
       $fetch('/api/admin/marketing-analytics', { headers }),
-      $fetch('/api/admin/plausible-stats', { headers }),
+      $fetch('/api/admin/posthog-stats', { headers }),
     ])
     data.value = internal
-    plausible.value = external
+    posthog.value = external
   }
   catch {
     loadError.value = 'Les statistiques n’ont pas pu être chargées. Réessaie dans quelques instants.'
@@ -48,12 +48,12 @@ const labels: Record<string, string> = {
   contact_form_submit_error: 'Erreurs formulaire',
 }
 
-const audienceMetrics = computed(() => plausible.value?.totals ? [
-  { label: 'Visiteurs uniques', value: plausible.value.totals.visitors, tone: 'violet' },
-  { label: 'Visites', value: plausible.value.totals.visits, tone: 'cyan' },
-  { label: 'Pages vues', value: plausible.value.totals.pageviews, tone: 'violet' },
-  { label: 'Taux de rebond', value: `${plausible.value.totals.bounceRate} %`, tone: 'cyan' },
-  { label: 'Durée moyenne', value: formatDuration(plausible.value.totals.visitDuration), tone: 'violet' },
+const audienceMetrics = computed(() => posthog.value?.totals ? [
+  { label: 'Visiteurs uniques', value: posthog.value.totals.visitors, tone: 'violet' },
+  { label: 'Pages vues', value: posthog.value.totals.pageviews, tone: 'cyan' },
+  { label: 'Contacts envoyés', value: posthog.value.totals.contacts, tone: 'violet' },
+  { label: 'Inscriptions newsletter', value: posthog.value.totals.newsletterSubscriptions, tone: 'cyan' },
+  { label: 'Clics rendez-vous', value: posthog.value.totals.bookingClicks, tone: 'violet' },
 ] : [])
 
 const internalMetrics = computed(() => data.value ? [
@@ -95,11 +95,11 @@ const channelRows = computed(() => ((data.value?.channelAttribution || []) as Ch
   label: channelLabels[row.channel] || 'Non attribué',
 })))
 
-const hasTrendData = computed(() => Boolean(plausible.value?.trend?.length >= 2 && (plausible.value?.totals?.visitors || plausible.value?.totals?.pageviews)))
+const hasTrendData = computed(() => Boolean(posthog.value?.trend?.length >= 2 && (posthog.value?.totals?.visitors || posthog.value?.totals?.pageviews)))
 const hasExperimentData = computed(() => Boolean(data.value?.variants?.some((variant: any) => variant.views > 0)))
 
 const trendChart = computed(() => {
-  const rows = (plausible.value?.trend || []) as TrendPoint[]
+  const rows = (posthog.value?.trend || []) as TrendPoint[]
   const width = 760
   const height = 260
   const left = 44
@@ -124,7 +124,7 @@ const trendChart = computed(() => {
 })
 
 const sourceChart = computed(() => {
-  const sources = (plausible.value?.sources || []) as SourcePoint[]
+  const sources = (posthog.value?.sources || []) as SourcePoint[]
   const total = sources.reduce((sum, source) => sum + source.visitors, 0)
   let cursor = 0
   const segments = sources.map((source, index) => {
@@ -163,12 +163,6 @@ function formatDate(value?: string) {
   return new Intl.DateTimeFormat('fr-CH', { day: '2-digit', month: 'short' }).format(new Date(`${value}T12:00:00`))
 }
 
-function formatDuration(seconds: number) {
-  if (!seconds) return '0 s'
-  if (seconds < 60) return `${Math.round(seconds)} s`
-  return `${Math.floor(seconds / 60)} min ${Math.round(seconds % 60)} s`
-}
-
 function formatMoney(cents: number) {
   return new Intl.NumberFormat('fr-CH', { style: 'currency', currency: 'CHF', maximumFractionDigits: 0 }).format(Number(cents || 0) / 100)
 }
@@ -201,13 +195,13 @@ onMounted(loadAnalytics)
     </div>
 
     <template v-if="data">
-      <section class="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.08] dark:bg-[#111118]" aria-labelledby="plausible-title">
+      <section class="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.08] dark:bg-[#111118]" aria-labelledby="posthog-title">
         <div class="flex flex-wrap items-start justify-between gap-3 border-b border-gray-100 px-5 py-4 dark:border-white/[0.06]">
-          <div><h2 id="plausible-title" class="font-display text-lg font-semibold">Audience Plausible</h2><p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Mesure respectueuse de la vie privée, journée en cours incluse.</p></div>
-          <a :href="`https://plausible.io/${plausible?.siteId || 'antoinequarroz.ch'}`" target="_blank" rel="noopener noreferrer" class="inline-flex min-h-11 items-center text-sm font-semibold text-violet-600 hover:text-violet-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:text-violet-300">Ouvrir Plausible ↗</a>
+          <div><h2 id="posthog-title" class="font-display text-lg font-semibold">Audience PostHog</h2><p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Mesure sans cookies ni profil individuel, journée en cours incluse.</p></div>
+          <a :href="`https://eu.posthog.com/project/${posthog?.projectId || '281423'}/web`" target="_blank" rel="noopener noreferrer" class="inline-flex min-h-11 items-center text-sm font-semibold text-violet-600 hover:text-violet-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:text-violet-300">Ouvrir PostHog ↗</a>
         </div>
 
-        <div v-if="plausible?.totals" class="grid grid-cols-2 divide-x divide-y divide-gray-100 lg:grid-cols-5 lg:divide-y-0 dark:divide-white/[0.06]">
+        <div v-if="posthog?.totals" class="grid grid-cols-2 divide-x divide-y divide-gray-100 lg:grid-cols-5 lg:divide-y-0 dark:divide-white/[0.06]">
           <div v-for="(metric, index) in audienceMetrics" :key="metric.label" class="px-4 py-3 lg:px-5 lg:py-4" :class="index === audienceMetrics.length - 1 ? 'col-span-2 lg:col-span-1' : ''">
             <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ metric.label }}</p>
             <p class="mt-1 font-display text-2xl font-semibold text-gray-950 dark:text-white">{{ metric.value }}</p>
@@ -215,18 +209,18 @@ onMounted(loadAnalytics)
         </div>
 
         <div v-else class="m-5 rounded-lg border border-dashed border-gray-300 p-4 text-sm text-gray-500 dark:border-white/[0.12] dark:text-gray-400">
-          <span v-if="plausible?.unavailable">Plausible est configuré mais les statistiques sont temporairement indisponibles.</span>
-          <span v-else>La clé Stats API doit être configurée sur le VPS. Le suivi public reste actif.</span>
+          <span v-if="posthog?.unavailable">PostHog est configuré mais les statistiques sont temporairement indisponibles.</span>
+          <span v-else>La clé de lecture PostHog doit être configurée sur le VPS. Le suivi public reste actif.</span>
         </div>
       </section>
 
-      <section v-if="plausible?.totals" class="grid gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(300px,0.8fr)]">
+      <section v-if="posthog?.totals" class="grid gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(300px,0.8fr)]">
         <article class="min-w-0 rounded-xl border border-gray-200 bg-white p-5 dark:border-white/[0.08] dark:bg-[#111118]">
           <div class="flex flex-wrap items-start justify-between gap-3">
             <div><h2 class="font-display text-lg font-semibold">Évolution de l’audience</h2><p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Visiteurs uniques et pages vues par jour.</p></div>
             <div class="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400"><span class="flex items-center gap-2"><i class="h-2.5 w-2.5 rounded-full" style="background-color:#7c3aed" />Visiteurs</span><span class="flex items-center gap-2"><i class="h-2.5 w-2.5 rounded-full" style="background-color:#22d3ee" />Pages vues</span></div>
           </div>
-          <div v-if="hasTrendData" class="mt-5" role="img" :aria-label="`Courbe sur 30 jours : ${plausible.totals.visitors} visiteurs et ${plausible.totals.pageviews} pages vues`">
+          <div v-if="hasTrendData" class="mt-5" role="img" :aria-label="`Courbe sur 30 jours : ${posthog.totals.visitors} visiteurs et ${posthog.totals.pageviews} pages vues`">
             <svg class="audience-chart" :viewBox="`0 0 ${trendChart.width} ${trendChart.height}`" aria-hidden="true">
               <g v-for="line in trendChart.grid" :key="line.y">
                 <line :x1="trendChart.left" :x2="trendChart.left + trendChart.plotWidth" :y1="line.y" :y2="line.y" class="stroke-gray-200 dark:stroke-white/[0.08]" stroke-dasharray="3 5" />

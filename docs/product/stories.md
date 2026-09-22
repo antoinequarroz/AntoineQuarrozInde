@@ -303,7 +303,7 @@
 - **Story :** En tant que propriétaire de la vitrine, je veux distinguer les contacts provenant de moteurs classiques et génératifs, afin de prioriser les contenus qui contribuent réellement aux demandes.
 - **Valeur :** relier visibilité, trafic et conversion sans se limiter aux impressions.
 - **Exigences :** `SEO-R021`, `SEO-R022`
-- **Préconditions :** Plausible et les événements de contact existants restent disponibles ; aucune donnée personnelle supplémentaire n'est nécessaire.
+- **Préconditions :** PostHog et les événements de contact existants restent disponibles ; aucune donnée personnelle supplémentaire n'est nécessaire.
 - **Acceptation :**
   - une visite conserve la source et les paramètres d'acquisition déjà autorisés jusqu'à l'événement de contact ;
   - les référents connus de moteurs génératifs peuvent être distingués des sources organiques classiques sans classification mensongère des sources inconnues ;

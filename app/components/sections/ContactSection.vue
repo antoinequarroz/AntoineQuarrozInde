@@ -3,7 +3,7 @@ import { classifyAcquisition } from '~~/shared/utils/acquisitionChannel'
 
 const { t, locale } = useI18n()
 const { track } = useMarketing()
-const { trackPlausible } = usePlausibleEvent()
+const { trackPostHog } = usePostHogEvent()
 const runtimeConfig = useRuntimeConfig()
 const turnstileSiteKey = runtimeConfig.public.turnstileSiteKey as string
 const isClient = import.meta.client
@@ -177,7 +177,7 @@ async function handleSubmit() {
     })
     status.value = 'success'
     track('contact_form_submit_success')
-    trackPlausible('Contact Sent', {
+    trackPostHog('contact_sent', {
       channel: contactResult.acquisitionChannel || classifyAcquisition({
         utmSource: attribution.value.utmSource,
         referrerHost: attribution.value.referrerHost,

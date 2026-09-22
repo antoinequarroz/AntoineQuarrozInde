@@ -13,7 +13,27 @@ export default defineNuxtConfig({
     '@pinia-plugin-persistedstate/nuxt',
     '@vueuse/nuxt',
     '@vueuse/motion/nuxt',
+    '@posthog/nuxt',
   ],
+
+  posthogConfig: {
+    // The project token is intentionally public. Private API access remains server-only.
+    publicKey: process.env.NUXT_PUBLIC_POSTHOG_KEY || 'phc_pEpzDYuscdeuHAfWFJTpgyDZT3dxWVFm4y38DUxA2epS',
+    host: process.env.NUXT_PUBLIC_POSTHOG_HOST || 'https://eu.i.posthog.com',
+    clientConfig: {
+      defaults: '2026-05-30',
+      cookieless_mode: 'always',
+      person_profiles: 'never',
+      autocapture: false,
+      capture_pageview: false,
+      capture_pageleave: false,
+      disable_session_recording: true,
+      capture_heatmaps: false,
+      disable_surveys: true,
+      advanced_disable_feature_flags: true,
+      capture_exceptions: false,
+    },
+  },
 
   colorMode: {
     classSuffix: '',
@@ -218,10 +238,10 @@ export default defineNuxtConfig({
     e2eAdminEmail: process.env.E2E_ADMIN_EMAIL || '',
     hermesReadToken: process.env.HERMES_READ_TOKEN || '',
     hermesPublishToken: process.env.HERMES_PUBLISH_TOKEN || '',
+    posthogPersonalApiKey: process.env.POSTHOG_PERSONAL_API_KEY || '',
+    posthogProjectId: process.env.POSTHOG_PROJECT_ID || '281423',
     public: {
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'https://www.antoinequarroz.ch',
-      plausibleDomain: process.env.NUXT_PUBLIC_PLAUSIBLE_DOMAIN || 'antoinequarroz.ch',
-      plausibleEndpoint: process.env.NUXT_PUBLIC_PLAUSIBLE_ENDPOINT || 'https://plausible.io/api/event',
       bookingUrl: process.env.NUXT_PUBLIC_BOOKING_URL || 'https://cal.com/antoine-quarroz-ilnim4/30min',
       defaultOrganizationSlug: process.env.DEFAULT_ORGANIZATION_SLUG || '',
       turnstileSiteKey: process.env.TURNSTILE_SITE_KEY || '',

@@ -2,6 +2,7 @@
 const { locale } = useI18n()
 const config = useRuntimeConfig()
 const { track } = useMarketing()
+const { trackPostHog } = usePostHogEvent()
 const CAL_NAMESPACE = 'portfolio-contact'
 
 type CalQueue = ((...args: unknown[]) => void) & {
@@ -110,6 +111,7 @@ const content = computed(() => {
 
 function openContactFallback() {
   track('booking_fallback_click')
+  trackPostHog('booking_fallback_clicked')
   window.dispatchEvent(new CustomEvent('aq:contact-open', { detail: { source: 'booking_fallback' } }))
 }
 </script>
@@ -152,7 +154,7 @@ function openContactFallback() {
       :data-cal-link="bookingPath"
       :data-cal-namespace="CAL_NAMESPACE"
       :data-cal-config="bookingConfig"
-      @click="track('booking_calendar_click')"
+      @click="track('booking_calendar_click'); trackPostHog('booking_clicked', { provider: 'cal.com' })"
     >{{ content.cta }}</a>
     <a v-else href="#contact-form" class="btn-primary mt-auto w-full justify-center rounded-xl py-3 text-sm active:scale-[0.96]" @click="openContactFallback">{{ content.fallbackCta }}</a>
     <a href="mailto:info@antoinequarroz.ch" class="flex min-h-11 items-center justify-center gap-2 text-xs text-gray-500 transition-colors duration-150 hover:text-violet-600 dark:text-gray-400 dark:hover:text-violet-300" @click="track('contact_email_click')">info@antoinequarroz.ch</a>

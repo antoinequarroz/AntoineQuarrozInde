@@ -27,7 +27,8 @@ describe('public legal information', () => {
   })
 
   it('documents the real CRM and analytics data flow', () => {
-    expect(privacy).toContain('Plausible')
+    expect(privacy).toContain('PostHog')
+    expect(privacy).toContain('sans cookies')
     expect(privacy).toContain('CRM')
     expect(privacy).toContain('UTM')
     expect(privacy).toContain('Stripe')

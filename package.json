@@ -4,7 +4,7 @@
   "private": true,
   "packageManager": "npm@11.19.0",
   "engines": {
-    "node": ">=22.19.0"
+    "node": ">=22.22.0"
   },
   "scripts": {
     "build": "nuxt build",
@@ -29,7 +29,7 @@
     "@nuxtjs/i18n": "^9.5.5",
     "@pinia-plugin-persistedstate/nuxt": "^1.2.1",
     "@pinia/nuxt": "^0.9.0",
-    "@plausible-analytics/tracker": "^0.4.5",
+    "@posthog/nuxt": "^1.7.91",
     "@supabase/supabase-js": "^2.106.1",
     "@vueuse/motion": "^2.2.6",
     "@vueuse/nuxt": "^12.7.0",
