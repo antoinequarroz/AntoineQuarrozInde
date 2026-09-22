@@ -81,7 +81,7 @@ Voir `competitors.md`. Les comparatifs doivent rester factuels et sourcés.
 ## 11. Outils connectés
 
 - **Suivi IA** : aucun
-- **Analytics** : statistiques internes et Search Console
+- **Analytics** : PostHog EU sans cookies, statistiques internes et Search Console
 - **Google Search Console** : connectée à `sc-domain:antoinequarroz.ch`
 - **Emailing** : Lumail
 - **Automatisation navigateur** : disponible localement
@@ -104,3 +104,5 @@ Sans objet.
 - **Mots-clés** : `.codex/geo/keywords.md`
 - **Files** : `.codex/geo/queue/`
 - **Phase actuelle** : volume avec contrôle anti-doublon quotidien
+- **Dernier rituel de mesure** : 2026-09-22 — référence PostHog initiale, volume encore insuffisant pour arbitrer
+- **Prochaine décision** : relire acquisition, contenu et conversion après deux semaines de collecte

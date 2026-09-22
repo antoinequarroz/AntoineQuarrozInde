@@ -2,6 +2,13 @@ import { isPostHogProductionHost, isPostHogPublicPath, safeAnalyticsPath, stripA
 
 const DOWNLOAD_EXTENSION = /\.(?:pdf|zip|docx?|xlsx?|csv|pptx?)$/i
 
+function contentProperties(path: string) {
+  const parts = path.split('/').filter(Boolean)
+  if (parts[0] === 'blog' && parts[1]) return { content_type: 'article', content_slug: parts[1] }
+  if (parts[0] === 'projets' && parts[1]) return { content_type: 'project', content_slug: parts[1] }
+  return { content_type: 'page' }
+}
+
 export default defineNuxtPlugin({
   name: 'posthog-public-pageviews',
   dependsOn: ['posthog-client'],
@@ -39,6 +46,7 @@ export default defineNuxtPlugin({
       posthog?.capture('$pageview', {
         $current_url: `${window.location.origin}${safePath}`,
         $pathname: safePath,
+        ...contentProperties(safePath),
       })
     }
 
@@ -59,6 +67,11 @@ export default defineNuxtPlugin({
           destination_host: destination.host,
           destination_path: destination.pathname,
           source_path: window.location.pathname,
+        }
+        const contactDestination = destination.origin === window.location.origin
+          && (destination.pathname === '/contact' || destination.hash === '#contact')
+        if (contactDestination || destination.protocol === 'mailto:' || destination.host === 'cal.com' || destination.host.endsWith('.cal.com')) {
+          posthog?.capture('contact_clicked', { ...properties, contact_type: destination.protocol === 'mailto:' ? 'email' : destination.host.includes('cal.com') ? 'booking' : 'form' })
         }
         if (destination.origin !== window.location.origin && !['mailto:', 'tel:'].includes(destination.protocol)) {
           posthog?.capture('outbound_link_clicked', properties)

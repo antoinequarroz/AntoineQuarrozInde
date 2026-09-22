@@ -94,6 +94,27 @@ def clean_linkedin_content(content: str) -> str:
     return LINKEDIN_SEQUENCE_PREFIX.sub("", content, count=1).lstrip()
 
 
+def tracked_article_url(article_url: str, platform: str, *, placement: str = "post") -> str:
+    """Build one canonical campaign URL without stacking old UTM parameters."""
+    parsed = urllib.parse.urlparse(article_url)
+    query = [(key, value) for key, value in urllib.parse.parse_qsl(parsed.query, keep_blank_values=True)
+             if not key.lower().startswith("utm_")]
+    slug = parsed.path.rstrip("/").split("/")[-1] or "accueil"
+    source = {"linkedin": "linkedin", "x": "x", "lumail": "lumail"}.get(platform)
+    if not source:
+        raise ValueError("Source de campagne inconnue.")
+    medium = "email" if platform == "lumail" else "social"
+    query.extend([
+        ("utm_source", source), ("utm_medium", medium),
+        ("utm_campaign", f"article_{slug}"), ("utm_content", placement),
+    ])
+    return urllib.parse.urlunparse(parsed._replace(query=urllib.parse.urlencode(query)))
+
+
+def tracked_social_content(content: str, article_url: str, platform: str) -> str:
+    return content.replace(article_url, tracked_article_url(article_url, platform))
+
+
 def inside_local_publication_hour(hour: int | None, timezone: str) -> bool:
     if hour is None:
         return True
@@ -399,9 +420,10 @@ def process_approved(site_url: str, token: str, *, dry_run: bool) -> dict:
             continue
         claimed = site_request(site_url, token, payload={"action": "claim", "id": queued_post["id"], "version": queued_post["version"]})["post"]
         try:
+            tracked_content = tracked_social_content(claimed["content"], claimed["article_url"], platform)
             result = publish_linkedin(
-                claimed["content"], claimed["article_url"], claimed.get("article_title", "")
-            ) if platform == "linkedin" else publish_x(claimed["content"])
+                tracked_content, claimed["article_url"], claimed.get("article_title", "")
+            ) if platform == "linkedin" else publish_x(tracked_content)
             post_id = result.get("id")
             site_request(site_url, token, payload={"action": "complete", "id": claimed["id"], "version": claimed["version"], "externalPostId": post_id, "externalPostUrl": external_post_url(platform, post_id)})
             summary["published"] += 1
@@ -507,9 +529,10 @@ def main() -> int:
         }, ensure_ascii=False))
         return 0
 
+    tracked_content = tracked_social_content(draft["content"], draft["article_url"], draft["platform"])
     result = publish_linkedin(
-        draft["content"], draft["article_url"], draft["article_title"]
-    ) if draft["platform"] == "linkedin" else publish_x(draft["content"])
+        tracked_content, draft["article_url"], draft["article_title"]
+    ) if draft["platform"] == "linkedin" else publish_x(tracked_content)
     receipt = {
         "status": "published",
         "platform": draft["platform"],

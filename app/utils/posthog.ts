@@ -27,3 +27,10 @@ export function stripAnalyticsUrlQuery(value: unknown) {
     return value
   }
 }
+
+export function analyticsContent(pathname: string) {
+  const parts = safeAnalyticsPath(pathname).split('/').filter(Boolean)
+  if (parts[0] === 'blog' && parts[1]) return { type: 'article', slug: parts[1] }
+  if (parts[0] === 'projets' && parts[1]) return { type: 'project', slug: parts[1] }
+  return { type: 'page', slug: null }
+}
