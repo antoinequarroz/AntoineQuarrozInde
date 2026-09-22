@@ -10,6 +10,8 @@
 | /blog/decider-refonte-site-audit-sept-points | fond | Refonte | fr | 2026-09-18 | validé |
 | /blog/remplacer-excel-outil-metier-criteres-etapes | fond | Outils métier | fr | 2026-09-21 | validé |
 
+| /blog/application-web-ou-mobile-choisir-selon-usages-reels | fond | Applications | fr | 2026-09-22 | validé |
+
 ## Prérequis infra
 
 - Rendu serveur vérifié le 2026-09-16 : oui, corps présent dans le HTML public.
