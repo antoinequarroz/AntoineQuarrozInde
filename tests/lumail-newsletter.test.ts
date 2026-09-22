@@ -41,7 +41,7 @@ describe('Lumail newsletter synchronization', () => {
         source_article: '/blog/example',
         consented_at: input.consentedAt,
       }),
-      triggerWorkflows: false,
+      triggerWorkflows: true,
       skipDoubleOptIn: false,
     }))
   })

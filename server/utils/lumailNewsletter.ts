@@ -29,7 +29,7 @@ export async function syncLumailNewsletterSubscriber(input: NewsletterSubscriber
     },
     replaceTags: false,
     resubscribe: true,
-    triggerWorkflows: false,
+    triggerWorkflows: true,
     skipDoubleOptIn: false,
   }
 

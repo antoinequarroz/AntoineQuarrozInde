@@ -25,7 +25,7 @@ const copy = computed(() => locale.value === 'en' ? {
   consent: 'I agree to receive the next articles and can unsubscribe at any time.',
   submit: 'Subscribe',
   sending: 'Subscribing…',
-  success: 'Your subscription is saved. I’ll email you when the next articles are published.',
+  success: 'Please check your inbox and confirm your address. You’ll then receive one welcome email and the next articles.',
   error: 'Unable to save your subscription. Please try again.',
   privacy: 'Privacy policy',
 } : locale.value === 'de' ? {
@@ -37,7 +37,7 @@ const copy = computed(() => locale.value === 'en' ? {
   consent: 'Ich möchte die nächsten Artikel erhalten und kann mich jederzeit abmelden.',
   submit: 'Abonnieren',
   sending: 'Anmeldung läuft…',
-  success: 'Ihre Anmeldung ist gespeichert. Ich schreibe Ihnen, wenn die nächsten Artikel erscheinen.',
+  success: 'Bitte prüfen Sie Ihren Posteingang und bestätigen Sie Ihre Adresse. Danach erhalten Sie einmalig eine Willkommens-E-Mail und die nächsten Artikel.',
   error: 'Die Anmeldung konnte nicht gespeichert werden. Bitte versuchen Sie es erneut.',
   privacy: 'Datenschutzerklärung',
 } : {
@@ -49,7 +49,7 @@ const copy = computed(() => locale.value === 'en' ? {
   consent: 'J’accepte de recevoir les prochains articles et je peux me désinscrire à tout moment.',
   submit: 'S’abonner',
   sending: 'Inscription…',
-  success: 'Votre inscription est enregistrée. Je vous écrirai lors de la publication des prochains articles.',
+  success: 'Consultez votre boîte mail et confirmez votre adresse. Vous recevrez ensuite un seul e-mail de bienvenue, puis les prochains articles.',
   error: 'L’inscription n’a pas pu être enregistrée. Réessayez dans un instant.',
   privacy: 'Politique de confidentialité',
 })
