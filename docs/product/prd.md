@@ -163,7 +163,7 @@ Le produit doit améliorer sa visibilité sans promettre de classement, sans inv
 - Les profils GitHub et LinkedIn visibles dans le footer sont approuvés pour `sameAs`.
 - Les APIs publiques d'articles et de projets restent les sources de vérité des contenus publiés.
 - Les avis et données de projets déjà visibles ne sont réutilisés comme preuves que dans le respect des consentements existants.
-- Plausible reste l'outil de mesure principal.
+- PostHog EU reste l'outil de mesure principal, en mode sans cookies, sans profil individuel et sans enregistrement de session.
 
 ## Risques et dépendances
 

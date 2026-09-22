@@ -9,6 +9,7 @@ const { locale } = useI18n()
 const route = useRoute()
 const localePath = useLocalePath()
 const { track } = useMarketing()
+const { trackPostHog } = usePostHogEvent()
 const instanceId = useId()
 const asideId = computed(() => props.variant === 'footer' ? 'footer-newsletter' : 'newsletter')
 const titleId = computed(() => `newsletter-title-${instanceId}`)
@@ -77,6 +78,7 @@ async function subscribe() {
     })
     status.value = 'success'
     track('newsletter_signup', { source: route.path })
+    trackPostHog('newsletter_subscribed', { source_path: route.path, placement: props.variant })
     email.value = ''
     consent.value = false
   }

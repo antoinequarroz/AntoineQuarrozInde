@@ -173,7 +173,7 @@ describe('AQ-058 release pipeline', () => {
     expect(dockerignore).toMatch(/^\.env$/m)
     expect(dockerignore).toMatch(/^\.env\.\*$/m)
     expect(dockerfile).toContain('USER node')
-    expect(dockerfile).toMatch(/FROM node:22\.19-alpine@sha256:[0-9a-f]{64}/)
+    expect(dockerfile).toMatch(/FROM node:22\.22-alpine@sha256:[0-9a-f]{64}/)
     expect(compose).toMatch(/image: caddy:2\.10\.2-alpine@sha256:[0-9a-f]{64}/)
     expect(compose).toContain('NUXT_SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}')
     expect(compose).toContain('NUXT_TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-}')
