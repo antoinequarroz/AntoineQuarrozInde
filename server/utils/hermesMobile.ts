@@ -56,7 +56,12 @@ export function validateHermesMobileSnapshot(value: unknown) {
     const row = object(item)
     const decision = text(row.decision, 40)
     if (!['À relire', 'À reprendre', 'Relu'].includes(decision)) invalid()
-    return { id: text(row.id, 180), title: text(row.title, 260), projectId: optionalText(row.projectId, 180), decision, addedAt: isoDate(row.addedAt) }
+    const contentVersion = optionalText(row.contentVersion, 64)
+    if (contentVersion && !/^[0-9a-f]{64}$/.test(contentVersion)) invalid()
+    return {
+      id: text(row.id, 180), title: text(row.title, 260), projectId: optionalText(row.projectId, 180), decision,
+      addedAt: isoDate(row.addedAt), contentVersion, digest: contentVersion, excerpt: optionalText(row.excerpt, 400),
+    }
   })
   const projectIds = new Set(projects.map(item => item.id))
   if (projectIds.size !== projects.length || profiles.length !== new Set(profiles.map(item => item.name)).size
