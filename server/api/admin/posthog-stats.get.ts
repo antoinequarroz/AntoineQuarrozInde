@@ -53,19 +53,25 @@ export default defineCachedEventHandler(async (event) => {
           countIf(event = 'booking_clicked') AS booking_clicks
         FROM events
         PREWHERE timestamp >= now() - INTERVAL 30 DAY
+        WHERE toString(properties.$host) IN ('antoinequarroz.ch', 'www.antoinequarroz.ch')
       `),
       queryPostHog(apiKey, projectId, 'site_admin_sources_30d', `
         SELECT
           if(
             notEmpty(toString(properties.$utm_source)),
             toString(properties.$utm_source),
-            if(notEmpty(toString(properties.$referring_domain)), toString(properties.$referring_domain), 'Direct / inconnu')
+            if(
+              notEmpty(toString(properties.$referring_domain)) AND toString(properties.$referring_domain) != '$direct',
+              toString(properties.$referring_domain),
+              'Direct / inconnu'
+            )
           ) AS source,
           uniqExact(distinct_id) AS visitors,
           count() AS pageviews
         FROM events
         PREWHERE timestamp >= now() - INTERVAL 30 DAY
         WHERE event = '$pageview'
+          AND toString(properties.$host) IN ('antoinequarroz.ch', 'www.antoinequarroz.ch')
         GROUP BY source
         ORDER BY visitors DESC
         LIMIT 8
@@ -78,6 +84,7 @@ export default defineCachedEventHandler(async (event) => {
         FROM events
         PREWHERE timestamp >= now() - INTERVAL 30 DAY
         WHERE event = '$pageview'
+          AND toString(properties.$host) IN ('antoinequarroz.ch', 'www.antoinequarroz.ch')
         GROUP BY date
         ORDER BY date ASC
       `),
