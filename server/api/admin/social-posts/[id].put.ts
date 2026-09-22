@@ -18,8 +18,8 @@ export default defineEventHandler(async (event) => {
 
   const updates: Record<string, unknown> = { version: version + 1, updated_at: new Date().toISOString() }
   if (action === 'save') updates.content = validateSocialContent(current.platform, body.content)
-  if (action === 'reject') updates.status = 'rejected'
-  if (action === 'restore') updates.status = 'draft'
+  if (action === 'reject') { updates.status = 'rejected'; updates.publish_after = null }
+  if (action === 'restore') { updates.status = 'draft'; updates.publish_after = null }
   const { data, error } = await supabase.from('social_posts').update(updates)
     .eq('organization_id', org.id).eq('id', id).eq('version', version)
     .select('id,content,status,version,updated_at').maybeSingle()

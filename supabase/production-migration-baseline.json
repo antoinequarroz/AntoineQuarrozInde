@@ -45,5 +45,6 @@
   { "filename": "20260915180656_add_contact_submission_delivery.sql", "sha256": "467fb11ce5da8ca22c7ade3a9544a2f3d14233368e560ae43d4ff12fd8c58028" },
   { "filename": "20260918112648_hermes_mobile_snapshot.sql", "sha256": "17c4493ce2f911542f1168f620726131dbcdc9f8b51afd793dc6c0e321242652" },
   { "filename": "20260921153713_add_newsletter_subscriptions.sql", "sha256": "5f145940667a1abd4a039d49647b994a899db242b645a8f73c75404ccd8d11c9" },
-  { "filename": "20260921160117_sync_newsletter_lumail.sql", "sha256": "135258515a792ac2086e2a1d13e9dde05dd459830e00cac049a6c00508ac3ad0" }
+  { "filename": "20260921160117_sync_newsletter_lumail.sql", "sha256": "135258515a792ac2086e2a1d13e9dde05dd459830e00cac049a6c00508ac3ad0" },
+  { "filename": "20260922161000_schedule_social_publications.sql", "sha256": "f0e7e2be98400e057af7e4513039c176c5374f44f21ea3e1e55102e7d858ea68" }
 ]

@@ -26,7 +26,8 @@ describe('social publication queue', () => {
   it('requires admin MFA and explicit confirmation for approval', () => {
     const route = read('server/api/admin/social-posts/[id]/approve.post.ts')
     expect(route).toContain('requireAdmin(event)')
-    expect(route).toContain('SOCIAL_APPROVAL_CONFIRMATION')
+    expect(route).toContain('SOCIAL_SCHEDULE_CONFIRMATION')
+    expect(route).toContain('SOCIAL_PUBLISH_NOW_CONFIRMATION')
     expect(route).not.toContain('social_platform_connections')
     expect(route).not.toContain('linkedin.com/rest/posts')
     expect(route).not.toContain('api.x.com')
@@ -41,11 +42,23 @@ describe('social publication queue', () => {
     expect(source).toContain('"action": "fail"')
   })
 
-  it('queues an approval for the 18:00 processor instead of promising an immediate post', () => {
+  it('separates the 18:00 approval from an explicit publish-now action', () => {
     const adminPage = read('app/pages/admin/social/index.vue')
-    expect(adminPage).toContain('Valider la publication')
+    expect(adminPage).toContain('Valider pour 18 h')
+    expect(adminPage).toContain('Publier maintenant')
     expect(adminPage).toContain('si la connexion est prête')
     expect(adminPage).not.toContain('Approuver et publier')
+  })
+
+  it('keeps scheduled approvals server-side until their due time', () => {
+    const migration = read('supabase/migrations/20260922161000_schedule_social_publications.sql')
+    const queue = read('server/api/hermes/social-publications.get.ts')
+    const approval = read('server/api/admin/social-posts/[id]/approve.post.ts')
+
+    expect(migration).toContain('publish_after <= now()')
+    expect(migration).toContain("time zone 'Europe/Zurich'")
+    expect(queue).toContain(".lte('publish_after', new Date().toISOString())")
+    expect(approval).toContain("mode === 'now' ? new Date() : nextSocialPublicationAt()")
   })
 
   it('removes rejected proposals from the social dashboard while keeping their audit record', () => {

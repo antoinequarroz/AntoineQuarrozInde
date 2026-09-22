@@ -1,12 +1,51 @@
 export const SOCIAL_PLATFORMS = ['linkedin', 'x'] as const
 export const SOCIAL_STATUSES = ['draft', 'approved', 'publishing', 'published', 'rejected', 'failed'] as const
 export const MAX_SOCIAL_REQUEST_BYTES = 16 * 1024
-export const SOCIAL_APPROVAL_CONFIRMATION = 'APPROUVER_ET_PUBLIER'
+export const SOCIAL_SCHEDULE_CONFIRMATION = 'PROGRAMMER_POUR_18H'
+export const SOCIAL_PUBLISH_NOW_CONFIRMATION = 'PUBLIER_MAINTENANT'
+export const SOCIAL_PUBLICATION_TIMEZONE = 'Europe/Zurich'
 const SITE_HOME = 'https://www.antoinequarroz.ch/'
 const ARTICLE_PREFIX = `${SITE_HOME}blog/`
 
 export type SocialPlatform = typeof SOCIAL_PLATFORMS[number]
 export type SocialStatus = typeof SOCIAL_STATUSES[number]
+export type SocialApprovalMode = 'scheduled' | 'now'
+
+function zurichParts(date: Date) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: SOCIAL_PUBLICATION_TIMEZONE,
+    year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', hourCycle: 'h23',
+  }).formatToParts(date)
+  const value = (type: Intl.DateTimeFormatPartTypes) => Number(parts.find(part => part.type === type)?.value)
+  return { year: value('year'), month: value('month'), day: value('day'), hour: value('hour') }
+}
+
+function zurichOffsetMinutes(date: Date) {
+  const value = new Intl.DateTimeFormat('en', {
+    timeZone: SOCIAL_PUBLICATION_TIMEZONE,
+    timeZoneName: 'longOffset',
+  }).formatToParts(date).find(part => part.type === 'timeZoneName')?.value || ''
+  const match = value.match(/^GMT([+-])(\d{2}):(\d{2})$/)
+  if (!match) throw new Error('Fuseau Europe/Zurich indisponible.')
+  const minutes = Number(match[2]) * 60 + Number(match[3])
+  return match[1] === '-' ? -minutes : minutes
+}
+
+export function nextSocialPublicationAt(now = new Date()) {
+  const local = zurichParts(now)
+  const dayOffset = local.hour >= 18 ? 1 : 0
+  const targetDay = new Date(Date.UTC(local.year, local.month - 1, local.day + dayOffset, 12))
+  const target = zurichParts(targetDay)
+  const offset = zurichOffsetMinutes(targetDay)
+  return new Date(Date.UTC(target.year, target.month - 1, target.day, 18) - offset * 60_000)
+}
+
+export function validateSocialApprovalMode(value: unknown): SocialApprovalMode {
+  if (value !== 'scheduled' && value !== 'now') {
+    throw createError({ statusCode: 400, message: 'Mode de publication invalide.' })
+  }
+  return value
+}
 
 function requiredText(value: unknown, field: string, max: number) {
   if (typeof value !== 'string') throw createError({ statusCode: 400, message: `${field} invalide.` })
