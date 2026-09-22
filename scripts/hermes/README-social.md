@@ -4,12 +4,13 @@ Le flux garde une validation humaine obligatoire :
 
 1. Le job SEO écrit deux brouillons dans `seo/social/a-valider/`.
 2. Le Centre de validation affiche leur contenu intégral.
-3. Antoine approuve explicitement un fichier précis.
+3. Antoine choisit explicitement **Valider pour 18 h** ou **Publier maintenant**.
 4. Hermes remplace seulement `statut: A_VALIDER` par `statut: APPROUVE` dans ce fichier.
-5. Hermes lance le contrôle aux heures UTC 16 et 17. Le script ne publie que
-   lorsque l'heure locale `Europe/Zurich` est exactement 18 h, y compris lors
-   des changements heure d'été / heure d'hiver.
-   Seuls les éléments déjà approuvés sont traités.
+5. La file serveur conserve `publish_after`. Une validation ordinaire reçoit la
+   prochaine échéance de 18 h dans `Europe/Zurich`; une demande « Publier
+   maintenant » devient disponible au prochain passage de Hermes. La lecture et
+   la réclamation du processeur refusent les éléments dont l'échéance n'est pas
+   atteinte. Seuls les éléments déjà approuvés et arrivés à échéance sont traités.
 6. Le script écrit un reçu dans `seo/social/receipts/`. Le même contenu ne peut pas être publié deux fois.
 
 Pour LinkedIn, le script récupère l'image Open Graph de l'article, la téléverse
