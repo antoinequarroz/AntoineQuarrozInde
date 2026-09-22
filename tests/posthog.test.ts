@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isPostHogProductionHost, isPostHogPublicPath, safeAnalyticsPath, stripAnalyticsUrlQuery } from '../app/utils/posthog'
+import { analyticsContent, isPostHogProductionHost, isPostHogPublicPath, safeAnalyticsPath, stripAnalyticsUrlQuery } from '../app/utils/posthog'
 
 describe('PostHog public analytics scope', () => {
   it('tracks public marketing and content pages', () => {
@@ -25,5 +25,11 @@ describe('PostHog public analytics scope', () => {
   it('removes query parameters before URLs reach analytics', () => {
     expect(safeAnalyticsPath('/blog/article?email=private@example.com')).toBe('/blog/article')
     expect(stripAnalyticsUrlQuery('https://www.antoinequarroz.ch/contact?token=secret')).toBe('https://www.antoinequarroz.ch/contact')
+  })
+
+  it('classifies articles and projects without keeping their query string', () => {
+    expect(analyticsContent('/blog/mon-article?utm_source=linkedin')).toEqual({ type: 'article', slug: 'mon-article' })
+    expect(analyticsContent('/projets/hermes-cockpit')).toEqual({ type: 'project', slug: 'hermes-cockpit' })
+    expect(analyticsContent('/contact')).toEqual({ type: 'page', slug: null })
   })
 })

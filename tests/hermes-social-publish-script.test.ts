@@ -87,4 +87,19 @@ describe('Hermes social publication helper', () => {
     expect(source).toContain('"altText": clean_social_title(article_title)[:300]')
     expect(source).toContain('"id": image_urn')
   })
+
+  it('normalizes campaign links for LinkedIn, X and Lumail', () => {
+    const output = execFileSync('python3', ['-c', `
+import importlib.util, json
+spec=importlib.util.spec_from_file_location('publisher', ${JSON.stringify(script)})
+module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
+base='https://www.antoinequarroz.ch/blog/test-social?utm_source=old&ref=keep'
+print(json.dumps([module.tracked_article_url(base, p) for p in ('linkedin','x','lumail')]))
+`], { encoding: 'utf8' })
+    const [linkedin, x, lumail] = JSON.parse(output)
+    expect(linkedin).toContain('ref=keep&utm_source=linkedin&utm_medium=social&utm_campaign=article_test-social&utm_content=post')
+    expect(x).toContain('utm_source=x&utm_medium=social')
+    expect(lumail).toContain('utm_source=lumail&utm_medium=email')
+    expect(linkedin).not.toContain('utm_source=old')
+  })
 })

@@ -125,10 +125,10 @@ const trendChart = computed(() => {
 
 const sourceChart = computed(() => {
   const sources = (posthog.value?.sources || []) as SourcePoint[]
-  const total = sources.reduce((sum, source) => sum + source.visitors, 0)
+  const total = sources.reduce((sum, source) => sum + source.pageviews, 0)
   let cursor = 0
   const segments = sources.map((source, index) => {
-    const percentage = total ? source.visitors / total * 100 : 0
+    const percentage = total ? source.pageviews / total * 100 : 0
     const start = cursor
     cursor += percentage
     return { ...source, percentage, color: sourceColors[index % sourceColors.length], start, end: cursor }
@@ -246,22 +246,75 @@ onMounted(loadAnalytics)
         </article>
 
         <article class="rounded-xl border border-gray-200 bg-white p-5 dark:border-white/[0.08] dark:bg-[#111118]">
-          <h2 class="font-display text-lg font-semibold">Origine des visiteurs</h2>
-          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Répartition par source d’acquisition.</p>
+          <h2 class="font-display text-lg font-semibold">Acquisition</h2>
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Pages vues par source. Les visites internes au domaine sont regroupées avec l’accès direct.</p>
           <div v-if="sourceChart.segments.length" class="mt-6 grid items-center gap-6 sm:grid-cols-[160px_1fr] xl:grid-cols-1">
-            <div class="relative mx-auto h-40 w-40 rounded-full" :style="{ background: sourceChart.background }" role="img" :aria-label="`${sourceChart.total} visiteurs répartis sur ${sourceChart.segments.length} sources`">
-              <div class="absolute inset-7 grid place-items-center rounded-full bg-white text-center dark:bg-[#111118]"><div><strong class="font-display text-2xl">{{ sourceChart.total }}</strong><p class="text-xs text-gray-500 dark:text-gray-400">visiteurs</p></div></div>
+            <div class="relative mx-auto h-40 w-40 rounded-full" :style="{ background: sourceChart.background }" role="img" :aria-label="`${sourceChart.total} pages vues réparties sur ${sourceChart.segments.length} sources`">
+              <div class="absolute inset-7 grid place-items-center rounded-full bg-white text-center dark:bg-[#111118]"><div><strong class="font-display text-2xl">{{ sourceChart.total }}</strong><p class="text-xs text-gray-500 dark:text-gray-400">pages vues</p></div></div>
             </div>
             <div class="space-y-3">
               <div v-for="segment in sourceChart.segments" :key="segment.source" class="flex items-center gap-3 text-sm">
                 <i class="h-2.5 w-2.5 shrink-0 rounded-full" :style="{ backgroundColor: segment.color }" />
                 <span class="min-w-0 flex-1 truncate text-gray-600 dark:text-gray-300">{{ segment.source }}</span>
-                <strong>{{ segment.visitors }}</strong>
+                <strong>{{ segment.pageviews }}</strong>
                 <span class="w-10 text-right text-xs text-gray-400">{{ Math.round(segment.percentage) }} %</span>
               </div>
             </div>
           </div>
           <p v-else class="mt-8 rounded-lg border border-dashed border-gray-200 p-5 text-center text-sm text-gray-500 dark:border-white/[0.1] dark:text-gray-400">Les sources apparaîtront dès les prochaines visites.</p>
+        </article>
+      </section>
+
+      <section v-if="posthog?.totals" class="grid gap-5 xl:grid-cols-3" aria-label="Tableaux PostHog métier">
+        <article class="rounded-xl border border-gray-200 bg-white p-5 dark:border-white/[0.08] dark:bg-[#111118]">
+          <h2 class="font-display text-lg font-semibold">Acquisition · 7 jours</h2>
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">D’où vient l’attention et si elle progresse.</p>
+          <dl class="mt-5 grid grid-cols-2 gap-3 text-sm">
+            <div class="rounded-lg bg-gray-50 p-3 dark:bg-white/[0.04]"><dt class="text-gray-500 dark:text-gray-400">Visiteurs</dt><dd class="mt-1 text-xl font-semibold">{{ posthog.weekly?.current.visitors || 0 }}</dd></div>
+            <div class="rounded-lg bg-gray-50 p-3 dark:bg-white/[0.04]"><dt class="text-gray-500 dark:text-gray-400">Pages vues</dt><dd class="mt-1 text-xl font-semibold">{{ posthog.weekly?.current.pageviews || 0 }}</dd></div>
+          </dl>
+        </article>
+
+        <article class="rounded-xl border border-gray-200 bg-white p-5 dark:border-white/[0.08] dark:bg-[#111118]">
+          <h2 class="font-display text-lg font-semibold">Contenu · 30 jours</h2>
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Articles et projets qui attirent réellement des lecteurs.</p>
+          <ol v-if="posthog.content?.length" class="mt-5 space-y-3">
+            <li v-for="item in posthog.content.slice(0, 4)" :key="item.path" class="flex items-center gap-3 text-sm"><span class="min-w-0 flex-1 truncate">{{ item.path }}</span><strong>{{ item.pageviews }}</strong></li>
+          </ol>
+          <p v-else class="mt-5 text-sm text-gray-500 dark:text-gray-400">Aucune lecture de contenu mesurée pour le moment.</p>
+        </article>
+
+        <article class="rounded-xl border border-gray-200 bg-white p-5 dark:border-white/[0.08] dark:bg-[#111118]">
+          <h2 class="font-display text-lg font-semibold">Business · 7 jours</h2>
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Signaux d’intention puis résultats concrets.</p>
+          <dl class="mt-5 grid grid-cols-2 gap-3 text-sm">
+            <div class="rounded-lg bg-gray-50 p-3 dark:bg-white/[0.04]"><dt class="text-gray-500 dark:text-gray-400">Intentions</dt><dd class="mt-1 text-xl font-semibold">{{ posthog.weekly?.current.contactIntents || 0 }}</dd></div>
+            <div class="rounded-lg bg-gray-50 p-3 dark:bg-white/[0.04]"><dt class="text-gray-500 dark:text-gray-400">Demandes</dt><dd class="mt-1 text-xl font-semibold">{{ posthog.weekly?.current.contacts || 0 }}</dd></div>
+            <div class="rounded-lg bg-gray-50 p-3 dark:bg-white/[0.04]"><dt class="text-gray-500 dark:text-gray-400">Newsletter</dt><dd class="mt-1 text-xl font-semibold">{{ posthog.weekly?.current.newsletterSubscriptions || 0 }}</dd></div>
+            <div class="rounded-lg bg-gray-50 p-3 dark:bg-white/[0.04]"><dt class="text-gray-500 dark:text-gray-400">Rendez-vous</dt><dd class="mt-1 text-xl font-semibold">{{ posthog.weekly?.current.bookingClicks || 0 }}</dd></div>
+          </dl>
+        </article>
+      </section>
+
+      <section v-if="posthog?.funnel?.length" class="grid gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(300px,0.8fr)]">
+        <article class="rounded-xl border border-gray-200 bg-white p-5 dark:border-white/[0.08] dark:bg-[#111118]">
+          <h2 class="font-display text-lg font-semibold">Parcours de conversion PostHog</h2>
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Visiteurs uniques ayant atteint chaque étape pendant les sept derniers jours.</p>
+          <div class="mt-6 space-y-4">
+            <div v-for="(step, index) in posthog.funnel" :key="step.key">
+              <div class="mb-2 flex items-center justify-between gap-3 text-sm"><span>{{ index + 1 }}. {{ step.label }}</span><span><strong>{{ step.value }}</strong><small v-if="index" class="ml-2 text-gray-400">{{ step.rate }} %</small></span></div>
+              <div class="h-3 overflow-hidden rounded-full bg-gray-100 dark:bg-white/[0.07]"><div class="h-full rounded-full bg-violet-600" :style="{ width: `${posthog.funnel[0].value ? Math.max(step.value ? 5 : 0, step.value / posthog.funnel[0].value * 100) : 0}%` }" /></div>
+            </div>
+          </div>
+        </article>
+        <article class="rounded-xl border border-gray-200 bg-white p-5 dark:border-white/[0.08] dark:bg-[#111118]">
+          <h2 class="font-display text-lg font-semibold">Recommandations FRIDAY</h2>
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Décisions automatiques fondées sur les seuils mesurés.</p>
+          <div class="mt-5 space-y-4">
+            <div v-for="item in posthog.recommendations" :key="item.title" class="rounded-lg border p-3" :class="item.level === 'attention' ? 'border-amber-200 bg-amber-50 dark:border-amber-500/20 dark:bg-amber-500/10' : item.level === 'success' ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-500/20 dark:bg-emerald-500/10' : 'border-violet-100 bg-violet-50 dark:border-violet-500/20 dark:bg-violet-500/10'">
+              <p class="text-sm font-semibold">{{ item.title }}</p><p class="mt-1 text-xs leading-5 text-gray-600 dark:text-gray-300">{{ item.detail }}</p>
+            </div>
+          </div>
         </article>
       </section>
 
