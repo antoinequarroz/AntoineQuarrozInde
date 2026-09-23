@@ -8,7 +8,7 @@ export interface Project {
   clientId: number | null
   title: string
   slug: string
-  category: 'web' | 'mobile' | 'cms'
+  category: 'web' | 'mobile' | 'cms' | 'software'
   tags: string[]
   description: string
   descriptionEn: string | null

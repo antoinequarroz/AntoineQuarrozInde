@@ -2,7 +2,7 @@
 const { t, locale } = useI18n()
 const store = useProjectsStore()
 
-type PortfolioFilter = 'all' | 'web' | 'mobile' | 'cms'
+type PortfolioFilter = 'all' | 'web' | 'mobile' | 'cms' | 'software'
 
 const activeFilter = ref<PortfolioFilter>('all')
 
@@ -11,6 +11,7 @@ const projectCounts = computed<Record<PortfolioFilter, number>>(() => ({
   web: store.portfolio.filter(project => project.category === 'web').length,
   mobile: store.portfolio.filter(project => project.category === 'mobile').length,
   cms: store.portfolio.filter(project => project.category === 'cms').length,
+  software: store.portfolio.filter(project => project.category === 'software').length,
 }))
 
 const filters = computed(() => [
@@ -18,6 +19,7 @@ const filters = computed(() => [
   { key: 'web' as const, label: t('portfolio.web'), count: projectCounts.value.web },
   { key: 'mobile' as const, label: t('portfolio.mobile'), count: projectCounts.value.mobile },
   { key: 'cms' as const, label: t('portfolio.cms'), count: projectCounts.value.cms },
+  { key: 'software' as const, label: t('portfolio.software'), count: projectCounts.value.software },
 ].filter(filter => filter.count > 0))
 
 const filtered = computed(() => {

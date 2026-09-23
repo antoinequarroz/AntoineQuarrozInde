@@ -21,7 +21,7 @@ create table if not exists public.projects (
   organization_id uuid references public.organizations(id) on delete set null,
   title text not null,
   slug text not null unique,
-  category text not null check (category in ('web', 'mobile', 'cms')),
+  category text not null constraint projects_category_allowed check (category in ('web', 'mobile', 'cms', 'software')),
   tags text[] not null default '{}',
   description text not null,
   description_en text,

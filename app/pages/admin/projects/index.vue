@@ -237,6 +237,7 @@ const catColors: Record<string, string> = {
   web: 'text-violet-600 bg-violet-50 dark:text-violet-400 dark:bg-violet-500/10',
   mobile: 'text-pink-600 bg-pink-50 dark:text-pink-400 dark:bg-pink-500/10',
   cms: 'text-indigo-600 bg-indigo-50 dark:text-indigo-400 dark:bg-indigo-500/10',
+  software: 'text-cyan-700 bg-cyan-50 dark:text-cyan-300 dark:bg-cyan-500/10',
 }
 function portfolioTone(project: Project) {
   return project.portfolioVisible
@@ -307,6 +308,7 @@ function caseStudyTone(project: Project) {
                   <option value="web">Web</option>
                   <option value="mobile">Mobile</option>
                   <option value="cms">CMS</option>
+                  <option value="software">Logiciel</option>
                 </select>
               </div>
             </div>

@@ -1156,6 +1156,7 @@ watch(() => auth.currentOrganizationId, (organizationId, previousOrganizationId)
                         web: 'bg-violet-100 text-violet-600 dark:bg-violet-500/10 dark:text-violet-400',
                         mobile: 'bg-pink-100 text-pink-600 dark:bg-pink-500/10 dark:text-pink-400',
                         cms: 'bg-indigo-100 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400',
+                        software: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300',
                       }[project.category]"
                     >{{ project.category }}</span>
                   </div>
