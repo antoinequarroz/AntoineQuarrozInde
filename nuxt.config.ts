@@ -240,6 +240,8 @@ export default defineNuxtConfig({
     hermesPublishToken: process.env.HERMES_PUBLISH_TOKEN || '',
     posthogPersonalApiKey: process.env.POSTHOG_PERSONAL_API_KEY || '',
     posthogProjectId: process.env.POSTHOG_PROJECT_ID || '281423',
+    posthogProjectToken: process.env.POSTHOG_PROJECT_TOKEN || process.env.NUXT_PUBLIC_POSTHOG_KEY || 'phc_pEpzDYuscdeuHAfWFJTpgyDZT3dxWVFm4y38DUxA2epS',
+    posthogIngestionHost: process.env.POSTHOG_INGESTION_HOST || process.env.NUXT_PUBLIC_POSTHOG_HOST || 'https://eu.i.posthog.com',
     public: {
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'https://www.antoinequarroz.ch',
       bookingUrl: process.env.NUXT_PUBLIC_BOOKING_URL || 'https://cal.com/antoine-quarroz-ilnim4/30min',

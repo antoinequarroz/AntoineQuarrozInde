@@ -18,7 +18,13 @@ function calendarDate(offsetDays = 0) {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Zurich', year: 'numeric', month: '2-digit', day: '2-digit' }).format(date)
 }
 function periodMetrics(row: unknown[] = []) {
-  return { visitors: numeric(row[0]), pageviews: numeric(row[1]), contentVisitors: numeric(row[2]), contactIntents: numeric(row[3]), contacts: numeric(row[4]), newsletterSubscriptions: numeric(row[5]), bookingClicks: numeric(row[6]) }
+  return {
+    visitors: numeric(row[0]), pageviews: numeric(row[1]), contentVisitors: numeric(row[2]), contactIntents: numeric(row[3]),
+    contacts: numeric(row[4]), newsletterSubscriptions: numeric(row[5]), bookingClicks: numeric(row[6]),
+    bookingConfirmations: numeric(row[7]), crmLeads: numeric(row[8]), clientsWon: numeric(row[9]),
+    acceptedQuotes: numeric(row[10]), acceptedQuoteCents: numeric(row[11]), invoicesCreated: numeric(row[12]),
+    publicErrors: numeric(row[13]),
+  }
 }
 function recommendations(current: ReturnType<typeof periodMetrics>, previous: ReturnType<typeof periodMetrics>, content: Array<{ path: string, visitors: number, pageviews: number }>) {
   const result: Array<{ level: 'info' | 'attention' | 'success', title: string, detail: string }> = []
@@ -26,6 +32,8 @@ function recommendations(current: ReturnType<typeof periodMetrics>, previous: Re
   if (current.visitors >= 20 && current.contentVisitors / current.visitors < 0.3) result.push({ level: 'attention', title: 'Mieux orienter vers les contenus', detail: 'Moins de 30 % des visiteurs consultent un article ou un projet. Renforce les liens depuis l’accueil.' })
   if (current.contentVisitors >= 10 && current.contactIntents === 0) result.push({ level: 'attention', title: 'Tester les appels à l’action', detail: 'Les contenus sont lus sans clic vers le contact. Essaie un CTA plus concret sur les pages les plus vues.' })
   if (current.contacts > previous.contacts && current.contacts > 0) result.push({ level: 'success', title: 'Demandes en progression', detail: 'Les demandes envoyées progressent par rapport aux sept jours précédents. Conserve les pages et canaux à l’origine de cette hausse.' })
+  if (current.publicErrors > 0) result.push({ level: 'attention', title: 'Erreur publique détectée', detail: `${current.publicErrors} erreur${current.publicErrors > 1 ? 's' : ''} applicative${current.publicErrors > 1 ? 's' : ''} a été détectée sur le site cette semaine. Vérifie les chemins concernés dans PostHog.` })
+  if (current.acceptedQuotes > 0) result.push({ level: 'success', title: 'Résultat commercial mesuré', detail: `${current.acceptedQuotes} devis accepté${current.acceptedQuotes > 1 ? 's' : ''} pour ${(current.acceptedQuoteCents / 100).toLocaleString('fr-CH')} CHF cette semaine.` })
   if (content.length && current.visitors >= 20) result.push({ level: 'info', title: 'Priorité de contenu', detail: `${content[0]?.path} est le contenu le plus consulté de la période. Utilise-le comme point de départ pour le prochain test.` })
   if (!result.length) result.push({ level: 'info', title: 'Aucune anomalie détectée', detail: 'Continue la collecte. Une recommandation apparaîtra dès qu’un signal exploitable sera mesuré.' })
   return result.slice(0, 3)
@@ -43,7 +51,10 @@ export default defineCachedEventHandler(async (event) => {
     const [summary, sources, trend, content, weekly] = await Promise.all([
       queryPostHog(apiKey, projectId, 'site_admin_summary_30d', `
         SELECT uniqExactIf(distinct_id, event = '$pageview'), countIf(event = '$pageview'), countIf(event = 'contact_sent'),
-          countIf(event = 'newsletter_subscribed'), countIf(event = 'booking_clicked')
+          countIf(event = 'newsletter_subscribed'), countIf(event = 'booking_clicked'), countIf(event = 'booking_confirmed'),
+          countIf(event = 'crm_lead_created'), countIf(event = 'client_won'), countIf(event = 'quote_accepted'),
+          sumIf(toInt64OrZero(toString(properties.amount_cents)), event = 'quote_accepted'), countIf(event = 'invoice_created'),
+          countIf(event = 'public_app_error')
         FROM events PREWHERE timestamp >= now() - INTERVAL 30 DAY WHERE ${SITE_FILTER}`),
       queryPostHog(apiKey, projectId, 'site_admin_sources_30d', `
         SELECT if(notEmpty(toString(properties.$utm_source)), lowerUTF8(toString(properties.$utm_source)),
@@ -65,7 +76,10 @@ export default defineCachedEventHandler(async (event) => {
         SELECT period, uniqExactIf(distinct_id, event = '$pageview'), countIf(event = '$pageview'),
           uniqExactIf(distinct_id, event = '$pageview' AND (startsWith(toString(properties.$pathname), '/blog/') OR startsWith(toString(properties.$pathname), '/projets/'))),
           uniqExactIf(distinct_id, event IN ('contact_clicked', 'booking_clicked')), countIf(event = 'contact_sent'),
-          countIf(event = 'newsletter_subscribed'), countIf(event = 'booking_clicked')
+          countIf(event = 'newsletter_subscribed'), countIf(event = 'booking_clicked'), countIf(event = 'booking_confirmed'),
+          countIf(event = 'crm_lead_created'), countIf(event = 'client_won'), countIf(event = 'quote_accepted'),
+          sumIf(toInt64OrZero(toString(properties.amount_cents)), event = 'quote_accepted'), countIf(event = 'invoice_created'),
+          countIf(event = 'public_app_error')
         FROM (SELECT *, if(timestamp >= now() - INTERVAL 7 DAY, 'current', 'previous') AS period FROM events
           PREWHERE timestamp >= now() - INTERVAL 14 DAY WHERE ${SITE_FILTER}) GROUP BY period`),
     ])
@@ -84,7 +98,11 @@ export default defineCachedEventHandler(async (event) => {
 
     return {
       configured: true, projectId, periodDays: 30,
-      totals: { visitors: numeric(metrics[0]), pageviews: numeric(metrics[1]), contacts: numeric(metrics[2]), newsletterSubscriptions: numeric(metrics[3]), bookingClicks: numeric(metrics[4]) },
+      totals: {
+        visitors: numeric(metrics[0]), pageviews: numeric(metrics[1]), contacts: numeric(metrics[2]), newsletterSubscriptions: numeric(metrics[3]),
+        bookingClicks: numeric(metrics[4]), bookingConfirmations: numeric(metrics[5]), crmLeads: numeric(metrics[6]), clientsWon: numeric(metrics[7]),
+        acceptedQuotes: numeric(metrics[8]), acceptedQuoteCents: numeric(metrics[9]), invoicesCreated: numeric(metrics[10]), publicErrors: numeric(metrics[11]),
+      },
       sources: (sources.results || []).map(row => ({ source: String(row[0] || 'Direct / inconnu'), visitors: numeric(row[1]), pageviews: numeric(row[2]) })),
       trend: Array.from({ length: 30 }, (_, index) => { const date = calendarDate(index - 29); const point = trendByDate.get(date); return { date, visitors: point?.visitors || 0, pageviews: point?.pageviews || 0 } }),
       content: contentRows, funnel, weekly: { current, previous }, recommendations: recommendations(current, previous, contentRows),

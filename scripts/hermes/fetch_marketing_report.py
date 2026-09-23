@@ -27,7 +27,11 @@ def render(value):
     lines = ['# Rapport marketing hebdomadaire FRIDAY', '', f"Généré le {value['generatedAt']}. Fenêtre : 7 jours, comparée aux 7 jours précédents.", '', '## Résultats',
       '', f"- Visiteurs : **{now['visitors']}** (période précédente : {before['visitors']}).", f"- Pages vues : **{now['pageviews']}** (précédente : {before['pageviews']}).",
       f"- Lecteurs d’articles ou projets : **{now['contentVisitors']}**.", f"- Intentions de contact : **{now['contactIntents']}**.",
-      f"- Demandes envoyées : **{now['contacts']}**.", f"- Inscriptions newsletter : **{now['newsletterSubscriptions']}**.", f"- Clics rendez-vous : **{now['bookingClicks']}**.", '', '## Sources']
+      f"- Demandes envoyées : **{now['contacts']}**.", f"- Inscriptions newsletter : **{now['newsletterSubscriptions']}**.",
+      f"- Clics rendez-vous : **{now['bookingClicks']}**.", f"- Rendez-vous confirmés : **{now['bookingConfirmations']}**.",
+      f"- Nouveaux prospects CRM : **{now['crmLeads']}**.", f"- Clients gagnés : **{now['clientsWon']}**.",
+      f"- Devis acceptés : **{now['acceptedQuotes']}** ({now['acceptedQuoteCents'] / 100:.0f} CHF).", f"- Factures créées : **{now['invoicesCreated']}**.",
+      f"- Erreurs publiques : **{now['publicErrors']}**.", '', '## Sources']
     lines += [f"- {row['source']} : {row['pageviews']} pages vues." for row in value['sources']] or ['- Aucune source mesurée.']
     lines += ['', '## Contenus'] + ([f"- {row['path']} : {row['pageviews']} pages vues, {row['visitors']} visiteurs." for row in value['content']] or ['- Aucun article ou projet lu pendant la période.'])
     lines += ['', '## Recommandations'] + [f"- {item}" for item in value['recommendations']]

@@ -4,12 +4,14 @@ describe('quote conversion API', () => {
   const rpc = vi.fn()
   const logAudit = vi.fn()
   const recordCommercialWorkflowEvent = vi.fn()
+  const capturePostHogBusinessEvent = vi.fn()
 
   beforeEach(() => {
     vi.resetModules()
     rpc.mockReset()
     logAudit.mockReset()
     recordCommercialWorkflowEvent.mockReset()
+    capturePostHogBusinessEvent.mockReset().mockResolvedValue(true)
     vi.stubGlobal('defineEventHandler', (handler: unknown) => handler)
     vi.stubGlobal('requireAdmin', vi.fn().mockResolvedValue({
       org: { id: 'org-test' },
@@ -23,6 +25,7 @@ describe('quote conversion API', () => {
     vi.stubGlobal('logAudit', logAudit)
     vi.stubGlobal('resolveCommercialCorrelationId', vi.fn().mockReturnValue('0199c7a3-1b7d-7000-8000-123456789abc'))
     vi.stubGlobal('recordCommercialWorkflowEvent', recordCommercialWorkflowEvent)
+    vi.stubGlobal('capturePostHogBusinessEvent', capturePostHogBusinessEvent)
     vi.stubGlobal('createError', (input: object) => Object.assign(new Error('request failed'), input))
   })
 
@@ -44,6 +47,7 @@ describe('quote conversion API', () => {
     })
     expect(logAudit).toHaveBeenCalledOnce()
     expect(recordCommercialWorkflowEvent).toHaveBeenCalledWith(expect.objectContaining({ stage: 'quote', outcome: 'success', entityId: 73 }))
+    expect(capturePostHogBusinessEvent).toHaveBeenCalledWith(expect.objectContaining({ event: 'invoice_created', entityId: 73 }))
   })
 
   it('returns an existing invoice without writing a duplicate audit', async () => {
@@ -55,6 +59,7 @@ describe('quote conversion API', () => {
     await expect(handler({} as never)).resolves.toEqual({ created: false, invoice })
     expect(logAudit).not.toHaveBeenCalled()
     expect(recordCommercialWorkflowEvent).toHaveBeenCalledWith(expect.objectContaining({ stage: 'quote', outcome: 'recovered', entityId: 73 }))
+    expect(capturePostHogBusinessEvent).not.toHaveBeenCalled()
   })
 
   it('rejects conversion without the explicit confirmation token', async () => {

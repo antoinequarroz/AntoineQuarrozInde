@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
 
   const supabase = getSupabaseAdmin()
   const { data: quote, error } = await supabase.from('quotes')
-    .select('id,number,title,status,valid_until,accepted_at')
+    .select('id,number,title,status,valid_until,accepted_at,total_cents,amount_cents,currency')
     .eq('organization_id', org.id)
     .eq('client_id', client.id)
     .eq('id', quoteId)
@@ -52,6 +52,15 @@ export default defineEventHandler(async (event) => {
     entityId: quote.id,
     clientId: client.id,
     idempotencyKey: `quote-accepted-${quote.id}-${acceptedAt}`,
+  })
+  await capturePostHogBusinessEvent({
+    event: 'quote_accepted',
+    organizationId: org.id,
+    entityType: 'quote',
+    entityId: quote.id,
+    clientId: client.id,
+    amountCents: quote.total_cents ?? quote.amount_cents,
+    currency: quote.currency,
   })
   return { accepted: true, acceptedAt }
 })

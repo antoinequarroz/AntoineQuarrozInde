@@ -9,7 +9,14 @@ async function query(apiKey: string, projectId: string, name: string, hogql: str
   })
 }
 function number(value: unknown) { const parsed = Number(value); return Number.isFinite(parsed) ? parsed : 0 }
-function metrics(row: unknown[] = []) { return { visitors: number(row[0]), pageviews: number(row[1]), contentVisitors: number(row[2]), contactIntents: number(row[3]), contacts: number(row[4]), newsletterSubscriptions: number(row[5]), bookingClicks: number(row[6]) } }
+function metrics(row: unknown[] = []) {
+  return {
+    visitors: number(row[0]), pageviews: number(row[1]), contentVisitors: number(row[2]), contactIntents: number(row[3]),
+    contacts: number(row[4]), newsletterSubscriptions: number(row[5]), bookingClicks: number(row[6]),
+    bookingConfirmations: number(row[7]), crmLeads: number(row[8]), clientsWon: number(row[9]),
+    acceptedQuotes: number(row[10]), acceptedQuoteCents: number(row[11]), invoicesCreated: number(row[12]), publicErrors: number(row[13]),
+  }
+}
 
 export default defineEventHandler(async (event) => {
   requireHermesReadAccess(event)
@@ -23,7 +30,10 @@ export default defineEventHandler(async (event) => {
       SELECT period, uniqExactIf(distinct_id, event = '$pageview'), countIf(event = '$pageview'),
         uniqExactIf(distinct_id, event = '$pageview' AND (startsWith(toString(properties.$pathname), '/blog/') OR startsWith(toString(properties.$pathname), '/projets/'))),
         uniqExactIf(distinct_id, event IN ('contact_clicked', 'booking_clicked')), countIf(event = 'contact_sent'),
-        countIf(event = 'newsletter_subscribed'), countIf(event = 'booking_clicked')
+        countIf(event = 'newsletter_subscribed'), countIf(event = 'booking_clicked'), countIf(event = 'booking_confirmed'),
+        countIf(event = 'crm_lead_created'), countIf(event = 'client_won'), countIf(event = 'quote_accepted'),
+        sumIf(toInt64OrZero(toString(properties.amount_cents)), event = 'quote_accepted'), countIf(event = 'invoice_created'),
+        countIf(event = 'public_app_error')
       FROM (SELECT *, if(timestamp >= now() - INTERVAL 7 DAY, 'current', 'previous') AS period FROM events
         PREWHERE timestamp >= now() - INTERVAL 14 DAY WHERE ${HOST_FILTER}) GROUP BY period`),
     query(apiKey, projectId, 'hermes_marketing_sources', `
@@ -51,6 +61,6 @@ export default defineEventHandler(async (event) => {
     sources: (sources.results || []).map(row => ({ source: String(row[0]), pageviews: number(row[1]) })),
     content: (content.results || []).map(row => ({ path: String(row[0]), visitors: number(row[1]), pageviews: number(row[2]) })),
     recommendations: recommendations.slice(0, 3),
-    limits: ['Les chiffres décrivent des événements PostHog, pas une vente attribuée.', 'Un rendez-vous cliqué ne prouve pas qu’il a été réservé.'],
+    limits: ['Les étapes commerciales sont agrégées avec des identifiants hachés et ne contiennent aucune donnée de contact.', 'Le clic et la confirmation d’un rendez-vous restent comptés séparément.'],
   }
 })
