@@ -27,11 +27,11 @@ validated_at: 2026-09-23
 - [x] Ajouter les traductions FR/EN/DE actives et leurs copies compatibles,
   avec une introduction adaptée au carousel. Validation : parsing des catalogues
   et test de couverture i18n.
-- [ ] Créer une migration Supabase via la CLI pour remplacer uniquement la
+- [x] Créer une migration Supabase via la CLI pour remplacer uniquement la
   contrainte de catégorie et reclasser Hermes Cockpit de façon bornée. Mettre à
   jour `schema.sql` et ajouter un test pgTAP. Ne pas toucher aux RLS, privilèges
   ou autres projets. Validation : suite DB locale via Portly.
-- [ ] Vérifier le parcours complet, le build et les budgets, inspecter le diff
+- [x] Vérifier le parcours complet, le build et les budgets, inspecter le diff
   et documenter les preuves. Aucun déploiement ou accès production dans ce
   ticket sans validation séparée.
 
@@ -51,3 +51,6 @@ validated_at: 2026-09-23
 - Test DB local bloqué avant exécution : Docker Desktop n'est pas démarré
   (`Cannot connect to the Docker daemon`). La migration et son pgTAP devront
   passer dans le job CI `database` avant toute livraison.
+- PR brouillon `#169` : les jobs CI `quality`, `database`, `accessibility`,
+  `seo-quality` et GitGuardian sont passés sur le commit `8252f74`. Les jobs de
+  déploiement et E2E authentifié sont volontairement ignorés sur une PR.
