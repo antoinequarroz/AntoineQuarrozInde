@@ -118,6 +118,7 @@
     "web": "Web",
     "mobile": "Mobile",
     "cms": "CMS",
+    "software": "Software",
     "view": "Projekt ansehen",
     "code": "Quellcode",
     "technologies": "Technologien",
@@ -150,6 +151,10 @@
       "cms": {
         "title": "CMS-Systeme, die leicht zu steuern sind.",
         "text": "Editierbare Werkzeuge, die Autonomie geben, ohne Design, Geschwindigkeit oder Qualität zu opfern."
+      },
+      "software": {
+        "title": "Nützliche, durchdachte Software.",
+        "text": "Zuverlässige und klare Desktop-Anwendungen, die konkrete Abläufe im Alltag vereinfachen."
       }
     },
     "case": {

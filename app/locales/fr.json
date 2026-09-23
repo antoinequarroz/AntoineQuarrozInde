@@ -94,6 +94,7 @@
     "web": "Web",
     "mobile": "Mobile",
     "cms": "CMS",
+    "software": "Logiciel",
     "view": "Voir le projet",
     "code": "Code source",
     "technologies": "Technologies",
@@ -120,6 +121,10 @@
       "cms": {
         "title": "Des CMS simples à piloter.",
         "text": "Des outils administrables qui donnent de l'autonomie sans sacrifier le design, la vitesse ou la qualité."
+      },
+      "software": {
+        "title": "Des logiciels utiles et bien conçus.",
+        "text": "Des applications desktop fiables, lisibles et pensées pour simplifier des usages concrets au quotidien."
       }
     },
     "case": {

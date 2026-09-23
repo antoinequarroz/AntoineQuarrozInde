@@ -3,7 +3,7 @@ import {
   type ProjectClientDisclosureStatus,
 } from '../../shared/utils/projectCaseStudyApproval'
 
-const PROJECT_CATEGORIES = new Set(['web', 'mobile', 'cms'])
+const PROJECT_CATEGORIES = new Set(['web', 'mobile', 'cms', 'software'])
 const CLIENT_DISCLOSURE_STATUSES = new Set<ProjectClientDisclosureStatus>(['pending', 'anonymous', 'approved'])
 
 function requiredText(value: unknown, field: string, maxLength: number) {

@@ -94,6 +94,7 @@
     "web": "Web",
     "mobile": "Mobile",
     "cms": "CMS",
+    "software": "Software",
     "view": "View project",
     "code": "Source code",
     "technologies": "Technologies",
@@ -120,6 +121,10 @@
       "cms": {
         "title": "CMS tools that are easy to run.",
         "text": "Editable systems that give clients autonomy without sacrificing design, speed or quality."
+      },
+      "software": {
+        "title": "Useful, thoughtfully designed software.",
+        "text": "Reliable and clear desktop applications built to simplify concrete everyday workflows."
       }
     },
     "case": {
