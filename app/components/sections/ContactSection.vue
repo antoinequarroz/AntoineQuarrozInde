@@ -21,6 +21,8 @@ const detailsOpen = ref(false)
 const formContainerRef = ref<HTMLElement | null>(null)
 const nameInputRef = ref<HTMLInputElement | null>(null)
 const submissionId = ref('')
+const postHogFormStarted = ref(false)
+const postHogFormCompleted = ref(false)
 
 const form = reactive({
   name: '',
@@ -79,7 +81,13 @@ function handleServiceSelected(event: Event) {
 async function openContactForm(source = 'cta') {
   const wasClosed = !formOpen.value
   formOpen.value = true
-  if (wasClosed) track('contact_form_open', { source })
+  if (wasClosed) {
+    track('contact_form_open', { source })
+    if (!postHogFormStarted.value) {
+      postHogFormStarted.value = true
+      trackPostHog('contact_form_started', { source, source_path: window.location.pathname })
+    }
+  }
   await nextTick()
   focusContactForm()
 }
@@ -140,6 +148,9 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  if (postHogFormStarted.value && !postHogFormCompleted.value && status.value !== 'sending') {
+    trackPostHog('contact_form_abandoned', { source_path: window.location.pathname })
+  }
   window.removeEventListener('aq:service-selected', handleServiceSelected)
   window.removeEventListener('aq:contact-open', handleContactOpen)
   turnstileObserver?.disconnect()
@@ -156,6 +167,7 @@ async function handleSubmit() {
   }
   errorMessage.value = ''
   status.value = 'sending'
+  trackPostHog('contact_form_submit_started', { source_path: window.location.pathname })
 
   try {
     const contactResult = await $fetch<{ acquisitionChannel?: string }>('/api/contact', {
@@ -176,6 +188,7 @@ async function handleSubmit() {
       },
     })
     status.value = 'success'
+    postHogFormCompleted.value = true
     track('contact_form_submit_success')
     trackPostHog('contact_sent', {
       channel: contactResult.acquisitionChannel || classifyAcquisition({
@@ -202,6 +215,7 @@ async function handleSubmit() {
     errorMessage.value = t('contact.form.error')
     status.value = 'error'
     track('contact_form_submit_error')
+    trackPostHog('contact_form_submit_error', { source_path: window.location.pathname })
   }
 
   setTimeout(() => { status.value = 'idle' }, 5000)

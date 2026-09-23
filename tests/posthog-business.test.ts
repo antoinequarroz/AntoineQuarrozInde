@@ -12,6 +12,8 @@ describe('PostHog business events', () => {
       amountCents: 12_500,
       currency: 'chf',
       channel: 'campaign',
+      lastChannel: 'organic_search',
+      projectId: 11,
     }, 'phc_public')
     const second = buildPostHogBusinessPayload({
       event: 'quote_accepted',
@@ -22,6 +24,8 @@ describe('PostHog business events', () => {
       amountCents: 12_500,
       currency: 'chf',
       channel: 'campaign',
+      lastChannel: 'organic_search',
+      projectId: 11,
     }, 'phc_public')
 
     expect(first).toEqual(second)
@@ -35,7 +39,9 @@ describe('PostHog business events', () => {
       amount_cents: 12_500,
       currency: 'CHF',
       channel: 'campaign',
+      last_channel: 'organic_search',
     })
+    expect(first.properties.project_hash).toMatch(/^[a-f0-9]{64}$/)
     expect(JSON.stringify(first)).not.toContain('org-secret')
   })
 
