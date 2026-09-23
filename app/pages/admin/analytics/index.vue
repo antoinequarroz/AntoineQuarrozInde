@@ -53,7 +53,7 @@ const audienceMetrics = computed(() => posthog.value?.totals ? [
   { label: 'Pages vues', value: posthog.value.totals.pageviews, tone: 'cyan' },
   { label: 'Contacts envoyés', value: posthog.value.totals.contacts, tone: 'violet' },
   { label: 'Inscriptions newsletter', value: posthog.value.totals.newsletterSubscriptions, tone: 'cyan' },
-  { label: 'Clics rendez-vous', value: posthog.value.totals.bookingClicks, tone: 'violet' },
+  { label: 'Rendez-vous confirmés', value: posthog.value.totals.bookingConfirmations, tone: 'violet' },
 ] : [])
 
 const internalMetrics = computed(() => data.value ? [
@@ -291,7 +291,12 @@ onMounted(loadAnalytics)
             <div class="rounded-lg bg-gray-50 p-3 dark:bg-white/[0.04]"><dt class="text-gray-500 dark:text-gray-400">Intentions</dt><dd class="mt-1 text-xl font-semibold">{{ posthog.weekly?.current.contactIntents || 0 }}</dd></div>
             <div class="rounded-lg bg-gray-50 p-3 dark:bg-white/[0.04]"><dt class="text-gray-500 dark:text-gray-400">Demandes</dt><dd class="mt-1 text-xl font-semibold">{{ posthog.weekly?.current.contacts || 0 }}</dd></div>
             <div class="rounded-lg bg-gray-50 p-3 dark:bg-white/[0.04]"><dt class="text-gray-500 dark:text-gray-400">Newsletter</dt><dd class="mt-1 text-xl font-semibold">{{ posthog.weekly?.current.newsletterSubscriptions || 0 }}</dd></div>
-            <div class="rounded-lg bg-gray-50 p-3 dark:bg-white/[0.04]"><dt class="text-gray-500 dark:text-gray-400">Rendez-vous</dt><dd class="mt-1 text-xl font-semibold">{{ posthog.weekly?.current.bookingClicks || 0 }}</dd></div>
+            <div class="rounded-lg bg-gray-50 p-3 dark:bg-white/[0.04]"><dt class="text-gray-500 dark:text-gray-400">RDV confirmés</dt><dd class="mt-1 text-xl font-semibold">{{ posthog.weekly?.current.bookingConfirmations || 0 }}</dd></div>
+            <div class="rounded-lg bg-gray-50 p-3 dark:bg-white/[0.04]"><dt class="text-gray-500 dark:text-gray-400">Prospects CRM</dt><dd class="mt-1 text-xl font-semibold">{{ posthog.weekly?.current.crmLeads || 0 }}</dd></div>
+            <div class="rounded-lg bg-gray-50 p-3 dark:bg-white/[0.04]"><dt class="text-gray-500 dark:text-gray-400">Clients gagnés</dt><dd class="mt-1 text-xl font-semibold">{{ posthog.weekly?.current.clientsWon || 0 }}</dd></div>
+            <div class="rounded-lg bg-gray-50 p-3 dark:bg-white/[0.04]"><dt class="text-gray-500 dark:text-gray-400">Devis acceptés</dt><dd class="mt-1 text-xl font-semibold">{{ posthog.weekly?.current.acceptedQuotes || 0 }}</dd></div>
+            <div class="rounded-lg bg-gray-50 p-3 dark:bg-white/[0.04]"><dt class="text-gray-500 dark:text-gray-400">Montant accepté</dt><dd class="mt-1 text-xl font-semibold">{{ formatMoney(posthog.weekly?.current.acceptedQuoteCents || 0) }}</dd></div>
+            <div class="rounded-lg bg-gray-50 p-3 dark:bg-white/[0.04]"><dt class="text-gray-500 dark:text-gray-400">Erreurs publiques</dt><dd class="mt-1 text-xl font-semibold">{{ posthog.weekly?.current.publicErrors || 0 }}</dd></div>
           </dl>
         </article>
       </section>

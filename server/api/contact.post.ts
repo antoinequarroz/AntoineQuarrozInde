@@ -188,6 +188,14 @@ export default defineEventHandler(async (event) => {
         entityId: linkedClientId,
         clientId: linkedClientId,
       })
+      await capturePostHogBusinessEvent({
+        event: 'crm_lead_created',
+        organizationId: org.id,
+        entityType: 'client',
+        entityId: linkedClientId,
+        clientId: linkedClientId,
+        channel: acquisitionChannel,
+      })
     }
   }
 

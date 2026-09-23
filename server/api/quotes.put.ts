@@ -6,6 +6,14 @@ export default defineEventHandler(async (event) => {
   const id = Number(body.id)
   if (!id) throw createError({ statusCode: 400, message: 'Missing quote id' })
   const supabase = getSupabaseAdmin()
+  const { data: existing, error: existingError } = await supabase
+    .from('quotes')
+    .select('id,status')
+    .eq('organization_id', org.id)
+    .eq('id', id)
+    .maybeSingle()
+  if (existingError) throw createError({ statusCode: 500, message: existingError.message })
+  if (!existing) throw createError({ statusCode: 404, message: 'Quote not found' })
   const items = normalizeBillingItems(body.items)
   const totals = computeTotals(items)
   let currency
@@ -71,5 +79,16 @@ export default defineEventHandler(async (event) => {
     clientId: data.client_id,
     payload: { number: data.number, title: data.title, status: data.status, amount_cents: data.amount_cents },
   })
+  if (existing.status !== 'accepted' && data.status === 'accepted') {
+    await capturePostHogBusinessEvent({
+      event: 'quote_accepted',
+      organizationId: org.id,
+      entityType: 'quote',
+      entityId: data.id,
+      clientId: data.client_id,
+      amountCents: data.total_cents ?? data.amount_cents,
+      currency: data.currency,
+    })
+  }
   return { ...data, items }
 })

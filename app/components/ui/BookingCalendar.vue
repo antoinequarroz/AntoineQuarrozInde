@@ -11,6 +11,13 @@ type CalQueue = ((...args: unknown[]) => void) & {
   q?: unknown[]
 }
 
+type CalEmbedMessage = {
+  type?: unknown
+  originator?: unknown
+}
+
+let bookingConfirmationCaptured = false
+
 const bookingUrl = computed(() => {
   const value = String(config.public.bookingUrl || '').trim()
   return /^https:\/\/(?:www\.)?cal\.com\//i.test(value) ? value : ''
@@ -74,7 +81,22 @@ function initializeCalEmbed() {
   })
 }
 
-onMounted(initializeCalEmbed)
+function captureConfirmedBooking(event: MessageEvent<CalEmbedMessage>) {
+  if (!['https://cal.com', 'https://app.cal.com'].includes(event.origin)) return
+  if (event.data?.type !== 'bookingSuccessfulV2') return
+  if (typeof event.data.originator !== 'string' || !event.data.originator.toLowerCase().includes('cal')) return
+  if (bookingConfirmationCaptured) return
+  bookingConfirmationCaptured = true
+  trackPostHog('booking_confirmed', { provider: 'cal.com' })
+}
+
+onMounted(() => {
+  bookingConfirmationCaptured = false
+  initializeCalEmbed()
+  window.addEventListener('message', captureConfirmedBooking)
+})
+
+onBeforeUnmount(() => window.removeEventListener('message', captureConfirmedBooking))
 
 const content = computed(() => {
   if (locale.value === 'en') return {

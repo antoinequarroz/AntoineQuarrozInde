@@ -85,5 +85,26 @@ export default defineEventHandler(async (event) => {
     code: result.created ? null : 'invoice_already_created',
   })
 
+  if (result.created) {
+    await capturePostHogBusinessEvent({
+      event: 'quote_accepted',
+      organizationId: org.id,
+      entityType: 'quote',
+      entityId: quoteId,
+      clientId: result.invoice.client_id,
+      amountCents: result.invoice.total_cents ?? result.invoice.amount_cents,
+      currency: result.invoice.currency,
+    })
+    await capturePostHogBusinessEvent({
+      event: 'invoice_created',
+      organizationId: org.id,
+      entityType: 'invoice',
+      entityId: result.invoice.id,
+      clientId: result.invoice.client_id,
+      amountCents: result.invoice.total_cents ?? result.invoice.amount_cents,
+      currency: result.invoice.currency,
+    })
+  }
+
   return { created: Boolean(result.created), invoice: result.invoice }
 })
