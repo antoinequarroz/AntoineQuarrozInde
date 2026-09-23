@@ -12,12 +12,13 @@ function contentProperties(path: string) {
 export default defineNuxtPlugin({
   name: 'posthog-public-pageviews',
   dependsOn: ['posthog-client'],
-  setup() {
+  setup(nuxtApp) {
     const router = useRouter()
     const posthog = usePostHog()
     if (!isPostHogProductionHost(window.location.hostname)) return
     let currentPath = ''
     let pageStartedAt = Date.now()
+    let capturedErrors = 0
 
     posthog?.set_config({
       before_send(event) {
@@ -49,6 +50,21 @@ export default defineNuxtPlugin({
         ...contentProperties(safePath),
       })
     }
+
+    function capturePublicError(kind: 'vue' | 'window' | 'promise', value: unknown) {
+      if (capturedErrors >= 5 || !isPostHogPublicPath(window.location.pathname)) return
+      const errorName = value instanceof Error && value.name ? value.name.slice(0, 80) : 'UnknownError'
+      capturedErrors += 1
+      posthog?.capture('public_app_error', {
+        error_kind: kind,
+        error_name: errorName,
+        source_path: safeAnalyticsPath(window.location.pathname),
+      })
+    }
+
+    const onWindowError = (event: ErrorEvent) => capturePublicError('window', event.error)
+    const onUnhandledRejection = (event: PromiseRejectionEvent) => capturePublicError('promise', event.reason)
+    nuxtApp.hook('vue:error', error => capturePublicError('vue', error))
 
     router.afterEach((to, from) => {
       if (from.fullPath) capturePageleave()
@@ -82,6 +98,8 @@ export default defineNuxtPlugin({
       }, { capture: true })
 
       window.addEventListener('pagehide', capturePageleave)
+      window.addEventListener('error', onWindowError)
+      window.addEventListener('unhandledrejection', onUnhandledRejection)
     })
   },
 })

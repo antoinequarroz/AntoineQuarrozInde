@@ -59,5 +59,16 @@ export default defineEventHandler(async (event) => {
     clientId: data.client_id,
     payload: { number: data.number, title: data.title, status: data.status, amount_cents: data.amount_cents },
   })
+  if (data.status === 'accepted') {
+    await capturePostHogBusinessEvent({
+      event: 'quote_accepted',
+      organizationId: org.id,
+      entityType: 'quote',
+      entityId: data.id,
+      clientId: data.client_id,
+      amountCents: data.total_cents ?? data.amount_cents,
+      currency: data.currency,
+    })
+  }
   return { ...data, items }
 })
