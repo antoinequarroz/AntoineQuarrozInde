@@ -187,6 +187,8 @@ jobs:
             -i "$RUNNER_TEMP/vps_deploy_key" \
             -o BatchMode=yes \
             -o IdentitiesOnly=yes \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=20 \
             -o StrictHostKeyChecking=yes \
             -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
             "$VPS_USER@$VPS_HOST" \
