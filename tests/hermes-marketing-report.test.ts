@@ -12,7 +12,7 @@ describe('Hermes weekly marketing report', () => {
     expect(report).toContain('schemaVersion: 1')
     expect(report).toContain('INTERVAL 7 DAY')
     expect(report).toContain("contact_form_abandoned")
-    expect(report).toContain("sumIf(toInt64OrZero")
+    expect(report).toContain("sumIf(toIntOrZero")
     expect(endpoint).not.toContain('getSupabaseAdmin')
   })
 
