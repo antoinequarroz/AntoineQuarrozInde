@@ -34,8 +34,8 @@ export async function buildPostHogMarketingReport(apiKey: string, projectId: str
         uniqExactIf(distinct_id, event IN ('contact_clicked', 'booking_clicked')), countIf(event = 'contact_sent'),
         countIf(event = 'newsletter_subscribed'), countIf(event = 'booking_clicked'), countIf(event = 'booking_confirmed'),
         countIf(event = 'crm_lead_created'), countIf(event = 'client_won'), countIf(event = 'quote_accepted'),
-        sumIf(toInt64OrZero(toString(properties.amount_cents)), event = 'quote_accepted'), countIf(event = 'invoice_created'),
-        sumIf(toInt64OrZero(toString(properties.amount_cents)), event = 'invoice_created'), countIf(event = 'public_app_error'),
+        sumIf(toIntOrZero(toString(properties.amount_cents)), event = 'quote_accepted'), countIf(event = 'invoice_created'),
+        sumIf(toIntOrZero(toString(properties.amount_cents)), event = 'invoice_created'), countIf(event = 'public_app_error'),
         countIf(event = 'contact_form_started'), countIf(event = 'contact_form_abandoned'), countIf(event = 'contact_form_submit_error')
       FROM (SELECT *, if(timestamp >= now() - INTERVAL 7 DAY, 'current', 'previous') AS period FROM events
         PREWHERE timestamp >= now() - INTERVAL 14 DAY WHERE ${HOST_FILTER}) GROUP BY period`),

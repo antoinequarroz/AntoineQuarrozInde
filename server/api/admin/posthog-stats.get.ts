@@ -53,7 +53,7 @@ export default defineCachedEventHandler(async (event) => {
         SELECT uniqExactIf(distinct_id, event = '$pageview'), countIf(event = '$pageview'), countIf(event = 'contact_sent'),
           countIf(event = 'newsletter_subscribed'), countIf(event = 'booking_clicked'), countIf(event = 'booking_confirmed'),
           countIf(event = 'crm_lead_created'), countIf(event = 'client_won'), countIf(event = 'quote_accepted'),
-          sumIf(toInt64OrZero(toString(properties.amount_cents)), event = 'quote_accepted'), countIf(event = 'invoice_created'),
+          sumIf(toIntOrZero(toString(properties.amount_cents)), event = 'quote_accepted'), countIf(event = 'invoice_created'),
           countIf(event = 'public_app_error')
         FROM events PREWHERE timestamp >= now() - INTERVAL 30 DAY WHERE ${SITE_FILTER}`),
       queryPostHog(apiKey, projectId, 'site_admin_sources_30d', `
@@ -78,7 +78,7 @@ export default defineCachedEventHandler(async (event) => {
           uniqExactIf(distinct_id, event IN ('contact_clicked', 'booking_clicked')), countIf(event = 'contact_sent'),
           countIf(event = 'newsletter_subscribed'), countIf(event = 'booking_clicked'), countIf(event = 'booking_confirmed'),
           countIf(event = 'crm_lead_created'), countIf(event = 'client_won'), countIf(event = 'quote_accepted'),
-          sumIf(toInt64OrZero(toString(properties.amount_cents)), event = 'quote_accepted'), countIf(event = 'invoice_created'),
+          sumIf(toIntOrZero(toString(properties.amount_cents)), event = 'quote_accepted'), countIf(event = 'invoice_created'),
           countIf(event = 'public_app_error')
         FROM (SELECT *, if(timestamp >= now() - INTERVAL 7 DAY, 'current', 'previous') AS period FROM events
           PREWHERE timestamp >= now() - INTERVAL 14 DAY WHERE ${SITE_FILTER}) GROUP BY period`),
