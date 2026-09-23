@@ -101,7 +101,11 @@ const filtered = computed(() => {
           </div>
         </template>
         <div v-else class="mt-2 md:mt-4">
-          <SectionsProjectHelixCarousel :projects="filtered" :active-category="activeFilter" />
+          <SectionsProjectHelixCarousel
+            :projects="filtered"
+            :active-category="activeFilter"
+            :layout-reference-total="store.portfolio.length"
+          />
         </div>
         <div v-if="locale === 'fr' && activeFilter === 'all' && !store.portfolio.some(project => project.slug === 'hermes-cockpit')" class="relative z-20 mx-auto mt-8 max-w-4xl rounded-3xl border border-violet-500/20 bg-white/80 p-6 shadow-xl shadow-violet-500/5 dark:border-white/10 dark:bg-[#191629] md:flex md:items-center md:justify-between md:gap-8 md:p-8">
           <div>
