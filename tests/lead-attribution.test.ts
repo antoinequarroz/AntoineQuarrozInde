@@ -11,6 +11,8 @@ describe('lead attribution payload', () => {
     })).toEqual({
       landing_path: '/contact', referrer_host: 'google.ch', utm_source: 'newsletter',
       utm_medium: null, utm_campaign: null, utm_content: null, utm_term: null,
+      last_landing_path: null, last_referrer_host: null, last_utm_source: null,
+      last_utm_medium: null, last_utm_campaign: null, last_utm_content: null, last_utm_term: null,
     })
   })
 

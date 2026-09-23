@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
 
   const supabase = getSupabaseAdmin()
   const { data: quote, error } = await supabase.from('quotes')
-    .select('id,number,title,status,valid_until,accepted_at,total_cents,amount_cents,currency')
+    .select('id,number,title,status,valid_until,accepted_at,total_cents,amount_cents,currency,project_id')
     .eq('organization_id', org.id)
     .eq('client_id', client.id)
     .eq('id', quoteId)
@@ -61,6 +61,7 @@ export default defineEventHandler(async (event) => {
     clientId: client.id,
     amountCents: quote.total_cents ?? quote.amount_cents,
     currency: quote.currency,
+    projectId: quote.project_id,
   })
   return { accepted: true, acceptedAt }
 })

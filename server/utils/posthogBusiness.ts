@@ -18,6 +18,8 @@ type BusinessEventInput = {
   amountCents?: number | null
   currency?: string | null
   channel?: string | null
+  lastChannel?: string | null
+  projectId?: string | number | null
 }
 
 const ALLOWED_CHANNELS = new Set(['organic_search', 'generative_ai', 'direct', 'campaign', 'unknown_referral'])
@@ -36,6 +38,7 @@ export function buildPostHogBusinessPayload(input: BusinessEventInput, projectTo
   const amountCents = Number(input.amountCents)
   const currency = String(input.currency || '').toUpperCase()
   const channel = String(input.channel || '')
+  const lastChannel = String(input.lastChannel || '')
 
   return {
     api_key: projectToken,
@@ -51,6 +54,8 @@ export function buildPostHogBusinessPayload(input: BusinessEventInput, projectTo
       ...(Number.isSafeInteger(amountCents) && amountCents >= 0 ? { amount_cents: amountCents } : {}),
       ...(ALLOWED_CURRENCIES.has(currency) ? { currency } : {}),
       ...(ALLOWED_CHANNELS.has(channel) ? { channel } : {}),
+      ...(ALLOWED_CHANNELS.has(lastChannel) ? { last_channel: lastChannel } : {}),
+      ...(input.projectId !== null && input.projectId !== undefined ? { project_hash: digest(`${organizationHash}:project:${input.projectId}`) } : {}),
     },
   }
 }

@@ -68,6 +68,7 @@ export default defineEventHandler(async (event) => {
   const supabase = getSupabaseAdmin()
   const cleanAttribution = leadAttributionPayload(body.attribution)
   const acquisitionChannel = leadAcquisitionChannel(body.attribution)
+  const lastAcquisitionChannel = leadLastAcquisitionChannel(body.attribution)
   const fingerprint = contactPayloadFingerprint(contact)
 
   const { data: insertedMessage, error: saveError } = await supabase
@@ -126,6 +127,12 @@ export default defineEventHandler(async (event) => {
   }
   else if (existingClient) {
     linkedClientId = Number(existingClient.id)
+    const { error: attributionUpdateError } = await supabase.from('clients').update({
+      last_acquisition_source: cleanAttribution.last_utm_source || cleanAttribution.last_referrer_host || 'direct',
+      last_acquisition_medium: cleanAttribution.last_utm_medium,
+      last_acquisition_campaign: cleanAttribution.last_utm_campaign,
+    }).eq('organization_id', org.id).eq('id', linkedClientId)
+    if (attributionUpdateError) console.warn('[contact] unable to update last-touch attribution', { correlationId })
     await recordCommercialWorkflowEvent({
       event,
       correlationId,
@@ -152,6 +159,9 @@ export default defineEventHandler(async (event) => {
         acquisition_source: cleanAttribution.utm_source || cleanAttribution.referrer_host || 'direct',
         acquisition_medium: cleanAttribution.utm_medium,
         acquisition_campaign: cleanAttribution.utm_campaign,
+        last_acquisition_source: cleanAttribution.last_utm_source || cleanAttribution.last_referrer_host || 'direct',
+        last_acquisition_medium: cleanAttribution.last_utm_medium,
+        last_acquisition_campaign: cleanAttribution.last_utm_campaign,
       })
       .select('id,name,email,status')
       .single()
@@ -195,6 +205,7 @@ export default defineEventHandler(async (event) => {
         entityId: linkedClientId,
         clientId: linkedClientId,
         channel: acquisitionChannel,
+        lastChannel: lastAcquisitionChannel,
       })
     }
   }
