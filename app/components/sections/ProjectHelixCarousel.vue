@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import type { Project } from '~/types'
+import { getHelixAngleStep, getHelixTrackHeightVh, resolveHelixLayoutTotal } from '~/utils/projectHelixLayout'
 
 type PortfolioCategory = 'all' | Project['category']
 
 const props = defineProps<{
   projects: Project[]
   activeCategory?: PortfolioCategory
+  layoutReferenceTotal?: number
 }>()
 
 const { t, locale } = useI18n()
@@ -48,11 +50,13 @@ let metrics = {
 }
 
 const sourceTotal = computed(() => Math.max(1, props.projects.length))
+const layoutTotal = computed(() => resolveHelixLayoutTotal(
+  props.projects.length,
+  props.layoutReferenceTotal,
+))
 const maxSourceStep = computed(() => Math.max(0, props.projects.length - 1))
 const desktopTrackStyle = computed(() => {
-  const projectSteps = Math.max(0, sourceTotal.value - 1)
-  const trackHeight = projectSteps ? Math.min(700, Math.max(420, 180 + projectSteps * 48)) : 120
-  return { height: `${trackHeight}vh` }
+  return { height: `${getHelixTrackHeightVh(sourceTotal.value)}vh` }
 })
 
 const activeProject = computed(() => props.projects[activeSourceIndex.value] ?? props.projects[0])
@@ -178,17 +182,18 @@ function renderHelix() {
   const progress = visualProgress
   const total = Math.max(1, props.projects.length)
   const step = progress * Math.max(0, total - 1)
-  const spin = total > 1 ? step * (360 / total) : 0
+  const angleStep = getHelixAngleStep(layoutTotal.value)
+  const spin = total > 1 ? step * angleStep : 0
   const horizontalRadius = metrics.viewportWidth >= 1440 ? 270 : metrics.viewportWidth >= 1280 ? 240 : 205
   const verticalRadius = metrics.viewportHeight >= 900 ? 390 : 330
 
   cards.forEach((card, index) => {
-    const baseAngle = (index / total) * 360
+    const baseAngle = index * angleStep
     const angle = baseAngle - spin
     const normalized = ((angle + 540) % 360) - 180
     const absoluteAngle = Math.abs(normalized)
     const radians = normalized * (Math.PI / 180)
-    const densityBoost = Math.max(0, total - 10) * 10
+    const densityBoost = Math.max(0, layoutTotal.value - 10) * 10
     const frontSeparationDistance = (metrics.viewportWidth >= 1280 ? 195 : 190) + densityBoost
     const frontSeparation = absoluteAngle < 80
       ? Math.sin((absoluteAngle / 80) * Math.PI) * frontSeparationDistance
@@ -337,6 +342,9 @@ async function refreshProjects() {
   await nextTick()
   activeSourceIndex.value = 0
   mobileActiveIndex.value = 0
+  visualProgressReady = false
+  scrollVelocity = 0
+  lastRenderSample = 0
   desktopImageIndexes.value = new Set()
   warmDesktopImages(activeSourceIndex.value)
   mobileListRef.value?.scrollTo({ left: 0, behavior: 'auto' })
