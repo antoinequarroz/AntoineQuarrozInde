@@ -68,6 +68,7 @@ export default defineEventHandler(async (event) => {
       clientId: data.client_id,
       amountCents: data.total_cents ?? data.amount_cents,
       currency: data.currency,
+      projectId: data.project_id,
     })
   }
   return { ...data, items }

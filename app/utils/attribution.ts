@@ -6,6 +6,13 @@ export type LeadAttribution = {
   utmCampaign: string | null
   utmContent: string | null
   utmTerm: string | null
+  lastLandingPath: string | null
+  lastReferrerHost: string | null
+  lastUtmSource: string | null
+  lastUtmMedium: string | null
+  lastUtmCampaign: string | null
+  lastUtmContent: string | null
+  lastUtmTerm: string | null
 }
 
 const STORAGE_KEY = 'aq_lead_attribution'
@@ -17,25 +24,17 @@ function clipped(value: string | null, max = 180) {
 }
 
 export function captureLeadAttribution(): LeadAttribution {
-  const empty: LeadAttribution = { landingPath: null, referrerHost: null, utmSource: null, utmMedium: null, utmCampaign: null, utmContent: null, utmTerm: null }
-  if (!import.meta.client) return empty
-
-  let stored: string | null = null
-  try { stored = sessionStorage.getItem(STORAGE_KEY) }
-  catch { return empty }
-  if (stored) {
-    try { return { ...empty, ...JSON.parse(stored) } }
-    catch {
-      try { sessionStorage.removeItem(STORAGE_KEY) }
-      catch { return empty }
-    }
+  const empty: LeadAttribution = {
+    landingPath: null, referrerHost: null, utmSource: null, utmMedium: null, utmCampaign: null, utmContent: null, utmTerm: null,
+    lastLandingPath: null, lastReferrerHost: null, lastUtmSource: null, lastUtmMedium: null, lastUtmCampaign: null, lastUtmContent: null, lastUtmTerm: null,
   }
+  if (!import.meta.client) return empty
 
   const params = new URLSearchParams(window.location.search)
   let referrerHost: string | null = null
   try { referrerHost = document.referrer ? new URL(document.referrer).hostname : null }
   catch {}
-  const attribution: LeadAttribution = {
+  const touch = {
     landingPath: clipped(window.location.pathname, 500),
     referrerHost: clipped(referrerHost),
     utmSource: clipped(params.get(UTM_KEYS[0])),
@@ -43,6 +42,27 @@ export function captureLeadAttribution(): LeadAttribution {
     utmCampaign: clipped(params.get(UTM_KEYS[2])),
     utmContent: clipped(params.get(UTM_KEYS[3])),
     utmTerm: clipped(params.get(UTM_KEYS[4])),
+  }
+  let first: Partial<LeadAttribution> = {}
+  try {
+    const stored = sessionStorage.getItem(STORAGE_KEY)
+    if (stored) first = JSON.parse(stored)
+  }
+  catch {
+    try { sessionStorage.removeItem(STORAGE_KEY) }
+    catch { return empty }
+  }
+  const attribution: LeadAttribution = {
+    ...empty,
+    ...touch,
+    ...first,
+    lastLandingPath: touch.landingPath,
+    lastReferrerHost: touch.referrerHost,
+    lastUtmSource: touch.utmSource,
+    lastUtmMedium: touch.utmMedium,
+    lastUtmCampaign: touch.utmCampaign,
+    lastUtmContent: touch.utmContent,
+    lastUtmTerm: touch.utmTerm,
   }
   try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(attribution)) }
   catch {}

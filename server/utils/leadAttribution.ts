@@ -18,6 +18,13 @@ export function leadAttributionPayload(value: unknown) {
     utm_campaign: clean(source.utmCampaign),
     utm_content: clean(source.utmContent),
     utm_term: clean(source.utmTerm),
+    last_landing_path: clean(source.lastLandingPath, MAX_LANDING_PATH_LENGTH),
+    last_referrer_host: clean(source.lastReferrerHost),
+    last_utm_source: clean(source.lastUtmSource),
+    last_utm_medium: clean(source.lastUtmMedium),
+    last_utm_campaign: clean(source.lastUtmCampaign),
+    last_utm_content: clean(source.lastUtmContent),
+    last_utm_term: clean(source.lastUtmTerm),
   }
 }
 
@@ -26,5 +33,13 @@ export function leadAcquisitionChannel(value: unknown) {
   return classifyAcquisition({
     utmSource: attribution.utm_source,
     referrerHost: attribution.referrer_host,
+  })
+}
+
+export function leadLastAcquisitionChannel(value: unknown) {
+  const attribution = leadAttributionPayload(value)
+  return classifyAcquisition({
+    utmSource: attribution.last_utm_source,
+    referrerHost: attribution.last_referrer_host,
   })
 }

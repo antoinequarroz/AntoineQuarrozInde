@@ -30,8 +30,11 @@ def render(value):
       f"- Demandes envoyées : **{now['contacts']}**.", f"- Inscriptions newsletter : **{now['newsletterSubscriptions']}**.",
       f"- Clics rendez-vous : **{now['bookingClicks']}**.", f"- Rendez-vous confirmés : **{now['bookingConfirmations']}**.",
       f"- Nouveaux prospects CRM : **{now['crmLeads']}**.", f"- Clients gagnés : **{now['clientsWon']}**.",
-      f"- Devis acceptés : **{now['acceptedQuotes']}** ({now['acceptedQuoteCents'] / 100:.0f} CHF).", f"- Factures créées : **{now['invoicesCreated']}**.",
-      f"- Erreurs publiques : **{now['publicErrors']}**.", '', '## Sources']
+      f"- Devis acceptés : **{now['acceptedQuotes']}** ({now['acceptedQuoteCents'] / 100:.0f} CHF).", f"- Factures créées : **{now['invoicesCreated']}** ({now['invoicedCents'] / 100:.0f} CHF).",
+      f"- Formulaires démarrés : **{now['formStarted']}** ; abandons : **{now['formAbandoned']}** ; erreurs : **{now['formErrors']}**.",
+      f"- Erreurs publiques : **{now['publicErrors']}**.", '', '## Alertes']
+    lines += [f"- **{row['title']}** — {row['detail']}" for row in value.get('alerts', [])] or ['- Aucun seuil d’alerte dépassé.']
+    lines += ['', '## Sources']
     lines += [f"- {row['source']} : {row['pageviews']} pages vues." for row in value['sources']] or ['- Aucune source mesurée.']
     lines += ['', '## Contenus'] + ([f"- {row['path']} : {row['pageviews']} pages vues, {row['visitors']} visiteurs." for row in value['content']] or ['- Aucun article ou projet lu pendant la période.'])
     lines += ['', '## Recommandations'] + [f"- {item}" for item in value['recommendations']]

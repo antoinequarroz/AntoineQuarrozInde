@@ -94,6 +94,7 @@ export default defineEventHandler(async (event) => {
       clientId: result.invoice.client_id,
       amountCents: result.invoice.total_cents ?? result.invoice.amount_cents,
       currency: result.invoice.currency,
+      projectId: result.invoice.project_id,
     })
     await capturePostHogBusinessEvent({
       event: 'invoice_created',
@@ -103,6 +104,7 @@ export default defineEventHandler(async (event) => {
       clientId: result.invoice.client_id,
       amountCents: result.invoice.total_cents ?? result.invoice.amount_cents,
       currency: result.invoice.currency,
+      projectId: result.invoice.project_id,
     })
   }
 
