@@ -64,3 +64,28 @@ ensemble-api.antoinequarroz.ch {
     }
 }
 # END ENSEMBLE API
+
+# BEGIN PIVXI — interface and isolated Supabase API
+pivxi.antoinequarroz.ch {
+    encode zstd gzip
+
+    @api path /auth/v1/* /rest/v1/* /storage/v1/* /realtime/v1/*
+    handle @api {
+        reverse_proxy pivxi-api-gw:8000
+    }
+
+    handle {
+        reverse_proxy pivxi-web:8080
+    }
+
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options nosniff
+        X-Frame-Options DENY
+        Referrer-Policy strict-origin-when-cross-origin
+        Permissions-Policy "camera=(), microphone=(), geolocation=()"
+        Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' wss:; media-src 'self' blob:; worker-src 'self' blob:"
+        -Server
+    }
+}
+# END PIVXI
