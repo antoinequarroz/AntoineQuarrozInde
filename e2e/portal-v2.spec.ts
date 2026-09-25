@@ -21,6 +21,7 @@ const overview = {
     notes: [{ id: 1, kind: 'meeting', title: 'Compte rendu du point hebdomadaire', content: 'Le parcours principal est validé.', occurred_at: '2026-08-08' }],
   }],
   quotes: [{ id: 42, number: 'DEV-2026-0042', title: 'Évolution du portail', total_cents: 125_000, currency: 'CHF', status: 'sent', issued_at: '2026-08-05', valid_until: '2026-08-31' }],
+  contracts: [{ id: 61, number: 'CTR-2026-0061', title: 'Contrat de développement', status: 'sent', version: 1, starts_at: '2026-09-01' }],
   invoices: [{
     id: 51,
     number: 'FAC-2026-0051',
@@ -56,6 +57,8 @@ test('client portal V2 exposes projects, decisions, deliverables and payments', 
   await expect(page.getByRole('heading', { name: 'Votre collaboration, clairement suivie.' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Vos projets' })).toBeVisible()
   await expect(page.getByRole('link', { name: 'Maquettes finales', exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Vos contrats' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Contrat de développement' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Vos devis' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Factures et paiements' })).toBeVisible()
   await page.screenshot({ path: testInfo.outputPath('portal-v2-desktop.png'), fullPage: true })
