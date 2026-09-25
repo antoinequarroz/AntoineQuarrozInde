@@ -2,7 +2,7 @@ import type { CommercialLocale, CommercialTemplateKey } from './commercialEmailT
 
 export type DeliveryCategory = 'transactional' | 'marketing'
 type DeliveryDependencies = { supabase?: any, send?: typeof sendAppEmail }
-type DeliveryTemplateKey = CommercialTemplateKey | 'contact_notification'
+type DeliveryTemplateKey = CommercialTemplateKey | 'contact_notification' | 'contract_available'
 
 export function emailDeliveryErrorCode(error: unknown) {
   const value = error as { statusCode?: number, name?: string, message?: string }
@@ -19,7 +19,7 @@ export async function sendTrackedEmail(input: {
   templateKey: DeliveryTemplateKey
   locale: CommercialLocale
   recipient: string
-  entityType?: 'quote' | 'invoice' | 'payment' | 'contact_message'
+  entityType?: 'quote' | 'invoice' | 'payment' | 'contact_message' | 'contract'
   entityId?: string | number | null
   idempotencyKey: string
   subject: string

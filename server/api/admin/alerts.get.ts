@@ -7,6 +7,7 @@ export default defineEventHandler(async (event) => {
   const [
     invoicesRes,
     quotesRes,
+    contractsRes,
     tasksRes,
     appointmentsRes,
     messagesRes,
@@ -22,6 +23,10 @@ export default defineEventHandler(async (event) => {
       .select('number', { count: 'exact', head: false })
       .eq('organization_id', org.id)
       .eq('status', 'draft'),
+    supabase.from('contracts')
+      .select('id,status')
+      .eq('organization_id', org.id)
+      .in('status', ['draft', 'declined']),
     supabase.from('tasks')
       .select('id', { count: 'exact', head: false })
       .eq('organization_id', org.id)
@@ -55,7 +60,7 @@ export default defineEventHandler(async (event) => {
       .limit(500),
   ])
 
-  const errors = [invoicesRes.error, quotesRes.error, tasksRes.error, appointmentsRes.error, messagesRes.error, applicationErrorsRes.error, socialPostsRes.error, commercialEventsRes.error].filter(Boolean)
+  const errors = [invoicesRes.error, quotesRes.error, contractsRes.error, tasksRes.error, appointmentsRes.error, messagesRes.error, applicationErrorsRes.error, socialPostsRes.error, commercialEventsRes.error].filter(Boolean)
   if (errors.length) {
     throw createError({ statusCode: 500, message: errors[0]!.message })
   }
@@ -64,6 +69,7 @@ export default defineEventHandler(async (event) => {
   const overdueCount = invoicesRes.count || 0
   const newMessages = messagesRes.count || 0
   const draftQuotes = quotesRes.count || 0
+  const contractActions = (contractsRes.data || []).length
   const dueTasks = tasksRes.count || 0
   const nextAppointment = appointmentsRes.data?.[0]
   const applicationErrors = applicationErrorsRes.count || 0
@@ -74,6 +80,7 @@ export default defineEventHandler(async (event) => {
   if (overdueCount > 0) alerts.push({ id: 'overdue', text: `${overdueCount} facture(s) en retard`, to: '/admin/invoices' })
   if (newMessages > 0) alerts.push({ id: 'messages', text: `${newMessages} nouveau(x) message(s)`, to: '/admin/messages' })
   if (draftQuotes > 0) alerts.push({ id: 'quotes', text: `${draftQuotes} devis en brouillon`, to: '/admin/quotes' })
+  if (contractActions > 0) alerts.push({ id: 'contracts', text: `${contractActions} contrat(s) à préparer ou revoir`, to: '/admin/contracts' })
   if (dueTasks > 0) alerts.push({ id: 'tasks', text: `${dueTasks} tache(s) a traiter sous 3 jours`, to: '/admin/tasks' })
   if (nextAppointment) alerts.push({ id: 'appt', text: `Prochain RDV: ${nextAppointment.title}`, to: '/admin/appointments' })
   if (applicationErrors > 0) alerts.push({ id: 'app-errors', text: `${applicationErrors} erreur(s) applicative(s) à traiter`, to: '/admin/errors' })

@@ -4,6 +4,7 @@ definePageMeta({ layout: false, middleware: 'portal' })
 type PortalPayment = { id: number, amount_cents: number, currency: string, method: string, paid_at: string, reference?: string | null }
 type PortalInvoice = { id: number, number: string, total_cents: number, paid_amount_cents: number, currency: string, status: string, document_type?: string | null, issued_at?: string | null, due_at?: string | null, payments?: PortalPayment[] }
 type PortalQuote = { id: number, number: string, title: string, total_cents: number, currency: string, status: string, issued_at?: string | null, valid_until?: string | null }
+type PortalContract = { id: number, number: string, title: string, status: string, version: number, effective_date?: string | null, starts_at?: string | null, ends_at?: string | null, signed_at?: string | null, signer_name?: string | null, snapshot_hash?: string | null }
 type PortalMilestone = { id: number, title: string, due_at?: string | null, status: string }
 type PortalDeliverable = { id: number, title: string, url?: string | null, status: string }
 type PortalNote = { id: number, kind: string, title: string, content?: string | null, occurred_at?: string | null }
@@ -13,6 +14,7 @@ type PortalData = {
   client: { id: number, name: string, company?: string | null }
   projects: PortalProject[]
   quotes: PortalQuote[]
+  contracts: PortalContract[]
   invoices: PortalInvoice[]
   payments: { twintAvailable: boolean }
 }
@@ -32,6 +34,13 @@ const decisionAnnouncement = ref('')
 const decisionReturnFocusId = ref('')
 const downloadingKey = ref('')
 const documentFeedback = ref<{ key: string, type: 'success' | 'error', message: string } | null>(null)
+const decidingContractId = ref<number | null>(null)
+const contractDecision = ref<'signed' | 'declined' | null>(null)
+const signerName = ref('')
+const contractConfirmed = ref(false)
+const contractReason = ref('')
+const contractDecisionLoading = ref(false)
+const contractDecisionError = ref('')
 
 const money = (cents: number, currency = 'CHF') => new Intl.NumberFormat('fr-CH', { style: 'currency', currency }).format((Number(cents) || 0) / 100)
 const formatDate = (value?: string | null) => value ? new Intl.DateTimeFormat('fr-CH', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(value)) : 'Non définie'
@@ -50,6 +59,7 @@ const noteKindLabel: Record<string, string> = { meeting: 'Réunion', note: 'Mise
 
 const outstandingCents = computed(() => (data.value?.invoices || []).reduce((sum, invoice) => sum + remainingCents(invoice), 0))
 const pendingQuotes = computed(() => (data.value?.quotes || []).filter(quote => quote.status === 'sent'))
+const pendingContracts = computed(() => (data.value?.contracts || []).filter(contract => contract.status === 'sent'))
 const availableDeliverables = computed(() => (data.value?.projects || []).reduce((sum, project) => sum + (project.deliverables?.length || 0), 0))
 const latestDeliverable = computed(() => (data.value?.projects || []).flatMap(project => (project.deliverables || []).map(deliverable => ({ ...deliverable, projectTitle: project.title }))).at(0) || null)
 
@@ -73,25 +83,60 @@ async function logout() {
   await navigateTo('/portal/login')
 }
 
-async function downloadDocument(kind: 'quote' | 'invoice', document: { id: number, number: string }) {
+async function downloadDocument(kind: 'quote' | 'invoice' | 'contract', document: { id: number, number: string, version?: number }) {
   const key = `${kind}-${document.id}`
   downloadingKey.value = key
   documentFeedback.value = null
-  const endpoint = kind === 'quote' ? '/api/portal/quote-pdf' : '/api/portal/invoice-pdf'
+  const endpoint = kind === 'quote' ? '/api/portal/quote-pdf' : kind === 'invoice' ? '/api/portal/invoice-pdf' : '/api/portal/contract-pdf'
   try {
     const blob = await $fetch<Blob>(endpoint, { query: { id: document.id }, headers: auth.authHeader(), responseType: 'blob' })
     const url = URL.createObjectURL(blob)
     const link = window.document.createElement('a')
     link.href = url
-    link.download = `${kind === 'quote' ? 'devis' : 'facture'}-${document.number}.pdf`
+    link.download = `${kind === 'quote' ? 'devis' : kind === 'invoice' ? 'facture' : 'contrat'}-${document.number}${kind === 'contract' ? `-v${document.version || 1}` : ''}.pdf`
     link.click()
     URL.revokeObjectURL(url)
-    documentFeedback.value = { key, type: 'success', message: `${kind === 'quote' ? 'Le devis' : 'La facture'} ${document.number} a été téléchargé.` }
+    documentFeedback.value = { key, type: 'success', message: `${kind === 'quote' ? 'Le devis' : kind === 'invoice' ? 'La facture' : 'Le contrat'} ${document.number} a été téléchargé.` }
   }
   catch {
     documentFeedback.value = { key, type: 'error', message: `Le document ${document.number} n’a pas pu être téléchargé. Actualisez la page puis réessayez.` }
   }
   finally { downloadingKey.value = '' }
+}
+
+function askContractDecision(contract: PortalContract, decision: 'signed' | 'declined') {
+  decidingContractId.value = contract.id
+  contractDecision.value = decision
+  signerName.value = data.value?.client.name || ''
+  contractConfirmed.value = false
+  contractReason.value = ''
+  contractDecisionError.value = ''
+}
+
+function cancelContractDecision() {
+  decidingContractId.value = null
+  contractDecision.value = null
+  contractConfirmed.value = false
+  contractDecisionError.value = ''
+}
+
+async function submitContractDecision(contract: PortalContract) {
+  if (!contractDecision.value || decidingContractId.value !== contract.id) return
+  if (!contractConfirmed.value) { contractDecisionError.value = 'Confirmez avoir lu la version complète du contrat.'; return }
+  contractDecisionLoading.value = true
+  contractDecisionError.value = ''
+  try {
+    const signed = contractDecision.value === 'signed'
+    await $fetch(signed ? '/api/portal/contracts/sign' : '/api/portal/contracts/decline', {
+      method: 'POST',
+      body: { contractId: contract.id, confirmed: true, signerName: signerName.value, reason: contractReason.value },
+      headers: auth.authHeader(),
+    })
+    if (data.value) data.value.contracts = data.value.contracts.map(item => item.id === contract.id ? { ...item, status: signed ? 'signed' : 'declined', signer_name: signed ? signerName.value : null, signed_at: signed ? new Date().toISOString() : null } : item)
+    decisionAnnouncement.value = `Votre décision pour le contrat ${contract.number} a été enregistrée.`
+    cancelContractDecision()
+  } catch (error: any) { contractDecisionError.value = error?.data?.message || 'Votre décision n’a pas pu être enregistrée.' }
+  finally { contractDecisionLoading.value = false }
 }
 
 function askForDecision(quote: PortalQuote, decision: 'accepted' | 'rejected', returnFocusId: string) {
@@ -177,6 +222,7 @@ const canPayWithTwint = (invoice: PortalInvoice) => data.value?.payments.twintAv
         </NuxtLink>
         <nav class="hidden items-center gap-1 md:flex" aria-label="Navigation de l’espace client">
           <a href="#projets" class="rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 hover:text-gray-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:text-gray-300 dark:hover:bg-white/[0.06] dark:hover:text-white">Projets</a>
+          <a href="#contrats" class="rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 hover:text-gray-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:text-gray-300 dark:hover:bg-white/[0.06] dark:hover:text-white">Contrats</a>
           <a href="#devis" class="rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 hover:text-gray-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:text-gray-300 dark:hover:bg-white/[0.06] dark:hover:text-white">Devis</a>
           <a href="#factures" class="rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 hover:text-gray-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:text-gray-300 dark:hover:bg-white/[0.06] dark:hover:text-white">Factures</a>
         </nav>
@@ -215,10 +261,11 @@ const canPayWithTwint = (invoice: PortalInvoice) => data.value?.payments.twintAv
         <section aria-labelledby="portal-priorities" class="mt-4 overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.08] dark:bg-[#111118]">
           <div class="border-b border-gray-100 px-4 py-3 dark:border-white/[0.06] sm:px-5"><h2 id="portal-priorities" class="font-display text-base font-semibold">À traiter maintenant</h2></div>
           <ol class="divide-y divide-gray-100 dark:divide-white/[0.06]">
+            <li v-if="pendingContracts[0]"><a href="#contrats" class="group flex min-h-16 items-center justify-between gap-4 px-4 py-3 hover:bg-violet-50/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-violet-500 dark:hover:bg-violet-500/[0.07] sm:px-5"><div><p class="text-xs font-semibold text-violet-700 dark:text-violet-300">Signature requise</p><p class="mt-0.5 text-sm font-semibold">Lire le contrat {{ pendingContracts[0].number }}</p></div><span class="text-sm font-semibold text-violet-700 dark:text-violet-300">Version {{ pendingContracts[0].version }}</span></a></li>
             <li v-if="pendingQuotes[0]"><a href="#devis" class="group flex min-h-16 items-center justify-between gap-4 px-4 py-3 hover:bg-violet-50/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-violet-500 dark:hover:bg-violet-500/[0.07] sm:px-5"><div><p class="text-xs font-semibold text-violet-700 dark:text-violet-300">Décision requise</p><p class="mt-0.5 text-sm font-semibold">Répondre au devis {{ pendingQuotes[0].number }}</p></div><span class="text-sm font-semibold text-violet-700 dark:text-violet-300">{{ money(pendingQuotes[0].total_cents, pendingQuotes[0].currency) }}</span></a></li>
             <li v-if="outstandingCents > 0"><a href="#factures" class="group flex min-h-16 items-center justify-between gap-4 px-4 py-3 hover:bg-violet-50/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-violet-500 dark:hover:bg-violet-500/[0.07] sm:px-5"><div><p class="text-xs font-semibold text-amber-800 dark:text-amber-200">Paiement à organiser</p><p class="mt-0.5 text-sm font-semibold">Consulter les factures ouvertes</p></div><span class="text-sm font-semibold tabular-nums">{{ money(outstandingCents) }}</span></a></li>
             <li v-if="latestDeliverable"><a :href="latestDeliverable.url || '#projets'" :target="latestDeliverable.url ? '_blank' : undefined" rel="noopener noreferrer" class="group flex min-h-16 items-center justify-between gap-4 px-4 py-3 hover:bg-cyan-50/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-cyan-500 dark:hover:bg-cyan-500/[0.07] sm:px-5"><div><p class="text-xs font-semibold text-cyan-800 dark:text-cyan-200">Nouveau livrable</p><p class="mt-0.5 text-sm font-semibold">{{ latestDeliverable.title }} · {{ latestDeliverable.projectTitle }}</p></div><svg v-if="latestDeliverable.url" aria-hidden="true" class="h-4 w-4 shrink-0 text-cyan-700 dark:text-cyan-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14 3h7v7m0-7L10 14M5 7v12h12v-5" /></svg></a></li>
-            <li v-if="!pendingQuotes.length && outstandingCents <= 0 && !latestDeliverable" class="px-4 py-5 text-sm text-gray-600 dark:text-gray-300 sm:px-5">Tout est à jour. Les prochains éléments apparaîtront ici.</li>
+            <li v-if="!pendingContracts.length && !pendingQuotes.length && outstandingCents <= 0 && !latestDeliverable" class="px-4 py-5 text-sm text-gray-600 dark:text-gray-300 sm:px-5">Tout est à jour. Les prochains éléments apparaîtront ici.</li>
           </ol>
         </section>
 
@@ -250,6 +297,29 @@ const canPayWithTwint = (invoice: PortalInvoice) => data.value?.payments.twintAv
             </article>
           </div>
           <div v-else class="mt-5 rounded-xl border border-dashed border-gray-300 p-7 text-center dark:border-white/15"><p class="font-semibold">Aucun projet partagé</p><p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Vos projets apparaîtront ici dès leur création.</p></div>
+        </section>
+
+        <section id="contrats" aria-labelledby="portal-contracts" class="scroll-mt-24 pt-12">
+          <div class="max-w-2xl"><h2 id="portal-contracts" class="font-display text-2xl font-semibold">Vos contrats</h2><p class="mt-2 text-sm text-gray-600 dark:text-gray-400">Téléchargez la version complète, lisez-la puis enregistrez votre décision.</p></div>
+          <div v-if="data.contracts.length" class="mt-5 overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-white/[0.08] dark:bg-[#111118]">
+            <article v-for="contract in data.contracts" :key="contract.id" class="border-b border-gray-100 p-4 last:border-0 dark:border-white/[0.06] sm:p-5">
+              <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div class="min-w-0"><div class="flex flex-wrap items-center gap-2"><h3 class="font-semibold">{{ contract.title }}</h3><span class="rounded-full px-2.5 py-1 text-xs font-semibold" :class="contract.status === 'sent' ? 'bg-amber-50 text-amber-800 dark:bg-amber-400/10 dark:text-amber-200' : contract.status === 'signed' ? 'bg-emerald-50 text-emerald-800 dark:bg-emerald-400/10 dark:text-emerald-200' : contract.status === 'declined' ? 'bg-red-50 text-red-800 dark:bg-red-400/10 dark:text-red-200' : 'bg-gray-100 text-gray-700 dark:bg-white/[0.08] dark:text-gray-300'">{{ contract.status === 'sent' ? 'Votre signature est attendue' : contract.status === 'signed' ? 'Accepté' : contract.status === 'declined' ? 'Modification demandée' : contract.status }}</span></div><p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ contract.number }} · version {{ contract.version }}<span v-if="contract.starts_at"> · dès le {{ formatDate(contract.starts_at) }}</span></p><p v-if="contract.signed_at" class="mt-2 text-xs font-semibold text-emerald-700 dark:text-emerald-300">Accepté par {{ contract.signer_name }} le {{ formatDate(contract.signed_at) }}</p></div>
+                <div class="flex flex-wrap gap-2"><button type="button" :disabled="downloadingKey === `contract-${contract.id}`" class="min-h-11 rounded-lg border border-gray-200 px-3 text-sm font-semibold text-gray-700 hover:border-violet-300 hover:text-violet-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 disabled:cursor-wait disabled:opacity-60 dark:border-white/10 dark:text-gray-200" @click="downloadDocument('contract', contract)">{{ downloadingKey === `contract-${contract.id}` ? 'Préparation…' : 'Lire le PDF complet' }}</button><template v-if="contract.status === 'sent'"><button type="button" class="min-h-11 rounded-lg bg-violet-600 px-4 text-sm font-semibold text-white transition-transform duration-150 active:scale-[0.96]" @click="askContractDecision(contract, 'signed')">Accepter</button><button type="button" class="min-h-11 rounded-lg px-3 text-sm font-semibold text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/[0.06]" @click="askContractDecision(contract, 'declined')">Demander une modification</button></template></div>
+              </div>
+              <p v-if="documentFeedback?.key === `contract-${contract.id}`" :role="documentFeedback.type === 'error' ? 'alert' : 'status'" class="mt-3 rounded-lg border px-3 py-2 text-sm" :class="documentFeedback.type === 'error' ? 'border-red-200 bg-red-50 text-red-900 dark:border-red-400/20 dark:bg-red-400/10 dark:text-red-100' : 'border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-100'">{{ documentFeedback.message }}</p>
+              <div v-if="decidingContractId === contract.id" class="mt-4 rounded-xl border border-violet-100 bg-violet-50/60 p-4 dark:border-violet-500/20 dark:bg-violet-500/[0.06]" :aria-busy="contractDecisionLoading">
+                <p class="text-sm font-semibold">{{ contractDecision === 'signed' ? 'Accepter cette version du contrat' : 'Demander une modification' }}</p>
+                <p class="mt-1 text-xs leading-5 text-gray-600 dark:text-gray-300">L’empreinte affichée dans le PDF identifie précisément la version enregistrée. Téléchargez et lisez le document avant de continuer.</p>
+                <label v-if="contractDecision === 'signed'" class="mt-4 block space-y-1 text-xs text-gray-600 dark:text-gray-300">Votre nom complet<input v-model="signerName" class="input-field" autocomplete="name"></label>
+                <label v-else class="mt-4 block space-y-1 text-xs text-gray-600 dark:text-gray-300">Modification souhaitée<textarea v-model="contractReason" rows="3" class="input-field resize-y" placeholder="Décrivez le point à revoir." /></label>
+                <label class="mt-4 flex items-start gap-3 text-sm"><input v-model="contractConfirmed" type="checkbox" class="mt-1 h-4 w-4 rounded border-gray-300 text-violet-600"><span>{{ contractDecision === 'signed' ? 'Je confirme avoir lu le PDF complet et accepter cette version du contrat.' : 'Je confirme vouloir transmettre cette demande de modification.' }}</span></label>
+                <p v-if="contractDecisionError" role="alert" class="mt-3 text-sm text-red-700 dark:text-red-300">{{ contractDecisionError }}</p>
+                <div class="mt-4 flex flex-wrap gap-2"><button type="button" :disabled="contractDecisionLoading" class="min-h-11 rounded-lg bg-violet-600 px-4 text-sm font-semibold text-white disabled:opacity-60" @click="submitContractDecision(contract)">{{ contractDecisionLoading ? 'Enregistrement…' : contractDecision === 'signed' ? 'Confirmer mon acceptation' : 'Envoyer ma demande' }}</button><button type="button" :disabled="contractDecisionLoading" class="min-h-11 rounded-lg px-4 text-sm font-semibold text-gray-600 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-white/[0.08]" @click="cancelContractDecision">Annuler</button></div>
+              </div>
+            </article>
+          </div>
+          <div v-else class="mt-5 rounded-xl border border-dashed border-gray-300 p-7 text-center dark:border-white/15"><p class="font-semibold">Aucun contrat disponible</p><p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Les contrats envoyés apparaîtront ici.</p></div>
         </section>
 
         <section id="devis" aria-labelledby="portal-quotes" class="scroll-mt-24 pt-12">
