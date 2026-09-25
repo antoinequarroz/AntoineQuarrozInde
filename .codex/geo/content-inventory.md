@@ -9,6 +9,9 @@
 | /blog/estimer-budget-reel-site-internet-suisse | fond | Création de site | fr | 2026-09-16 | validé |
 | /blog/decider-refonte-site-audit-sept-points | fond | Refonte | fr | 2026-09-18 | validé |
 | /blog/remplacer-excel-outil-metier-criteres-etapes | fond | Outils métier | fr | 2026-09-21 | validé |
+| /blog/application-web-ou-mobile-choisir-selon-usages-reels | fond | Applications | fr | 2026-09-22 | validé |
+| /blog/preparer-contenus-avant-creation-site-professionnel | fond | Création de site | fr | 2026-09-23 | validé |
+| /blog/wordpress-ou-cms-sur-mesure-pme | fond | Création de site | fr | 2026-09-24 | validé |
 
 ## Prérequis infra
 
