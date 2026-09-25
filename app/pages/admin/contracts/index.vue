@@ -128,8 +128,11 @@ async function sendContract(contract: ClientContract) {
 async function downloadPdf(contract: ClientContract) {
   runningAction.value = `pdf-${contract.id}`
   try {
-    const blob = await $fetch<Blob>('/api/contracts/pdf', { query: { id: contract.id }, headers: auth.authHeader(), responseType: 'blob' })
-    const url = URL.createObjectURL(blob)
+    const { url } = await $fetch<{ url: string }>('/api/contracts/pdf-link', {
+      method: 'POST',
+      body: { id: contract.id },
+      headers: auth.authHeader(),
+    })
     const link = document.createElement('a')
     link.href = url
     link.download = `contrat-${contract.number}-v${contract.version}.pdf`
@@ -137,9 +140,6 @@ async function downloadPdf(contract: ClientContract) {
     document.body.appendChild(link)
     link.click()
     link.remove()
-    // Safari, Opera and embedded browsers may start reading the Blob only
-    // after the click handler has returned. Revoking immediately cancels it.
-    window.setTimeout(() => URL.revokeObjectURL(url), 30_000)
     toast.success('Le PDF a été téléchargé')
   } catch (error: any) { toast.error(error?.data?.message || 'Le PDF n’a pas pu être généré.') }
   finally { runningAction.value = '' }
