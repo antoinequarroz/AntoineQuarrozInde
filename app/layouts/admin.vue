@@ -22,6 +22,7 @@ const navGroups = [
       { label: 'Messages', icon: 'mail', href: '/admin/messages' },
       { label: 'E-mails', icon: 'send', href: '/admin/emails' },
       { label: 'Devis', icon: 'file-plus', href: '/admin/quotes' },
+      { label: 'Contrats', icon: 'file-text', href: '/admin/contracts' },
     ],
   },
   {
@@ -239,7 +240,7 @@ onMounted(() => {
 
     if (!shortcutPrefix) return
     const destinations: Record<'g' | 'n', Record<string, string>> = {
-      g: { t: '/admin/tasks', d: '/admin/quotes', f: '/admin/invoices', p: '/admin/projects', c: '/admin/clients' },
+      g: { t: '/admin/tasks', d: '/admin/quotes', k: '/admin/contracts', f: '/admin/invoices', p: '/admin/projects', c: '/admin/clients' },
       n: { t: '/admin/tasks?new=1', d: '/admin/quotes?new=1', f: '/admin/invoices?new=1', p: '/admin/projects?new=1' },
     }
     const destination = destinations[shortcutPrefix][key]

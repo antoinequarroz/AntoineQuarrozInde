@@ -19,6 +19,7 @@ export default defineEventHandler(async (event) => {
     clientsRes,
     tasksRes,
     quotesRes,
+    contractsRes,
     invoicesRes,
     projectsRes,
     articlesRes,
@@ -35,6 +36,11 @@ export default defineEventHandler(async (event) => {
       .limit(5),
     supabase.from('quotes')
       .select('id,number,title,status')
+      .eq('organization_id', org.id)
+      .or(`number.ilike.${ilike},title.ilike.${ilike}`)
+      .limit(5),
+    supabase.from('contracts')
+      .select('id,number,title,status,version')
       .eq('organization_id', org.id)
       .or(`number.ilike.${ilike},title.ilike.${ilike}`)
       .limit(5),
@@ -59,6 +65,7 @@ export default defineEventHandler(async (event) => {
     clientsRes.error,
     tasksRes.error,
     quotesRes.error,
+    contractsRes.error,
     invoicesRes.error,
     projectsRes.error,
     articlesRes.error,
@@ -86,6 +93,12 @@ export default defineEventHandler(async (event) => {
       label: `${item.number} · ${item.title}`,
       sub: `Devis · ${item.status}`,
       to: `/admin/quotes?quoteId=${item.id}`,
+    }))),
+    ...((contractsRes.data || []).map(item => ({
+      key: `contract-${item.id}`,
+      label: `${item.number} · ${item.title}`,
+      sub: `Contrat v${item.version} · ${item.status}`,
+      to: `/admin/contracts?contractId=${item.id}`,
     }))),
     ...((invoicesRes.data || []).map(item => ({
       key: `invoice-${item.id}`,

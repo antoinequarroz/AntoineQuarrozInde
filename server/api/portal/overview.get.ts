@@ -1,12 +1,13 @@
 export default defineEventHandler(async (event) => {
   const { org, client } = await requirePortalClient(event)
   const supabase = getSupabaseAdmin()
-  const [projects, quotes, invoices] = await Promise.all([
+  const [projects, quotes, invoices, contracts] = await Promise.all([
     supabase.from('projects').select('id,title,category,description,image,live_url,workflow_status,starts_at,target_at,created_at').eq('organization_id', org.id).eq('client_id', client.id).order('created_at', { ascending: false }),
     supabase.from('quotes').select('id,project_id,number,title,total_cents,currency,status,issued_at,valid_until,accepted_at,created_at').eq('organization_id', org.id).eq('client_id', client.id).neq('status', 'draft').order('created_at', { ascending: false }),
     supabase.from('invoices').select('id,project_id,number,total_cents,currency,status,document_type,issued_at,due_at,paid_at,created_at').eq('organization_id', org.id).eq('client_id', client.id).neq('status', 'draft').order('created_at', { ascending: false }),
+    supabase.from('contracts').select('id,project_id,quote_id,number,title,status,version,effective_date,starts_at,ends_at,sent_at,signed_at,signer_name,snapshot_hash,created_at').eq('organization_id', org.id).eq('client_id', client.id).neq('status', 'draft').order('created_at', { ascending: false }),
   ])
-  const firstError = projects.error || quotes.error || invoices.error
+  const firstError = projects.error || quotes.error || invoices.error || contracts.error
   if (firstError) throw createError({ statusCode: 500, message: firstError.message })
 
   const invoiceIds = (invoices.data || []).map(invoice => invoice.id)
@@ -45,6 +46,7 @@ export default defineEventHandler(async (event) => {
       notes: (projectNotes.data || []).filter(item => item.project_id === project.id),
     })),
     quotes: quotes.data || [],
+    contracts: contracts.data || [],
     invoices: portalInvoices,
     payments: { twintAvailable: isTwintConfigured(useRuntimeConfig()) },
   }

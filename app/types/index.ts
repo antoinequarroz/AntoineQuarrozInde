@@ -201,6 +201,43 @@ export interface InvoiceItem {
   totalCents?: number
 }
 
+export interface ClientContract {
+  id: number
+  clientId: number
+  projectId: number | null
+  quoteId: number | null
+  number: string
+  title: string
+  status: 'draft' | 'sent' | 'signed' | 'declined' | 'cancelled'
+  version: number
+  effectiveDate: string | null
+  startsAt: string | null
+  endsAt: string | null
+  scope: string
+  deliverables: string[]
+  providerObligations: string
+  clientObligations: string
+  paymentTerms: string
+  changeManagement: string
+  intellectualProperty: string
+  confidentiality: string
+  dataProtection: string
+  warrantySupport: string
+  liability: string
+  termination: string
+  governingLaw: string
+  jurisdiction: string
+  specialTerms: string
+  snapshotHash: string | null
+  sentAt: string | null
+  signedAt: string | null
+  signerName: string | null
+  signerEmail: string | null
+  declinedAt: string | null
+  createdAt: string
+  updatedAt: string
+}
+
 export interface Appointment {
   id: number
   title: string

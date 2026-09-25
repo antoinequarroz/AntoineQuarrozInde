@@ -49,5 +49,6 @@
   { "filename": "20260922161000_schedule_social_publications.sql", "sha256": "f0e7e2be98400e057af7e4513039c176c5374f44f21ea3e1e55102e7d858ea68" },
   { "filename": "20260922221500_hermes_mobile_review_decisions.sql", "sha256": "bcea4491593ff216e0eaea5325e2bdc2e82da0446505c7ae0789a0799749d63c" },
   { "filename": "20260923122050_add_software_project_category.sql", "sha256": "48b501295913217352091e0064c14f71fb6a050b2a6662ca07efe94e9db34352" },
-  { "filename": "20260923152000_add_last_touch_attribution.sql", "sha256": "62834e00eb462d9381b5df48b1710d5dfb5d64da278ae2447b49f04f3a8e0e02" }
+  { "filename": "20260923152000_add_last_touch_attribution.sql", "sha256": "62834e00eb462d9381b5df48b1710d5dfb5d64da278ae2447b49f04f3a8e0e02" },
+  { "filename": "20260925182500_add_client_contracts.sql", "sha256": "9532d403de726d35c3b411d6f4fc6db7e7db001f106feda9d7817a7f13bf548b" }
 ]
