@@ -14,7 +14,7 @@ export default defineEventHandler(async (event) => {
   ])
   const pdf = await buildClientContractPdf(contractDocumentData(contract, organization || org, client), contract.signed_at ? { name: contract.signer_name, email: contract.signer_email, signedAt: contract.signed_at } : null)
   setHeader(event, 'Content-Type', 'application/pdf')
-  setHeader(event, 'Content-Disposition', `inline; filename="contrat-${contract.number}-v${contract.version}.pdf"`)
+  setHeader(event, 'Content-Disposition', `attachment; filename="contrat-${contract.number}-v${contract.version}.pdf"`)
   setHeader(event, 'X-Contract-Snapshot', contract.snapshot_hash || 'draft')
   return pdf
 })

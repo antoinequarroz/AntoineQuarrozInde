@@ -133,9 +133,15 @@ async function downloadPdf(contract: ClientContract) {
     const link = document.createElement('a')
     link.href = url
     link.download = `contrat-${contract.number}-v${contract.version}.pdf`
+    link.style.display = 'none'
+    document.body.appendChild(link)
     link.click()
-    URL.revokeObjectURL(url)
-  } catch { toast.error('Le PDF n’a pas pu être généré.') }
+    link.remove()
+    // Safari, Opera and embedded browsers may start reading the Blob only
+    // after the click handler has returned. Revoking immediately cancels it.
+    window.setTimeout(() => URL.revokeObjectURL(url), 30_000)
+    toast.success('Le PDF a été téléchargé')
+  } catch (error: any) { toast.error(error?.data?.message || 'Le PDF n’a pas pu être généré.') }
   finally { runningAction.value = '' }
 }
 
