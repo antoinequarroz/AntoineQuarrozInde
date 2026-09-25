@@ -63,7 +63,7 @@ test('client portal V2 exposes projects, decisions, deliverables and payments', 
   await expect(page.getByRole('heading', { name: 'Factures et paiements' })).toBeVisible()
   await page.screenshot({ path: testInfo.outputPath('portal-v2-desktop.png'), fullPage: true })
 
-  await page.getByRole('button', { name: 'Accepter', exact: true }).click()
+  await page.getByLabel('Vos devis').getByRole('button', { name: 'Accepter', exact: true }).click()
   await expect(page.getByText('Confirmer l’acceptation de ce devis ?')).toBeVisible()
   await page.getByRole('button', { name: 'Confirmer ma décision' }).click()
   await expect(page.getByText('Accepté', { exact: true })).toBeVisible()
