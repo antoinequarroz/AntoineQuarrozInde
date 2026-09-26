@@ -4,3 +4,4 @@
 
 - 2026-09-26 — article-019 : publication reprise après épuisement de la file ; couverture native 1200 × 675 vérifiée, sources Google Search Central et W3C, page publique contrôlée, brouillons LinkedIn et X créés avec UTM.
 - 2026-09-26 — réserve reconstituée pour dix jours ouvrés, articles 020 à 029. Les sujets prolongent les clusters création de site, maintenance, outils métier et applications sans répéter les articles publics 1 à 19.
+- 2026-09-26 — article-020 avancé au dimanche 27 septembre à la demande d’Antoine. Angle validé : adoption concrète de l’IA dans une PME, sélection d’un premier cas d’usage, mesure du gain, protection des données, validation humaine et règles d’équipe. Sources primaires à utiliser : Portail PME de la Confédération, PFPDT et Commission européenne pour les entreprises concernées par l’AI Act.
