@@ -127,13 +127,13 @@ test('contact exposes the integrated Cal.com booking with a direct fallback URL'
   await expect(booking).toHaveAttribute('data-cal-namespace', 'portfolio-contact')
 })
 
-test('contact form progressively reveals optional project details at 320px', async ({ page }) => {
+test('diagnostic contact form keeps only the useful fields at 320px', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 720 })
   await page.goto('/#contact')
 
   const form = page.locator('#contact-form form')
   await expect(form).toHaveCount(0)
-  const openForm = page.getByRole('button', { name: /travailler avec moi|work with me|mit mir arbeiten/i })
+  const openForm = page.getByRole('button', { name: /recevoir un premier avis|get an initial assessment|erste einschätzung erhalten/i })
   await expect(openForm).toBeEnabled()
   await page.waitForTimeout(500)
   await openForm.click()
@@ -141,16 +141,11 @@ test('contact form progressively reveals optional project details at 320px', asy
   await expect(page.getByLabel(/nom|name/i)).toBeFocused()
   await expect(page.getByLabel(/nom|name/i)).toHaveAttribute('required', '')
   await expect(page.getByLabel(/e-?mail/i)).toHaveAttribute('required', '')
-  await expect(page.getByLabel(/message|nachricht/i)).toHaveAttribute('required', '')
-
-  const details = page.locator('button[aria-controls="contact-project-details"]')
-  await expect(details).toHaveAttribute('aria-expanded', 'false')
+  await expect(page.getByLabel(/quel problème|what problem|welches problem/i)).toHaveAttribute('required', '')
+  await expect(page.getByLabel(/entreprise|company|unternehmen/i)).toBeVisible()
+  await expect(page.getByLabel(/entreprise|company|unternehmen/i)).not.toHaveAttribute('required', '')
   await expect(page.getByLabel(/budget indicatif|estimated budget|budgetrahmen/i)).toHaveCount(0)
-  await details.click()
-  await expect(details).toHaveAttribute('aria-expanded', 'true')
-  await expect(page.getByLabel(/budget indicatif|estimated budget|budgetrahmen/i)).toBeVisible()
-  await expect(page.getByLabel(/budget indicatif|estimated budget|budgetrahmen/i)).not.toHaveAttribute('required', '')
-  await expect(page.getByLabel(/délai cible|target timeline|gewünschter zeitrahmen/i)).not.toHaveAttribute('required', '')
+  await expect(page.getByLabel(/délai cible|target timeline|gewünschter zeitrahmen/i)).toHaveCount(0)
 })
 
 test('mobile portfolio makes horizontal browsing and project actions explicit', { tag: '@live-data' }, async ({ page }) => {

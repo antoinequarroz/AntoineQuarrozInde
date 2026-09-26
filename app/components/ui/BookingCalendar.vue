@@ -100,8 +100,8 @@ onBeforeUnmount(() => window.removeEventListener('message', captureConfirmedBook
 
 const content = computed(() => {
   if (locale.value === 'en') return {
-    title: 'A 30-minute call about your project',
-    desc: 'Tell me where you are and what you want to build. You will leave with a clear next step.',
+    title: 'A complimentary diagnostic for your project',
+    desc: 'In 30 minutes, we clarify the problem, the useful level of solution and the most sensible next step.',
     duration: '30 min', remote: 'Video call', noCommitment: 'No commitment', cta: 'Choose a time',
     bookingTitle: 'Choose a time directly',
     bookingDesc: 'Open the calendar, select an available slot and receive the video-call link automatically.',
@@ -110,8 +110,8 @@ const content = computed(() => {
     fallbackCta: 'Describe your project',
   }
   if (locale.value === 'de') return {
-    title: '30 Minuten für Ihr Projekt',
-    desc: 'Erzählen Sie mir, wo Sie stehen und was Sie umsetzen möchten. Danach ist der nächste Schritt klar.',
+    title: 'Kostenlose Diagnose für Ihr Projekt',
+    desc: 'In 30 Minuten klären wir das Problem, den sinnvollen Lösungsumfang und den nächsten Schritt.',
     duration: '30 Min.', remote: 'Videogespräch', noCommitment: 'Unverbindlich', cta: 'Termin auswählen',
     bookingTitle: 'Termin direkt auswählen',
     bookingDesc: 'Öffnen Sie den Kalender, wählen Sie einen freien Termin und erhalten Sie den Videolink automatisch.',
@@ -120,8 +120,8 @@ const content = computed(() => {
     fallbackCta: 'Projekt beschreiben',
   }
   return {
-    title: '30 minutes pour parler de votre projet',
-    desc: 'Expliquez-moi où vous en êtes et ce que vous souhaitez créer. Vous repartirez avec une prochaine étape claire.',
+    title: 'Un diagnostic offert pour votre projet',
+    desc: 'En 30 minutes, nous clarifions le problème, le niveau de solution utile et la prochaine étape la plus pertinente.',
     duration: '30 min', remote: 'Visio', noCommitment: 'Sans engagement', cta: 'Choisir un créneau',
     bookingTitle: 'Choisissez directement votre créneau',
     bookingDesc: 'Ouvrez le calendrier, sélectionnez une disponibilité et recevez automatiquement le lien de visio.',

@@ -7,6 +7,7 @@ export const MARKETING_EVENTS = [
   'booking_calendar_click',
   'booking_fallback_click',
   'contact_form_open',
+  'diagnostic_cta_click',
   'contact_details_open',
   'project_case_study_view',
   'project_case_study_click',

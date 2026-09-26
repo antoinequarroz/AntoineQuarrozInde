@@ -17,7 +17,6 @@ const sectionRef = shallowRef<HTMLElement | null>(null)
 const selectedService = ref('')
 const errorMessage = ref('')
 const formOpen = ref(false)
-const detailsOpen = ref(false)
 const formContainerRef = ref<HTMLElement | null>(null)
 const nameInputRef = ref<HTMLInputElement | null>(null)
 const submissionId = ref('')
@@ -27,9 +26,8 @@ const postHogFormCompleted = ref(false)
 const form = reactive({
   name: '',
   email: '',
+  company: '',
   subject: '',
-  budget: '',
-  timeline: '',
   message: '',
   website: '',
   startedAt: Date.now(),
@@ -41,6 +39,10 @@ const turnstileWidgetId = ref<string | null>(null)
 type FormStatus = 'idle' | 'sending' | 'success' | 'error'
 const status = ref<FormStatus>('idle')
 const attribution = ref(captureLeadAttribution())
+const bookingUrl = computed(() => {
+  const value = String(runtimeConfig.public.bookingUrl || '').trim()
+  return /^https:\/\/(?:www\.)?cal\.com\//i.test(value) ? value : ''
+})
 
 useHead(() => ({
   script: shouldUseTurnstile && turnstileShouldLoad.value
@@ -100,11 +102,6 @@ function focusContactForm() {
 function handleContactOpen(event: Event) {
   const source = (event as CustomEvent<{ source?: string }>).detail?.source || 'fallback'
   openContactForm(source)
-}
-
-function toggleProjectDetails() {
-  detailsOpen.value = !detailsOpen.value
-  if (detailsOpen.value) track('contact_details_open')
 }
 
 function currentSubmissionId() {
@@ -176,9 +173,10 @@ async function handleSubmit() {
         submissionId: currentSubmissionId(),
         name: form.name,
         email: form.email,
+        company: form.company,
         subject: form.subject,
-        budget: form.budget || null,
-        timeline: form.timeline || null,
+        budget: null,
+        timeline: null,
         message: form.message,
         locale: locale.value,
         website: form.website,
@@ -198,14 +196,12 @@ async function handleSubmit() {
     })
     form.name = ''
     form.email = ''
+    form.company = ''
     form.subject = ''
-    form.budget = ''
-    form.timeline = ''
     form.message = ''
     form.website = ''
     form.startedAt = Date.now()
     submissionId.value = ''
-    detailsOpen.value = false
     turnstileToken.value = ''
     if (turnstileWidgetId.value && (window as any).turnstile) {
       (window as any).turnstile.reset(turnstileWidgetId.value)
@@ -218,7 +214,7 @@ async function handleSubmit() {
     trackPostHog('contact_form_submit_error', { source_path: window.location.pathname })
   }
 
-  setTimeout(() => { status.value = 'idle' }, 5000)
+  if (status.value === 'error') setTimeout(() => { status.value = 'idle' }, 5000)
 }
 
 const EMAIL = 'info@antoinequarroz.ch'
@@ -306,6 +302,16 @@ const contactInfo = computed(() => [
                   {{ t('contact.form.open_cta') }}
                 </button>
               </div>
+              <div v-else-if="status === 'success'" key="contact-success" class="card-glass flex h-full min-h-[320px] flex-col justify-center p-6 md:p-10">
+                <span class="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300" aria-hidden="true">
+                  <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m5 13 4 4L19 7" /></svg>
+                </span>
+                <h3 class="mt-5 font-display text-2xl font-semibold text-gray-950 dark:text-white">{{ t('contact.form.success_title') }}</h3>
+                <p class="mt-3 max-w-lg text-sm leading-6 text-gray-600 dark:text-gray-300">{{ t('contact.form.success') }}</p>
+                <a v-if="bookingUrl" :href="bookingUrl" target="_blank" rel="noopener noreferrer" class="btn-primary mt-7 min-h-11 w-full justify-center" @click="track('booking_calendar_click'); trackPostHog('booking_clicked', { provider: 'cal.com', placement: 'contact_success' })">
+                  {{ t('contact.form.success_booking') }}
+                </a>
+              </div>
               <form v-else key="contact-form" class="card-glass h-full space-y-4 p-4 md:space-y-5 md:p-8" @submit.prevent="handleSubmit">
             <div v-if="selectedService" role="status" class="flex items-center gap-2 rounded-xl bg-violet-500/10 px-3 py-2.5 text-sm text-violet-800 dark:text-violet-100">
               <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
@@ -356,6 +362,22 @@ const contactInfo = computed(() => [
             </div>
 
             <div>
+              <label for="contact-company" class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-white/50">
+                {{ t('contact.form.company') }} <span class="font-normal normal-case tracking-normal">{{ t('contact.form.optional') }}</span>
+              </label>
+              <input
+                id="contact-company"
+                v-model="form.company"
+                name="company"
+                type="text"
+                maxlength="160"
+                autocomplete="organization"
+                class="input-field"
+                :placeholder="t('contact.form.company_placeholder')"
+              >
+            </div>
+
+            <div>
               <ClientOnly>
                 <div v-if="shouldUseTurnstile && turnstileReady" class="mb-3">
                   <div ref="turnstileContainer" />
@@ -371,65 +393,13 @@ const contactInfo = computed(() => [
                 rows="5"
                 required
                 class="input-field resize-none"
-                :placeholder="t('contact.form.message')"
+                :placeholder="t('contact.form.message_placeholder')"
               />
-            </div>
-
-            <div class="rounded-2xl border border-violet-500/15 bg-violet-500/[0.035] p-3 dark:border-violet-300/15 dark:bg-white/[0.025]">
-              <button
-                type="button"
-                class="flex min-h-11 w-full items-center justify-between gap-3 rounded-xl px-2 text-left text-sm font-semibold text-gray-800 transition-[background-color,color,transform] hover:bg-violet-500/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 active:scale-[0.96] dark:text-gray-100 dark:hover:bg-white/[0.05]"
-                :aria-expanded="detailsOpen"
-                aria-controls="contact-project-details"
-                @click="toggleProjectDetails"
-              >
-                <span>
-                  {{ detailsOpen ? t('contact.form.details_hide') : t('contact.form.details_show') }}
-                  <span class="block text-xs font-normal text-gray-500 dark:text-gray-400">{{ t('contact.form.details_hint') }}</span>
-                </span>
-                <svg class="h-4 w-4 shrink-0 transition-transform duration-150" :class="detailsOpen ? 'rotate-180' : ''" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6" /></svg>
-              </button>
-              <Transition name="details-reveal">
-                <div v-if="detailsOpen" id="contact-project-details" class="mt-3 space-y-4 border-t border-violet-500/10 pt-4 dark:border-white/[0.08]">
-                  <div>
-                    <label for="contact-subject" class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-white/50">{{ t('contact.form.subject') }}</label>
-                    <input id="contact-subject" v-model="form.subject" name="subject" type="text" autocomplete="off" class="input-field" :placeholder="t('contact.form.subject')">
-                  </div>
-                  <div class="grid gap-4 sm:grid-cols-2 md:gap-5">
-                    <div>
-                      <label for="contact-budget" class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-white/50">{{ t('contact.form.budget') }}</label>
-                      <select id="contact-budget" v-model="form.budget" name="budget" class="input-field" autocomplete="off">
-                        <option value="">{{ t('contact.form.budget_select') }}</option>
-                        <option value="<2k">{{ t('contact.form.budget_under_2k') }}</option>
-                        <option value="2k-5k">{{ t('contact.form.budget_2_5k') }}</option>
-                        <option value="5k-10k">{{ t('contact.form.budget_5_10k') }}</option>
-                        <option value="10k+">{{ t('contact.form.budget_over_10k') }}</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label for="contact-timeline" class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-white/50">{{ t('contact.form.timeline') }}</label>
-                      <select id="contact-timeline" v-model="form.timeline" name="timeline" class="input-field" autocomplete="off">
-                        <option value="">{{ t('contact.form.timeline_select') }}</option>
-                        <option value="urgent">{{ t('contact.form.timeline_urgent') }}</option>
-                        <option value="1mois">{{ t('contact.form.timeline_month') }}</option>
-                        <option value="2-3mois">{{ t('contact.form.timeline_quarter') }}</option>
-                        <option value="flexible">{{ t('contact.form.timeline_flexible') }}</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              </Transition>
             </div>
 
             <!-- Status messages -->
             <Transition name="fade">
-              <div v-if="status === 'success'" role="status" aria-live="polite" class="flex items-center gap-2 p-2.5 rounded-xl bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 text-sm">
-                <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                {{ t('contact.form.success') }}
-              </div>
-              <div v-else-if="status === 'error'" role="alert" aria-live="assertive" class="flex items-center gap-2 p-2.5 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm">
+              <div v-if="status === 'error'" role="alert" aria-live="assertive" class="flex items-center gap-2 p-2.5 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm">
                 <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
@@ -452,6 +422,7 @@ const contactInfo = computed(() => [
               </svg>
               {{ status === 'sending' ? t('contact.form.sending') : t('contact.form.send') }}
             </button>
+            <p class="text-center text-xs leading-5 text-gray-500 dark:text-white/50">{{ t('contact.form.trust') }}</p>
             <p class="text-xs text-gray-500 dark:text-white/50 text-center">
               {{ t('contact.quick_reply_at') }}
               <a :href="`mailto:${EMAIL}`" class="inline-flex min-h-11 items-center text-violet-600 underline dark:text-violet-300" @click="track('contact_email_click')">{{ EMAIL }}</a>

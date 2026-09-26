@@ -117,7 +117,7 @@ export default defineEventHandler(async (event) => {
   let linkedClientId: number | null = null
   const { data: existingClient, error: existingClientError } = await supabase
     .from('clients')
-    .select('id,name,email,status')
+    .select('id,name,email,status,company')
     .eq('organization_id', org.id)
     .ilike('email', contact.email)
     .maybeSingle()
@@ -128,6 +128,7 @@ export default defineEventHandler(async (event) => {
   else if (existingClient) {
     linkedClientId = Number(existingClient.id)
     const { error: attributionUpdateError } = await supabase.from('clients').update({
+      ...(contact.company && !existingClient.company ? { company: contact.company } : {}),
       last_acquisition_source: cleanAttribution.last_utm_source || cleanAttribution.last_referrer_host || 'direct',
       last_acquisition_medium: cleanAttribution.last_utm_medium,
       last_acquisition_campaign: cleanAttribution.last_utm_campaign,
@@ -151,7 +152,7 @@ export default defineEventHandler(async (event) => {
       .insert({
         organization_id: org.id,
         name: contact.name,
-        company: null,
+        company: contact.company,
         email: contact.email,
         phone: null,
         status: 'lead',
