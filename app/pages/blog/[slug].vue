@@ -176,6 +176,7 @@ useHead(() => ({
           </p>
           <!-- eslint-disable vue/no-v-html -->
           <div class="text-gray-600 dark:text-gray-300" v-html="renderSafeMarkdown(article.content)" />
+          <BlogDiagnosticCta />
           <BlogNewsletterSignup />
         </div>
 

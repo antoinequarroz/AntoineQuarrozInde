@@ -12,13 +12,13 @@ const minimal = {
 describe('contact submission contract', () => {
   it('accepts a minimal request and keeps project details absent', () => {
     expect(normalizeContactSubmission(minimal)).toMatchObject({
-      email: 'ada@example.com', subject: 'Nouveau projet', budget: null, timeline: null, locale: 'fr',
+      email: 'ada@example.com', company: null, subject: 'Demande de premier avis', budget: null, timeline: null, locale: 'fr',
     })
   })
 
   it('accepts only the closed optional values and localizes the default subject', () => {
-    expect(normalizeContactSubmission({ ...minimal, locale: 'en', budget: '2k-5k', timeline: 'flexible' }))
-      .toMatchObject({ subject: 'New project', budget: '2k-5k', timeline: 'flexible', locale: 'en' })
+    expect(normalizeContactSubmission({ ...minimal, locale: 'en', company: 'Analytical Engines', budget: '2k-5k', timeline: 'flexible' }))
+      .toMatchObject({ subject: 'Request for an initial assessment', company: 'Analytical Engines', budget: '2k-5k', timeline: 'flexible', locale: 'en' })
     expect(() => normalizeContactSubmission({ ...minimal, budget: 'unlimited' })).toThrow(ContactSubmissionError)
     expect(() => normalizeContactSubmission({ ...minimal, timeline: 'tomorrow' })).toThrow(ContactSubmissionError)
   })
@@ -26,15 +26,17 @@ describe('contact submission contract', () => {
   it('rejects an invalid id, identity, empty message and honeypot', () => {
     expect(() => normalizeContactSubmission({ ...minimal, submissionId: 'not-a-uuid' })).toThrow('invalid_submission')
     expect(() => normalizeContactSubmission({ ...minimal, name: '' })).toThrow('invalid_name')
+    expect(() => normalizeContactSubmission({ ...minimal, company: 'x'.repeat(161) })).toThrow('invalid_company')
     expect(() => normalizeContactSubmission({ ...minimal, email: 'invalid' })).toThrow('invalid_email')
     expect(() => normalizeContactSubmission({ ...minimal, message: ' ' })).toThrow('invalid_message')
     expect(() => normalizeContactSubmission({ ...minimal, website: 'spam.example' })).toThrow('honeypot')
   })
 
   it('builds an escaped notification without fake optional values', () => {
-    const normalized = normalizeContactSubmission({ ...minimal, name: '<Ada>', message: '<script>alert(1)</script>' })
+    const normalized = normalizeContactSubmission({ ...minimal, name: '<Ada>', company: '<Engine>', message: '<script>alert(1)</script>' })
     const notification = buildContactNotification(normalized)
     expect(notification.html).toContain('&lt;Ada&gt;')
+    expect(notification.html).toContain('&lt;Engine&gt;')
     expect(notification.html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;')
     expect(notification.text).toContain('Non précisé')
     expect(notification.html).not.toContain('<script>')

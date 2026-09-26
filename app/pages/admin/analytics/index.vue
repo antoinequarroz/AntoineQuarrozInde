@@ -44,6 +44,7 @@ const labels: Record<string, string> = {
   project_live_click: 'Clics vers les projets en ligne',
   project_code_click: 'Clics vers le code',
   contact_email_click: 'Clics e-mail',
+  diagnostic_cta_click: 'Clics diagnostic',
   contact_form_submit_success: 'Formulaires envoyés',
   contact_form_submit_error: 'Erreurs formulaire',
 }

@@ -7,19 +7,20 @@ export type ContactTimeline = typeof CONTACT_TIMELINES[number]
 export type ContactLocale = 'fr' | 'en' | 'de'
 
 const MAX_NAME_LENGTH = 120
+const MAX_COMPANY_LENGTH = 160
 const MAX_SUBJECT_LENGTH = 180
 const MAX_MESSAGE_LENGTH = 10_000
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 const copy = {
-  fr: { defaultSubject: 'Nouveau projet', title: 'Nouveau message depuis le portfolio', from: 'De', email: 'E-mail', subject: 'Sujet', budget: 'Budget indicatif', timeline: 'Délai cible', absent: 'Non précisé' },
-  en: { defaultSubject: 'New project', title: 'New message from the portfolio', from: 'From', email: 'Email', subject: 'Subject', budget: 'Estimated budget', timeline: 'Target timeline', absent: 'Not specified' },
-  de: { defaultSubject: 'Neues Projekt', title: 'Neue Nachricht aus dem Portfolio', from: 'Von', email: 'E-Mail', subject: 'Betreff', budget: 'Budgetrahmen', timeline: 'Gewünschter Zeitrahmen', absent: 'Nicht angegeben' },
+  fr: { defaultSubject: 'Demande de premier avis', title: 'Nouvelle demande de diagnostic', from: 'De', company: 'Entreprise', email: 'E-mail', subject: 'Sujet', budget: 'Budget indicatif', timeline: 'Délai cible', absent: 'Non précisé' },
+  en: { defaultSubject: 'Request for an initial assessment', title: 'New diagnostic request', from: 'From', company: 'Company', email: 'Email', subject: 'Subject', budget: 'Estimated budget', timeline: 'Target timeline', absent: 'Not specified' },
+  de: { defaultSubject: 'Anfrage für eine erste Einschätzung', title: 'Neue Diagnoseanfrage', from: 'Von', company: 'Unternehmen', email: 'E-Mail', subject: 'Betreff', budget: 'Budgetrahmen', timeline: 'Gewünschter Zeitrahmen', absent: 'Nicht angegeben' },
 } as const
 
 export class ContactSubmissionError extends Error {
-  constructor(public readonly code: 'invalid_submission' | 'invalid_name' | 'invalid_email' | 'invalid_subject' | 'invalid_message' | 'invalid_budget' | 'invalid_timeline' | 'honeypot') {
+  constructor(public readonly code: 'invalid_submission' | 'invalid_name' | 'invalid_company' | 'invalid_email' | 'invalid_subject' | 'invalid_message' | 'invalid_budget' | 'invalid_timeline' | 'honeypot') {
     super(code)
   }
 }
@@ -34,6 +35,7 @@ function optionalEnum<T extends string>(value: unknown, allowed: readonly T[], c
 export function normalizeContactSubmission(body: Record<string, unknown>) {
   const submissionId = String(body.submissionId || '').trim().toLowerCase()
   const name = String(body.name || '').trim()
+  const company = String(body.company || '').trim()
   const email = String(body.email || '').trim().toLowerCase()
   const subjectInput = String(body.subject || '').trim()
   const message = String(body.message || '').trim()
@@ -41,6 +43,7 @@ export function normalizeContactSubmission(body: Record<string, unknown>) {
 
   if (!UUID_PATTERN.test(submissionId)) throw new ContactSubmissionError('invalid_submission')
   if (!name || name.length > MAX_NAME_LENGTH) throw new ContactSubmissionError('invalid_name')
+  if (company.length > MAX_COMPANY_LENGTH) throw new ContactSubmissionError('invalid_company')
   if (!EMAIL_PATTERN.test(email) || email.length > 254) throw new ContactSubmissionError('invalid_email')
   if (subjectInput.length > MAX_SUBJECT_LENGTH) throw new ContactSubmissionError('invalid_subject')
   if (!message || message.length > MAX_MESSAGE_LENGTH) throw new ContactSubmissionError('invalid_message')
@@ -49,6 +52,7 @@ export function normalizeContactSubmission(body: Record<string, unknown>) {
   return {
     submissionId,
     name,
+    company: company || null,
     email,
     subject: subjectInput || copy[locale].defaultSubject,
     message,
@@ -61,6 +65,7 @@ export function normalizeContactSubmission(body: Record<string, unknown>) {
 export function contactPayloadFingerprint(input: ReturnType<typeof normalizeContactSubmission>) {
   return createHash('sha256').update(JSON.stringify({
     name: input.name,
+    company: input.company,
     email: input.email,
     subject: input.subject,
     message: input.message,
@@ -87,13 +92,14 @@ export function escapeContactHtml(value: unknown) {
 export function buildContactNotification(input: ReturnType<typeof normalizeContactSubmission>) {
   const labels = copy[input.locale]
   const safeName = escapeContactHtml(input.name)
+  const safeCompany = escapeContactHtml(input.company || labels.absent)
   const safeEmail = escapeContactHtml(input.email)
   const safeSubject = escapeContactHtml(input.subject)
   const safeMessage = escapeContactHtml(input.message)
   const safeBudget = escapeContactHtml(input.budget || labels.absent)
   const safeTimeline = escapeContactHtml(input.timeline || labels.absent)
   const subject = `[Portfolio] ${input.subject}`
-  const text = `${labels.title}\n\n${labels.from}: ${input.name}\n${labels.email}: ${input.email}\n${labels.subject}: ${input.subject}\n${labels.budget}: ${input.budget || labels.absent}\n${labels.timeline}: ${input.timeline || labels.absent}\n\n${input.message}`
-  const html = `<div style="font-family:Inter,Arial,sans-serif;max-width:560px;margin:0 auto;color:#111827;line-height:1.6"><h2 style="color:#7c3aed">${labels.title}</h2><table style="width:100%;border-collapse:collapse"><tr><td style="padding:8px 0;color:#6b7280;width:130px">${labels.from}</td><td style="padding:8px 0;font-weight:600">${safeName}</td></tr><tr><td style="padding:8px 0;color:#6b7280">${labels.email}</td><td style="padding:8px 0"><a href="mailto:${safeEmail}">${safeEmail}</a></td></tr><tr><td style="padding:8px 0;color:#6b7280">${labels.subject}</td><td style="padding:8px 0">${safeSubject}</td></tr><tr><td style="padding:8px 0;color:#6b7280">${labels.budget}</td><td style="padding:8px 0">${safeBudget}</td></tr><tr><td style="padding:8px 0;color:#6b7280">${labels.timeline}</td><td style="padding:8px 0">${safeTimeline}</td></tr></table><hr style="border:none;border-top:1px solid #e5e7eb;margin:16px 0"><p style="color:#374151;line-height:1.6;white-space:pre-wrap">${safeMessage}</p></div>`
+  const text = `${labels.title}\n\n${labels.from}: ${input.name}\n${labels.company}: ${input.company || labels.absent}\n${labels.email}: ${input.email}\n${labels.subject}: ${input.subject}\n${labels.budget}: ${input.budget || labels.absent}\n${labels.timeline}: ${input.timeline || labels.absent}\n\n${input.message}`
+  const html = `<div style="font-family:Inter,Arial,sans-serif;max-width:560px;margin:0 auto;color:#111827;line-height:1.6"><h2 style="color:#7c3aed">${labels.title}</h2><table style="width:100%;border-collapse:collapse"><tr><td style="padding:8px 0;color:#6b7280;width:130px">${labels.from}</td><td style="padding:8px 0;font-weight:600">${safeName}</td></tr><tr><td style="padding:8px 0;color:#6b7280">${labels.company}</td><td style="padding:8px 0">${safeCompany}</td></tr><tr><td style="padding:8px 0;color:#6b7280">${labels.email}</td><td style="padding:8px 0"><a href="mailto:${safeEmail}">${safeEmail}</a></td></tr><tr><td style="padding:8px 0;color:#6b7280">${labels.subject}</td><td style="padding:8px 0">${safeSubject}</td></tr><tr><td style="padding:8px 0;color:#6b7280">${labels.budget}</td><td style="padding:8px 0">${safeBudget}</td></tr><tr><td style="padding:8px 0;color:#6b7280">${labels.timeline}</td><td style="padding:8px 0">${safeTimeline}</td></tr></table><hr style="border:none;border-top:1px solid #e5e7eb;margin:16px 0"><p style="color:#374151;line-height:1.6;white-space:pre-wrap">${safeMessage}</p></div>`
   return { subject, text, html }
 }
