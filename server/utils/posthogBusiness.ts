@@ -9,8 +9,21 @@ export const POSTHOG_BUSINESS_EVENTS = [
 
 export type PostHogBusinessEvent = typeof POSTHOG_BUSINESS_EVENTS[number]
 
+export const POSTHOG_BUSINESS_ORIGINS = [
+  'contact_submission',
+  'client_creation',
+  'client_status_change',
+  'quote_creation',
+  'quote_status_change',
+  'portal_quote_acceptance',
+  'quote_conversion',
+] as const
+
+export type PostHogBusinessOrigin = typeof POSTHOG_BUSINESS_ORIGINS[number]
+
 type BusinessEventInput = {
   event: PostHogBusinessEvent
+  origin: PostHogBusinessOrigin
   organizationId: string
   entityType: 'client' | 'quote' | 'invoice'
   entityId: string | number
@@ -49,6 +62,8 @@ export function buildPostHogBusinessPayload(input: BusinessEventInput, projectTo
       $host: 'www.antoinequarroz.ch',
       $process_person_profile: false,
       source_system: 'crm',
+      event_schema_version: 2,
+      event_origin: input.origin,
       entity_type: input.entityType,
       organization_hash: organizationHash,
       ...(Number.isSafeInteger(amountCents) && amountCents >= 0 ? { amount_cents: amountCents } : {}),

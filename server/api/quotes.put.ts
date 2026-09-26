@@ -82,6 +82,7 @@ export default defineEventHandler(async (event) => {
   if (existing.status !== 'accepted' && data.status === 'accepted') {
     await capturePostHogBusinessEvent({
       event: 'quote_accepted',
+      origin: 'quote_status_change',
       organizationId: org.id,
       entityType: 'quote',
       entityId: data.id,

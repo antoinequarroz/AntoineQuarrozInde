@@ -50,5 +50,13 @@ Les montants de devis sont envoyés en centimes avec une devise fermée. Un
 `$insert_id` stable évite les doublons lorsqu'une acceptation passe par le
 portail puis par la conversion en facture.
 
+Depuis la version 2 des événements métier, `event_origin` distingue une
+soumission de contact, une création ou transition de client, une acceptation
+de devis dans le portail et une conversion en facture. Le tableau
+`/admin/analytics` affiche séparément la durée de collecte, la couverture UTM
+et la proportion d'événements métier dont l'origine est classée. Les anciens
+événements sans origine restent visibles, mais ne doivent pas servir à
+attribuer un résultat commercial à un canal.
+
 Les paramètres UTM complets restent dans le mécanisme d'attribution interne et
 le CRM. Ils ne sont pas recopiés dans les URL PostHog.

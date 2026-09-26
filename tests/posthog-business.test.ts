@@ -5,6 +5,7 @@ describe('PostHog business events', () => {
   it('creates stable anonymous identifiers and keeps only safe properties', () => {
     const first = buildPostHogBusinessPayload({
       event: 'quote_accepted',
+      origin: 'portal_quote_acceptance',
       organizationId: 'org-secret',
       entityType: 'quote',
       entityId: 42,
@@ -17,6 +18,7 @@ describe('PostHog business events', () => {
     }, 'phc_public')
     const second = buildPostHogBusinessPayload({
       event: 'quote_accepted',
+      origin: 'portal_quote_acceptance',
       organizationId: 'org-secret',
       entityType: 'quote',
       entityId: 42,
@@ -35,6 +37,8 @@ describe('PostHog business events', () => {
       $host: 'www.antoinequarroz.ch',
       $process_person_profile: false,
       source_system: 'crm',
+      event_schema_version: 2,
+      event_origin: 'portal_quote_acceptance',
       entity_type: 'quote',
       amount_cents: 12_500,
       currency: 'CHF',
@@ -48,6 +52,7 @@ describe('PostHog business events', () => {
   it('drops unsupported dimensions instead of forwarding arbitrary data', () => {
     const payload = buildPostHogBusinessPayload({
       event: 'client_won',
+      origin: 'client_status_change',
       organizationId: 'org-secret',
       entityType: 'client',
       entityId: 7,

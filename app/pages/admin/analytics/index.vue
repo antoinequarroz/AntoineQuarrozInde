@@ -208,7 +208,25 @@ onMounted(loadAnalytics)
           </div>
         </div>
 
-        <div v-else class="m-5 rounded-lg border border-dashed border-gray-300 p-4 text-sm text-gray-500 dark:border-white/[0.12] dark:text-gray-400">
+        <div v-if="posthog?.dataQuality" class="grid gap-3 border-t border-gray-100 bg-gray-50/70 p-4 sm:grid-cols-3 dark:border-white/[0.06] dark:bg-white/[0.02]" aria-label="Qualité des données PostHog">
+          <div class="rounded-lg border border-gray-200 bg-white p-3 dark:border-white/[0.08] dark:bg-[#111118]">
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Période de référence</p>
+            <p class="mt-1 font-display text-lg font-semibold">{{ posthog.dataQuality.observationDays }}/14 jours</p>
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Les recommandations de contenu attendent 14 jours complets.</p>
+          </div>
+          <div class="rounded-lg border border-gray-200 bg-white p-3 dark:border-white/[0.08] dark:bg-[#111118]">
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Trafic attribué par UTM</p>
+            <p class="mt-1 font-display text-lg font-semibold">{{ posthog.dataQuality.utmCoveragePct }} %</p>
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ posthog.dataQuality.taggedPageviews }} page{{ posthog.dataQuality.taggedPageviews > 1 ? 's' : '' }} vue{{ posthog.dataQuality.taggedPageviews > 1 ? 's' : '' }} avec une source explicite.</p>
+          </div>
+          <div class="rounded-lg border border-gray-200 bg-white p-3 dark:border-white/[0.08] dark:bg-[#111118]">
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Événements métier classés</p>
+            <p class="mt-1 font-display text-lg font-semibold">{{ posthog.dataQuality.businessEventsClassified }}/{{ posthog.dataQuality.businessEventsTotal }}</p>
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Les nouveaux événements indiquent leur origine technique.</p>
+          </div>
+        </div>
+
+        <div v-if="!posthog?.totals" class="m-5 rounded-lg border border-dashed border-gray-300 p-4 text-sm text-gray-500 dark:border-white/[0.12] dark:text-gray-400">
           <span v-if="posthog?.unavailable">PostHog est configuré mais les statistiques sont temporairement indisponibles.</span>
           <span v-else>La clé de lecture PostHog doit être configurée sur le VPS. Le suivi public reste actif.</span>
         </div>
