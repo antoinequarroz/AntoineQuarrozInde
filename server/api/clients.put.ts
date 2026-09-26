@@ -95,6 +95,7 @@ export default defineEventHandler(async (event) => {
   if (existing.status !== 'active' && data.status === 'active') {
     await capturePostHogBusinessEvent({
       event: 'client_won',
+      origin: 'client_status_change',
       organizationId: org.id,
       entityType: 'client',
       entityId: data.id,

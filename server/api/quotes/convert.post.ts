@@ -88,6 +88,7 @@ export default defineEventHandler(async (event) => {
   if (result.created) {
     await capturePostHogBusinessEvent({
       event: 'quote_accepted',
+      origin: 'quote_conversion',
       organizationId: org.id,
       entityType: 'quote',
       entityId: quoteId,
@@ -98,6 +99,7 @@ export default defineEventHandler(async (event) => {
     })
     await capturePostHogBusinessEvent({
       event: 'invoice_created',
+      origin: 'quote_conversion',
       organizationId: org.id,
       entityType: 'invoice',
       entityId: result.invoice.id,

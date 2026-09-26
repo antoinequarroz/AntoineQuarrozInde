@@ -13,6 +13,11 @@ async function queryPostHog(apiKey: string, projectId: string, name: string, que
 
 function numeric(value: unknown) { const parsed = Number(value); return Number.isFinite(parsed) ? parsed : 0 }
 function percentage(value: number, base: number) { return base ? Math.round(value / base * 1_000) / 10 : 0 }
+function observationDays(firstObservedAt: unknown) {
+  const timestamp = new Date(String(firstObservedAt || '')).getTime()
+  if (!Number.isFinite(timestamp)) return 0
+  return Math.max(1, Math.floor((Date.now() - timestamp) / 86_400_000) + 1)
+}
 function calendarDate(offsetDays = 0) {
   const date = new Date(Date.now() + offsetDays * 86_400_000)
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Zurich', year: 'numeric', month: '2-digit', day: '2-digit' }).format(date)
@@ -26,15 +31,20 @@ function periodMetrics(row: unknown[] = []) {
     publicErrors: numeric(row[13]),
   }
 }
-function recommendations(current: ReturnType<typeof periodMetrics>, previous: ReturnType<typeof periodMetrics>, content: Array<{ path: string, visitors: number, pageviews: number }>) {
+type DataQuality = { observationDays: number, utmCoveragePct: number, businessEventsClassified: number, businessEventsTotal: number }
+function recommendations(current: ReturnType<typeof periodMetrics>, previous: ReturnType<typeof periodMetrics>, content: Array<{ path: string, visitors: number, pageviews: number }>, quality: DataQuality) {
   const result: Array<{ level: 'info' | 'attention' | 'success', title: string, detail: string }> = []
-  if (current.visitors < 20) result.push({ level: 'info', title: 'Constituer la référence', detail: 'Le volume est encore trop faible pour arbitrer une page ou un canal. Laisse le suivi fonctionner au moins deux semaines.' })
-  if (current.visitors >= 20 && current.contentVisitors / current.visitors < 0.3) result.push({ level: 'attention', title: 'Mieux orienter vers les contenus', detail: 'Moins de 30 % des visiteurs consultent un article ou un projet. Renforce les liens depuis l’accueil.' })
-  if (current.contentVisitors >= 10 && current.contactIntents === 0) result.push({ level: 'attention', title: 'Tester les appels à l’action', detail: 'Les contenus sont lus sans clic vers le contact. Essaie un CTA plus concret sur les pages les plus vues.' })
+  const mature = quality.observationDays >= 14
+  if (!mature) result.push({ level: 'info', title: 'Référence en cours', detail: `${quality.observationDays}/14 jours de collecte. Attends la période complète avant d’arbitrer une page ou un canal.` })
+  else if (current.visitors < 20) result.push({ level: 'info', title: 'Volume encore limité', detail: 'La période est complète, mais le trafic reste trop faible pour arbitrer une page ou un canal de façon fiable.' })
+  if (quality.utmCoveragePct < 30 && current.pageviews >= 20) result.push({ level: 'attention', title: 'Sources encore peu attribuées', detail: `${quality.utmCoveragePct} % des pages vues portent une source UTM. Continue à utiliser les liens marqués LinkedIn, X et LuMail.` })
+  if (mature && current.visitors >= 20 && current.contentVisitors / current.visitors < 0.3) result.push({ level: 'attention', title: 'Mieux orienter vers les contenus', detail: 'Moins de 30 % des visiteurs consultent un article ou un projet. Renforce les liens depuis l’accueil.' })
+  if (mature && current.contentVisitors >= 10 && current.contactIntents === 0) result.push({ level: 'attention', title: 'Tester les appels à l’action', detail: 'Les contenus sont lus sans clic vers le contact. Essaie un CTA plus concret sur les pages les plus vues.' })
   if (current.contacts > previous.contacts && current.contacts > 0) result.push({ level: 'success', title: 'Demandes en progression', detail: 'Les demandes envoyées progressent par rapport aux sept jours précédents. Conserve les pages et canaux à l’origine de cette hausse.' })
   if (current.publicErrors > 0) result.push({ level: 'attention', title: 'Erreur publique détectée', detail: `${current.publicErrors} erreur${current.publicErrors > 1 ? 's' : ''} applicative${current.publicErrors > 1 ? 's' : ''} a été détectée sur le site cette semaine. Vérifie les chemins concernés dans PostHog.` })
-  if (current.acceptedQuotes > 0) result.push({ level: 'success', title: 'Résultat commercial mesuré', detail: `${current.acceptedQuotes} devis accepté${current.acceptedQuotes > 1 ? 's' : ''} pour ${(current.acceptedQuoteCents / 100).toLocaleString('fr-CH')} CHF cette semaine.` })
-  if (content.length && current.visitors >= 20) result.push({ level: 'info', title: 'Priorité de contenu', detail: `${content[0]?.path} est le contenu le plus consulté de la période. Utilise-le comme point de départ pour le prochain test.` })
+  if (quality.businessEventsTotal > quality.businessEventsClassified) result.push({ level: 'attention', title: 'Historique commercial à qualifier', detail: `${quality.businessEventsTotal - quality.businessEventsClassified} événement${quality.businessEventsTotal - quality.businessEventsClassified > 1 ? 's' : ''} métier ancien${quality.businessEventsTotal - quality.businessEventsClassified > 1 ? 's' : ''} ne précise${quality.businessEventsTotal - quality.businessEventsClassified > 1 ? 'nt' : ''} pas encore son origine. Ne l’utilise pas pour attribuer un canal.` })
+  else if (current.acceptedQuotes > 0) result.push({ level: 'success', title: 'Événements commerciaux classés', detail: `${current.acceptedQuotes} devis accepté${current.acceptedQuotes > 1 ? 's' : ''} pour ${(current.acceptedQuoteCents / 100).toLocaleString('fr-CH')} CHF cette semaine, avec une origine technique vérifiable.` })
+  if (mature && content.length && current.visitors >= 20) result.push({ level: 'info', title: 'Priorité de contenu', detail: `${content[0]?.path} est le contenu le plus consulté de la période. Utilise-le comme point de départ pour le prochain test.` })
   if (!result.length) result.push({ level: 'info', title: 'Aucune anomalie détectée', detail: 'Continue la collecte. Une recommandation apparaîtra dès qu’un signal exploitable sera mesuré.' })
   return result.slice(0, 3)
 }
@@ -44,7 +54,7 @@ export default defineCachedEventHandler(async (event) => {
   const config = useRuntimeConfig()
   const apiKey = String(config.posthogPersonalApiKey || '').trim()
   const projectId = String(config.posthogProjectId || '').trim()
-  const empty = { projectId, periodDays: 30, totals: null, sources: [], trend: [], content: [], funnel: [], weekly: null, recommendations: [] }
+  const empty = { projectId, periodDays: 30, totals: null, sources: [], trend: [], content: [], funnel: [], weekly: null, dataQuality: null, recommendations: [] }
   if (!apiKey || !projectId) return { configured: false, ...empty }
 
   try {
@@ -54,7 +64,10 @@ export default defineCachedEventHandler(async (event) => {
           countIf(event = 'newsletter_subscribed'), countIf(event = 'booking_clicked'), countIf(event = 'booking_confirmed'),
           countIf(event = 'crm_lead_created'), countIf(event = 'client_won'), countIf(event = 'quote_accepted'),
           sumIf(toIntOrZero(toString(properties.amount_cents)), event = 'quote_accepted'), countIf(event = 'invoice_created'),
-          countIf(event = 'public_app_error')
+          countIf(event = 'public_app_error'), countIf(event = '$pageview' AND notEmpty(toString(properties.$utm_source))),
+          toString(minIf(timestamp, event = '$pageview')),
+          countIf(event IN ('crm_lead_created', 'client_won', 'quote_accepted', 'invoice_created') AND notEmpty(toString(properties.event_origin))),
+          countIf(event IN ('crm_lead_created', 'client_won', 'quote_accepted', 'invoice_created'))
         FROM events PREWHERE timestamp >= now() - INTERVAL 30 DAY WHERE ${SITE_FILTER}`),
       queryPostHog(apiKey, projectId, 'site_admin_sources_30d', `
         SELECT if(notEmpty(toString(properties.$utm_source)), lowerUTF8(toString(properties.$utm_source)),
@@ -89,6 +102,13 @@ export default defineCachedEventHandler(async (event) => {
     const contentRows = (content.results || []).map(row => ({ path: String(row[0] || '/'), visitors: numeric(row[1]), pageviews: numeric(row[2]) }))
     const weeklyRows = new Map((weekly.results || []).map(row => [String(row[0]), row.slice(1)]))
     const current = periodMetrics(weeklyRows.get('current')); const previous = periodMetrics(weeklyRows.get('previous'))
+    const quality = {
+      observationDays: numeric(metrics[1]) ? observationDays(metrics[13]) : 0,
+      utmCoveragePct: percentage(numeric(metrics[12]), numeric(metrics[1])),
+      taggedPageviews: numeric(metrics[12]),
+      businessEventsClassified: numeric(metrics[14]),
+      businessEventsTotal: numeric(metrics[15]),
+    }
     const funnel = [
       { key: 'visitors', label: 'Visiteurs du site', value: current.visitors },
       { key: 'content', label: 'Article ou projet consulté', value: current.contentVisitors },
@@ -105,7 +125,7 @@ export default defineCachedEventHandler(async (event) => {
       },
       sources: (sources.results || []).map(row => ({ source: String(row[0] || 'Direct / inconnu'), visitors: numeric(row[1]), pageviews: numeric(row[2]) })),
       trend: Array.from({ length: 30 }, (_, index) => { const date = calendarDate(index - 29); const point = trendByDate.get(date); return { date, visitors: point?.visitors || 0, pageviews: point?.pageviews || 0 } }),
-      content: contentRows, funnel, weekly: { current, previous }, recommendations: recommendations(current, previous, contentRows),
+      content: contentRows, funnel, weekly: { current, previous }, dataQuality: quality, recommendations: recommendations(current, previous, contentRows, quality),
     }
   }
   catch (error: any) {

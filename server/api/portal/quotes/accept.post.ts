@@ -55,6 +55,7 @@ export default defineEventHandler(async (event) => {
   })
   await capturePostHogBusinessEvent({
     event: 'quote_accepted',
+    origin: 'portal_quote_acceptance',
     organizationId: org.id,
     entityType: 'quote',
     entityId: quote.id,
