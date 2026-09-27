@@ -51,5 +51,6 @@
   { "filename": "20260923122050_add_software_project_category.sql", "sha256": "48b501295913217352091e0064c14f71fb6a050b2a6662ca07efe94e9db34352" },
   { "filename": "20260923152000_add_last_touch_attribution.sql", "sha256": "62834e00eb462d9381b5df48b1710d5dfb5d64da278ae2447b49f04f3a8e0e02" },
   { "filename": "20260925182500_add_client_contracts.sql", "sha256": "9532d403de726d35c3b411d6f4fc6db7e7db001f106feda9d7817a7f13bf548b" },
-  { "filename": "20260927173000_allow_social_resource_destination.sql", "sha256": "28bef8d0d74375416a0270ae972ea7f279073e53fa0d2637f378039710e1c2bb" }
+  { "filename": "20260927173000_allow_social_resource_destination.sql", "sha256": "28bef8d0d74375416a0270ae972ea7f279073e53fa0d2637f378039710e1c2bb" },
+  { "filename": "20260927184000_add_social_document_assets.sql", "sha256": "aaafa22a9dd33a6bd09640f12e7c7f6f0c26c68708c9503959240ff37611ac9b" }
 ]

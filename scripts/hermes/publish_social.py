@@ -23,9 +23,12 @@ from zoneinfo import ZoneInfo
 
 LINKEDIN_POSTS_ENDPOINT = "https://api.linkedin.com/rest/posts"
 LINKEDIN_IMAGES_ENDPOINT = "https://api.linkedin.com/rest/images?action=initializeUpload"
+LINKEDIN_DOCUMENTS_ENDPOINT = "https://api.linkedin.com/rest/documents?action=initializeUpload"
 X_POSTS_ENDPOINT = "https://api.x.com/2/tweets"
 CANONICAL_SITE_HOME = "https://www.antoinequarroz.ch/"
 CANONICAL_ARTICLE_PREFIX = f"{CANONICAL_SITE_HOME}blog/"
+CANONICAL_RESOURCE_PREFIX = f"{CANONICAL_SITE_HOME}ressources/"
+CANONICAL_SOCIAL_PREFIX = f"{CANONICAL_SITE_HOME}social/"
 ALLOWED_DRAFT_ROOT = Path("seo/social/a-valider")
 RECEIPT_ROOT = Path("seo/social/receipts")
 LINKEDIN_VERSION = "202606"
@@ -33,6 +36,7 @@ X_POST_WITH_URL_ESTIMATED_USD = 0.20
 DEFAULT_SITE_URL = "https://www.antoinequarroz.ch"
 MAX_ARTICLE_HTML_BYTES = 2 * 1024 * 1024
 MAX_SOCIAL_IMAGE_BYTES = 10 * 1024 * 1024
+MAX_SOCIAL_DOCUMENT_BYTES = 25 * 1024 * 1024
 LINKEDIN_SEQUENCE_PREFIX = re.compile(
     r"^\s*(?:post\s+)?(?:#|n[°o]\s*)?\d+\s*[.):-]\s+", re.IGNORECASE
 )
@@ -85,6 +89,9 @@ def parse_draft(path: Path) -> dict[str, str]:
         "status": status,
         "article_url": article_url,
         "article_title": metadata.get("article_title") or metadata.get("titre") or "",
+        "media_kind": metadata.get("media_kind", "").lower(),
+        "media_url": metadata.get("media_url", ""),
+        "media_title": metadata.get("media_title", ""),
         "content": content,
     }
 
@@ -134,14 +141,26 @@ def validate_draft(path: Path, project: Path) -> dict[str, str]:
         raise ValueError("Plateforme autorisee: linkedin ou x.")
     if draft["status"] != "APPROUVE":
         raise ValueError("Publication refusee: le statut doit etre exactement APPROUVE.")
-    if draft["article_url"] != CANONICAL_SITE_HOME and not draft["article_url"].startswith(CANONICAL_ARTICLE_PREFIX):
-        raise ValueError("L'URL doit etre l'accueil ou un article public du site canonique.")
+    if (
+        draft["article_url"] != CANONICAL_SITE_HOME
+        and not draft["article_url"].startswith(CANONICAL_ARTICLE_PREFIX)
+        and not draft["article_url"].startswith(CANONICAL_RESOURCE_PREFIX)
+    ):
+        raise ValueError("L'URL doit etre l'accueil, un article ou une ressource du site canonique.")
     if draft["article_url"] not in draft["content"]:
         raise ValueError("Le texte public doit contenir l'URL de l'article approuve.")
     if draft["platform"] == "x" and len(draft["content"]) > 280:
         raise ValueError("Le brouillon X depasse 280 caracteres.")
     if draft["platform"] == "linkedin":
         draft["content"] = clean_linkedin_content(draft["content"])
+        media_values = (draft["media_kind"], draft["media_url"], draft["media_title"])
+        if any(media_values):
+            if not all(media_values):
+                raise ValueError("Le document LinkedIn doit avoir un type, une URL et un titre.")
+            if draft["media_kind"] != "document":
+                raise ValueError("Seul un document PDF LinkedIn est pris en charge.")
+            if not draft["media_url"].startswith(CANONICAL_SOCIAL_PREFIX) or not draft["media_url"].lower().endswith(".pdf"):
+                raise ValueError("Le document LinkedIn doit etre un PDF public du dossier /social/.")
     if not draft["content"]:
         raise ValueError("Le brouillon est vide.")
     return draft
@@ -243,6 +262,66 @@ def upload_linkedin_image(token: str, author: str, image: bytes, mime_type: str)
     return image_urn
 
 
+def social_document(document_url: str) -> bytes:
+    parsed = urllib.parse.urlparse(document_url)
+    if (
+        parsed.scheme != "https"
+        or parsed.hostname not in {"www.antoinequarroz.ch", "antoinequarroz.ch"}
+        or not parsed.path.startswith("/social/")
+        or not parsed.path.lower().endswith(".pdf")
+    ):
+        raise RuntimeError("Document LinkedIn refuse: seul un PDF public du dossier /social/ est autorise.")
+    request = urllib.request.Request(document_url, headers={"User-Agent": "hermes-antoinequarroz/1.0"})
+    try:
+        with urllib.request.urlopen(request, timeout=60) as response:
+            final = urllib.parse.urlparse(response.geturl())
+            if final.hostname not in {"www.antoinequarroz.ch", "antoinequarroz.ch"}:
+                raise RuntimeError("Le document LinkedIn a redirige hors du site officiel.")
+            if response.headers.get_content_type() != "application/pdf":
+                raise RuntimeError("Document LinkedIn refuse: le fichier public n'est pas un PDF.")
+            return read_bounded_response(response, MAX_SOCIAL_DOCUMENT_BYTES, "Le document LinkedIn")
+    except urllib.error.HTTPError as exc:
+        raise RuntimeError(f"Document LinkedIn indisponible ({exc.code}).") from exc
+
+
+def upload_linkedin_document(token: str, author: str, document: bytes) -> str:
+    initialized, _ = request_json(
+        LINKEDIN_DOCUMENTS_ENDPOINT,
+        {"initializeUploadRequest": {"owner": author}},
+        {
+            "Authorization": f"Bearer {token}",
+            "X-Restli-Protocol-Version": "2.0.0",
+            "Linkedin-Version": LINKEDIN_VERSION,
+        },
+    )
+    value = initialized.get("value", {})
+    upload_url = value.get("uploadUrl")
+    document_urn = value.get("document")
+    if not isinstance(upload_url, str) or not upload_url.startswith("https://"):
+        raise RuntimeError("LinkedIn n'a pas fourni d'URL d'envoi de document valide.")
+    if not isinstance(document_urn, str) or not document_urn.startswith("urn:li:document:"):
+        raise RuntimeError("LinkedIn n'a pas fourni d'identifiant de document valide.")
+
+    request = urllib.request.Request(
+        upload_url,
+        data=document,
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/pdf",
+            "User-Agent": "hermes-antoinequarroz/1.0",
+        },
+        method="PUT",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=120) as response:
+            if response.status not in {200, 201}:
+                raise RuntimeError(f"Envoi du document LinkedIn refuse ({response.status}).")
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", errors="replace")
+        raise RuntimeError(f"Envoi du document LinkedIn refuse ({exc.code}): {detail[:500]}") from exc
+    return document_urn
+
+
 def site_request(site_url: str, token: str, *, payload: dict | None = None, path: str = "social-publications") -> dict:
     url = f"{site_url.rstrip('/')}/api/hermes/{path}"
     request = urllib.request.Request(
@@ -264,13 +343,30 @@ def clean_social_title(title: str) -> str:
     return re.sub(r"^\s*\d+\.\s*", "", title).strip() or "Illustration de l'article"
 
 
-def publish_linkedin(content: str, article_url: str, article_title: str) -> dict:
+def publish_linkedin(
+    content: str,
+    article_url: str,
+    article_title: str,
+    media_kind: str = "",
+    media_url: str = "",
+    media_title: str = "",
+) -> dict:
     token = os.environ.get("LINKEDIN_ACCESS_TOKEN", "").strip()
     author = os.environ.get("LINKEDIN_PERSON_URN", "").strip()
     if not token or not re.fullmatch(r"urn:li:person:[A-Za-z0-9_-]+", author):
         raise RuntimeError("LINKEDIN_ACCESS_TOKEN ou LINKEDIN_PERSON_URN absent/invalide.")
-    image, mime_type, image_url = article_social_image(article_url)
-    image_urn = upload_linkedin_image(token, author, image, mime_type)
+    media: dict[str, str]
+    result_media: dict[str, str]
+    if media_kind == "document":
+        document = social_document(media_url)
+        document_urn = upload_linkedin_document(token, author, document)
+        media = {"title": media_title[:200], "id": document_urn}
+        result_media = {"document": document_urn, "documentSource": media_url}
+    else:
+        image, mime_type, image_url = article_social_image(article_url)
+        image_urn = upload_linkedin_image(token, author, image, mime_type)
+        media = {"altText": clean_social_title(article_title)[:300], "id": image_urn}
+        result_media = {"image": image_urn, "imageSource": image_url}
     payload = {
         "author": author,
         "commentary": content,
@@ -280,12 +376,7 @@ def publish_linkedin(content: str, article_url: str, article_title: str) -> dict
             "targetEntities": [],
             "thirdPartyDistributionChannels": [],
         },
-        "content": {
-            "media": {
-                "altText": clean_social_title(article_title)[:300],
-                "id": image_urn,
-            }
-        },
+        "content": {"media": media},
         "lifecycleState": "PUBLISHED",
         "isReshareDisabledByAuthor": False,
     }
@@ -302,8 +393,7 @@ def publish_linkedin(content: str, article_url: str, article_title: str) -> dict
     return {
         "id": headers.get("x-restli-id") or body.get("id"),
         "response": body,
-        "image": image_urn,
-        "imageSource": image_url,
+        **result_media,
     }
 
 
@@ -422,7 +512,12 @@ def process_approved(site_url: str, token: str, *, dry_run: bool) -> dict:
         try:
             tracked_content = tracked_social_content(claimed["content"], claimed["article_url"], platform)
             result = publish_linkedin(
-                tracked_content, claimed["article_url"], claimed.get("article_title", "")
+                tracked_content,
+                claimed["article_url"],
+                claimed.get("article_title", ""),
+                claimed.get("media_kind") or "",
+                claimed.get("media_url") or "",
+                claimed.get("media_title") or "",
             ) if platform == "linkedin" else publish_x(tracked_content)
             post_id = result.get("id")
             site_request(site_url, token, payload={"action": "complete", "id": claimed["id"], "version": claimed["version"], "externalPostId": post_id, "externalPostUrl": external_post_url(platform, post_id)})
@@ -448,7 +543,12 @@ def sync_drafts(project: Path, site_url: str, token: str, *, dry_run: bool) -> d
                 raise ValueError("plateforme absente ou invalide")
             if platform == "linkedin":
                 content = clean_linkedin_content(content)
-            if (article_url != CANONICAL_SITE_HOME and not article_url.startswith(CANONICAL_ARTICLE_PREFIX)) or article_url not in content:
+            is_canonical = (
+                article_url == CANONICAL_SITE_HOME
+                or article_url.startswith(CANONICAL_ARTICLE_PREFIX)
+                or article_url.startswith(CANONICAL_RESOURCE_PREFIX)
+            )
+            if not is_canonical or article_url not in content:
                 raise ValueError("URL canonique absente du texte")
             if not content or len(content) > (280 if platform == "x" else 3000):
                 raise ValueError("longueur de texte invalide")
@@ -460,6 +560,9 @@ def sync_drafts(project: Path, site_url: str, token: str, *, dry_run: bool) -> d
                     "articleUrl": article_url,
                     "content": content,
                     "sourcePath": str(draft_path.relative_to(project)),
+                    "mediaKind": draft["media_kind"] or None,
+                    "mediaUrl": draft["media_url"] or None,
+                    "mediaTitle": draft["media_title"] or None,
                 })
             result["synced"] = int(result["synced"]) + 1
         except Exception as exc:
@@ -508,7 +611,7 @@ def main() -> int:
     draft_path = args.draft if args.draft.is_absolute() else project / args.draft
     draft = validate_draft(draft_path, project)
     fingerprint = hashlib.sha256(
-        f"{draft['platform']}\n{draft['content']}".encode("utf-8")
+        f"{draft['platform']}\n{draft['content']}\n{draft['media_url']}".encode("utf-8")
     ).hexdigest()[:32]
     receipt_path = project / RECEIPT_ROOT / f"{fingerprint}.json"
 
@@ -531,7 +634,12 @@ def main() -> int:
 
     tracked_content = tracked_social_content(draft["content"], draft["article_url"], draft["platform"])
     result = publish_linkedin(
-        tracked_content, draft["article_url"], draft["article_title"]
+        tracked_content,
+        draft["article_url"],
+        draft["article_title"],
+        draft["media_kind"],
+        draft["media_url"],
+        draft["media_title"],
     ) if draft["platform"] == "linkedin" else publish_x(tracked_content)
     receipt = {
         "status": "published",
@@ -539,6 +647,7 @@ def main() -> int:
         "articleUrl": draft["article_url"],
         "postId": result.get("id"),
         "imageAttached": bool(result.get("image")),
+        "documentAttached": bool(result.get("document")),
         "fingerprint": fingerprint,
         "idempotent": False,
     }

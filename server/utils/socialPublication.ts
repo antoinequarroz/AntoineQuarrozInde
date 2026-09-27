@@ -7,6 +7,7 @@ export const SOCIAL_PUBLICATION_TIMEZONE = 'Europe/Zurich'
 const SITE_HOME = 'https://www.antoinequarroz.ch/'
 const ARTICLE_PREFIX = `${SITE_HOME}blog/`
 const RESOURCE_PREFIX = `${SITE_HOME}ressources/`
+const SOCIAL_DOCUMENT_PREFIX = `${SITE_HOME}social/`
 
 export type SocialPlatform = typeof SOCIAL_PLATFORMS[number]
 export type SocialStatus = typeof SOCIAL_STATUSES[number]
@@ -80,6 +81,15 @@ export function validateSocialDraftInput(body: Record<string, unknown>) {
   if (sourcePath && !/^seo\/social\/a-valider\/[A-Za-z0-9._/-]+\.md$/.test(sourcePath)) {
     throw createError({ statusCode: 400, message: 'Chemin source invalide.' })
   }
+  const mediaKind = body.mediaKind == null || body.mediaKind === '' ? null : requiredText(body.mediaKind, 'Type de média', 30)
+  const mediaUrl = body.mediaUrl == null || body.mediaUrl === '' ? null : requiredText(body.mediaUrl, 'Fichier média', 500)
+  const mediaTitle = body.mediaTitle == null || body.mediaTitle === '' ? null : requiredText(body.mediaTitle, 'Titre du média', 180)
+  if ([mediaKind, mediaUrl, mediaTitle].some(Boolean) && (!mediaKind || !mediaUrl || !mediaTitle)) {
+    throw createError({ statusCode: 400, message: 'Le document social est incomplet.' })
+  }
+  if (mediaKind && (platform !== 'linkedin' || mediaKind !== 'document' || !mediaUrl?.startsWith(SOCIAL_DOCUMENT_PREFIX) || !mediaUrl.endsWith('.pdf'))) {
+    throw createError({ statusCode: 400, message: 'Seul un PDF officiel du site peut être joint à LinkedIn.' })
+  }
   return {
     platform,
     sourceKey: requiredText(body.sourceKey, 'Clé source', 180),
@@ -87,6 +97,9 @@ export function validateSocialDraftInput(body: Record<string, unknown>) {
     articleUrl,
     content: validateSocialContent(platform, body.content),
     sourcePath,
+    mediaKind,
+    mediaUrl,
+    mediaTitle,
   }
 }
 
