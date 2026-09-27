@@ -47,16 +47,23 @@ useHead({
     <div class="section-container relative z-10">
       <div class="mx-auto max-w-5xl">
         <UiAppBreadcrumbs :items="breadcrumbs.items" class="mb-7" />
-        <div class="grid items-end gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(20rem,0.9fr)]">
-          <div>
-            <span class="badge">Ressource gratuite pour PME</span>
-            <h1 class="mt-5 max-w-4xl font-display text-4xl font-bold leading-tight text-gray-950 dark:text-white sm:text-5xl">
+        <div class="relative overflow-hidden rounded-[2rem] border border-violet-400/25 bg-[#080810] p-7 text-white shadow-[0_32px_90px_-48px_rgba(124,58,237,0.8)] sm:p-10 lg:p-12">
+          <div class="pointer-events-none absolute -right-20 -top-24 h-72 w-72 rounded-full border border-violet-400/30" aria-hidden="true" />
+          <div class="pointer-events-none absolute -right-8 -top-12 h-52 w-52 rounded-full border border-cyan-300/20" aria-hidden="true" />
+          <div class="relative grid items-end gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(20rem,0.9fr)]">
+            <div>
+              <div class="flex items-center gap-3">
+                <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 via-fuchsia-500 to-cyan-400 font-display text-sm font-bold text-white shadow-lg shadow-violet-900/30">AQ</span>
+                <span class="rounded-full border border-violet-300/25 bg-violet-400/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-cyan-300">Ressource gratuite pour PME</span>
+              </div>
+              <h1 class="mt-6 max-w-4xl font-display text-4xl font-bold leading-tight text-white sm:text-5xl">
               Encadrez votre premier pilote IA avant d’y mettre des données réelles
-            </h1>
+              </h1>
+            </div>
+            <p class="text-lg leading-8 text-slate-300">
+              Huit pages à compléter pour choisir une tâche, fixer les règles et décider après 30 jours sur des mesures concrètes.
+            </p>
           </div>
-          <p class="text-lg leading-8 text-gray-600 dark:text-gray-300">
-            Huit pages à compléter pour choisir une tâche, fixer les règles et décider après 30 jours sur des mesures concrètes.
-          </p>
         </div>
 
         <BlogLeadMagnetSignup class="mt-12" />
@@ -71,7 +78,7 @@ useHead({
               ['03', 'Les règles de l’équipe', 'Outils approuvés, validation humaine et procédure en cas d’erreur.'],
               ['04', 'La décision', 'Intégrer, modifier ou abandonner selon les résultats du pilote.'],
             ]" :key="item[0]" class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-white/[0.04]">
-              <span class="font-display text-sm font-bold text-[#c77f3d]">{{ item[0] }}</span>
+              <span class="font-display text-sm font-bold text-violet-600 dark:text-cyan-300">{{ item[0] }}</span>
               <h3 class="mt-3 font-display text-xl font-bold text-gray-950 dark:text-white">{{ item[1] }}</h3>
               <p class="mt-2 leading-7 text-gray-600 dark:text-gray-300">{{ item[2] }}</p>
             </article>
