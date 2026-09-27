@@ -6,6 +6,7 @@ const runtimeConfig = useRuntimeConfig()
 const siteUrl = runtimeConfig.public.siteUrl.replace(/\/+$/, '')
 const path = '/ressources/checklist-ia-pme'
 const canonicalUrl = `${siteUrl}${path}`
+const socialImage = 'https://oxlrljszatejqxhclmbu.supabase.co/storage/v1/object/public/media/hermes/ea7155990a6dba7b0514a830b69120a4d31182b30b9843e8f67006349359db7f.png'
 const breadcrumbs = resolvePublicBreadcrumbTrail(siteUrl, [
   { name: 'Accueil', path: '/' },
   { name: 'Checklist pilote IA en PME', path },
@@ -17,7 +18,10 @@ useSeoMeta({
   ogTitle: 'Checklist : pilote IA de 30 jours dans une PME',
   ogDescription: 'Cas d’usage, données, outils, validation humaine et mesure avant/après dans un PDF pratique.',
   ogUrl: canonicalUrl,
-  robots: 'noindex, follow',
+  ogImage: socialImage,
+  twitterCard: 'summary_large_image',
+  twitterImage: socialImage,
+  robots: 'index, follow',
 })
 
 useHead({
@@ -42,7 +46,7 @@ useHead({
 </script>
 
 <template>
-  <main class="section-surface pb-24 pt-28">
+  <div class="section-surface pb-24 pt-28">
     <div class="section-background"><div class="section-grid" /></div>
     <div class="section-container relative z-10">
       <div class="mx-auto max-w-5xl">
@@ -83,8 +87,13 @@ useHead({
               <p class="mt-2 leading-7 text-gray-600 dark:text-gray-300">{{ item[2] }}</p>
             </article>
           </div>
+          <div class="mt-8 rounded-2xl border border-violet-200/80 bg-violet-50 p-6 dark:border-violet-400/15 dark:bg-violet-500/10">
+            <h2 class="font-display text-xl font-bold text-gray-950 dark:text-white">Vous voulez comprendre la méthode avant de remplir la checklist ?</h2>
+            <p class="mt-2 leading-7 text-gray-600 dark:text-gray-300">Le guide explique comment choisir un premier cas d’usage, classer les données et mesurer un pilote de 30 jours dans une PME suisse.</p>
+            <NuxtLink to="/blog/ia-pme-commencer-sans-exposer-donnees" class="mt-4 inline-flex min-h-11 items-center font-semibold text-violet-700 underline underline-offset-4 dark:text-violet-300">Lire le guide complet →</NuxtLink>
+          </div>
         </section>
       </div>
     </div>
-  </main>
+  </div>
 </template>

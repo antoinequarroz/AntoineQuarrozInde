@@ -4,13 +4,14 @@ import { describe, expect, it } from 'vitest'
 const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
 
 describe('social publication queue', () => {
-  it('accepts standalone posts only for the canonical homepage', () => {
+  it('accepts only canonical site, article and resource links', () => {
     const validation = read('server/utils/socialPublication.ts')
     const publisher = read('scripts/hermes/publish_social.py')
     const adminPage = read('app/pages/admin/social/index.vue')
 
     expect(validation).toContain("const SITE_HOME = 'https://www.antoinequarroz.ch/'")
     expect(validation).toContain('articleUrl !== SITE_HOME')
+    expect(validation).toContain('!articleUrl.startsWith(RESOURCE_PREFIX)')
     expect(publisher).toContain('CANONICAL_SITE_HOME = "https://www.antoinequarroz.ch/"')
     expect(adminPage).toContain('Voir le lien associé')
   })
