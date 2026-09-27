@@ -62,7 +62,9 @@ export default defineEventHandler(async (event) => {
   }
 
   if (!response.ok) {
-    console.error('Google Places request failed', response.status, await response.text())
+    // Google may echo credential identifiers in error bodies. Keep production
+    // logs actionable without ever persisting upstream response content.
+    console.error('Google Places request failed', response.status, response.statusText)
     return { configured: true, unavailable: true, reviews: [] }
   }
 
