@@ -215,6 +215,16 @@ onBeforeUnmount(() => {
               <span class="mt-0.5 block text-sm text-gray-500 transition-colors group-hover:text-cyan-700 dark:text-white/50 dark:group-hover:text-cyan-300">{{ displayCount }} {{ content.reviewsLabel }} · {{ content.profile }}</span>
             </span>
           </a>
+          <a
+            v-else-if="googleStore.googleMapsUri"
+            :href="googleStore.googleMapsUri"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="mt-8 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-cyan-800 underline underline-offset-4 transition-colors duration-150 hover:text-cyan-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 dark:text-cyan-200 dark:hover:text-cyan-100"
+          >
+            {{ content.profile }}
+            <svg aria-hidden="true" viewBox="0 0 24 24" class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17 17 7M8 7h9v9" stroke-linecap="round" stroke-linejoin="round" /></svg>
+          </a>
         </div>
 
         <div

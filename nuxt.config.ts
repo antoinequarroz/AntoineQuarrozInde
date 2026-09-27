@@ -239,6 +239,7 @@ export default defineNuxtConfig({
     turnstileSecretKey: process.env.TURNSTILE_SECRET_KEY || '',
     googlePlacesApiKey: process.env.GOOGLE_PLACES_API_KEY || '',
     googlePlaceId: process.env.GOOGLE_PLACE_ID || '',
+    googleReviewsEnabled: process.env.GOOGLE_REVIEWS_ENABLED || 'false',
     stripeSecretKey: process.env.STRIPE_SECRET_KEY || '',
     stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET || '',
     supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || '',

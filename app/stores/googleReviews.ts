@@ -17,7 +17,7 @@ export interface GoogleReview {
 type GoogleReviewsResponse = {
   configured: boolean
   unavailable?: boolean
-  issue?: 'project_suspended' | 'access_denied' | 'unavailable'
+  issue?: 'project_suspended' | 'access_denied' | 'unavailable' | 'disabled'
   placeName?: string
   rating?: number
   userRatingCount?: number
