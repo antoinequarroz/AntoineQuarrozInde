@@ -43,6 +43,11 @@ export default defineEventHandler(async (event) => {
   const downloadUrl = leadMagnet
     ? `/api/ressources/${leadMagnet}?token=${encodeURIComponent(createLeadMagnetToken(leadMagnet, leadMagnetSecret))}`
     : null
+  const leadMagnetResponse = async () => {
+    if (!leadMagnet || !downloadUrl) return {}
+    await sendLeadMagnetEmail({ email: subscription.email, slug: leadMagnet, downloadUrl })
+    return { downloadUrl, emailDelivered: true }
+  }
   const lumailSubscriber = await syncLumailNewsletterSubscriber({
     ...subscription,
     consentedAt,
@@ -78,7 +83,7 @@ export default defineEventHandler(async (event) => {
       success: true,
       duplicate: existing.status === 'active',
       reactivated: existing.status !== 'active',
-      ...(downloadUrl ? { downloadUrl } : {}),
+      ...await leadMagnetResponse(),
     }
   }
 
@@ -97,7 +102,7 @@ export default defineEventHandler(async (event) => {
     return {
       success: true,
       duplicate: true,
-      ...(downloadUrl ? { downloadUrl } : {}),
+      ...await leadMagnetResponse(),
     }
   }
   if (error) throw createError({ statusCode: 500, message: 'L’inscription ne peut pas être enregistrée.' })
@@ -105,6 +110,6 @@ export default defineEventHandler(async (event) => {
   return {
     success: true,
     duplicate: false,
-    ...(downloadUrl ? { downloadUrl } : {}),
+    ...await leadMagnetResponse(),
   }
 })

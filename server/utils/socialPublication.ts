@@ -6,6 +6,7 @@ export const SOCIAL_PUBLISH_NOW_CONFIRMATION = 'PUBLIER_MAINTENANT'
 export const SOCIAL_PUBLICATION_TIMEZONE = 'Europe/Zurich'
 const SITE_HOME = 'https://www.antoinequarroz.ch/'
 const ARTICLE_PREFIX = `${SITE_HOME}blog/`
+const RESOURCE_PREFIX = `${SITE_HOME}ressources/`
 
 export type SocialPlatform = typeof SOCIAL_PLATFORMS[number]
 export type SocialStatus = typeof SOCIAL_STATUSES[number]
@@ -72,8 +73,8 @@ export function validateSocialContent(platform: SocialPlatform, value: unknown) 
 export function validateSocialDraftInput(body: Record<string, unknown>) {
   const platform = validateSocialPlatform(body.platform)
   const articleUrl = requiredText(body.articleUrl, 'Lien public associé', 500)
-  if (articleUrl !== SITE_HOME && !articleUrl.startsWith(ARTICLE_PREFIX)) {
-    throw createError({ statusCode: 400, message: 'Le lien doit être la page d’accueil ou un article du site officiel.' })
+  if (articleUrl !== SITE_HOME && !articleUrl.startsWith(ARTICLE_PREFIX) && !articleUrl.startsWith(RESOURCE_PREFIX)) {
+    throw createError({ statusCode: 400, message: 'Le lien doit être une page publique du site officiel.' })
   }
   const sourcePath = body.sourcePath == null ? null : requiredText(body.sourcePath, 'Chemin source', 300)
   if (sourcePath && !/^seo\/social\/a-valider\/[A-Za-z0-9._/-]+\.md$/.test(sourcePath)) {

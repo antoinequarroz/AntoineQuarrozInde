@@ -32,7 +32,7 @@ async function subscribe() {
   if (status.value === 'sending' || !consent.value) return
   status.value = 'sending'
   try {
-    const result = await $fetch<{ downloadUrl?: string }>('/api/newsletter', {
+    const result = await $fetch<{ downloadUrl?: string, emailDelivered?: boolean }>('/api/newsletter', {
       method: 'POST',
       body: {
         email: email.value,
@@ -44,12 +44,14 @@ async function subscribe() {
         startedAt: startedAt.value,
       },
     })
-    if (!result.downloadUrl) throw new Error('download_unavailable')
+    if (!result.downloadUrl || !result.emailDelivered) throw new Error('delivery_unavailable')
     downloadUrl.value = result.downloadUrl
     status.value = 'success'
     const properties = { slug: resourceSlug, source_path: route.path, placement: props.compact ? 'article' : 'landing' }
     track('lead_magnet_submit', properties)
     trackPostHog('lead_magnet_submitted', properties)
+    track('lead_magnet_delivered', properties)
+    trackPostHog('lead_magnet_delivered', { ...properties, channel: 'email' })
     email.value = ''
     consent.value = false
   }
@@ -61,8 +63,8 @@ async function subscribe() {
 
 function trackDownload() {
   const properties = { slug: resourceSlug, source_path: route.path, placement: props.compact ? 'article' : 'landing' }
-  track('lead_magnet_delivered', properties)
-  trackPostHog('lead_magnet_delivered', properties)
+  track('lead_magnet_download', properties)
+  trackPostHog('lead_magnet_downloaded', properties)
 }
 </script>
 
@@ -84,6 +86,9 @@ function trackDownload() {
         <p class="mt-4 max-w-2xl leading-7 text-slate-300">
           Choisissez le bon cas d’usage, classez les données, contrôlez l’outil et mesurez le résultat avant de décider.
         </p>
+        <NuxtLink v-if="compact" :to="localePath('/ressources/checklist-ia-pme')" class="mt-4 inline-flex min-h-11 items-center font-semibold text-cyan-300 underline decoration-cyan-300/50 underline-offset-4 hover:text-cyan-200">
+          Voir la checklist et son contenu détaillé →
+        </NuxtLink>
         <ul class="mt-5 grid gap-2 text-sm text-slate-200 sm:grid-cols-2" aria-label="Contenu de la checklist">
           <li class="flex gap-2"><span class="text-cyan-300">✓</span> Grille de sélection</li>
           <li class="flex gap-2"><span class="text-cyan-300">✓</span> Classification des données</li>
@@ -95,7 +100,7 @@ function trackDownload() {
       <div class="rounded-2xl border border-violet-300/20 bg-[#13131f]/90 p-5 backdrop-blur sm:p-6">
         <div v-if="status === 'success'" role="status">
           <p class="font-display text-xl font-bold">Votre checklist est prête.</p>
-          <p class="mt-2 text-sm leading-6 text-slate-300">Le lien reste valable pendant 24 heures. LuMail vous demandera aussi de confirmer votre inscription.</p>
+          <p class="mt-2 text-sm leading-6 text-slate-300">Nous venons aussi de vous envoyer le PDF par e-mail. Le bouton ci-dessous reste disponible pendant 24 heures.</p>
           <a :href="downloadUrl" download class="mt-5 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-gradient-to-r from-violet-600 via-fuchsia-500 to-cyan-400 px-5 font-bold text-white transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300" @click="trackDownload">
             Télécharger le PDF
           </a>
@@ -117,7 +122,7 @@ function trackDownload() {
           <button type="submit" class="mt-5 min-h-12 w-full rounded-xl bg-gradient-to-r from-violet-600 via-fuchsia-500 to-cyan-400 px-5 font-bold text-white transition hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50" :disabled="status === 'sending' || !consent">
             {{ status === 'sending' ? 'Préparation…' : 'Recevoir la checklist' }}
           </button>
-          <p class="mt-3 text-center text-xs text-slate-400">PDF livré immédiatement · aucun paiement</p>
+          <p class="mt-3 text-center text-xs text-slate-400">PDF envoyé par e-mail et disponible immédiatement · aucun paiement</p>
           <p v-if="status === 'error'" role="alert" class="mt-3 text-sm font-medium text-red-300">La checklist n’a pas pu être préparée. Réessayez dans un instant.</p>
         </form>
       </div>

@@ -24,4 +24,4 @@
 
 | Ressource | Persona | Placement | Tag LuMail | Inscrits |
 |---|---|---|---|---:|
-| Checklist pilote IA en PME sur 30 jours | Responsable de PME suisse | Article « IA dans une PME » et `/ressources/checklist-ia-pme` | `lead-magnet`, `checklist-ia-pme` | 0 |
+| Checklist pilote IA en PME sur 30 jours | Responsable de PME suisse | Article « IA dans une PME » et `/ressources/checklist-ia-pme` ; PDF envoyé immédiatement par e-mail après consentement | `lead-magnet`, `checklist-ia-pme` | 0 |

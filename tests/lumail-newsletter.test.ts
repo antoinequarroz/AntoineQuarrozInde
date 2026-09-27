@@ -81,5 +81,7 @@ describe('Lumail newsletter synchronization', () => {
     expect(localWrite).toBeGreaterThan(lumailSync)
     expect(endpoint).toContain('lumail_subscriber_id: lumailSubscriber.id')
     expect(endpoint).toContain('lumail_synced_at: consentedAt')
+    expect(endpoint).toContain('await sendLeadMagnetEmail')
+    expect(endpoint).toContain('emailDelivered: true')
   })
 })

@@ -12,6 +12,7 @@ export const MARKETING_EVENTS = [
   'lead_magnet_view',
   'lead_magnet_submit',
   'lead_magnet_delivered',
+  'lead_magnet_download',
   'contact_details_open',
   'project_case_study_view',
   'project_case_study_click',
