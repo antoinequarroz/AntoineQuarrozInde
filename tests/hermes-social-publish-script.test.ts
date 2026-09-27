@@ -17,6 +17,14 @@ function createDraft(status: string, platform = 'linkedin', text?: string) {
   return { project, path }
 }
 
+function attachDocument(path: string) {
+  const draft = readFileSync(path, 'utf8').replace(
+    '---\nUne idée',
+    'media_kind: document\nmedia_url: https://www.antoinequarroz.ch/social/checklist.pdf\nmedia_title: Checklist IA PME\n---\nUne idée',
+  )
+  writeFileSync(path, draft)
+}
+
 describe('Hermes social publication helper', () => {
   it('requires an explicit approval before any external write', () => {
     const { project, path } = createDraft('A_VALIDER')
@@ -86,6 +94,24 @@ describe('Hermes social publication helper', () => {
     expect(source).toContain('upload_linkedin_image(token, author, image, mime_type)')
     expect(source).toContain('"altText": clean_social_title(article_title)[:300]')
     expect(source).toContain('"id": image_urn')
+  })
+
+  it('validates a canonical LinkedIn PDF carousel in dry-run mode', () => {
+    const { project, path } = createDraft('APPROUVE')
+    attachDocument(path)
+    const receipt = JSON.parse(execFileSync('python3', [
+      script, '--project', project, '--draft', path, '--dry-run',
+    ], { encoding: 'utf8' }))
+    expect(receipt).toMatchObject({ platform: 'linkedin', externalWrite: false, status: 'validated' })
+  })
+
+  it('uploads LinkedIn carousels through the official document API', () => {
+    const source = readFileSync(script, 'utf8')
+    expect(source).toContain('LINKEDIN_DOCUMENTS_ENDPOINT')
+    expect(source).toContain('social_document(media_url)')
+    expect(source).toContain('upload_linkedin_document(token, author, document)')
+    expect(source).toContain('"title": media_title[:200]')
+    expect(source).toContain('"id": document_urn')
   })
 
   it('normalizes campaign links for LinkedIn, X and Lumail', () => {

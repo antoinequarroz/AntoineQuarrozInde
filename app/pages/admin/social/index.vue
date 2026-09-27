@@ -9,6 +9,9 @@ type SocialPost = {
   article_title: string
   article_url: string
   content: string
+  media_kind: 'document' | null
+  media_url: string | null
+  media_title: string | null
   status: Status
   external_post_url: string | null
   last_error: string | null
@@ -54,6 +57,7 @@ function connection(platform: Platform) {
 }
 function platformLabel(platform: Platform) { return platform === 'linkedin' ? 'LinkedIn' : 'X' }
 function characterCount(content: string) { return [...content].length }
+function hasDocument(post: SocialPost) { return post.media_kind === 'document' && Boolean(post.media_url) }
 function openConfirmation(post: SocialPost, mode: 'scheduled' | 'now') {
   confirmationMode.value = mode
   confirmationPost.value = post
@@ -125,7 +129,7 @@ onMounted(load)
     <section class="relative overflow-hidden rounded-xl border border-gray-200 bg-white px-4 py-4 shadow-sm dark:border-white/[0.08] dark:bg-[#111118] sm:px-5">
       <div class="pointer-events-none absolute -top-16 right-[8%] h-48 w-48 rounded-full bg-violet-500/10 blur-3xl" />
       <div class="relative flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div><span class="rounded-md bg-gradient-brand px-2 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white">Publication</span><h1 class="mt-2 font-display text-2xl font-semibold text-gray-950 dark:text-white sm:text-3xl">Réseaux sociaux</h1><p class="mt-1 max-w-2xl text-sm text-gray-500 dark:text-gray-400">Relis chaque texte dans la journée. Après ta validation, Hermes tente de le publier à 18 h avec l’image de l’article, si la connexion est prête.</p></div>
+        <div><span class="rounded-md bg-gradient-brand px-2 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white">Publication</span><h1 class="mt-2 font-display text-2xl font-semibold text-gray-950 dark:text-white sm:text-3xl">Réseaux sociaux</h1><p class="mt-1 max-w-2xl text-sm text-gray-500 dark:text-gray-400">Relis le texte et son média dans la journée. Après ta validation, Hermes tente de publier l’ensemble à 18 h si la connexion est prête.</p></div>
         <button type="button" class="min-h-11 rounded-lg border border-gray-200 px-4 text-sm font-semibold text-gray-700 transition-[background-color,transform] duration-150 hover:bg-gray-50 active:scale-[.96] dark:border-white/[0.1] dark:text-gray-200 dark:hover:bg-white/[0.05]" @click="load">Actualiser</button>
       </div>
     </section>
@@ -149,6 +153,19 @@ onMounted(load)
       <article v-for="post in filteredPosts" :key="post.id" class="admin-card flex flex-col p-5">
         <div class="flex items-start justify-between gap-3"><div><div class="flex flex-wrap items-center gap-2"><span class="text-xs font-bold uppercase tracking-wider text-violet-600 dark:text-violet-300">{{ platformLabel(post.platform) }}</span><span class="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600 dark:bg-white/[0.07] dark:text-gray-300">{{ statusLabel(post.status) }}</span></div><h2 class="mt-2 font-display text-lg font-semibold text-gray-950 dark:text-white">{{ post.article_title }}</h2></div><span class="text-xs tabular-nums" :class="characterCount(post.content) > (post.platform === 'x' ? 280 : 3000) ? 'text-red-600' : 'text-gray-400'">{{ characterCount(post.content) }}/{{ post.platform === 'x' ? 280 : 3000 }}</span></div>
         <a :href="post.article_url" target="_blank" rel="noopener noreferrer" class="mt-2 truncate text-xs font-medium text-violet-600 hover:underline dark:text-violet-300">Voir le lien associé ↗</a>
+        <section v-if="hasDocument(post)" class="mt-4 overflow-hidden rounded-xl border border-violet-200/80 bg-violet-50/60 dark:border-violet-400/20 dark:bg-violet-500/[0.06]" aria-label="Carrousel LinkedIn joint">
+          <div class="flex items-center justify-between gap-3 border-b border-violet-200/70 px-4 py-3 dark:border-violet-400/15">
+            <div class="min-w-0">
+              <span class="inline-flex rounded-full bg-violet-600 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-white">Carrousel joint</span>
+              <p class="mt-2 truncate text-sm font-semibold text-gray-950 dark:text-white">{{ post.media_title || 'Document LinkedIn' }}</p>
+              <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">PDF feuilletable · joint automatiquement à la publication</p>
+            </div>
+            <a :href="post.media_url!" target="_blank" rel="noopener noreferrer" class="shrink-0 rounded-lg border border-violet-200 bg-white px-3 py-2 text-xs font-semibold text-violet-700 transition-colors hover:bg-violet-50 dark:border-violet-400/20 dark:bg-white/[0.05] dark:text-violet-200">Ouvrir ↗</a>
+          </div>
+          <object :data="post.media_url!" type="application/pdf" class="h-[32rem] w-full bg-white dark:bg-[#0b0b11]" :aria-label="`Aperçu du carrousel ${post.media_title || ''}`">
+            <div class="grid min-h-40 place-items-center p-5 text-center text-sm text-gray-600 dark:text-gray-300"><a :href="post.media_url!" target="_blank" rel="noopener noreferrer" class="font-semibold text-violet-600 underline dark:text-violet-300">Afficher le carrousel PDF</a></div>
+          </object>
+        </section>
         <textarea v-if="['draft', 'failed'].includes(post.status)" v-model="post.content" rows="9" class="input-field mt-4 resize-y text-sm leading-6" :maxlength="post.platform === 'x' ? 280 : 3000" :aria-label="`Texte ${platformLabel(post.platform)}`" />
         <div v-else class="mt-4 whitespace-pre-wrap rounded-xl bg-gray-50 p-4 text-sm leading-6 text-gray-700 dark:bg-white/[0.04] dark:text-gray-200">{{ post.content }}</div>
         <p v-if="post.last_error" role="alert" class="mt-3 rounded-lg bg-red-50 p-3 text-xs text-red-800 dark:bg-red-500/10 dark:text-red-200">{{ post.last_error }}</p>
@@ -163,7 +180,7 @@ onMounted(load)
     </section>
 
     <div v-if="confirmationPost" ref="dialogRef" class="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="social-confirm-title" tabindex="-1" @keydown="handleDialogKeydown">
-      <div class="w-full max-w-lg rounded-2xl bg-white p-5 shadow-2xl dark:bg-[#15151e]"><h2 id="social-confirm-title" class="font-display text-xl font-semibold text-gray-950 dark:text-white">{{ confirmationMode === 'now' ? 'Publier maintenant' : 'Programmer pour 18 h' }}</h2><p class="mt-2 text-sm leading-6 text-gray-600 dark:text-gray-300">{{ confirmationMode === 'now' ? `Après ton accord explicite, Hermes tentera de publier ce texte sur ${platformLabel(confirmationPost.platform)} lors de son prochain passage.` : `Après ton accord explicite, ce texte restera en attente jusqu’à 18 h, heure de Suisse. Hermes le publiera ensuite si la connexion est prête.` }}</p><div class="mt-4 max-h-60 overflow-y-auto whitespace-pre-wrap rounded-xl bg-gray-50 p-4 text-sm leading-6 dark:bg-white/[0.05]">{{ confirmationPost.content }}</div><label class="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border border-gray-200 p-3 dark:border-white/[0.1]"><input v-model="confirmationAccepted" type="checkbox" class="mt-1 h-4 w-4 accent-violet-600"><span class="text-sm text-gray-700 dark:text-gray-200">{{ confirmationMode === 'now' ? 'J’ai relu ce texte et j’autorise sa publication publique dès le prochain passage de Hermes.' : 'J’ai relu ce texte et j’autorise sa publication publique à partir de 18 h.' }}</span></label><div class="mt-5 flex gap-3"><button data-confirm-close type="button" class="min-h-11 flex-1 rounded-lg border border-gray-200 px-4 text-sm font-semibold dark:border-white/[0.1]" @click="closeConfirmation">Annuler</button><button type="button" class="min-h-11 flex-1 rounded-lg bg-violet-600 px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50" :disabled="!confirmationAccepted || busyId === confirmationPost.id" @click="approve">{{ confirmationMode === 'now' ? 'Publier maintenant' : 'Valider pour 18 h' }}</button></div></div>
+      <div class="w-full max-w-lg rounded-2xl bg-white p-5 shadow-2xl dark:bg-[#15151e]"><h2 id="social-confirm-title" class="font-display text-xl font-semibold text-gray-950 dark:text-white">{{ confirmationMode === 'now' ? 'Publier maintenant' : 'Programmer pour 18 h' }}</h2><p class="mt-2 text-sm leading-6 text-gray-600 dark:text-gray-300">{{ confirmationMode === 'now' ? `Après ton accord explicite, Hermes tentera de publier ce texte sur ${platformLabel(confirmationPost.platform)} lors de son prochain passage.` : `Après ton accord explicite, ce texte restera en attente jusqu’à 18 h, heure de Suisse. Hermes le publiera ensuite si la connexion est prête.` }}</p><div v-if="hasDocument(confirmationPost)" class="mt-4 flex items-center justify-between gap-3 rounded-xl border border-violet-200 bg-violet-50 p-3 dark:border-violet-400/20 dark:bg-violet-500/[0.08]"><div><p class="text-xs font-bold uppercase tracking-wider text-violet-700 dark:text-violet-200">Carrousel inclus</p><p class="mt-1 text-sm font-semibold text-gray-950 dark:text-white">{{ confirmationPost.media_title }}</p></div><a :href="confirmationPost.media_url!" target="_blank" rel="noopener noreferrer" class="shrink-0 text-xs font-semibold text-violet-700 underline dark:text-violet-200">Relire le PDF ↗</a></div><div class="mt-4 max-h-60 overflow-y-auto whitespace-pre-wrap rounded-xl bg-gray-50 p-4 text-sm leading-6 dark:bg-white/[0.05]">{{ confirmationPost.content }}</div><label class="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border border-gray-200 p-3 dark:border-white/[0.1]"><input v-model="confirmationAccepted" type="checkbox" class="mt-1 h-4 w-4 accent-violet-600"><span class="text-sm text-gray-700 dark:text-gray-200">{{ confirmationMode === 'now' ? 'J’ai relu ce texte et son média, et j’autorise leur publication publique dès le prochain passage de Hermes.' : 'J’ai relu ce texte et son média, et j’autorise leur publication publique à partir de 18 h.' }}</span></label><div class="mt-5 flex gap-3"><button data-confirm-close type="button" class="min-h-11 flex-1 rounded-lg border border-gray-200 px-4 text-sm font-semibold dark:border-white/[0.1]" @click="closeConfirmation">Annuler</button><button type="button" class="min-h-11 flex-1 rounded-lg bg-violet-600 px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50" :disabled="!confirmationAccepted || busyId === confirmationPost.id" @click="approve">{{ confirmationMode === 'now' ? 'Publier maintenant' : 'Valider pour 18 h' }}</button></div></div>
     </div>
   </div>
 </template>

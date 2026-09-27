@@ -3,6 +3,9 @@ platform: linkedin
 statut: A_VALIDER
 article_url: https://www.antoinequarroz.ch/ressources/checklist-ia-pme?utm_source=linkedin&utm_medium=social&utm_campaign=lead_magnet_checklist_ia_pme&utm_content=carousel
 date: 2026-09-27
+media_kind: document
+media_url: https://www.antoinequarroz.ch/social/carousel-ia-pme-pilote-30-jours.pdf
+media_title: Checklist IA PME — pilote de 30 jours
 ---
 Dans une PME, le premier choix en matière d’IA ne devrait pas être le modèle.
 

@@ -1,6 +1,6 @@
 begin;
 
-select plan(11);
+select plan(13);
 
 insert into public.organizations (id, name, slug)
 values ('00000000-0000-0000-0000-000000000701', 'AQ Social Queue', 'aq-social-queue');
@@ -127,6 +127,50 @@ select throws_ok(
   '23514',
   null,
   'the queue rejects an external destination URL'
+);
+
+select lives_ok(
+  $$
+    insert into public.social_posts (
+      organization_id, platform, source_key, article_title, article_url, content, source_path,
+      media_kind, media_url, media_title
+    ) values (
+      '00000000-0000-0000-0000-000000000701',
+      'linkedin',
+      'document-carousel',
+      'Checklist IA PME',
+      'https://www.antoinequarroz.ch/ressources/checklist-ia-pme',
+      'Un carrousel LinkedIn avec sa checklist.',
+      'seo/social/a-valider/document-carousel-linkedin.md',
+      'document',
+      'https://www.antoinequarroz.ch/social/checklist-ia-pme.pdf',
+      'Checklist IA PME — pilote de 30 jours'
+    )
+  $$,
+  'the queue accepts an official LinkedIn PDF document'
+);
+
+select throws_ok(
+  $$
+    insert into public.social_posts (
+      organization_id, platform, source_key, article_title, article_url, content, source_path,
+      media_kind, media_url, media_title
+    ) values (
+      '00000000-0000-0000-0000-000000000701',
+      'x',
+      'x-document',
+      'Invalid X document',
+      'https://www.antoinequarroz.ch/ressources/checklist-ia-pme',
+      'X must not receive a LinkedIn document.',
+      'seo/social/a-valider/x-document.md',
+      'document',
+      'https://www.antoinequarroz.ch/social/checklist-ia-pme.pdf',
+      'Checklist IA PME'
+    )
+  $$,
+  '23514',
+  null,
+  'the queue rejects document media for X'
 );
 
 select * from finish();
