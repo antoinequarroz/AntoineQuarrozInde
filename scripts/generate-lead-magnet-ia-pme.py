@@ -25,25 +25,38 @@ from reportlab.platypus import (
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "output/pdf/checklist-pilote-ia-pme-30-jours.pdf"
 SERVER_ASSET = ROOT / "server/assets/lead-magnets/checklist-pilote-ia-pme-30-jours.pdf"
-FONT_ROOT = Path(
-    "/Users/antoinequarroz/.cache/codex-runtimes/codex-primary-runtime/dependencies/"
-    "native/libreoffice-headless/libreoffice/LibreOfficeDev.app/Contents/Resources/fonts/truetype"
-)
+FONT_ROOT = ROOT / "scripts/assets/fonts"
 
-NAVY = colors.HexColor("#090F1D")
-NAVY_2 = colors.HexColor("#111D31")
-COPPER = colors.HexColor("#D99A55")
-COPPER_LIGHT = colors.HexColor("#F0C38D")
-INK = colors.HexColor("#172033")
-MUTED = colors.HexColor("#5F6878")
-PALE = colors.HexColor("#F5F1EA")
-LINE = colors.HexColor("#D9DEE8")
+# Antoine Quarroz — charte graphique, édition du 16 septembre 2026.
+PURPLE = colors.HexColor("#7C3AED")
+PURPLE_DEEP = colors.HexColor("#5B21B6")
+PURPLE_STUDIO = colors.HexColor("#A78BFA")
+FUCHSIA = colors.HexColor("#A855F7")
+CYAN = colors.HexColor("#22D3EE")
+CYAN_LIGHT = colors.HexColor("#A5F3FC")
+NIGHT = colors.HexColor("#080810")
+CARD_NIGHT = colors.HexColor("#13131F")
+INK = colors.HexColor("#111827")
+MUTED = colors.HexColor("#62627A")
+MIST = colors.HexColor("#F8F7FF")
+LINE = colors.HexColor("#DED9EE")
 WHITE = colors.white
+
+# Aliases used by the document tables and callouts.
+NAVY = PURPLE
+NAVY_2 = CARD_NIGHT
+COPPER = PURPLE
+COPPER_LIGHT = PURPLE_STUDIO
+PALE = MIST
 
 
 def register_fonts():
-    pdfmetrics.registerFont(TTFont("AQSans", str(FONT_ROOT / "DejaVuSans.ttf")))
-    pdfmetrics.registerFont(TTFont("AQSansBold", str(FONT_ROOT / "DejaVuSansCondensed-Bold.ttf")))
+    pdfmetrics.registerFont(TTFont("AQBody", str(FONT_ROOT / "Inter-Regular.ttf")))
+    pdfmetrics.registerFont(TTFont("AQBodySemibold", str(FONT_ROOT / "Inter-SemiBold.ttf")))
+    pdfmetrics.registerFont(TTFont("AQDisplay", str(FONT_ROOT / "SpaceGrotesk-SemiBold.ttf")))
+    pdfmetrics.registerFont(TTFont("AQDisplayBold", str(FONT_ROOT / "SpaceGrotesk-Bold.ttf")))
+    pdfmetrics.registerFontFamily("AQBody", normal="AQBody", bold="AQBodySemibold")
+    pdfmetrics.registerFontFamily("AQDisplay", normal="AQDisplay", bold="AQDisplayBold")
 
 
 def checkbox_line(text, style):
@@ -52,9 +65,9 @@ def checkbox_line(text, style):
         colWidths=[8 * mm, 162 * mm],
         style=TableStyle([
             ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ("FONTNAME", (0, 0), (0, 0), "AQSansBold"),
+            ("FONTNAME", (0, 0), (0, 0), "AQDisplayBold"),
             ("FONTSIZE", (0, 0), (0, 0), 13),
-            ("TEXTCOLOR", (0, 0), (0, 0), COPPER),
+            ("TEXTCOLOR", (0, 0), (0, 0), PURPLE),
             ("LEFTPADDING", (0, 0), (-1, -1), 0),
             ("RIGHTPADDING", (0, 0), (-1, -1), 0),
             ("TOPPADDING", (0, 0), (-1, -1), 2),
@@ -67,54 +80,90 @@ def page_number(canvas, doc):
     if doc.page == 1:
         return
     canvas.saveState()
+    width, height = A4
+    canvas.setFillColor(PURPLE)
+    canvas.roundRect(20 * mm, height - 13 * mm, 8 * mm, 8 * mm, 2.2 * mm, stroke=0, fill=1)
+    canvas.setFillColor(WHITE)
+    canvas.setFont("AQDisplayBold", 5.8)
+    canvas.drawCentredString(24 * mm, height - 10.2 * mm, "AQ")
+    canvas.setFillColor(PURPLE)
+    canvas.setFont("AQBodySemibold", 7.5)
+    canvas.drawString(31 * mm, height - 10.3 * mm, "ANTOINE QUARROZ")
+    canvas.setFillColor(MUTED)
+    canvas.drawRightString(190 * mm, height - 10.3 * mm, "CHECKLIST / PILOTE IA EN PME")
     canvas.setStrokeColor(LINE)
     canvas.line(20 * mm, 13 * mm, 190 * mm, 13 * mm)
-    canvas.setFont("AQSans", 8)
+    canvas.setFont("AQBody", 7.4)
     canvas.setFillColor(MUTED)
-    canvas.drawString(20 * mm, 8 * mm, "Antoine Quarroz - Checklist IA pour PME")
-    canvas.drawRightString(190 * mm, 8 * mm, str(doc.page))
+    canvas.drawString(20 * mm, 8 * mm, "antoinequarroz.ch  ·  Checklist IA pour PME")
+    canvas.drawRightString(190 * mm, 8 * mm, f"{doc.page:02d} / 08")
     canvas.restoreState()
 
 
 def cover(canvas, doc):
     canvas.saveState()
     width, height = A4
-    canvas.setFillColor(NAVY)
+    canvas.setFillColor(NIGHT)
     canvas.rect(0, 0, width, height, stroke=0, fill=1)
-    canvas.setFillColor(NAVY_2)
-    canvas.circle(width * 0.83, height * 0.78, 72 * mm, stroke=0, fill=1)
-    canvas.setStrokeColor(COPPER)
-    canvas.setLineWidth(1.4)
-    for offset in (0, 9, 18):
-        canvas.circle(width * 0.83, height * 0.78, (35 + offset) * mm, stroke=1, fill=0)
-    canvas.setFillColor(COPPER)
-    canvas.roundRect(20 * mm, 250 * mm, 52 * mm, 9 * mm, 4.5 * mm, stroke=0, fill=1)
-    canvas.setFillColor(NAVY)
-    canvas.setFont("AQSansBold", 8)
-    canvas.drawCentredString(46 * mm, 253 * mm, "CHECKLIST PRATIQUE")
+    canvas.setFillColor(CARD_NIGHT)
+    canvas.circle(width * 0.84, height * 0.78, 74 * mm, stroke=0, fill=1)
+    canvas.setLineWidth(0.65)
+    for index, radius in enumerate((39, 45, 51, 57, 63)):
+        canvas.setStrokeColor(colors.Color(0.49, 0.23, 0.93, alpha=max(0.18, 0.58 - index * 0.08)))
+        canvas.circle(width * 0.84, height * 0.78, radius * mm, stroke=1, fill=0)
+
+    # Signature AQ, conforme à la charte : initiales blanches sur dégradé violet.
+    mark_x, mark_y, mark_size = 153 * mm, 205 * mm, 34 * mm
+    canvas.saveState()
+    path = canvas.beginPath()
+    path.roundRect(mark_x, mark_y, mark_size, mark_size, 9 * mm)
+    canvas.clipPath(path, stroke=0, fill=0)
+    canvas.linearGradient(mark_x, mark_y, mark_x + mark_size, mark_y + mark_size,
+                          (PURPLE, FUCHSIA, colors.HexColor("#C084FC")), extend=True)
+    canvas.restoreState()
     canvas.setFillColor(WHITE)
-    canvas.setFont("AQSansBold", 31)
-    canvas.drawString(20 * mm, 212 * mm, "PILOTE IA")
-    canvas.drawString(20 * mm, 196 * mm, "EN PME")
-    canvas.setFillColor(COPPER_LIGHT)
-    canvas.setFont("AQSansBold", 18)
-    canvas.drawString(20 * mm, 177 * mm, "30 jours pour tester sans")
-    canvas.drawString(20 * mm, 166 * mm, "exposer vos données")
-    canvas.setFillColor(colors.HexColor("#D9E0EB"))
-    canvas.setFont("AQSans", 11)
-    canvas.drawString(20 * mm, 143 * mm, "Cas d’usage  •  données  •  outils  •  validation")
-    canvas.drawString(20 * mm, 135 * mm, "mesure avant/après  •  décision finale")
-    canvas.setFillColor(COPPER)
-    canvas.roundRect(20 * mm, 49 * mm, 170 * mm, 36 * mm, 5 * mm, stroke=0, fill=1)
-    canvas.setFillColor(NAVY)
-    canvas.setFont("AQSansBold", 13)
-    canvas.drawString(28 * mm, 70 * mm, "Votre objectif")
-    canvas.setFont("AQSans", 10)
+    canvas.setFont("AQDisplayBold", 24)
+    canvas.drawCentredString(mark_x + mark_size / 2, mark_y + 11.7 * mm, "AQ")
+
+    canvas.setFillColor(PURPLE_STUDIO)
+    canvas.setFont("AQBodySemibold", 8.2)
+    canvas.drawString(20 * mm, 272 * mm, "ANTOINE QUARROZ")
+    canvas.setFillColor(colors.HexColor("#B9B7C9"))
+    canvas.drawRightString(190 * mm, 272 * mm, "CHECKLIST / PILOTE IA EN PME")
+    canvas.setFillColor(PURPLE_STUDIO)
+    canvas.setFont("AQBodySemibold", 8)
+    canvas.drawString(20 * mm, 248 * mm, "GUIDE PRATIQUE · 30 JOURS")
+    canvas.setFillColor(CYAN)
+    canvas.circle(61.5 * mm, 249.1 * mm, 1.05 * mm, stroke=0, fill=1)
+    canvas.setFillColor(WHITE)
+    canvas.setFont("AQDisplayBold", 34)
+    canvas.drawString(20 * mm, 218 * mm, "PILOTE IA")
+    canvas.drawString(20 * mm, 201 * mm, "EN PME")
+    canvas.setFillColor(PURPLE_STUDIO)
+    canvas.setFont("AQDisplayBold", 18)
+    canvas.drawString(20 * mm, 178 * mm, "Tester sans exposer")
+    canvas.drawString(20 * mm, 167 * mm, "vos données")
+    canvas.setFillColor(colors.HexColor("#C7C5D2"))
+    canvas.setFont("AQBody", 10.3)
+    canvas.drawString(20 * mm, 145 * mm, "Cas d’usage  ·  données  ·  outils  ·  validation")
+    canvas.drawString(20 * mm, 137 * mm, "mesure avant/après  ·  décision finale")
+
+    canvas.setFillColor(CARD_NIGHT)
+    canvas.roundRect(20 * mm, 50 * mm, 170 * mm, 38 * mm, 6 * mm, stroke=0, fill=1)
+    canvas.setStrokeColor(PURPLE)
+    canvas.setLineWidth(1)
+    canvas.line(20 * mm, 50 * mm, 20 * mm, 88 * mm)
+    canvas.setFillColor(PURPLE_STUDIO)
+    canvas.setFont("AQDisplayBold", 12.5)
+    canvas.drawString(28 * mm, 72 * mm, "VOTRE OBJECTIF")
+    canvas.setFillColor(colors.HexColor("#E7E5EF"))
+    canvas.setFont("AQBody", 9.7)
     canvas.drawString(28 * mm, 61 * mm, "Décider sur des faits si un usage IA mérite d’être intégré,")
     canvas.drawString(28 * mm, 54 * mm, "modifié ou abandonné après un mois d’essai contrôlé.")
-    canvas.setFillColor(colors.HexColor("#B8C2D2"))
-    canvas.setFont("AQSans", 9)
+    canvas.setFillColor(colors.HexColor("#AAA7BA"))
+    canvas.setFont("AQBody", 8)
     canvas.drawString(20 * mm, 25 * mm, "antoinequarroz.ch  ·  Développement web, mobile et outils métier")
+    canvas.drawRightString(190 * mm, 25 * mm, "01 / 08")
     canvas.restoreState()
 
 
@@ -124,13 +173,13 @@ def build():
     SERVER_ASSET.parent.mkdir(parents=True, exist_ok=True)
 
     styles = getSampleStyleSheet()
-    title = ParagraphStyle("Title", parent=styles["Heading1"], fontName="AQSansBold", fontSize=23, leading=27, textColor=NAVY, spaceAfter=7 * mm)
-    h2 = ParagraphStyle("H2", parent=styles["Heading2"], fontName="AQSansBold", fontSize=14, leading=18, textColor=NAVY, spaceBefore=4 * mm, spaceAfter=3 * mm)
-    body = ParagraphStyle("Body", parent=styles["BodyText"], fontName="AQSans", fontSize=9.2, leading=13.2, textColor=INK, spaceAfter=3 * mm)
+    title = ParagraphStyle("Title", parent=styles["Heading1"], fontName="AQDisplayBold", fontSize=23, leading=27, textColor=INK, spaceAfter=7 * mm)
+    h2 = ParagraphStyle("H2", parent=styles["Heading2"], fontName="AQDisplay", fontSize=14, leading=18, textColor=INK, spaceBefore=4 * mm, spaceAfter=3 * mm)
+    body = ParagraphStyle("Body", parent=styles["BodyText"], fontName="AQBody", fontSize=9.2, leading=13.2, textColor=INK, spaceAfter=3 * mm)
     small = ParagraphStyle("Small", parent=body, fontSize=7.8, leading=10.5, textColor=MUTED)
-    label = ParagraphStyle("Label", parent=body, fontName="AQSansBold", fontSize=8, leading=10, textColor=COPPER)
-    callout = ParagraphStyle("Callout", parent=body, fontName="AQSansBold", fontSize=10.2, leading=14, textColor=NAVY)
-    table_head = ParagraphStyle("TableHead", parent=body, fontName="AQSansBold", fontSize=8.2, leading=10, textColor=WHITE)
+    label = ParagraphStyle("Label", parent=body, fontName="AQBodySemibold", fontSize=8, leading=10, textColor=PURPLE)
+    callout = ParagraphStyle("Callout", parent=body, fontName="AQBodySemibold", fontSize=10.2, leading=14, textColor=PURPLE_DEEP)
+    table_head = ParagraphStyle("TableHead", parent=body, fontName="AQBodySemibold", fontSize=8.2, leading=10, textColor=WHITE)
     table_cell = ParagraphStyle("TableCell", parent=body, fontSize=7.8, leading=10.2, spaceAfter=0)
     center = ParagraphStyle("Center", parent=body, alignment=TA_CENTER)
 
@@ -139,7 +188,7 @@ def build():
         pagesize=A4,
         rightMargin=20 * mm,
         leftMargin=20 * mm,
-        topMargin=18 * mm,
+        topMargin=22 * mm,
         bottomMargin=19 * mm,
         title="Checklist pilote IA en PME - 30 jours",
         author="Antoine Quarroz",
@@ -304,10 +353,33 @@ def build():
         ]))))
         story.append(Spacer(1, 3 * mm))
     story.extend([
-        Paragraph("Point de contrôle hebdomadaire", h2),
-        Paragraph("Qu’avons-nous appris ? ______________________________________________________________", body),
-        Paragraph("Quel risque ou blocage faut-il traiter ? ______________________________________________", body),
-        Paragraph("Quelle règle change la semaine prochaine ? ___________________________________________", body),
+        PageBreak(),
+        Paragraph("Suivi hebdomadaire du pilote", title),
+        Paragraph("Consignez une fois par semaine ce qui a été appris, le principal risque observé et l’ajustement décidé. Ce journal évite de juger le pilote uniquement sur l’impression finale.", callout),
+        Spacer(1, 4 * mm),
+        Table([
+            [Paragraph("Semaine", table_head), Paragraph("Apprentissage principal", table_head), Paragraph("Risque ou blocage", table_head), Paragraph("Ajustement décidé", table_head)],
+            [Paragraph("01", table_cell), "", "", ""],
+            [Paragraph("02", table_cell), "", "", ""],
+            [Paragraph("03", table_cell), "", "", ""],
+            [Paragraph("04", table_cell), "", "", ""],
+        ], colWidths=[20 * mm, 50 * mm, 50 * mm, 50 * mm], rowHeights=[11 * mm] + [35 * mm] * 4, style=TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), PURPLE),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [WHITE, MIST]),
+            ("GRID", (0, 0), (-1, -1), 0.5, LINE),
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("ALIGN", (0, 1), (0, -1), "CENTER"),
+            ("FONTNAME", (0, 1), (0, -1), "AQDisplayBold"),
+            ("FONTSIZE", (0, 1), (0, -1), 12),
+            ("TEXTCOLOR", (0, 1), (0, -1), PURPLE),
+            ("LEFTPADDING", (0, 0), (-1, -1), 3 * mm),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 3 * mm),
+            ("TOPPADDING", (0, 0), (-1, -1), 3 * mm),
+        ])),
+        Spacer(1, 6 * mm),
+        Paragraph("Responsable du suivi : ____________________________________", body),
+        Paragraph("Incident à escalader immédiatement : __________________________________________________", body),
+        Paragraph("Décision intermédiaire :   ☐ Continuer   ☐ Modifier   ☐ Suspendre", callout),
         PageBreak(),
         Paragraph("6. Décider et documenter", title),
         Paragraph("Le résultat du pilote n’est pas forcément un déploiement. Abandonner un usage peu fiable ou trop risqué est une décision utile.", callout),
