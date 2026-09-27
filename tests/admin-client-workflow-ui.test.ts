@@ -37,6 +37,8 @@ describe('admin client workflow UI', () => {
     expect(quotes).toContain('@click="sendQuoteEmail(q)"')
     expect(quotes).toContain('Confirmer une signature externe')
     expect(quotes).toContain('Plus d’actions')
+    expect(quotes).toContain('@click="openEdit(selectedQuote)"')
+    expect(quotes).toContain('La correction met uniquement à jour le devis')
     expect(invoices).toContain('@click="sendInvoiceEmail(i)"')
     expect(invoices).toContain('Relancer avec la facture PDF')
     expect(invoices).toContain('Plus d’actions')

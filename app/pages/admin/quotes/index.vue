@@ -61,6 +61,13 @@ const runningAction = ref<string | null>(null)
 const loadError = ref('')
 const submitting = ref(false)
 const selectedQuote = computed(() => store.quotes.find(q => q.id === selectedId.value) ?? null)
+const editingNotice = computed(() => {
+  if (!editing.value) return ''
+  if (editing.value.status === 'sent') return 'Ce devis a déjà été envoyé. Enregistre la correction, puis renvoie le PDF au client pour qu’il dispose de la nouvelle version.'
+  if (editing.value.status === 'accepted') return 'Ce devis est accepté. La correction met uniquement à jour le devis : une facture déjà créée ne sera pas modifiée automatiquement.'
+  if (editing.value.status === 'rejected') return 'Ce devis a été refusé. Tu peux le corriger puis changer son statut avant un nouvel envoi.'
+  return ''
+})
 type QuoteNextAction = 'send' | 'convert' | 'crm'
 const workflowNotice = ref<{ quoteId: number, message: string, nextAction: QuoteNextAction } | null>(null)
 const journeyClientId = computed(() => selectedQuote.value?.clientId ?? (showForm.value ? form.clientId : null))
@@ -252,11 +259,11 @@ async function submit() {
       : await store.add(payload as any)
     selectedId.value = savedQuote.id
     showForm.value = false
-    toast.success('Devis enregistré')
+    toast.success(editing.value ? 'Correction du devis enregistrée' : 'Devis enregistré')
     workflowNotice.value = {
       quoteId: savedQuote.id,
-      message: `Le devis ${savedQuote.number} est enregistré.`,
-      nextAction: savedQuote.status === 'draft' ? 'send' : savedQuote.status === 'accepted' ? 'convert' : 'crm',
+      message: editing.value ? `La correction du devis ${savedQuote.number} est enregistrée.` : `Le devis ${savedQuote.number} est enregistré.`,
+      nextAction: savedQuote.status === 'draft' || savedQuote.status === 'sent' ? 'send' : savedQuote.status === 'accepted' ? 'convert' : 'crm',
     }
   } catch {
     toast.error('Le devis n’a pas pu être enregistré')
@@ -574,7 +581,7 @@ onMounted(async () => {
               <td class="px-4 py-3 text-sm">{{ formatAmount(q.amountCents, q.currency) }}</td>
               <td class="px-4 py-3 text-sm">{{ statusLabel(q.status) }}</td>
               <td class="px-4 py-3 text-right">
-                <div class="flex justify-end gap-1"><button v-if="q.status === 'draft'" class="min-h-11 rounded-lg px-2 text-xs font-semibold text-violet-700 hover:bg-violet-50 dark:text-violet-300" @click.stop="sendQuoteEmail(q)">Envoyer PDF</button><button v-if="q.status === 'sent'" class="min-h-11 rounded-lg px-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 dark:text-emerald-300" @click.stop="markQuoteEvent(q, 'signed_at')">Confirmer signature</button><button v-if="q.status === 'draft'" class="min-h-11 rounded-lg px-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 dark:text-gray-300" @click.stop="openEdit(q)">Modifier</button></div>
+                <div class="flex justify-end gap-1"><button v-if="q.status === 'draft'" class="min-h-11 rounded-lg px-2 text-xs font-semibold text-violet-700 hover:bg-violet-50 dark:text-violet-300" @click.stop="sendQuoteEmail(q)">Envoyer PDF</button><button v-if="q.status === 'sent'" class="min-h-11 rounded-lg px-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 dark:text-emerald-300" @click.stop="markQuoteEvent(q, 'signed_at')">Confirmer signature</button><button class="min-h-11 rounded-lg px-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 dark:text-gray-300" @click.stop="openEdit(q)">Modifier</button></div>
               </td>
             </tr>
             <tr v-if="!filteredQuotes.length"><td colspan="7" class="p-8 text-center text-sm text-gray-500 dark:text-gray-400">Aucun devis. Modifie la recherche ou crée un nouveau devis.</td></tr>
@@ -599,6 +606,7 @@ onMounted(async () => {
             <p><span class="text-gray-600 dark:text-gray-300">Valide jusqu’au :</span> {{ selectedQuote.validUntil || '-' }}</p>
           </div>
           <div class="mt-4 space-y-2">
+            <button class="min-h-11 w-full rounded-lg border border-violet-200 px-3 text-sm font-semibold text-violet-700 hover:bg-violet-50 dark:border-violet-500/30 dark:text-violet-300 dark:hover:bg-violet-500/10" @click="openEdit(selectedQuote)">Modifier ce devis</button>
             <button v-if="selectedQuote.status === 'draft' || selectedQuote.status === 'sent'" class="min-h-11 w-full rounded-lg bg-violet-600 px-3 text-sm font-semibold text-white disabled:opacity-50" :disabled="runningAction === `send-${selectedQuote.id}`" @click="sendQuoteEmail(selectedQuote)">{{ runningAction === `send-${selectedQuote.id}` ? 'Envoi…' : selectedQuote.status === 'draft' ? 'Envoyer le devis avec son PDF' : 'Renvoyer le devis avec son PDF' }}</button>
             <button v-if="selectedQuote.status === 'sent' || selectedQuote.status === 'accepted'" class="min-h-11 w-full rounded-lg bg-violet-600 px-3 text-sm font-semibold text-white disabled:opacity-50" :disabled="runningAction === `convert-${selectedQuote.id}`" @click="convertToInvoice(selectedQuote)">{{ runningAction === `convert-${selectedQuote.id}` ? 'Création…' : selectedQuote.status === 'accepted' ? 'Créer la facture' : 'Accepter et créer la facture' }}</button>
             <button v-if="selectedQuote.status === 'sent'" class="min-h-11 w-full rounded-lg border border-emerald-300/60 px-3 text-sm font-semibold text-emerald-700 dark:text-emerald-300" @click="markQuoteEvent(selectedQuote, 'signed_at')">Confirmer une signature externe</button>
@@ -622,7 +630,8 @@ onMounted(async () => {
       <div v-if="showForm" ref="dialogRef" class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-3 sm:p-4" role="dialog" aria-modal="true" aria-labelledby="quote-form-title" tabindex="-1" @keydown="handleDialogKeydown">
         <div class="absolute inset-0 bg-black/40" @click="showForm=false" />
         <form class="admin-modal-panel relative my-3 max-h-[calc(100dvh-1.5rem)] w-full max-w-4xl space-y-4 overflow-x-hidden overflow-y-auto rounded-xl bg-white p-4 dark:bg-[#111118] sm:p-5" @submit.prevent="submit">
-          <h2 id="quote-form-title" class="font-display text-lg font-semibold text-gray-900 dark:text-white">{{ editing ? 'Modifier le devis' : 'Nouveau devis' }}</h2>
+          <h2 id="quote-form-title" class="font-display text-lg font-semibold text-gray-900 dark:text-white">{{ editing ? `Modifier le devis ${editing.number}` : 'Nouveau devis' }}</h2>
+          <p v-if="editingNotice" role="status" class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm leading-6 text-amber-950 dark:border-amber-500/25 dark:bg-amber-500/10 dark:text-amber-100">{{ editingNotice }}</p>
           <div><label for="quote-number" class="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">Numéro *</label><input id="quote-number" v-model="form.number" class="input-field" placeholder="DEV-2026-0001" required></div>
           <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <label class="space-y-1 text-xs text-gray-500 dark:text-gray-400">Client
