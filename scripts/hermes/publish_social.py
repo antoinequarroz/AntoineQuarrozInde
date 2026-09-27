@@ -319,7 +319,43 @@ def upload_linkedin_document(token: str, author: str, document: bytes) -> str:
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode("utf-8", errors="replace")
         raise RuntimeError(f"Envoi du document LinkedIn refuse ({exc.code}): {detail[:500]}") from exc
+    wait_for_linkedin_document(token, document_urn)
     return document_urn
+
+
+def linkedin_document_status(token: str, document_urn: str) -> str:
+    url = f"https://api.linkedin.com/rest/documents/{urllib.parse.quote(document_urn, safe=':')}"
+    request = urllib.request.Request(
+        url,
+        headers={
+            "Authorization": f"Bearer {token}",
+            "X-Restli-Protocol-Version": "2.0.0",
+            "Linkedin-Version": LINKEDIN_VERSION,
+            "User-Agent": "hermes-antoinequarroz/1.0",
+        },
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=60) as response:
+            body = json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", errors="replace")
+        raise RuntimeError(f"Verification du document LinkedIn refusee ({exc.code}): {detail[:500]}") from exc
+    return str(body.get("status") or "")
+
+
+def wait_for_linkedin_document(token: str, document_urn: str, *, attempts: int = 30, interval: float = 2.0) -> None:
+    """Wait until LinkedIn has rendered the PDF before creating the public post."""
+    for attempt in range(attempts):
+        status = linkedin_document_status(token, document_urn)
+        if status == "AVAILABLE":
+            return
+        if status == "PROCESSING_FAILED":
+            raise RuntimeError("LinkedIn n'a pas pu traiter le PDF du carrousel.")
+        if status not in {"WAITING_UPLOAD", "PROCESSING"}:
+            raise RuntimeError(f"Etat inattendu du document LinkedIn: {status or 'absent'}.")
+        if attempt + 1 < attempts:
+            time.sleep(interval)
+    raise RuntimeError("Le PDF LinkedIn est toujours en traitement apres 60 secondes; aucune publication n'a ete creee.")
 
 
 def site_request(site_url: str, token: str, *, payload: dict | None = None, path: str = "social-publications") -> dict:
