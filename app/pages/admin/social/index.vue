@@ -162,9 +162,7 @@ onMounted(load)
             </div>
             <a :href="post.media_url!" target="_blank" rel="noopener noreferrer" class="shrink-0 rounded-lg border border-violet-200 bg-white px-3 py-2 text-xs font-semibold text-violet-700 transition-colors hover:bg-violet-50 dark:border-violet-400/20 dark:bg-white/[0.05] dark:text-violet-200">Ouvrir ↗</a>
           </div>
-          <object :data="post.media_url!" type="application/pdf" class="h-[32rem] w-full bg-white dark:bg-[#0b0b11]" :aria-label="`Aperçu du carrousel ${post.media_title || ''}`">
-            <div class="grid min-h-40 place-items-center p-5 text-center text-sm text-gray-600 dark:text-gray-300"><a :href="post.media_url!" target="_blank" rel="noopener noreferrer" class="font-semibold text-violet-600 underline dark:text-violet-300">Afficher le carrousel PDF</a></div>
-          </object>
+          <iframe :src="post.media_url!" class="h-[32rem] w-full bg-white dark:bg-[#0b0b11]" :title="`Aperçu du carrousel ${post.media_title || ''}`" loading="lazy" />
         </section>
         <textarea v-if="['draft', 'failed'].includes(post.status)" v-model="post.content" rows="9" class="input-field mt-4 resize-y text-sm leading-6" :maxlength="post.platform === 'x' ? 280 : 3000" :aria-label="`Texte ${platformLabel(post.platform)}`" />
         <div v-else class="mt-4 whitespace-pre-wrap rounded-xl bg-gray-50 p-4 text-sm leading-6 text-gray-700 dark:bg-white/[0.04] dark:text-gray-200">{{ post.content }}</div>

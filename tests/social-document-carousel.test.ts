@@ -7,8 +7,8 @@ describe('LinkedIn document carousel review', () => {
   it('shows the attached PDF before approval', () => {
     const page = read('app/pages/admin/social/index.vue')
     expect(page).toContain('Carrousel joint')
-    expect(page).toContain('type="application/pdf"')
-    expect(page).toContain(':data="post.media_url!"')
+    expect(page).toContain('<iframe :src="post.media_url!"')
+    expect(page).toContain('Aperçu du carrousel')
     expect(page).toContain('Carrousel inclus')
   })
 
