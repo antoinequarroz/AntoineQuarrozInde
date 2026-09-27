@@ -178,12 +178,13 @@ async function handleDelete(id: number) {
               </div>
             </div>
             <div>
-              <label for="review-role" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Rôle / Fonction</label>
-              <input id="review-role" v-model="form.role" type="text" class="input-field" placeholder="Directeur, Gérant..." autocomplete="organization-title">
+              <label for="review-role" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Poste / Fonction *</label>
+              <input id="review-role" v-model="form.role" type="text" class="input-field" placeholder="Directeur, Gérante, Physiothérapeute…" required autocomplete="organization-title">
             </div>
             <div>
               <label for="review-content" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Témoignage *</label>
               <textarea id="review-content" v-model="form.content" rows="4" class="input-field resize-none" placeholder="Le témoignage du client..." required />
+              <p class="mt-1.5 text-xs leading-5 text-gray-500 dark:text-gray-400">Tu peux inclure une URL complète ou une adresse commençant par www. : elle sera automatiquement cliquable sur le site.</p>
             </div>
             <div v-if="form.author || form.content" class="rounded-2xl border border-violet-200 bg-[#f8f7ff] p-4 dark:border-white/10 dark:bg-[#0c0b18]">
               <p class="text-[11px] font-semibold uppercase tracking-[.12em] text-cyan-700 dark:text-cyan-300">Aperçu du carrousel</p>
