@@ -1,6 +1,6 @@
 begin;
 
-select plan(10);
+select plan(11);
 
 insert into public.organizations (id, name, slug)
 values ('00000000-0000-0000-0000-000000000701', 'AQ Social Queue', 'aq-social-queue');
