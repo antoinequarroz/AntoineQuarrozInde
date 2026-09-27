@@ -19,3 +19,9 @@
 - Bots IA : autorisés par la configuration publique.
 - Schéma Article/BlogPosting : généré par le front.
 - Blocages ouverts : aucun pour une production unitaire. Le relais Codex peut produire une couverture native si le job Hermes ne dispose pas d’un générateur d’image vérifiable.
+
+## Ressources gated
+
+| Ressource | Persona | Placement | Tag LuMail | Inscrits |
+|---|---|---|---|---:|
+| Checklist pilote IA en PME sur 30 jours | Responsable de PME suisse | Article « IA dans une PME » et `/ressources/checklist-ia-pme` | `lead-magnet`, `checklist-ia-pme` | 0 |

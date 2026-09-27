@@ -55,6 +55,7 @@ export const LOCALIZED_ROUTE_POLICY = [
   frenchOnlyFamily('mobile-application-service', 'application-mobile-valais', '/application-mobile-valais'),
   frenchOnlyFamily('blog-index', 'blog', '/blog', 'app/pages/blog/index.vue'),
   frenchOnlyFamily('blog-article', 'blog-slug', '/blog/**', 'app/pages/blog/[slug].vue'),
+  frenchOnlyFamily('ia-sme-checklist', 'ressources-checklist-ia-pme', '/ressources/checklist-ia-pme'),
   frenchOnlyFamily('case-studies-index', 'cas-clients-valais', '/cas-clients-valais'),
   frenchOnlyFamily('case-study', 'projets-slug', '/projets/**', 'app/pages/projets/[slug].vue'),
 ] as const satisfies LocalizedRoutePolicy

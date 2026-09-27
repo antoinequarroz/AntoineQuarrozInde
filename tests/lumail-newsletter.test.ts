@@ -55,6 +55,16 @@ describe('Lumail newsletter synchronization', () => {
     expect(updateSubscriber).toHaveBeenCalledWith(input.email, expect.objectContaining({ resubscribe: true }))
   })
 
+  it('segments a checklist request without replacing existing tags', async () => {
+    const { syncLumailNewsletterSubscriber } = await import('../server/utils/lumailNewsletter')
+    await syncLumailNewsletterSubscriber({ ...input, leadMagnet: 'checklist-ia-pme' })
+
+    expect(createSubscriber).toHaveBeenCalledWith(expect.objectContaining({
+      tags: ['newsletter', 'lead-magnet', 'checklist-ia-pme'],
+      replaceTags: false,
+    }))
+  })
+
   it('refuses a local-only success when Lumail is unavailable', async () => {
     createSubscriber.mockResolvedValue({ data: null, error: { statusCode: 503, message: 'Unavailable' } })
     const { syncLumailNewsletterSubscriber } = await import('../server/utils/lumailNewsletter')

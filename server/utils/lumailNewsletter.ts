@@ -5,6 +5,7 @@ type NewsletterSubscriberInput = {
   locale: 'fr' | 'en' | 'de'
   sourcePath: string
   consentedAt: string
+  leadMagnet?: string | null
 }
 
 export type LumailNewsletterSubscriber = {
@@ -21,7 +22,11 @@ export async function syncLumailNewsletterSubscriber(input: NewsletterSubscriber
   const lumail = new Lumail({ apiKey: String(config.lumailApiKey) })
   const subscriber = {
     email: input.email,
-    tags: ['newsletter', 'blog'],
+    tags: [
+      'newsletter',
+      input.leadMagnet ? 'lead-magnet' : 'blog',
+      ...(input.leadMagnet ? [input.leadMagnet] : []),
+    ],
     fields: {
       locale: input.locale,
       source_article: input.sourcePath,

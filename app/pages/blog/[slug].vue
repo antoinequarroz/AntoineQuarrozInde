@@ -21,6 +21,7 @@ const siteUrl = runtimeConfig.public.siteUrl.replace(/\/+$/, '')
 await store.ensureLoaded()
 
 const article = computed(() => store.published.find(a => a.slug === route.params.slug))
+const isIaPmeArticle = computed(() => article.value?.slug === 'ia-pme-commencer-sans-exposer-donnees')
 
 if (!article.value) {
   throw createError({ statusCode: 404, message: 'Article non trouvé' })
@@ -176,8 +177,9 @@ useHead(() => ({
           </p>
           <!-- eslint-disable vue/no-v-html -->
           <div class="text-gray-600 dark:text-gray-300" v-html="renderSafeMarkdown(article.content)" />
+          <BlogLeadMagnetSignup v-if="isIaPmeArticle" compact />
           <BlogDiagnosticCta />
-          <BlogNewsletterSignup />
+          <BlogNewsletterSignup v-if="!isIaPmeArticle" />
         </div>
 
         <!-- Footer -->
