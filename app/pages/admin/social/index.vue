@@ -58,6 +58,11 @@ function connection(platform: Platform) {
 function platformLabel(platform: Platform) { return platform === 'linkedin' ? 'LinkedIn' : 'X' }
 function characterCount(content: string) { return [...content].length }
 function hasDocument(post: SocialPost) { return post.media_kind === 'document' && Boolean(post.media_url) }
+function documentSlides(post: SocialPost) {
+  if (!post.media_url) return []
+  const base = post.media_url.replace(/\.pdf(?:\?.*)?$/i, '')
+  return Array.from({ length: 7 }, (_, index) => `${base}/slide-${index + 1}.png`)
+}
 function openConfirmation(post: SocialPost, mode: 'scheduled' | 'now') {
   confirmationMode.value = mode
   confirmationPost.value = post
@@ -162,7 +167,15 @@ onMounted(load)
             </div>
             <a :href="post.media_url!" target="_blank" rel="noopener noreferrer" class="shrink-0 rounded-lg border border-violet-200 bg-white px-3 py-2 text-xs font-semibold text-violet-700 transition-colors hover:bg-violet-50 dark:border-violet-400/20 dark:bg-white/[0.05] dark:text-violet-200">Ouvrir ↗</a>
           </div>
-          <iframe :src="post.media_url!" class="h-[32rem] w-full bg-white dark:bg-[#0b0b11]" :title="`Aperçu du carrousel ${post.media_title || ''}`" loading="lazy" />
+          <div class="bg-white/80 p-4 dark:bg-[#0b0b11]" :aria-label="`Aperçu du carrousel ${post.media_title || ''}`">
+            <div class="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-3" tabindex="0">
+              <figure v-for="(slide, index) in documentSlides(post)" :key="slide" class="relative w-[min(78vw,18rem)] shrink-0 snap-center overflow-hidden rounded-xl border border-gray-200 bg-[#07070d] shadow-sm dark:border-white/[0.1]">
+                <img :src="slide" :alt="`Page ${index + 1} sur 7 du carrousel ${post.media_title || ''}`" class="aspect-[4/5] h-auto w-full object-cover" :loading="index === 0 ? 'eager' : 'lazy'">
+                <figcaption class="absolute bottom-2 right-2 rounded-full bg-black/75 px-2 py-1 text-[11px] font-semibold tabular-nums text-white backdrop-blur-sm">{{ index + 1 }} / 7</figcaption>
+              </figure>
+            </div>
+            <p class="mt-1 text-center text-xs font-medium text-gray-500 dark:text-gray-400">Fais défiler horizontalement pour relire les 7 pages avant publication.</p>
+          </div>
         </section>
         <textarea v-if="['draft', 'failed'].includes(post.status)" v-model="post.content" rows="9" class="input-field mt-4 resize-y text-sm leading-6" :maxlength="post.platform === 'x' ? 280 : 3000" :aria-label="`Texte ${platformLabel(post.platform)}`" />
         <div v-else class="mt-4 whitespace-pre-wrap rounded-xl bg-gray-50 p-4 text-sm leading-6 text-gray-700 dark:bg-white/[0.04] dark:text-gray-200">{{ post.content }}</div>

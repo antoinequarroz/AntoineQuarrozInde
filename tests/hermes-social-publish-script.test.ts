@@ -110,8 +110,24 @@ describe('Hermes social publication helper', () => {
     expect(source).toContain('LINKEDIN_DOCUMENTS_ENDPOINT')
     expect(source).toContain('social_document(media_url)')
     expect(source).toContain('upload_linkedin_document(token, author, document)')
+    expect(source).toContain('wait_for_linkedin_document(token, document_urn)')
+    expect(source).toContain('status == "AVAILABLE"')
     expect(source).toContain('"title": media_title[:200]')
     expect(source).toContain('"id": document_urn')
+  })
+
+  it('waits for LinkedIn to finish processing the PDF before creating the post', () => {
+    const output = execFileSync('python3', ['-c', `
+import importlib.util
+spec=importlib.util.spec_from_file_location('publisher', ${JSON.stringify(script)})
+module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
+statuses=iter(('WAITING_UPLOAD', 'PROCESSING', 'AVAILABLE'))
+module.linkedin_document_status=lambda token, urn: next(statuses)
+module.time.sleep=lambda interval: None
+module.wait_for_linkedin_document('token', 'urn:li:document:test', attempts=3, interval=0)
+print('available')
+`], { encoding: 'utf8' })
+    expect(output.trim()).toBe('available')
   })
 
   it('normalizes campaign links for LinkedIn, X and Lumail', () => {
