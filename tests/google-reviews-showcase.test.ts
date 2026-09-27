@@ -10,6 +10,8 @@ describe('Google reviews showcase', () => {
     expect(source).toContain('role="tablist"')
     expect(source).toContain(':aria-selected="index === activeIndex"')
     expect(source).toContain('prefers-reduced-motion: reduce')
+    expect(source).toContain('html.dark .reviews-showcase .reviews-grid')
+    expect(source).not.toContain(':global(.dark)')
     expect(source).toContain('rel="noopener noreferrer"')
     expect(source).not.toContain('Avis client exemple')
   })

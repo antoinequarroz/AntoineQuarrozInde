@@ -294,12 +294,15 @@ onBeforeUnmount(() => {
 .review-swap-enter-from { opacity: 0; transform: translateX(18px); }
 .review-swap-leave-to { opacity: 0; transform: translateX(-18px); }
 
-:global(.dark) .reviews-showcase { background: linear-gradient(180deg, #080711 0%, #0c0b18 100%); }
-:global(.dark) .reviews-grid { opacity: .2; }
-:global(.dark) .review-card::after { background: linear-gradient(125deg, rgba(255, 255, 255, .04), transparent 35%, transparent 72%, rgba(34, 211, 238, .04)); }
-:global(.dark) .review-nav-button { border-color: rgba(255, 255, 255, .12); color: rgba(255, 255, 255, .75); }
-:global(.dark) .review-nav-button:hover { background: rgba(255, 255, 255, .06); color: rgb(103 232 249); }
 @media (prefers-reduced-motion: reduce) {
   .review-swap-enter-active, .review-swap-leave-active, .review-avatar-button, .review-nav-button { transition: none; }
 }
+</style>
+
+<style>
+html.dark .reviews-showcase { background: linear-gradient(180deg, #080711 0%, #0c0b18 100%); }
+html.dark .reviews-showcase .reviews-grid { opacity: .2; }
+html.dark .reviews-showcase .review-card::after { background: linear-gradient(125deg, rgba(255, 255, 255, .04), transparent 35%, transparent 72%, rgba(34, 211, 238, .04)); }
+html.dark .reviews-showcase .review-nav-button { border-color: rgba(255, 255, 255, .12); color: rgba(255, 255, 255, .75); }
+html.dark .reviews-showcase .review-nav-button:hover { background: rgba(255, 255, 255, .06); color: rgb(103 232 249); }
 </style>
