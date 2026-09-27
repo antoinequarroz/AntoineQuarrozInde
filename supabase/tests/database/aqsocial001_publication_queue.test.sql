@@ -93,6 +93,23 @@ select lives_ok(
   'the queue accepts the canonical homepage for a standalone social post'
 );
 
+select lives_ok(
+  $$
+    insert into public.social_posts (
+      organization_id, platform, source_key, article_title, article_url, content, source_path
+    ) values (
+      '00000000-0000-0000-0000-000000000701',
+      'linkedin',
+      'resource-checklist',
+      'Checklist IA PME',
+      'https://www.antoinequarroz.ch/ressources/checklist-ia-pme?utm_source=linkedin&utm_medium=social',
+      'Téléchargez la checklist IA PME.',
+      'seo/social/a-valider/ia-pme-checklist-carousel-linkedin.md'
+    )
+  $$,
+  'the queue accepts a canonical resource destination with tracking parameters'
+);
+
 select throws_ok(
   $$
     insert into public.social_posts (
