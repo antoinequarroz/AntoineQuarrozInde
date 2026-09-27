@@ -35,6 +35,7 @@ export const sitemapStaticPaths = [
   '/confidentialite',
   '/conditions-utilisation',
   '/mentions-legales',
+  '/coursia/confidentialite',
   '/en/confidentialite',
   '/en/conditions-utilisation',
   '/en/mentions-legales',

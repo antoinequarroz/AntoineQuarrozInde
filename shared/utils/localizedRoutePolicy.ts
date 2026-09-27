@@ -58,6 +58,7 @@ export const LOCALIZED_ROUTE_POLICY = [
   frenchOnlyFamily('ia-sme-checklist', 'ressources-checklist-ia-pme', '/ressources/checklist-ia-pme'),
   frenchOnlyFamily('case-studies-index', 'cas-clients-valais', '/cas-clients-valais'),
   frenchOnlyFamily('case-study', 'projets-slug', '/projets/**', 'app/pages/projets/[slug].vue'),
+  frenchOnlyFamily('coursia-privacy', 'coursia-confidentialite', '/coursia/confidentialite'),
 ] as const satisfies LocalizedRoutePolicy
 
 function requireReference(

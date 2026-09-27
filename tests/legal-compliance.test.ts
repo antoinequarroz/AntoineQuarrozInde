@@ -5,6 +5,7 @@ import { sitemapStaticPaths } from '../server/utils/sitemapDiscovery'
 const legalPage = readFileSync(new URL('../app/pages/mentions-legales.vue', import.meta.url), 'utf8')
 const footer = readFileSync(new URL('../app/components/layout/AppFooter.vue', import.meta.url), 'utf8')
 const privacy = readFileSync(new URL('../app/pages/confidentialite.vue', import.meta.url), 'utf8')
+const coursiaPrivacy = readFileSync(new URL('../app/pages/coursia/confidentialite.vue', import.meta.url), 'utf8')
 
 describe('public legal information', () => {
   it('publishes the operator identity and required contact details', () => {
@@ -34,5 +35,17 @@ describe('public legal information', () => {
     expect(privacy).toContain('Stripe')
     expect(privacy).toContain('ten years')
     expect(footer).toContain('text-gray-600 dark:text-gray-300')
+  })
+
+  it('publishes a dedicated CoursIA privacy policy matching the app data flow', () => {
+    expect(coursiaPrivacy).toContain('allergies peuvent constituer des données sensibles')
+    expect(coursiaPrivacy).toContain('Supabase')
+    expect(coursiaPrivacy).toContain('RevenueCat et Apple')
+    expect(coursiaPrivacy).toContain('PostHog')
+    expect(coursiaPrivacy).toContain('Sentry')
+    expect(coursiaPrivacy).toContain('OpenAI')
+    expect(coursiaPrivacy).toContain('ne déclenchent actuellement aucune commande réelle')
+    expect(coursiaPrivacy).toContain('info@antoinequarroz.ch')
+    expect(sitemapStaticPaths).toContain('/coursia/confidentialite')
   })
 })

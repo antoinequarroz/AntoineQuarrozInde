@@ -151,7 +151,7 @@ function policyWithApprovedEnglish(overrides: Partial<LocalizedRouteFamily['vari
 }
 
 describe('AQ-SEO-005 French-only route policy', () => {
-  it('declares the exhaustive set of nine French-only route families', () => {
+  it('declares the exhaustive set of ten French-only route families', () => {
     expect(LOCALIZED_ROUTE_POLICY.map(family => [family.routeName, family.path])).toEqual([
       ['developpeur-web-valais', '/developpeur-web-valais'],
       ['creation-site-internet-valais', '/creation-site-internet-valais'],
@@ -162,6 +162,7 @@ describe('AQ-SEO-005 French-only route policy', () => {
       ['ressources-checklist-ia-pme', '/ressources/checklist-ia-pme'],
       ['cas-clients-valais', '/cas-clients-valais'],
       ['projets-slug', '/projets/**'],
+      ['coursia-confidentialite', '/coursia/confidentialite'],
     ])
 
     for (const family of LOCALIZED_ROUTE_POLICY) {
@@ -174,7 +175,7 @@ describe('AQ-SEO-005 French-only route policy', () => {
   it('builds i18n page restrictions without affecting routes outside the manifest', () => {
     const pages = createI18nPagesConfig()
 
-    expect(Object.keys(pages)).toHaveLength(9)
+    expect(Object.keys(pages)).toHaveLength(10)
     for (const family of LOCALIZED_ROUTE_POLICY) {
       expect(pages[family.routeName]).toEqual({ fr: undefined, en: false, de: false })
     }
