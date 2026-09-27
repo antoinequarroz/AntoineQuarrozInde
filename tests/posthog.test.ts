@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises'
 import { describe, expect, it } from 'vitest'
 import { analyticsContent, isPostHogProductionHost, isPostHogPublicPath, safeAnalyticsPath, stripAnalyticsUrlQuery } from '../app/utils/posthog'
 
@@ -31,5 +32,19 @@ describe('PostHog public analytics scope', () => {
     expect(analyticsContent('/blog/mon-article?utm_source=linkedin')).toEqual({ type: 'article', slug: 'mon-article' })
     expect(analyticsContent('/projets/hermes-cockpit')).toEqual({ type: 'project', slug: 'hermes-cockpit' })
     expect(analyticsContent('/contact')).toEqual({ type: 'page', slug: null })
+  })
+
+  it('uses first-party ingestion and captures the four Core Web Vitals', async () => {
+    const [nuxtConfig, caddyfile] = await Promise.all([
+      readFile('nuxt.config.ts', 'utf8'),
+      readFile('Caddyfile', 'utf8'),
+    ])
+
+    expect(nuxtConfig).toContain("host: process.env.NUXT_PUBLIC_POSTHOG_HOST || '/ingest'")
+    expect(nuxtConfig).toContain('capture_performance: {')
+    expect(nuxtConfig).toContain('web_vitals: true')
+    expect(nuxtConfig).toContain("web_vitals_allowed_metrics: ['LCP', 'CLS', 'FCP', 'INP']")
+    expect(caddyfile).toContain('handle_path /ingest/*')
+    expect(caddyfile).toContain('reverse_proxy https://eu.i.posthog.com')
   })
 })

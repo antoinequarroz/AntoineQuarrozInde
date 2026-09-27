@@ -19,7 +19,10 @@ export default defineNuxtConfig({
   posthogConfig: {
     // The project token is intentionally public. Private API access remains server-only.
     publicKey: process.env.NUXT_PUBLIC_POSTHOG_KEY || 'phc_pEpzDYuscdeuHAfWFJTpgyDZT3dxWVFm4y38DUxA2epS',
-    host: process.env.NUXT_PUBLIC_POSTHOG_HOST || 'https://eu.i.posthog.com',
+    // Keep browser ingestion first-party so content blockers do not silently
+    // remove part of the audience. Server-side business events stay on the
+    // direct EU ingestion host through posthogIngestionHost below.
+    host: process.env.NUXT_PUBLIC_POSTHOG_HOST || '/ingest',
     clientConfig: {
       defaults: '2026-05-30',
       cookieless_mode: 'always',
@@ -27,6 +30,10 @@ export default defineNuxtConfig({
       autocapture: false,
       capture_pageview: false,
       capture_pageleave: false,
+      capture_performance: {
+        web_vitals: true,
+        web_vitals_allowed_metrics: ['LCP', 'CLS', 'FCP', 'INP'],
+      },
       disable_session_recording: true,
       capture_heatmaps: false,
       disable_surveys: true,
