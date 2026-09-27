@@ -74,6 +74,11 @@ pivxi.antoinequarroz.ch {
         reverse_proxy pivxi-api-gw:8000
     }
 
+    @mailer path /mail/v1/*
+    handle @mailer {
+        reverse_proxy pivxi-mailer:8081
+    }
+
     handle {
         reverse_proxy pivxi-web:8080
     }
