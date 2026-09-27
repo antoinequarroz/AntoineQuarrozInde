@@ -76,6 +76,7 @@ const content = computed(() => {
       source: 'Read the original review', report: 'Report', sorted: 'Reviews shown and ordered by relevance by Google Maps.',
       translated: 'Translated review', visited: 'Visited', rating: 'out of 5', previous: 'Previous review', next: 'Next review',
       profile: 'View all reviews on Google', verified: 'Review published on Google Maps', select: 'Show review by', manual: 'Client testimonial',
+      fallback: 'Read verified client feedback directly on my Google Business Profile.',
     }
   }
   if (locale.value === 'de') {
@@ -85,6 +86,7 @@ const content = computed(() => {
       source: 'Originalbewertung lesen', report: 'Melden', sorted: 'Bewertungen werden von Google Maps nach Relevanz angezeigt und sortiert.',
       translated: 'Übersetzte Bewertung', visited: 'Besucht', rating: 'von 5', previous: 'Vorherige Bewertung', next: 'Nächste Bewertung',
       profile: 'Alle Bewertungen auf Google ansehen', verified: 'Auf Google Maps veröffentlichte Bewertung', select: 'Bewertung anzeigen von', manual: 'Kundenstimme',
+      fallback: 'Lesen Sie verifizierte Kundenbewertungen direkt in meinem Google-Unternehmensprofil.',
     }
   }
   return {
@@ -93,6 +95,7 @@ const content = computed(() => {
     source: 'Lire l’avis original', report: 'Signaler', sorted: 'Avis affichés et classés par pertinence par Google Maps.',
     translated: 'Avis traduit', visited: 'Visite', rating: 'sur 5', previous: 'Avis précédent', next: 'Avis suivant',
     profile: 'Voir tous les avis sur Google', verified: 'Avis publié sur Google Maps', select: 'Afficher l’avis de', manual: 'Témoignage client',
+    fallback: 'Retrouvez les avis de mes clients directement sur ma fiche Google.',
   }
 })
 
@@ -155,6 +158,30 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
+  <section v-if="!activeReview && googleStore.googleMapsUri" id="reviews" class="reviews-showcase section-padding overflow-hidden" aria-labelledby="reviews-title">
+    <div aria-hidden="true" class="reviews-aurora reviews-aurora-left" />
+    <div aria-hidden="true" class="reviews-aurora reviews-aurora-right" />
+    <div aria-hidden="true" class="reviews-grid" />
+    <div class="section-container relative z-10 grid items-center gap-8 lg:grid-cols-[1fr_auto] lg:gap-14">
+      <div>
+        <span class="badge mb-5">{{ content.badge }}</span>
+        <h2 id="reviews-title" class="section-heading text-left">
+          {{ content.titleA }}<br>
+          <span class="section-heading-gradient">{{ content.titleB }}</span>
+        </h2>
+        <p class="mt-5 max-w-xl text-base leading-7 text-gray-600 dark:text-white/60">{{ content.fallback }}</p>
+      </div>
+      <a
+        :href="googleStore.googleMapsUri"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="inline-flex min-h-12 items-center justify-center gap-3 rounded-2xl border border-cyan-500/25 bg-white px-6 py-3 text-sm font-semibold text-cyan-900 shadow-lg shadow-cyan-950/10 transition-[color,background-color,box-shadow] duration-150 hover:bg-cyan-50 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-2 dark:bg-white/10 dark:text-cyan-100 dark:hover:bg-white/15 dark:focus-visible:ring-offset-[#080711]"
+      >
+        {{ content.profile }}
+        <svg aria-hidden="true" viewBox="0 0 24 24" class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17 17 7M8 7h9v9" stroke-linecap="round" stroke-linejoin="round" /></svg>
+      </a>
+    </div>
+  </section>
   <section v-if="activeReview" id="reviews" class="reviews-showcase section-padding overflow-hidden" aria-labelledby="reviews-title">
     <div aria-hidden="true" class="reviews-aurora reviews-aurora-left" />
     <div aria-hidden="true" class="reviews-aurora reviews-aurora-right" />
