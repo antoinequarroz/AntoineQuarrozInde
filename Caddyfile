@@ -16,7 +16,18 @@ www.antoinequarroz.ch {
 		X-Frame-Options "DENY"
 		-Server
 	}
-	reverse_proxy web:3000
+
+	# First-party PostHog ingestion. The prefix is stripped to preserve the
+	# upstream EU ingestion paths (/e, /decide, /static, ...).
+	handle_path /ingest/* {
+		reverse_proxy https://eu.i.posthog.com {
+			header_up Host eu.i.posthog.com
+		}
+	}
+
+	handle {
+		reverse_proxy web:3000
+	}
 }
 
 metricove.antoinequarroz.ch {

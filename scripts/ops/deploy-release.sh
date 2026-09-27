@@ -141,10 +141,11 @@ validate_caddy_config
 trap rollback ERR
 # Feed Docker the committed tree itself. This makes the image independent from
 # ignored files (including .env) and any other filesystem state on the VPS.
+# Docker still invalidates source-dependent layers from the exact archive while
+# reusing the pinned dependency layer; this keeps deploys bounded on the VPS.
 git archive --format=tar HEAD \
   | docker build \
       --pull \
-      --no-cache \
       --build-arg "APP_VERSION=$APP_VERSION" \
       --build-arg "APP_BUILD_TIME=$APP_BUILD_TIME" \
       --tag "$image_name:$candidate_tag" \
