@@ -35,6 +35,9 @@ export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig()
   const apiKey = String(config.googlePlacesApiKey || '')
   const placeId = String(config.googlePlaceId || '')
+  const googleMapsUri = placeId
+    ? `https://www.google.com/maps/search/?api=1&query=Antoine%20Quarroz&query_place_id=${encodeURIComponent(placeId)}`
+    : ''
 
   setHeader(event, 'cache-control', 'private, no-store')
 
@@ -58,14 +61,26 @@ export default defineEventHandler(async (event) => {
     })
   }
   catch {
-    return { configured: true, unavailable: true, reviews: [] }
+    return { configured: true, unavailable: true, googleMapsUri, reviews: [] }
   }
 
   if (!response.ok) {
     // Google may echo credential identifiers in error bodies. Keep production
     // logs actionable without ever persisting upstream response content.
     console.error('Google Places request failed', response.status, response.statusText)
-    return { configured: true, unavailable: true, reviews: [] }
+    let errorCode = ''
+    try {
+      const failure = await response.json() as { error?: { details?: Array<{ reason?: string }> } }
+      errorCode = String(failure.error?.details?.[0]?.reason || '')
+    }
+    catch { /* Upstream may return non-JSON errors. */ }
+    return {
+      configured: true,
+      unavailable: true,
+      issue: errorCode === 'CONSUMER_SUSPENDED' ? 'project_suspended' : response.status === 403 ? 'access_denied' : 'unavailable',
+      googleMapsUri,
+      reviews: [],
+    }
   }
 
   const place = await response.json() as GooglePlaceResponse
@@ -74,7 +89,7 @@ export default defineEventHandler(async (event) => {
     placeName: place.displayName?.text || '',
     rating: Number(place.rating || 0),
     userRatingCount: Number(place.userRatingCount || 0),
-    googleMapsUri: place.googleMapsUri || '',
+    googleMapsUri: place.googleMapsUri || googleMapsUri,
     attributions: (place.attributions ?? []).map(attribution => ({
       provider: attribution.provider || '',
       providerUri: attribution.providerUri || '',

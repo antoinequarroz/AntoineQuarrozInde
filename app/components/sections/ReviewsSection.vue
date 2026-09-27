@@ -5,6 +5,7 @@ const { locale } = useI18n()
 const store = useReviewsStore()
 const googleStore = useGoogleReviewsStore()
 const activeIndex = ref(0)
+const slideDirection = ref<'next' | 'previous'>('next')
 const isPaused = ref(false)
 const reduceMotion = usePreferredReducedMotion()
 
@@ -64,34 +65,34 @@ const reviews = computed(() => [
   ...(locale.value === 'fr' ? manualReviews.value : []),
 ])
 const activeReview = computed(() => reviews.value[activeIndex.value] ?? reviews.value[0])
-const displayRating = computed(() => googleReviews.value.length ? googleStore.rating : store.avgRating)
-const displayCount = computed(() => googleReviews.value.length ? googleStore.userRatingCount : manualReviews.value.length)
+const displayRating = computed(() => googleStore.rating)
+const displayCount = computed(() => googleStore.userRatingCount)
 
 const content = computed(() => {
   if (locale.value === 'en') {
     return {
-      badge: 'Google reviews', titleA: 'A collaboration', titleB: 'told by clients.',
-      subtitle: 'Verified feedback, published on Google after real projects.', reviewsLabel: 'reviews',
+      badge: 'Client testimonials', titleA: 'A collaboration', titleB: 'told by clients.',
+      subtitle: 'Authentic feedback from clients I have worked with.', reviewsLabel: 'reviews',
       source: 'Read the original review', report: 'Report', sorted: 'Reviews shown and ordered by relevance by Google Maps.',
       translated: 'Translated review', visited: 'Visited', rating: 'out of 5', previous: 'Previous review', next: 'Next review',
-      profile: 'View all reviews on Google', verified: 'Review published on Google Maps', select: 'Show review by',
+      profile: 'View all reviews on Google', verified: 'Review published on Google Maps', select: 'Show review by', manual: 'Client testimonial',
     }
   }
   if (locale.value === 'de') {
     return {
-      badge: 'Google-Bewertungen', titleA: 'Eine Zusammenarbeit,', titleB: 'von Kunden erzählt.',
-      subtitle: 'Verifizierte Rückmeldungen, nach echten Projekten auf Google veröffentlicht.', reviewsLabel: 'Bewertungen',
+      badge: 'Kundenstimmen', titleA: 'Eine Zusammenarbeit,', titleB: 'von Kunden erzählt.',
+      subtitle: 'Authentische Rückmeldungen von Kunden, mit denen ich gearbeitet habe.', reviewsLabel: 'Bewertungen',
       source: 'Originalbewertung lesen', report: 'Melden', sorted: 'Bewertungen werden von Google Maps nach Relevanz angezeigt und sortiert.',
       translated: 'Übersetzte Bewertung', visited: 'Besucht', rating: 'von 5', previous: 'Vorherige Bewertung', next: 'Nächste Bewertung',
-      profile: 'Alle Bewertungen auf Google ansehen', verified: 'Auf Google Maps veröffentlichte Bewertung', select: 'Bewertung anzeigen von',
+      profile: 'Alle Bewertungen auf Google ansehen', verified: 'Auf Google Maps veröffentlichte Bewertung', select: 'Bewertung anzeigen von', manual: 'Kundenstimme',
     }
   }
   return {
-    badge: 'Avis Google', titleA: 'Une collaboration,', titleB: 'racontée par mes clients.',
-    subtitle: 'Des retours vérifiés, publiés sur Google après de vrais projets.', reviewsLabel: 'avis',
+    badge: 'Témoignages clients', titleA: 'Une collaboration,', titleB: 'racontée par mes clients.',
+    subtitle: 'Des retours authentiques de personnes avec qui j’ai travaillé.', reviewsLabel: 'avis',
     source: 'Lire l’avis original', report: 'Signaler', sorted: 'Avis affichés et classés par pertinence par Google Maps.',
     translated: 'Avis traduit', visited: 'Visite', rating: 'sur 5', previous: 'Avis précédent', next: 'Avis suivant',
-    profile: 'Voir tous les avis sur Google', verified: 'Avis publié sur Google Maps', select: 'Afficher l’avis de',
+    profile: 'Voir tous les avis sur Google', verified: 'Avis publié sur Google Maps', select: 'Afficher l’avis de', manual: 'Témoignage client',
   }
 })
 
@@ -107,15 +108,35 @@ function formatVisitDate(value: string) {
 function goTo(index: number) {
   const total = reviews.value.length
   if (!total) return
-  activeIndex.value = (index + total) % total
+  const nextIndex = (index + total) % total
+  if (nextIndex === activeIndex.value) return
+  slideDirection.value = index < activeIndex.value ? 'previous' : 'next'
+  activeIndex.value = nextIndex
 }
 
 function previous() {
-  goTo(activeIndex.value - 1)
+  slideDirection.value = 'previous'
+  activeIndex.value = (activeIndex.value - 1 + reviews.value.length) % reviews.value.length
 }
 
 function next() {
-  goTo(activeIndex.value + 1)
+  slideDirection.value = 'next'
+  activeIndex.value = (activeIndex.value + 1) % reviews.value.length
+}
+
+let touchStartX: number | null = null
+function onTouchStart(event: TouchEvent) {
+  touchStartX = event.changedTouches[0]?.clientX ?? null
+  isPaused.value = true
+}
+function onTouchEnd(event: TouchEvent) {
+  const endX = event.changedTouches[0]?.clientX
+  if (touchStartX !== null && endX !== undefined && Math.abs(endX - touchStartX) > 48 && reviews.value.length > 1) {
+    if (endX < touchStartX) next()
+    else previous()
+  }
+  touchStartX = null
+  isPaused.value = false
 }
 
 watch(reviews, (items) => {
@@ -178,6 +199,8 @@ onBeforeUnmount(() => {
           @mouseleave="isPaused = false"
           @focusin="isPaused = true"
           @focusout="isPaused = false"
+          @touchstart.passive="onTouchStart"
+          @touchend.passive="onTouchEnd"
         >
           <div aria-hidden="true" class="absolute inset-5 translate-x-5 translate-y-5 rounded-[2rem] border border-violet-400/15 bg-violet-500/[0.04]" />
           <article class="review-card relative min-h-[420px] overflow-hidden rounded-[2rem] border border-white/70 bg-white/90 p-6 shadow-[0_32px_90px_-42px_rgba(30,20,70,.5)] backdrop-blur-xl sm:p-9 dark:border-white/10 dark:bg-[#0c0b18]/90">
@@ -186,12 +209,12 @@ onBeforeUnmount(() => {
               <div class="flex items-center justify-between gap-4">
                 <span class="inline-flex items-center gap-2 rounded-full border border-cyan-500/20 bg-cyan-500/[0.07] px-3 py-1.5 text-xs font-semibold text-cyan-800 dark:text-cyan-200">
                   <span class="h-1.5 w-1.5 rounded-full bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,.9)]" />
-                  {{ activeReview.source === 'google' ? content.verified : content.badge }}
+                  {{ activeReview.source === 'google' ? content.verified : content.manual }}
                 </span>
-                <span class="text-sm tracking-[0.08em] text-amber-400" :aria-label="`${activeReview.rating} ${content.rating}`"><span aria-hidden="true">{{ '★'.repeat(activeReview.rating) }}</span></span>
+                <span v-if="activeReview.source === 'google'" class="text-sm tracking-[0.08em] text-amber-400" :aria-label="`${activeReview.rating} ${content.rating}`"><span aria-hidden="true">{{ '★'.repeat(activeReview.rating) }}</span></span>
               </div>
 
-              <Transition name="review-swap" mode="out-in">
+              <Transition :name="slideDirection === 'next' ? 'review-slide-next' : 'review-slide-previous'" mode="out-in">
                 <div :key="activeReview.id" class="flex flex-1 flex-col">
                   <blockquote class="mt-8 flex-1 font-display text-xl font-medium leading-[1.5] text-gray-950 sm:text-2xl sm:leading-[1.48] dark:text-white">
                     {{ activeReview.content }}
@@ -290,12 +313,17 @@ onBeforeUnmount(() => {
 }
 .review-nav-button:hover { transform: translateY(-2px); border-color: rgb(34 211 238 / .7); color: rgb(8 145 178); background: rgb(255 255 255 / .7); }
 .review-nav-button:focus-visible { outline: 2px solid rgb(34 211 238); outline-offset: 3px; }
-.review-swap-enter-active, .review-swap-leave-active { transition: opacity 260ms ease, transform 260ms ease; }
-.review-swap-enter-from { opacity: 0; transform: translateX(18px); }
-.review-swap-leave-to { opacity: 0; transform: translateX(-18px); }
+.review-slide-next-enter-active, .review-slide-next-leave-active,
+.review-slide-previous-enter-active, .review-slide-previous-leave-active {
+  transition: opacity 260ms ease-out, transform 260ms cubic-bezier(.2, 0, 0, 1);
+}
+.review-slide-next-enter-from, .review-slide-previous-leave-to { opacity: 0; transform: translateX(56px); }
+.review-slide-next-leave-to, .review-slide-previous-enter-from { opacity: 0; transform: translateX(-56px); }
 
 @media (prefers-reduced-motion: reduce) {
-  .review-swap-enter-active, .review-swap-leave-active, .review-avatar-button, .review-nav-button { transition: none; }
+  .review-slide-next-enter-active, .review-slide-next-leave-active,
+  .review-slide-previous-enter-active, .review-slide-previous-leave-active,
+  .review-avatar-button, .review-nav-button { transition: none; }
 }
 </style>
 

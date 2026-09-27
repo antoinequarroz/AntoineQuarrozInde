@@ -13,6 +13,7 @@ const { dialogRef, handleDialogKeydown } = useAccessibleDialog(showForm, closeFo
 const editingReview = ref<Review | null>(null)
 const loadError = ref('')
 const submitting = ref(false)
+const authenticityConfirmed = ref(false)
 
 const form = reactive({
   author: '',
@@ -21,17 +22,19 @@ const form = reactive({
   avatar: null as string | null,
   rating: 5,
   content: '',
-  visible: true,
+  visible: false,
 })
 
 function openNew() {
   editingReview.value = null
-  Object.assign(form, { author: '', company: '', role: '', avatar: null, rating: 5, content: '', visible: true })
+  authenticityConfirmed.value = false
+  Object.assign(form, { author: '', company: '', role: '', avatar: null, rating: 5, content: '', visible: false })
   showForm.value = true
 }
 
 function openEdit(review: Review) {
   editingReview.value = review
+  authenticityConfirmed.value = true
   Object.assign(form, { ...review })
   showForm.value = true
 }
@@ -57,6 +60,10 @@ async function refreshGoogleReviews() {
 }
 
 async function handleSubmit() {
+  if (!authenticityConfirmed.value) {
+    toast.error('Confirme que le témoignage est authentique et autorisé avant de l’enregistrer')
+    return
+  }
   submitting.value = true
   try {
     if (editingReview.value) {
@@ -103,7 +110,7 @@ async function handleDelete(id: number) {
         <div class="min-w-0">
           <span class="rounded-md bg-gradient-brand px-2 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white">Avis clients</span>
           <h1 class="mt-2 font-display text-2xl font-semibold text-gray-950 dark:text-white sm:text-3xl">Avis clients</h1>
-          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ store.reviews.length }} avis · note moy. {{ store.avgRating.toFixed(1) }}/5 · {{ store.visible.length }} visibles</p>
+          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ store.reviews.length }} témoignages · {{ store.visible.length }} visibles</p>
         </div>
         <button
           class="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-lg bg-gradient-brand px-4 text-sm font-semibold text-white shadow-glow-sm transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2"
@@ -130,7 +137,9 @@ async function handleDelete(id: number) {
             Les avis manuels restent inchangés. Quand la connexion sera active, Google affichera en direct jusqu’à 5 avis classés par pertinence, avec leurs liens et attributions obligatoires. Ils ne sont pas copiés dans ta base.
           </p>
           <p v-if="googleStore.configured && !googleStore.unavailable" class="mt-2 text-xs text-cyan-700 dark:text-cyan-300">{{ googleStore.placeName }} · {{ googleStore.rating.toFixed(1) }}/5 · {{ googleStore.userRatingCount }} avis Google</p>
+          <p v-else-if="googleStore.issue === 'project_suspended'" class="mt-2 text-xs font-medium text-amber-800 dark:text-amber-200">Google a suspendu le projet Cloud de cette clé. Réactive le projet et sa facturation dans Google Cloud, puis clique sur « Vérifier la connexion ». Aucun avis Google ne peut apparaître avant cela.</p>
           <p v-else-if="googleStore.unavailable" class="mt-2 text-xs text-amber-800 dark:text-amber-200">La connexion n’a pas pu être validée. Vérifie la clé, l’identifiant du lieu et les autorisations Google Places.</p>
+          <a v-if="googleStore.googleMapsUri" :href="googleStore.googleMapsUri" target="_blank" rel="noopener noreferrer" class="mt-3 inline-flex min-h-11 items-center text-sm font-semibold text-cyan-700 underline underline-offset-4 dark:text-cyan-300">Ouvrir la fiche Google ↗</a>
         </div>
         <button type="button" class="min-h-11 shrink-0 rounded-lg border border-cyan-500/20 px-4 text-sm font-semibold text-cyan-700 transition-colors hover:bg-cyan-50 dark:text-cyan-300 dark:hover:bg-cyan-500/10" :disabled="googleStore.loading" @click="refreshGoogleReviews">
           {{ googleStore.loading ? 'Vérification…' : 'Vérifier la connexion' }}
@@ -156,6 +165,7 @@ async function handleDelete(id: number) {
           </div>
 
           <form class="px-6 py-5 space-y-4" @submit.prevent="handleSubmit">
+            <p class="rounded-lg bg-cyan-50 px-3 py-2 text-xs leading-5 text-cyan-950 dark:bg-cyan-500/10 dark:text-cyan-100">Ajoute ici un retour client reçu directement et autorisé à être publié. Les avis Google sont chargés séparément, avec leur attribution d’origine.</p>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label for="review-author" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Nom *</label>
@@ -171,29 +181,23 @@ async function handleDelete(id: number) {
               <input id="review-role" v-model="form.role" type="text" class="input-field" placeholder="Directeur, Gérant..." autocomplete="organization-title">
             </div>
             <div>
-              <span id="review-rating-label" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Note</span>
-              <div class="flex gap-1.5" role="group" aria-labelledby="review-rating-label">
-                <button
-                  v-for="n in 5"
-                  :key="n"
-                  type="button"
-                  class="flex h-11 w-11 items-center justify-center text-2xl leading-none transition-transform hover:scale-110"
-                  :class="n <= form.rating ? 'text-yellow-400' : 'text-gray-200 dark:text-gray-700'"
-                  :aria-label="`${n} étoile${n > 1 ? 's' : ''}`"
-                  :aria-pressed="n === form.rating"
-                  @click="form.rating = n"
-                >★</button>
-              </div>
-            </div>
-            <div>
               <label for="review-content" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Témoignage *</label>
               <textarea id="review-content" v-model="form.content" rows="4" class="input-field resize-none" placeholder="Le témoignage du client..." required />
             </div>
+            <div v-if="form.author || form.content" class="rounded-2xl border border-violet-200 bg-[#f8f7ff] p-4 dark:border-white/10 dark:bg-[#0c0b18]">
+              <p class="text-[11px] font-semibold uppercase tracking-[.12em] text-cyan-700 dark:text-cyan-300">Aperçu du carrousel</p>
+              <blockquote class="mt-3 text-base leading-7 text-gray-950 dark:text-white">“{{ form.content || 'Le témoignage apparaîtra ici.' }}”</blockquote>
+              <p class="mt-3 text-sm font-semibold text-gray-800 dark:text-gray-200">{{ form.author || 'Nom du client' }}<span v-if="form.company" class="font-normal text-gray-500"> · {{ form.company }}</span></p>
+            </div>
+            <label class="flex items-start gap-3 text-sm leading-5 text-gray-700 dark:text-gray-200">
+              <input v-model="authenticityConfirmed" type="checkbox" class="mt-0.5 h-4 w-4 accent-violet-600" required>
+              <span>Je confirme que ce témoignage est authentique et que son auteur a autorisé sa publication.</span>
+            </label>
             <div class="flex items-center gap-3">
               <button type="button" role="switch" :aria-checked="form.visible" aria-label="Visible sur le site" class="relative w-10 h-6 rounded-full transition-colors duration-200 flex-shrink-0 before:absolute before:-inset-2.5 before:rounded-xl" :class="form.visible ? 'bg-violet-500' : 'bg-gray-200 dark:bg-gray-700'" @click="form.visible = !form.visible">
                 <span class="absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200" :class="form.visible ? 'translate-x-4' : 'translate-x-0'" />
               </button>
-              <span class="text-sm text-gray-600 dark:text-gray-300">Visible sur le site</span>
+              <span class="text-sm text-gray-600 dark:text-gray-300">Visible sur le site <span v-if="!editingReview" class="block text-xs text-gray-500">Désactivé par défaut : tu peux relire avant de publier.</span></span>
             </div>
             <div class="admin-sticky-actions sticky bottom-0 bg-white dark:bg-[#111118] flex gap-3 pt-2 border-t border-gray-100 dark:border-white/[0.06]">
               <button type="submit" class="min-h-11 flex-1 rounded-lg bg-violet-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-violet-700 disabled:cursor-wait disabled:opacity-60" :disabled="submitting">
@@ -210,7 +214,7 @@ async function handleDelete(id: number) {
     <div v-else-if="loadError" role="alert" class="rounded-xl border border-red-200 bg-red-50 p-5 text-red-900 dark:border-red-400/20 dark:bg-red-400/10 dark:text-red-100"><p class="font-semibold">Les avis sont indisponibles</p><p class="mt-1 text-sm">{{ loadError }}</p><button type="button" class="mt-4 min-h-11 rounded-lg bg-red-700 px-4 text-sm font-semibold text-white" @click="loadReviews(true)">Réessayer</button></div>
 
     <div v-if="!store.loading && !loadError" class="space-y-2 sm:hidden">
-      <article v-for="review in store.reviews" :key="`mobile-${review.id}`" class="rounded-xl border border-gray-200 bg-white p-4 dark:border-white/[0.08] dark:bg-[#111118]" :class="{ 'opacity-60': !review.visible }"><div class="flex items-start justify-between gap-3"><div><h2 class="font-semibold text-gray-900 dark:text-white">{{ review.author }}</h2><p class="mt-1 text-xs text-gray-500">{{ review.role }}{{ review.company ? ` · ${review.company}` : '' }}</p></div><span class="text-sm text-yellow-500" :aria-label="`${review.rating} étoiles sur 5`">{{ '★'.repeat(review.rating) }}</span></div><p class="mt-3 line-clamp-3 text-sm leading-6 text-gray-600 dark:text-gray-300">{{ review.content }}</p><div class="mt-3 grid grid-cols-3 gap-1 border-t border-gray-100 pt-3 dark:border-white/[0.06]"><button class="min-h-11 rounded-lg text-xs font-semibold text-emerald-700 hover:bg-emerald-50 dark:text-emerald-300 dark:hover:bg-emerald-500/10" @click="toggleVisibility(review.id)">{{ review.visible ? 'Masquer' : 'Afficher' }}</button><button class="min-h-11 rounded-lg text-xs font-semibold text-violet-700 hover:bg-violet-50 dark:text-violet-300 dark:hover:bg-violet-500/10" @click="openEdit(review)">Modifier</button><button class="min-h-11 rounded-lg text-xs font-semibold text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10" @click="handleDelete(review.id)">Supprimer</button></div></article>
+      <article v-for="review in store.reviews" :key="`mobile-${review.id}`" class="rounded-xl border border-gray-200 bg-white p-4 dark:border-white/[0.08] dark:bg-[#111118]" :class="{ 'opacity-60': !review.visible }"><div class="flex items-start justify-between gap-3"><div><h2 class="font-semibold text-gray-900 dark:text-white">{{ review.author }}</h2><p class="mt-1 text-xs text-gray-500">{{ review.role }}{{ review.company ? ` · ${review.company}` : '' }}</p></div></div><p class="mt-3 line-clamp-3 text-sm leading-6 text-gray-600 dark:text-gray-300">{{ review.content }}</p><div class="mt-3 grid grid-cols-3 gap-1 border-t border-gray-100 pt-3 dark:border-white/[0.06]"><button class="min-h-11 rounded-lg text-xs font-semibold text-emerald-700 hover:bg-emerald-50 dark:text-emerald-300 dark:hover:bg-emerald-500/10" @click="toggleVisibility(review.id)">{{ review.visible ? 'Masquer' : 'Afficher' }}</button><button class="min-h-11 rounded-lg text-xs font-semibold text-violet-700 hover:bg-violet-50 dark:text-violet-300 dark:hover:bg-violet-500/10" @click="openEdit(review)">Modifier</button><button class="min-h-11 rounded-lg text-xs font-semibold text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10" @click="handleDelete(review.id)">Supprimer</button></div></article>
       <AdminEmptyState v-if="!store.reviews.length" title="Aucun avis pour l’instant" body="Ajoute un témoignage vérifié pour le publier ensuite sur le site."><button class="mt-2 min-h-11 rounded-lg border border-violet-200 px-4 text-sm font-semibold text-violet-700" @click="openNew">Ajouter le premier</button></AdminEmptyState>
     </div>
 
@@ -219,7 +223,6 @@ async function handleDelete(id: number) {
         <thead>
           <tr class="border-b border-gray-100 dark:border-white/[0.06]">
             <th class="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Client</th>
-            <th class="hidden px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300 sm:table-cell">Note</th>
             <th class="hidden px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300 md:table-cell">Avis</th>
             <th class="px-5 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Actions</th>
           </tr>
@@ -240,11 +243,6 @@ async function handleDelete(id: number) {
                   <p class="text-sm font-medium text-gray-800 dark:text-gray-200">{{ review.author }}</p>
                   <p class="text-xs text-gray-600 dark:text-gray-300">{{ review.role }}{{ review.company ? ` · ${review.company}` : '' }}</p>
                 </div>
-              </div>
-            </td>
-            <td class="px-5 py-3.5 hidden sm:table-cell">
-              <div class="flex gap-0.5">
-                <span v-for="i in 5" :key="i" class="text-sm" :class="i <= review.rating ? 'text-yellow-400' : 'text-gray-200 dark:text-gray-700'">★</span>
               </div>
             </td>
             <td class="px-5 py-3.5 hidden md:table-cell">
