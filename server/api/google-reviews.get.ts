@@ -35,6 +35,7 @@ export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig()
   const apiKey = String(config.googlePlacesApiKey || '')
   const placeId = String(config.googlePlaceId || '')
+  const enabled = String(config.googleReviewsEnabled || 'false') === 'true'
   const googleMapsUri = placeId
     ? `https://www.google.com/maps/search/?api=1&query=Antoine%20Quarroz&query_place_id=${encodeURIComponent(placeId)}`
     : ''
@@ -43,6 +44,10 @@ export default defineEventHandler(async (event) => {
 
   if (!apiKey || !placeId) {
     return { configured: false, reviews: [] }
+  }
+
+  if (!enabled) {
+    return { configured: true, unavailable: true, issue: 'disabled', googleMapsUri, reviews: [] }
   }
 
   const requestedLanguage = String(getQuery(event).locale || 'fr').toLowerCase()
