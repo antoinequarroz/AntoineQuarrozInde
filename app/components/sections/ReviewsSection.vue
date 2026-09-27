@@ -235,7 +235,7 @@ onBeforeUnmount(() => {
               <div class="relative z-10 flex h-full flex-col">
                 <div class="flex items-center justify-between gap-4">
                   <span class="review-source-pill"><span class="h-1.5 w-1.5 rounded-full bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,.9)]" />{{ review.source === 'google' ? content.verified : review.source === 'demo' ? content.demo : content.manual }}</span>
-                  <span v-if="review.rating" class="text-sm tracking-[0.08em] text-amber-400" :aria-label="`${review.rating} ${content.rating}`"><span aria-hidden="true">{{ '★'.repeat(review.rating) }}</span></span>
+                  <span v-if="review.rating" role="img" class="text-sm tracking-[0.08em] text-amber-400" :aria-label="`${review.rating} ${content.rating}`"><span aria-hidden="true">{{ '★'.repeat(review.rating) }}</span></span>
                 </div>
 
                 <blockquote class="mt-8 flex-1 font-display text-xl font-medium leading-[1.55] text-gray-950 sm:text-2xl dark:text-white">
