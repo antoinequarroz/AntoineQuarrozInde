@@ -111,9 +111,11 @@ const qrReferenceError = computed(() => getQrReferenceError(
 const formItems = ref<Array<{ label: string, description: string | null, quantity: number, unitPriceCents: number, taxRate: number }>>([{ label: 'Prestation', description: null, quantity: 1, unitPriceCents: 0, taxRate: 8.1 }])
 const clientsById = computed(() => new Map(clients.clients.map(c => [c.id, c])))
 const quotesById = computed(() => new Map(quotes.quotes.map(q => [q.id, q])))
+const projectsById = computed(() => new Map(projects.projects.map(project => [project.id, project])))
 const availableProjects = computed(() => form.clientId
   ? projects.projects.filter(project => !project.clientId || project.clientId === form.clientId)
   : projects.projects)
+const selectedFormProject = computed(() => form.projectId ? projectsById.value.get(form.projectId) ?? null : null)
 const filteredQuotes = computed(() => {
   if (!form.clientId) return quotes.quotes
   return quotes.quotes.filter(q => q.clientId === form.clientId)
@@ -146,7 +148,7 @@ const filteredInvoices = computed(() => {
     const byStatus = statusFilter.value === 'all' || x.status === statusFilter.value || (statusFilter.value === 'sent' && x.status === 'overdue')
     if (!byStatus) return false
     if (!q) return true
-    return [x.number, x.notes || '', clientsById.value.get(x.clientId || 0)?.name || ''].join(' ').toLowerCase().includes(q)
+    return [x.number, x.notes || '', clientsById.value.get(x.clientId || 0)?.name || '', projectsById.value.get(x.projectId || 0)?.title || ''].join(' ').toLowerCase().includes(q)
   })
 })
 const selectedQuote = computed(() => {
@@ -154,9 +156,11 @@ const selectedQuote = computed(() => {
   return quotes.quotes.find(q => q.id === form.quoteId) ?? null
 })
 watch(() => form.clientId, () => {
-  if (!form.quoteId) return
-  const stillValid = filteredQuotes.value.some(q => q.id === form.quoteId)
-  if (!stillValid) form.quoteId = null
+  if (form.quoteId) {
+    const stillValid = filteredQuotes.value.some(q => q.id === form.quoteId)
+    if (!stillValid) form.quoteId = null
+  }
+  if (form.projectId && !availableProjects.value.some(project => project.id === form.projectId)) form.projectId = null
 })
 watch(() => form.quoteId, () => {
   if (!selectedQuote.value) return
@@ -164,6 +168,9 @@ watch(() => form.quoteId, () => {
   form.projectId = selectedQuote.value.projectId
   form.amountCents = selectedQuote.value.amountCents
   form.currency = selectedQuote.value.currency
+})
+watch(() => form.projectId, () => {
+  if (selectedFormProject.value?.clientId) form.clientId = selectedFormProject.value.clientId
 })
 watch(() => form.paymentReferenceType, (referenceType) => {
   if (referenceType === 'NON') {
@@ -312,11 +319,13 @@ function printSelected() {
   const documentLabel = i.documentType === 'credit_note' ? 'Avoir' : 'Facture'
   const client = i.clientId ? (clientsById.value.get(i.clientId)?.name || '-') : '-'
   const quote = i.quoteId ? (quotesById.value.get(i.quoteId)?.number || '-') : '-'
+  const project = i.projectId ? (projectsById.value.get(i.projectId)?.title || '-') : '-'
   const opened = printStructuredDocument({
     title: `${documentLabel} ${i.number}`,
     heading: `${documentLabel} ${i.number}`,
     fields: [
       { label: 'Client', value: client },
+      { label: 'Projet', value: project },
       { label: 'Devis', value: quote },
       { label: 'Montant', value: formatAmount(i.amountCents, i.currency) },
       { label: 'Statut', value: statusLabel(i.status) },
@@ -515,6 +524,7 @@ onBeforeUnmount(releasePdfPreview)
             <button type="button" class="w-full text-left" @click="selectedId = i.id">
               <p class="text-sm font-semibold">{{ i.documentType === 'credit_note' ? 'Avoir' : 'Facture' }} {{ i.number }}</p>
               <p class="line-clamp-1 text-xs text-gray-500">{{ i.clientId ? clientsById.get(i.clientId)?.name || '-' : '-' }}</p>
+              <p v-if="i.projectId" class="mt-1 line-clamp-1 text-xs font-medium text-violet-700 dark:text-violet-300">Projet · {{ projectsById.get(i.projectId)?.title || 'Projet inconnu' }}</p>
               <p class="mt-1 text-xs">{{ formatAmount(i.amountCents, i.currency) }}</p>
             </button>
             <div class="mt-2 flex flex-wrap gap-2">
@@ -539,6 +549,7 @@ onBeforeUnmount(releasePdfPreview)
               <span class="text-xs font-medium text-gray-500">{{ statusLabel(q.status) }}</span>
             </div>
             <p class="mt-1 text-xs text-gray-500">{{ q.clientId ? clientsById.get(q.clientId)?.name || 'Client inconnu' : 'Aucun client' }}</p>
+            <p v-if="q.projectId" class="mt-1 text-xs font-medium text-violet-700 dark:text-violet-300">Projet · {{ projectsById.get(q.projectId)?.title || 'Projet inconnu' }}</p>
             <p class="mt-1 text-xs text-gray-500">Échéance : {{ q.dueAt || 'Non définie' }}</p>
             <p class="mt-2 text-sm font-semibold">{{ formatAmount(q.amountCents, q.currency) }}</p>
           </button>
@@ -573,18 +584,19 @@ onBeforeUnmount(releasePdfPreview)
 
     <div v-if="viewMode==='table'" class="admin-table-wrap hidden sm:block bg-white dark:bg-[#111118] border border-gray-100 dark:border-white/[0.06] rounded-xl overflow-hidden">
       <table class="admin-table w-full">
-        <thead><tr class="border-b border-gray-100 dark:border-white/[0.06]"><th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Numéro</th><th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Client</th><th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Devis</th><th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Montant</th><th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Échéance</th><th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Statut</th><th class="text-right px-4 py-3 text-xs uppercase text-gray-400">Actions</th></tr></thead>
+        <thead><tr class="border-b border-gray-100 dark:border-white/[0.06]"><th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Numéro</th><th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Client</th><th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Projet</th><th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Devis</th><th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Montant</th><th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Échéance</th><th class="text-left px-4 py-3 text-xs uppercase text-gray-400">Statut</th><th class="text-right px-4 py-3 text-xs uppercase text-gray-400">Actions</th></tr></thead>
         <tbody>
           <tr v-for="q in filteredInvoices" :key="q.id" class="cursor-pointer border-b border-gray-50 dark:border-white/[0.03]" :class="selectedId === q.id ? 'bg-violet-50/60 dark:bg-violet-500/10' : ''" tabindex="0" :aria-selected="selectedId === q.id" @click="selectedId = q.id" @keydown.enter.prevent="selectedId = q.id" @keydown.space.prevent="selectedId = q.id">
             <td class="px-4 py-3 text-sm"><span v-if="q.documentType === 'credit_note'" class="mr-1 rounded bg-cyan-500/10 px-1.5 py-0.5 text-xs font-semibold uppercase text-cyan-700 dark:text-cyan-300">Avoir</span>{{ q.number }}</td>
             <td class="px-4 py-3 text-sm">{{ q.clientId ? clientsById.get(q.clientId)?.name || '-' : '-' }}</td>
+            <td class="px-4 py-3 text-sm"><NuxtLink v-if="q.projectId" :to="`/admin/projects/${q.projectId}`" class="font-medium text-violet-700 hover:underline dark:text-violet-300" @click.stop>{{ projectsById.get(q.projectId)?.title || 'Projet inconnu' }}</NuxtLink><span v-else>-</span></td>
             <td class="px-4 py-3 text-sm">{{ q.quoteId ? quotesById.get(q.quoteId)?.number || '-' : '-' }}</td>
             <td class="px-4 py-3 text-sm">{{ formatAmount(q.amountCents, q.currency) }}</td>
             <td class="px-4 py-3 text-sm">{{ q.dueAt || '-' }}</td>
             <td class="px-4 py-3 text-sm">{{ statusLabel(q.status) }}</td>
             <td class="space-x-2 px-4 py-3 text-right"><button v-if="canRecordPayment(q)" class="text-xs font-semibold text-emerald-700 dark:text-emerald-300" @click.stop="openPaymentForm(q)">Paiement</button><button v-if="canMarkSent(q)" class="text-xs font-semibold text-violet-700 dark:text-violet-300" @click.stop="sendInvoiceEmail(q)">Envoyer PDF</button><button v-if="q.status === 'draft'" class="text-xs text-gray-600 dark:text-gray-300" @click.stop="openEdit(q)">Éditer</button></td>
           </tr>
-          <tr v-if="!filteredInvoices.length"><td colspan="7" class="p-8 text-center text-sm text-gray-500 dark:text-gray-400">Aucune facture trouvée. Modifie la recherche ou crée une nouvelle facture.</td></tr>
+          <tr v-if="!filteredInvoices.length"><td colspan="8" class="p-8 text-center text-sm text-gray-500 dark:text-gray-400">Aucune facture trouvée. Modifie la recherche ou crée une nouvelle facture.</td></tr>
         </tbody>
       </table>
     </div>
@@ -595,6 +607,7 @@ onBeforeUnmount(releasePdfPreview)
         <h2 class="text-lg font-semibold mt-1">{{ selectedInvoice.number }}</h2>
         <div class="mt-4 space-y-2 text-sm">
           <p><span class="text-gray-400">Client :</span> {{ selectedInvoice.clientId ? clientsById.get(selectedInvoice.clientId)?.name || '-' : '-' }}</p>
+          <p><span class="text-gray-400">Projet :</span> <NuxtLink v-if="selectedInvoice.projectId" :to="`/admin/projects/${selectedInvoice.projectId}`" class="font-medium text-violet-700 hover:underline dark:text-violet-300">{{ projectsById.get(selectedInvoice.projectId)?.title || 'Projet inconnu' }}</NuxtLink><span v-else>-</span></p>
           <p><span class="text-gray-400">Devis :</span> {{ selectedInvoice.quoteId ? quotesById.get(selectedInvoice.quoteId)?.number || '-' : '-' }}</p>
           <p><span class="text-gray-400">Montant :</span> {{ formatAmount(selectedInvoice.totalCents ?? selectedInvoice.amountCents, selectedInvoice.currency) }}</p>
           <p><span class="text-gray-400">Sous-total :</span> {{ formatAmount(selectedInvoice.subtotalCents ?? selectedInvoice.amountCents, selectedInvoice.currency) }}</p>
@@ -662,11 +675,13 @@ onBeforeUnmount(releasePdfPreview)
               <option v-for="q in filteredQuotes" :key="q.id" :value="q.id">{{ q.number }} - {{ q.title }}</option>
             </select></label>
           </div>
-          <label class="block space-y-1 text-xs text-gray-500 dark:text-gray-400">Projet
+          <label class="block space-y-1 text-xs text-gray-500 dark:text-gray-400">Projet lié
             <select v-model.number="form.projectId" class="input-field">
               <option :value="null">Aucun projet</option>
               <option v-for="project in availableProjects" :key="project.id" :value="project.id">{{ project.title }}</option>
             </select>
+            <span class="block leading-5">La facture apparaîtra dans le suivi de ce projet. Le client du projet sera repris automatiquement.</span>
+            <NuxtLink v-if="form.projectId" :to="`/admin/projects/${form.projectId}`" target="_blank" class="inline-flex min-h-8 items-center font-semibold text-violet-700 hover:underline dark:text-violet-300">Ouvrir le projet ↗</NuxtLink>
           </label>
           <label class="block space-y-1 text-xs text-gray-500">Devise
             <select v-model="form.currency" class="input-field"><option value="CHF">CHF</option><option value="EUR">EUR</option></select>

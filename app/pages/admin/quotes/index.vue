@@ -48,9 +48,11 @@ const form = reactive({
 })
 
 const clientsById = computed(() => new Map(clients.clients.map(c => [c.id, c])))
+const projectsById = computed(() => new Map(projects.projects.map(project => [project.id, project])))
 const availableProjects = computed(() => form.clientId
   ? projects.projects.filter(project => !project.clientId || project.clientId === form.clientId)
   : projects.projects)
+const selectedFormProject = computed(() => form.projectId ? projectsById.value.get(form.projectId) ?? null : null)
 const selectedId = ref<number | null>(null)
 const viewMode = ref<'table' | 'kanban'>('table')
 const search = ref('')
@@ -69,6 +71,12 @@ const journeyInvoiceId = computed(() => selectedQuote.value
 watch(selectedId, (id) => {
   if (workflowNotice.value && workflowNotice.value.quoteId !== id) workflowNotice.value = null
 })
+watch(() => form.clientId, () => {
+  if (form.projectId && !availableProjects.value.some(project => project.id === form.projectId)) form.projectId = null
+})
+watch(() => form.projectId, () => {
+  if (selectedFormProject.value?.clientId) form.clientId = selectedFormProject.value.clientId
+})
 const quoteStatuses: Array<Quote['status']> = ['draft', 'sent', 'accepted', 'rejected']
 const kanbanQuotes = computed(() =>
   quoteStatuses.map(status => ({
@@ -82,7 +90,7 @@ const filteredQuotes = computed(() => {
     const byStatus = statusFilter.value === 'all' || x.status === statusFilter.value
     if (!byStatus) return false
     if (!q) return true
-    return [x.number, x.title, x.notes || '', clientsById.value.get(x.clientId || 0)?.name || ''].join(' ').toLowerCase().includes(q)
+    return [x.number, x.title, x.notes || '', clientsById.value.get(x.clientId || 0)?.name || '', projectsById.value.get(x.projectId || 0)?.title || ''].join(' ').toLowerCase().includes(q)
   })
 })
 
@@ -398,11 +406,13 @@ function printSelected() {
   }
   const q = selectedQuote.value
   const client = q.clientId ? (clientsById.value.get(q.clientId)?.name || '-') : '-'
+  const project = q.projectId ? (projectsById.value.get(q.projectId)?.title || '-') : '-'
   const opened = printStructuredDocument({
     title: `Devis ${q.number}`,
     heading: `Devis ${q.number}`,
     fields: [
       { label: 'Client', value: client },
+      { label: 'Projet', value: project },
       { label: 'Titre', value: q.title },
       { label: 'Montant', value: formatAmount(q.amountCents, q.currency) },
       { label: 'Statut', value: statusLabel(q.status) },
@@ -504,7 +514,7 @@ onMounted(async () => {
               :key="`kanban-${q.id}`"
               class="rounded-lg border border-gray-100 p-2.5 dark:border-white/[0.08]"
             >
-              <button type="button" class="block min-h-11 w-full rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500" @click="selectedId = q.id"><span class="block text-sm font-semibold">{{ q.number }}</span><span class="block truncate text-xs text-gray-500">{{ q.title }}</span><span class="mt-1 block text-xs">{{ formatAmount(q.amountCents, q.currency) }}</span></button>
+              <button type="button" class="block min-h-11 w-full rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500" @click="selectedId = q.id"><span class="block text-sm font-semibold">{{ q.number }}</span><span class="block truncate text-xs text-gray-500">{{ q.title }}</span><span v-if="q.projectId" class="mt-1 block truncate text-xs font-medium text-violet-700 dark:text-violet-300">Projet · {{ projectsById.get(q.projectId)?.title || 'Projet inconnu' }}</span><span class="mt-1 block text-xs">{{ formatAmount(q.amountCents, q.currency) }}</span></button>
               <div class="mt-2 flex flex-wrap gap-2">
                 <button v-if="q.status === 'draft'" class="min-h-11 rounded-lg px-2 text-xs font-semibold text-violet-700 hover:bg-violet-50 dark:text-violet-300" @click="sendQuoteEmail(q)">Envoyer le PDF</button>
                 <button v-if="q.status === 'sent'" class="min-h-11 rounded-lg px-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 dark:text-emerald-300" @click="markQuoteEvent(q,'signed_at')">Confirmer la signature</button>
@@ -521,7 +531,7 @@ onMounted(async () => {
             class="w-full rounded-xl border border-gray-100 bg-white p-3 dark:border-white/[0.06] dark:bg-[#111118]"
             :class="selectedId === q.id ? 'ring-1 ring-violet-500/60' : ''"
           >
-            <button type="button" class="block min-h-11 w-full rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500" @click="selectedId = q.id"><span class="flex items-start justify-between gap-2"><strong class="text-sm">{{ q.number }}</strong><span class="text-xs font-semibold uppercase text-gray-500">{{ statusLabel(q.status) }}</span></span><span class="mt-1 block truncate text-sm text-gray-600 dark:text-gray-300">{{ q.title }}</span><span class="mt-1 block text-xs text-gray-500">{{ q.clientId ? clientsById.get(q.clientId)?.name || 'Client non renseigné' : 'Client non renseigné' }}</span><strong class="mt-2 block text-sm">{{ formatAmount(q.amountCents, q.currency) }}</strong></button>
+            <button type="button" class="block min-h-11 w-full rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500" @click="selectedId = q.id"><span class="flex items-start justify-between gap-2"><strong class="text-sm">{{ q.number }}</strong><span class="text-xs font-semibold uppercase text-gray-500">{{ statusLabel(q.status) }}</span></span><span class="mt-1 block truncate text-sm text-gray-600 dark:text-gray-300">{{ q.title }}</span><span class="mt-1 block text-xs text-gray-500">{{ q.clientId ? clientsById.get(q.clientId)?.name || 'Client non renseigné' : 'Client non renseigné' }}</span><span v-if="q.projectId" class="mt-1 block truncate text-xs font-medium text-violet-700 dark:text-violet-300">Projet · {{ projectsById.get(q.projectId)?.title || 'Projet inconnu' }}</span><strong class="mt-2 block text-sm">{{ formatAmount(q.amountCents, q.currency) }}</strong></button>
             <div class="mt-3 grid grid-cols-3 gap-1 border-t border-gray-100 pt-3 dark:border-white/[0.06]">
               <button v-if="q.status === 'draft'" class="min-h-11 rounded-lg text-xs font-semibold text-violet-700 hover:bg-violet-50 dark:text-violet-300" @click="sendQuoteEmail(q)">Envoyer</button>
               <button v-else-if="q.status === 'sent'" class="min-h-11 rounded-lg text-xs font-semibold text-emerald-700 hover:bg-emerald-50 dark:text-emerald-300" @click="markQuoteEvent(q, 'signed_at')">Signature</button>
@@ -538,6 +548,7 @@ onMounted(async () => {
             <tr class="border-b border-gray-100 dark:border-white/[0.06]">
               <th class="px-4 py-3 text-left text-xs uppercase text-gray-600 dark:text-gray-300">Numéro</th>
               <th class="px-4 py-3 text-left text-xs uppercase text-gray-600 dark:text-gray-300">Client</th>
+              <th class="px-4 py-3 text-left text-xs uppercase text-gray-600 dark:text-gray-300">Projet</th>
               <th class="px-4 py-3 text-left text-xs uppercase text-gray-600 dark:text-gray-300">Titre</th>
               <th class="px-4 py-3 text-left text-xs uppercase text-gray-600 dark:text-gray-300">Montant</th>
               <th class="px-4 py-3 text-left text-xs uppercase text-gray-600 dark:text-gray-300">Statut</th>
@@ -558,6 +569,7 @@ onMounted(async () => {
             >
               <td class="px-4 py-3 text-sm">{{ q.number }}</td>
               <td class="px-4 py-3 text-sm">{{ q.clientId ? clientsById.get(q.clientId)?.name || '-' : '-' }}</td>
+              <td class="px-4 py-3 text-sm"><NuxtLink v-if="q.projectId" :to="`/admin/projects/${q.projectId}`" class="font-medium text-violet-700 hover:underline dark:text-violet-300" @click.stop>{{ projectsById.get(q.projectId)?.title || 'Projet inconnu' }}</NuxtLink><span v-else>-</span></td>
               <td class="px-4 py-3 text-sm">{{ q.title }}</td>
               <td class="px-4 py-3 text-sm">{{ formatAmount(q.amountCents, q.currency) }}</td>
               <td class="px-4 py-3 text-sm">{{ statusLabel(q.status) }}</td>
@@ -565,7 +577,7 @@ onMounted(async () => {
                 <div class="flex justify-end gap-1"><button v-if="q.status === 'draft'" class="min-h-11 rounded-lg px-2 text-xs font-semibold text-violet-700 hover:bg-violet-50 dark:text-violet-300" @click.stop="sendQuoteEmail(q)">Envoyer PDF</button><button v-if="q.status === 'sent'" class="min-h-11 rounded-lg px-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 dark:text-emerald-300" @click.stop="markQuoteEvent(q, 'signed_at')">Confirmer signature</button><button v-if="q.status === 'draft'" class="min-h-11 rounded-lg px-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 dark:text-gray-300" @click.stop="openEdit(q)">Modifier</button></div>
               </td>
             </tr>
-            <tr v-if="!filteredQuotes.length"><td colspan="6" class="p-8 text-center text-sm text-gray-500 dark:text-gray-400">Aucun devis. Modifie la recherche ou crée un nouveau devis.</td></tr>
+            <tr v-if="!filteredQuotes.length"><td colspan="7" class="p-8 text-center text-sm text-gray-500 dark:text-gray-400">Aucun devis. Modifie la recherche ou crée un nouveau devis.</td></tr>
           </tbody>
           </table>
         </div>
@@ -578,6 +590,7 @@ onMounted(async () => {
           <p class="text-sm text-gray-500 mt-1">{{ selectedQuote.title }}</p>
           <div class="mt-4 space-y-2 text-sm">
             <p><span class="text-gray-600 dark:text-gray-300">Client :</span> {{ selectedQuote.clientId ? clientsById.get(selectedQuote.clientId)?.name || '-' : '-' }}</p>
+            <p><span class="text-gray-600 dark:text-gray-300">Projet :</span> <NuxtLink v-if="selectedQuote.projectId" :to="`/admin/projects/${selectedQuote.projectId}`" class="font-medium text-violet-700 hover:underline dark:text-violet-300">{{ projectsById.get(selectedQuote.projectId)?.title || 'Projet inconnu' }}</NuxtLink><span v-else>-</span></p>
             <p><span class="text-gray-600 dark:text-gray-300">Montant :</span> {{ formatAmount(selectedQuote.totalCents ?? selectedQuote.amountCents, selectedQuote.currency) }}</p>
             <p><span class="text-gray-600 dark:text-gray-300">Sous-total :</span> {{ formatAmount(selectedQuote.subtotalCents ?? selectedQuote.amountCents, selectedQuote.currency) }}</p>
             <p><span class="text-gray-600 dark:text-gray-300">TVA :</span> {{ formatAmount(selectedQuote.taxCents ?? 0, selectedQuote.currency) }}</p>
@@ -618,11 +631,13 @@ onMounted(async () => {
                 <option v-for="c in clients.clients" :key="c.id" :value="c.id">{{ c.name }}</option>
               </select>
             </label>
-            <label class="space-y-1 text-xs text-gray-500 dark:text-gray-400">Projet
+            <label class="space-y-1 text-xs text-gray-500 dark:text-gray-400">Projet lié
               <select v-model.number="form.projectId" class="input-field">
                 <option :value="null">Aucun projet</option>
                 <option v-for="project in availableProjects" :key="project.id" :value="project.id">{{ project.title }}</option>
               </select>
+              <span class="block leading-5">Le devis apparaîtra dans le suivi de ce projet. Le client du projet sera repris automatiquement.</span>
+              <NuxtLink v-if="form.projectId" :to="`/admin/projects/${form.projectId}`" target="_blank" class="inline-flex min-h-8 items-center font-semibold text-violet-700 hover:underline dark:text-violet-300">Ouvrir le projet ↗</NuxtLink>
             </label>
           </div>
           <div><label for="quote-title" class="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">Titre *</label><input id="quote-title" v-model="form.title" class="input-field" placeholder="Ex. Création du site vitrine" required></div>
