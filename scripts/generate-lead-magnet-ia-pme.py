@@ -10,6 +10,7 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import (
     BaseDocTemplate,
+    Flowable,
     Frame,
     KeepTogether,
     NextPageTemplate,
@@ -59,21 +60,58 @@ def register_fonts():
     pdfmetrics.registerFontFamily("AQDisplay", normal="AQDisplay", bold="AQDisplayBold")
 
 
+class Checkbox(Flowable):
+    """Draw a checkbox as vector artwork so it never depends on a font glyph."""
+
+    def __init__(self, size=4.2 * mm, stroke=PURPLE, line_width=1.1):
+        super().__init__()
+        self.width = size
+        self.height = size
+        self.stroke = stroke
+        self.line_width = line_width
+
+    def wrap(self, avail_width, avail_height):
+        return self.width, self.height
+
+    def draw(self):
+        self.canv.saveState()
+        self.canv.setStrokeColor(self.stroke)
+        self.canv.setLineWidth(self.line_width)
+        self.canv.roundRect(0, 0, self.width, self.height, 1.2 * mm, stroke=1, fill=0)
+        self.canv.restoreState()
+
+
 def checkbox_line(text, style):
     return Table(
-        [["□", Paragraph(text, style)]],
+        [[Checkbox(), Paragraph(text, style)]],
         colWidths=[8 * mm, 162 * mm],
         style=TableStyle([
             ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ("FONTNAME", (0, 0), (0, 0), "AQDisplayBold"),
-            ("FONTSIZE", (0, 0), (0, 0), 13),
-            ("TEXTCOLOR", (0, 0), (0, 0), PURPLE),
             ("LEFTPADDING", (0, 0), (-1, -1), 0),
             ("RIGHTPADDING", (0, 0), (-1, -1), 0),
             ("TOPPADDING", (0, 0), (-1, -1), 2),
             ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
         ]),
     )
+
+
+def choice_line(options, style):
+    """Render decision boxes as vectors for consistent output in every PDF viewer."""
+    pair_width = 170 * mm / len(options)
+    row = []
+    widths = []
+    for option in options:
+        row.extend([Checkbox(), Paragraph(option, style)])
+        widths.extend([8 * mm, pair_width - 8 * mm])
+    return Table([row], colWidths=widths, style=TableStyle([
+        ("BACKGROUND", (0, 0), (-1, -1), PALE),
+        ("BOX", (0, 0), (-1, -1), 1, COPPER),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 3 * mm),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 1 * mm),
+        ("TOPPADDING", (0, 0), (-1, -1), 3 * mm),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 3 * mm),
+    ]))
 
 
 def page_number(canvas, doc):
@@ -379,7 +417,8 @@ def build():
         Spacer(1, 6 * mm),
         Paragraph("Responsable du suivi : ____________________________________", body),
         Paragraph("Incident à escalader immédiatement : __________________________________________________", body),
-        Paragraph("Décision intermédiaire :   ☐ Continuer   ☐ Modifier   ☐ Suspendre", callout),
+        Paragraph("Décision intermédiaire", h2),
+        choice_line(["Continuer", "Modifier", "Suspendre"], body),
         PageBreak(),
         Paragraph("6. Décider et documenter", title),
         Paragraph("Le résultat du pilote n’est pas forcément un déploiement. Abandonner un usage peu fiable ou trop risqué est une décision utile.", callout),
@@ -400,7 +439,7 @@ def build():
             ("BOTTOMPADDING", (0, 0), (-1, -1), 3 * mm),
         ])),
         Paragraph("Décision du 30e jour", h2),
-        Paragraph("☐ Intégrer   ☐ Modifier   ☐ Abandonner", callout),
+        choice_line(["Intégrer", "Modifier", "Abandonner"], body),
         Paragraph("Pourquoi : __________________________________________________________________________", body),
         Paragraph("Responsable de la suite : __________________________  Réexamen le : __________________", body),
         Paragraph("Sources officielles", h2),
