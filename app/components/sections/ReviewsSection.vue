@@ -85,7 +85,7 @@ const reviews = computed(() => {
   ]
   return published.length ? published : demoReviews
 })
-const railHeight = computed(() => `${100 + Math.max(1, reviews.value.length) * 62}svh`)
+const railHeight = computed(() => `${100 + Math.max(1, reviews.value.length) * 54}svh`)
 const displayRating = computed(() => googleStore.rating)
 const displayCount = computed(() => googleStore.userRatingCount)
 
@@ -217,7 +217,7 @@ onBeforeUnmount(() => {
 
     <div ref="railHost" class="reviews-rail-host relative z-10" :style="{ height: railHeight }">
       <div class="reviews-sticky">
-        <div class="section-container flex items-center justify-between gap-6 pt-6 lg:pt-10">
+        <div class="section-container flex items-center justify-between gap-6 pt-24 lg:pt-28">
           <p class="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-700 dark:text-cyan-300">{{ content.badge }}</p>
           <p class="text-xs text-gray-500 dark:text-white/45 lg:hidden">{{ content.swipe }}</p>
           <div class="hidden items-center gap-3 lg:flex">
@@ -238,7 +238,7 @@ onBeforeUnmount(() => {
                   <span v-if="review.rating" role="img" class="text-sm tracking-[0.08em] text-amber-400" :aria-label="`${review.rating} ${content.rating}`"><span aria-hidden="true">{{ '★'.repeat(review.rating) }}</span></span>
                 </div>
 
-                <blockquote class="mt-8 flex-1 font-display text-xl font-medium leading-[1.55] text-gray-950 sm:text-2xl dark:text-white">
+                <blockquote class="mt-8 flex-1 font-display text-lg font-medium leading-[1.55] text-gray-950 sm:text-xl xl:text-[1.35rem] dark:text-white">
                   <template v-for="(part, partIndex) in linkifyReviewText(review.content)" :key="`${review.id}-${partIndex}`">
                     <a v-if="part.type === 'link'" :href="part.href" target="_blank" rel="noopener noreferrer nofollow" class="review-inline-link">{{ part.text }}</a><template v-else>{{ part.text }}</template>
                   </template>
@@ -298,12 +298,15 @@ onBeforeUnmount(() => {
 .reviews-aurora-left { left: -18rem; top: 12%; background: #7c3aed; }
 .reviews-aurora-right { right: -16rem; bottom: 0; background: #06b6d4; }
 .reviews-sticky { position: sticky; top: 0; height: 100svh; overflow: hidden; }
-.reviews-track-viewport { margin-top: clamp(2rem, 6vh, 4.5rem); overflow: hidden; outline: none; }
+.reviews-track-viewport { height: calc(100svh - 8.5rem); overflow: hidden; outline: none; }
 .reviews-track-viewport:focus-visible { box-shadow: inset 0 0 0 2px rgb(34 211 238); }
-.reviews-track { display: flex; width: max-content; align-items: stretch; gap: clamp(2rem, 6vw, 6rem); padding: 0 10vw 1rem; will-change: transform; }
-.review-card { position: relative; width: clamp(21rem, 31vw, 29rem); min-height: min(33rem, 68svh); flex: 0 0 auto; overflow: hidden; border: 1px solid rgb(255 255 255 / .75); border-radius: 2rem; background: rgb(255 255 255 / .9); padding: clamp(1.5rem, 3vw, 2.35rem); box-shadow: 0 32px 90px -42px rgb(30 20 70 / .5); backdrop-filter: blur(20px); scroll-snap-align: center; }
+.reviews-track { display: flex; width: max-content; height: 100%; align-items: center; gap: clamp(3rem, 7vw, 7rem); padding: 0 11vw; will-change: transform; }
+.review-card { position: relative; width: clamp(38rem, 48vw, 49rem); height: clamp(28rem, 68svh, 31rem); flex: 0 0 auto; overflow: hidden; border: 1px solid rgb(255 255 255 / .75); border-radius: 2rem; background: rgb(255 255 255 / .9); padding: clamp(1.65rem, 2.5vw, 2.5rem); box-shadow: 0 32px 90px -42px rgb(30 20 70 / .5); backdrop-filter: blur(20px); scroll-snap-align: center; transition: border-color 220ms ease, box-shadow 220ms ease; }
+.review-card:nth-child(odd) { transform: translateY(-3.5svh); }
+.review-card:nth-child(even) { transform: translateY(3.5svh); }
+.review-card:hover { border-color: rgb(34 211 238 / .35); box-shadow: 0 40px 110px -46px rgb(34 211 238 / .4); }
 .review-card::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(125deg, rgba(255, 255, 255, .8), transparent 32%, transparent 72%, rgba(34, 211, 238, .06)); }
-.review-quote-mark { position: absolute; right: 1.5rem; top: -3rem; font-family: Georgia, serif; font-size: 15rem; line-height: 1; color: rgba(124, 58, 237, .07); user-select: none; }
+.review-quote-mark { position: absolute; right: 1.5rem; top: -4.5rem; font-family: Georgia, serif; font-size: 17rem; line-height: 1; color: rgba(124, 58, 237, .07); user-select: none; }
 .review-source-pill { display: inline-flex; align-items: center; gap: .5rem; border: 1px solid rgb(6 182 212 / .2); border-radius: 9999px; background: rgb(6 182 212 / .07); padding: .375rem .75rem; font-size: .75rem; font-weight: 600; color: rgb(21 94 117); }
 .review-inline-link { color: rgb(8 145 178); text-decoration: underline; text-decoration-thickness: .08em; text-underline-offset: .16em; overflow-wrap: anywhere; transition: color 150ms ease; }
 .review-inline-link:hover { color: rgb(109 40 217); }
@@ -322,10 +325,16 @@ onBeforeUnmount(() => {
 @media (max-width: 1023px) {
   .reviews-rail-host { height: auto !important; padding-bottom: 5rem; }
   .reviews-sticky { position: relative; height: auto; overflow: visible; }
-  .reviews-track-viewport { margin-top: 2rem; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
+  .reviews-track-viewport { height: auto; margin-top: 2rem; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
   .reviews-track-viewport::-webkit-scrollbar { display: none; }
   .reviews-track { gap: 1rem; padding: 0 max(1.25rem, calc((100vw - 74rem) / 2)) 1.25rem; transform: none !important; will-change: auto; }
-  .review-card { width: min(84vw, 25rem); min-height: 31rem; }
+  .review-card { width: min(88vw, 46rem); height: auto; min-height: 22rem; transform: none !important; }
+}
+
+@media (max-width: 639px) {
+  .review-card { min-height: 24rem; padding: 1.35rem; }
+  .review-card blockquote { font-size: 1rem; line-height: 1.5; }
+  .review-quote-mark { right: .75rem; top: -2.25rem; font-size: 10rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -333,6 +342,7 @@ onBeforeUnmount(() => {
   .reviews-sticky { position: relative; height: auto; overflow: visible; }
   .reviews-track-viewport { overflow-x: auto; scroll-snap-type: x mandatory; }
   .reviews-track { transform: none !important; will-change: auto; }
+  .review-card { transform: none !important; transition: none; }
   .review-inline-link, .review-external-button, .review-primary-link, .review-secondary-link { transition: none; }
 }
 </style>
