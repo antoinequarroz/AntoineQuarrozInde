@@ -1,3 +1,5 @@
+import { IA_PME_LEAD_MAGNET_PATH } from './leadMagnetAccess'
+
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export type NewsletterLocale = 'fr' | 'en' | 'de'
@@ -17,7 +19,8 @@ export function normalizeNewsletterSubscription(body: Record<string, unknown>) {
     throw new NewsletterSubscriptionError('invalid_email')
   }
   if (body.consent !== true) throw new NewsletterSubscriptionError('invalid_consent')
-  if (!sourcePath.startsWith('/blog/') || sourcePath.length > 500 || /[?#]/.test(sourcePath)) {
+  const allowedSource = sourcePath.startsWith('/blog/') || sourcePath === IA_PME_LEAD_MAGNET_PATH
+  if (!allowedSource || sourcePath.length > 500 || /[?#]/.test(sourcePath)) {
     throw new NewsletterSubscriptionError('invalid_source')
   }
   if (body.website && String(body.website).trim()) {

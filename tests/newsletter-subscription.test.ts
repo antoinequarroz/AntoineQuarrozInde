@@ -23,6 +23,13 @@ describe('newsletter subscription contract', () => {
     expect(normalizeNewsletterSubscription({ ...valid, locale: 'it' }).locale).toBe('fr')
   })
 
+  it('accepts the approved lead magnet landing page without query data', () => {
+    expect(normalizeNewsletterSubscription({
+      ...valid,
+      sourcePath: '/ressources/checklist-ia-pme',
+    }).sourcePath).toBe('/ressources/checklist-ia-pme')
+  })
+
   it.each([
     [{ ...valid, email: 'invalid' }, 'invalid_email'],
     [{ ...valid, consent: false }, 'invalid_consent'],

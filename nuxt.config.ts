@@ -65,6 +65,7 @@ export default defineNuxtConfig({
     '/portal': { headers: { 'X-Robots-Tag': 'noindex, nofollow' } },
     '/portal/**': { headers: { 'X-Robots-Tag': 'noindex, nofollow' } },
     '/offline': { headers: { 'X-Robots-Tag': 'noindex, nofollow' } },
+    '/ressources/checklist-ia-pme': { headers: { 'X-Robots-Tag': 'noindex, follow' } },
   },
 
   pwa: {

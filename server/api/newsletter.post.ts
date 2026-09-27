@@ -38,9 +38,15 @@ export default defineEventHandler(async (event) => {
   }
 
   const consentedAt = new Date().toISOString()
+  const leadMagnet = isSupportedLeadMagnet(body.resourceSlug) ? body.resourceSlug : null
+  const leadMagnetSecret = leadMagnet ? String(useRuntimeConfig().supabaseServiceRoleKey || '') : ''
+  const downloadUrl = leadMagnet
+    ? `/api/ressources/${leadMagnet}?token=${encodeURIComponent(createLeadMagnetToken(leadMagnet, leadMagnetSecret))}`
+    : null
   const lumailSubscriber = await syncLumailNewsletterSubscriber({
     ...subscription,
     consentedAt,
+    leadMagnet,
   })
   const supabase = getSupabaseAdmin()
   const { data: existing, error: readError } = await supabase
@@ -68,7 +74,12 @@ export default defineEventHandler(async (event) => {
       .eq('organization_id', org.id)
       .eq('id', existing.id)
     if (error) throw createError({ statusCode: 500, message: 'L’inscription ne peut pas être réactivée.' })
-    return { success: true, duplicate: existing.status === 'active', reactivated: existing.status !== 'active' }
+    return {
+      success: true,
+      duplicate: existing.status === 'active',
+      reactivated: existing.status !== 'active',
+      ...(downloadUrl ? { downloadUrl } : {}),
+    }
   }
 
   const { error } = await supabase.from('newsletter_subscriptions').insert({
@@ -82,8 +93,18 @@ export default defineEventHandler(async (event) => {
     lumail_status: lumailSubscriber.status,
     lumail_synced_at: consentedAt,
   })
-  if (error?.code === '23505') return { success: true, duplicate: true }
+  if (error?.code === '23505') {
+    return {
+      success: true,
+      duplicate: true,
+      ...(downloadUrl ? { downloadUrl } : {}),
+    }
+  }
   if (error) throw createError({ statusCode: 500, message: 'L’inscription ne peut pas être enregistrée.' })
 
-  return { success: true, duplicate: false }
+  return {
+    success: true,
+    duplicate: false,
+    ...(downloadUrl ? { downloadUrl } : {}),
+  }
 })
