@@ -177,6 +177,12 @@ useHead(() => ({
           </p>
           <!-- eslint-disable vue/no-v-html -->
           <div class="text-gray-600 dark:text-gray-300" v-html="renderSafeMarkdown(article.content)" />
+          <aside class="my-10 overflow-hidden rounded-3xl border border-cyan-500/20 bg-gradient-to-br from-violet-500/10 via-white/70 to-cyan-400/10 p-6 dark:via-white/[0.04] sm:p-8" aria-labelledby="article-service-title">
+            <p class="text-xs font-bold uppercase tracking-[0.18em] text-cyan-700 dark:text-cyan-300">Votre projet en Valais</p>
+            <h2 id="article-service-title" class="mt-3 font-display text-2xl font-bold text-gray-950 dark:text-white">Besoin d’un site clair pour votre PME&nbsp;?</h2>
+            <p class="mt-3 max-w-2xl leading-7 text-gray-600 dark:text-gray-300">Découvrez ma méthode, les livrables et les projets déjà réalisés avant de me présenter votre besoin.</p>
+            <NuxtLink to="/creation-site-internet-valais" class="btn-primary mt-6 min-h-11 justify-center sm:justify-start">Voir la création de site pour PME</NuxtLink>
+          </aside>
           <BlogLeadMagnetSignup v-if="isIaPmeArticle" compact />
           <BlogDiagnosticCta />
           <BlogNewsletterSignup v-if="!isIaPmeArticle" />

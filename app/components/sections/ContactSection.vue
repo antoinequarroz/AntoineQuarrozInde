@@ -22,6 +22,7 @@ const nameInputRef = ref<HTMLInputElement | null>(null)
 const submissionId = ref('')
 const postHogFormStarted = ref(false)
 const postHogFormCompleted = ref(false)
+const contactOriginPath = ref('')
 
 const form = reactive({
   name: '',
@@ -87,7 +88,12 @@ async function openContactForm(source = 'cta') {
     track('contact_form_open', { source })
     if (!postHogFormStarted.value) {
       postHogFormStarted.value = true
-      trackPostHog('contact_form_started', { source, source_path: window.location.pathname })
+      contactOriginPath.value = sessionStorage.getItem('aq_contact_origin') || window.location.pathname
+      trackPostHog('contact_form_started', {
+        source,
+        source_path: window.location.pathname,
+        origin_path: contactOriginPath.value,
+      })
     }
   }
   await nextTick()
@@ -146,7 +152,10 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   if (postHogFormStarted.value && !postHogFormCompleted.value && status.value !== 'sending') {
-    trackPostHog('contact_form_abandoned', { source_path: window.location.pathname })
+    trackPostHog('contact_form_abandoned', {
+      source_path: window.location.pathname,
+      origin_path: contactOriginPath.value || window.location.pathname,
+    })
   }
   window.removeEventListener('aq:service-selected', handleServiceSelected)
   window.removeEventListener('aq:contact-open', handleContactOpen)
@@ -164,7 +173,10 @@ async function handleSubmit() {
   }
   errorMessage.value = ''
   status.value = 'sending'
-  trackPostHog('contact_form_submit_started', { source_path: window.location.pathname })
+  trackPostHog('contact_form_submit_started', {
+    source_path: window.location.pathname,
+    origin_path: contactOriginPath.value || window.location.pathname,
+  })
 
   try {
     const contactResult = await $fetch<{ acquisitionChannel?: string }>('/api/contact', {
@@ -193,7 +205,10 @@ async function handleSubmit() {
         utmSource: attribution.value.utmSource,
         referrerHost: attribution.value.referrerHost,
       }),
+      source_path: window.location.pathname,
+      origin_path: contactOriginPath.value || window.location.pathname,
     })
+    sessionStorage.removeItem('aq_contact_origin')
     form.name = ''
     form.email = ''
     form.company = ''
