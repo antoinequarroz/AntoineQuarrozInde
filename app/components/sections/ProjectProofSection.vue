@@ -8,8 +8,6 @@ let animationFrame = 0
 let observer: IntersectionObserver | null = null
 let motionQuery: MediaQueryList | null = null
 let isVisible = false
-let pointerX = 0
-let pointerY = 0
 
 const copy = computed(() => {
   if (locale.value === 'en') return { number: '15+', title: 'custom tools for your SME' }
@@ -25,16 +23,25 @@ const screens = [
   { light: '/showcase-tools/analyse.png', dark: '/showcase-tools/analyse-dark.png', alt: 'Analyse des performances' },
 ]
 
-const movements = [
-  { enterX: 230, enterY: 90, driftX: -26, driftY: -34, pointer: -12 },
-  { enterX: 0, enterY: 180, driftX: 12, driftY: -24, pointer: 6 },
-  { enterX: -240, enterY: 100, driftX: 28, driftY: -32, pointer: 12 },
-  { enterX: 210, enterY: -150, driftX: -20, driftY: 34, pointer: -8 },
-  { enterX: -220, enterY: -160, driftX: 22, driftY: 38, pointer: 9 },
-]
+const trajectories = [
+  { start: [-72, 42, 1.38, -18, 38], middle: [-38, -19, 0.92, -8, 25], end: [-68, -58, 0.62, 16, -42] },
+  { start: [-18, 64, 0.72, -12, 22], middle: [0, -35, 0.72, 2, -8], end: [54, -58, 0.52, 16, 38] },
+  { start: [70, 30, 0.74, 18, -34], middle: [39, -18, 0.9, 8, -24], end: [73, 42, 0.55, -14, 42] },
+  { start: [54, 72, 0.62, 18, -38], middle: [-28, 27, 1.08, 6, -18], end: [-62, 54, 0.62, -18, 38] },
+  { start: [-64, -52, 0.66, -16, 34], middle: [31, 27, 1.08, -6, 20], end: [16, 70, 0.7, 12, -30] },
+] as const
 
 function clamp(value: number) {
   return Math.min(1, Math.max(0, value))
+}
+
+function smoothstep(from: number, to: number, value: number) {
+  const progress = clamp((value - from) / (to - from))
+  return progress * progress * (3 - 2 * progress)
+}
+
+function mix(from: number, to: number, progress: number) {
+  return from + (to - from) * progress
 }
 
 function renderScene() {
@@ -45,34 +52,40 @@ function renderScene() {
   const rect = sectionRef.value.getBoundingClientRect()
   const viewport = Math.max(1, window.innerHeight)
   const travel = Math.max(1, rect.height - viewport)
-  const progress = reducedMotion ? 0.65 : clamp(-rect.top / travel)
-  const revealProgress = clamp((progress + 0.08) / 0.58)
-  const reveal = 1 - Math.pow(1 - revealProgress, 3)
-  const drift = reducedMotion ? 0 : (progress - 0.5) * 2
+  const progress = reducedMotion ? 0.5 : clamp(-rect.top / travel)
+  const arrival = smoothstep(0.08, 0.46, progress)
+  const departure = smoothstep(0.56, 0.94, progress)
+  const visibility = smoothstep(0.05, 0.2, progress) * (1 - smoothstep(0.8, 0.96, progress))
 
   stageRef.value.querySelectorAll<HTMLElement>('.tool-showcase__screen').forEach((screen, index) => {
-    const movement = movements[index] ?? movements[0]!
-    const x = (1 - reveal) * movement.enterX + drift * movement.driftX + pointerX * movement.pointer
-    const y = (1 - reveal) * movement.enterY + drift * movement.driftY + pointerY * movement.pointer * 0.6
-    screen.style.setProperty('--screen-x', `${x.toFixed(2)}px`)
-    screen.style.setProperty('--screen-y', `${y.toFixed(2)}px`)
-    screen.style.setProperty('--screen-scale', `${(0.74 + reveal * 0.26).toFixed(4)}`)
-    screen.style.setProperty('--screen-opacity', `${(0.08 + reveal * 0.92).toFixed(4)}`)
+    const path = trajectories[index] ?? trajectories[0]!
+    const from = path.start
+    const center = path.middle
+    const to = path.end
+    const x = mix(mix(from[0], center[0], arrival), to[0], departure)
+    const y = mix(mix(from[1], center[1], arrival), to[1], departure)
+    const scale = mix(mix(from[2], center[2], arrival), to[2], departure)
+    const rotateZ = mix(mix(from[3], center[3], arrival), to[3], departure)
+    const rotateY = mix(mix(from[4], center[4], arrival), to[4], departure)
+    const depth = Math.abs(rotateY) / 42
+
+    screen.style.setProperty('--screen-x', `${x.toFixed(2)}vw`)
+    screen.style.setProperty('--screen-y', `${y.toFixed(2)}vh`)
+    screen.style.setProperty('--screen-scale', scale.toFixed(4))
+    screen.style.setProperty('--screen-rotate-z', `${rotateZ.toFixed(2)}deg`)
+    screen.style.setProperty('--screen-rotate-y', `${rotateY.toFixed(2)}deg`)
+    screen.style.setProperty('--screen-z', `${mix(-90, 80, 1 - depth).toFixed(2)}px`)
+    screen.style.setProperty('--screen-opacity', visibility.toFixed(4))
   })
 
-  stageRef.value.style.setProperty('--title-opacity', `${clamp((progress + 0.08) / 0.3).toFixed(4)}`)
+  const titleOpacity = smoothstep(0.23, 0.4, progress) * (1 - smoothstep(0.7, 0.86, progress))
+  const titleScale = mix(0.88, 1, smoothstep(0.24, 0.48, progress))
+  stageRef.value.style.setProperty('--title-opacity', titleOpacity.toFixed(4))
+  stageRef.value.style.setProperty('--title-scale', titleScale.toFixed(4))
 }
 
 function scheduleRender() {
   if (!animationFrame) animationFrame = window.requestAnimationFrame(renderScene)
-}
-
-function onPointerMove(event: PointerEvent) {
-  if (!sectionRef.value || event.pointerType === 'touch' || motionQuery?.matches) return
-  const rect = sectionRef.value.getBoundingClientRect()
-  pointerX = clamp((event.clientX - rect.left) / rect.width) * 2 - 1
-  pointerY = clamp((event.clientY - rect.top) / rect.height) * 2 - 1
-  scheduleRender()
 }
 
 onMounted(() => {
@@ -101,7 +114,6 @@ onBeforeUnmount(() => {
     ref="sectionRef"
     aria-labelledby="tool-showcase-title"
     class="tool-showcase relative bg-surface-light-secondary dark:bg-surface-dark-secondary"
-    @pointermove="onPointerMove"
   >
     <div ref="stageRef" class="tool-showcase__stage">
       <div class="section-background" aria-hidden="true">
@@ -131,12 +143,13 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .tool-showcase {
-  height: 150svh;
-  min-height: 940px;
+  height: 450svh;
+  min-height: 3000px;
 }
 
 .tool-showcase__stage {
   --title-opacity: 0;
+  --title-scale: 0.88;
   position: sticky;
   top: 0;
   min-height: 100svh;
@@ -174,13 +187,14 @@ onBeforeUnmount(() => {
   margin: 0;
   color: rgb(17 24 39);
   font-family: var(--font-display);
-  font-size: clamp(2.1rem, 4.6vw, 4.7rem);
+  font-size: clamp(2.1rem, 4.4vw, 4.5rem);
   font-weight: 750;
   line-height: 0.98;
   letter-spacing: -0.05em;
   text-align: center;
   opacity: var(--title-opacity);
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%) scale(var(--title-scale));
+  will-change: transform, opacity;
 }
 
 :global(.dark .tool-showcase__title) { color: white; }
@@ -199,7 +213,8 @@ onBeforeUnmount(() => {
   inset: 0;
   max-width: 1540px;
   margin: 0 auto;
-  perspective: 1400px;
+  perspective: 1050px;
+  perspective-origin: 50% 50%;
 }
 
 .tool-showcase__screen {
@@ -207,7 +222,12 @@ onBeforeUnmount(() => {
   --screen-y: 0px;
   --screen-scale: 1;
   --screen-opacity: 1;
+  --screen-rotate-z: 0deg;
+  --screen-rotate-y: 0deg;
+  --screen-z: 0px;
   position: absolute;
+  top: 50%;
+  left: 50%;
   width: clamp(195px, 20vw, 320px);
   aspect-ratio: 1.48;
   overflow: hidden;
@@ -217,7 +237,7 @@ onBeforeUnmount(() => {
   background: rgb(255 255 255);
   box-shadow: 0 30px 85px rgb(15 23 42 / 0.22), 0 0 0 1px rgb(255 255 255 / 0.1);
   opacity: var(--screen-opacity);
-  transform: translate3d(var(--screen-x), var(--screen-y), 0) scale(var(--screen-scale));
+  transform: translate3d(calc(-50% + var(--screen-x)), calc(-50% + var(--screen-y)), var(--screen-z)) rotateZ(var(--screen-rotate-z)) rotateY(var(--screen-rotate-y)) scale(var(--screen-scale));
   transform-style: preserve-3d;
   will-change: transform, opacity;
 }
@@ -235,48 +255,24 @@ onBeforeUnmount(() => {
   object-position: top left;
 }
 
-.tool-showcase__screen--1 {
-  top: 18%;
-  left: 1%;
-  rotate: -8deg;
-}
-
 .tool-showcase__screen--1 .tool-showcase__image { transform: scale(1.01); }
 
 .tool-showcase__screen--2 {
-  top: 5%;
-  left: 50%;
   width: clamp(175px, 17vw, 270px);
-  margin-left: clamp(-88px, -8.5vw, -135px);
-  rotate: 2deg;
-}
-
-.tool-showcase__screen--3 {
-  top: 20%;
-  right: 0;
-  rotate: 8deg;
 }
 
 .tool-showcase__screen--4 {
-  bottom: 3%;
-  left: 9%;
   width: clamp(235px, 25vw, 400px);
-  rotate: 6deg;
 }
 
 .tool-showcase__screen--5 {
-  right: 7%;
-  bottom: 2%;
   width: clamp(235px, 25vw, 405px);
-  rotate: -6deg;
 }
 
 @media (max-width: 1023px) and (min-width: 768px) {
   .tool-showcase__screen { width: clamp(165px, 23vw, 230px); }
   .tool-showcase__screen--4,
   .tool-showcase__screen--5 { width: clamp(210px, 29vw, 300px); }
-  .tool-showcase__screen--4 { left: 2%; }
-  .tool-showcase__screen--5 { right: 2%; }
 }
 
 @media (max-width: 767px) {
