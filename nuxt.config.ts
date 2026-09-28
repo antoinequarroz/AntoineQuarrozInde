@@ -79,6 +79,9 @@ export default defineNuxtConfig({
     ],
     defaultLocale: 'fr',
     strategy: 'prefix_except_default',
+    // The unprefixed URL is the French version. Do not redirect it from the
+    // visitor's browser language; /en and /de remain explicit alternatives.
+    detectBrowserLanguage: false,
     customRoutes: 'config',
     pages: createI18nPagesConfig(),
     vueI18n: './i18n.config.ts',

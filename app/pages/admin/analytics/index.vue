@@ -342,6 +342,21 @@ onMounted(loadAnalytics)
         </article>
       </section>
 
+      <section v-if="posthog?.serviceFunnel?.length" class="rounded-xl border border-gray-200 bg-white p-5 dark:border-white/[0.08] dark:bg-[#111118]" aria-labelledby="pme-funnel-title">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-[0.14em] text-violet-600 dark:text-violet-300">Conversion ciblée</p>
+          <h2 id="pme-funnel-title" class="mt-1 font-display text-lg font-semibold">Page « Création de site web pour PME »</h2>
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Visiteurs uniques sur les 30 derniers jours, suivis jusqu’à la demande envoyée.</p>
+        </div>
+        <div class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div v-for="(step, index) in posthog.serviceFunnel" :key="step.key" class="rounded-lg bg-gray-50 p-4 dark:bg-white/[0.04]">
+            <p class="text-xs text-gray-500 dark:text-gray-400">{{ index + 1 }}. {{ step.label }}</p>
+            <p class="mt-2 font-display text-2xl font-semibold">{{ step.value }}</p>
+            <p v-if="index" class="mt-1 text-xs font-medium text-violet-600 dark:text-violet-300">{{ step.rate }} % depuis l’étape précédente</p>
+          </div>
+        </div>
+      </section>
+
       <section class="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.08] dark:bg-[#111118]">
         <div class="border-b border-gray-100 px-5 py-4 dark:border-white/[0.06]"><h2 class="font-display text-lg font-semibold">Actions sur le site</h2><p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Événements internes utiles pour comprendre le parcours.</p></div>
         <div class="grid divide-y divide-gray-100 sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-6 dark:divide-white/[0.06]">

@@ -75,7 +75,7 @@ export default defineNuxtPlugin({
           source_path: window.location.pathname,
         }
         const contactDestination = destination.origin === window.location.origin
-          && (destination.pathname === '/contact' || destination.hash === '#contact')
+          && (destination.pathname === '/contact' || destination.hash === '#contact' || destination.hash === '#contact-form')
         if (contactDestination || destination.protocol === 'mailto:' || destination.host === 'cal.com' || destination.host.endsWith('.cal.com')) {
           posthog?.capture('contact_clicked', { ...properties, contact_type: destination.protocol === 'mailto:' ? 'email' : destination.host.includes('cal.com') ? 'booking' : 'form' })
         }

@@ -9,8 +9,10 @@ import { serializeJsonLd } from '~~/shared/utils/publicSeoIdentity'
 const runtimeConfig = useRuntimeConfig()
 const siteUrl = runtimeConfig.public.siteUrl.replace(/\/+$/, '')
 const projectsStore = useProjectsStore()
+const reviewsStore = useReviewsStore()
+const { trackPostHog } = usePostHogEvent()
 
-await projectsStore.ensureLoaded()
+await Promise.all([projectsStore.ensureLoaded(), reviewsStore.ensureLoaded()])
 
 const decisionContent = resolvePublicServiceDecisionContent({
   introduction: 'Je conçois des sites web sur mesure pour les PME, les indépendants et les jeunes entreprises du Valais qui veulent expliquer clairement leur offre, être trouvés localement et transformer une visite en demande utile.',
@@ -107,6 +109,32 @@ const approvedCases = computed(() => projectsStore.projects.filter(project => (
   && project.caseStudyApprovedAt
   && project.relatedServicePaths.includes(service.path)
 )).slice(0, 3))
+const featuredCase = computed(() => approvedCases.value[0] ?? null)
+const featuredReview = computed(() => {
+  const project = featuredCase.value
+  if (!project) return null
+  const names = [project.title, project.clientLabel]
+    .filter(Boolean)
+    .map(value => String(value).toLocaleLowerCase('fr'))
+  return reviewsStore.visible.find(review => names.includes(String(review.company || '').toLocaleLowerCase('fr'))) ?? null
+})
+
+function handleServicePageClick(event: MouseEvent) {
+  if (!import.meta.client) return
+  const target = event.target instanceof Element ? event.target.closest('a[href]') : null
+  if (!(target instanceof HTMLAnchorElement)) return
+  const destination = new URL(target.href, window.location.href)
+  if (destination.origin !== window.location.origin || !['#contact', '#contact-form'].includes(destination.hash)) return
+  sessionStorage.setItem('aq_contact_origin', service.path)
+  trackPostHog('service_cta_clicked', {
+    service_path: service.path,
+    placement: target.dataset.serviceCtaPlacement || 'service_page',
+  })
+}
+
+onMounted(() => {
+  trackPostHog('service_page_viewed', { service_path: service.path })
+})
 
 useSeoMeta({
   title: 'Création de site web pour PME en Valais | Antoine Quarroz',
@@ -132,7 +160,7 @@ useHead({
 </script>
 
 <template>
-  <main class="section-surface">
+  <main class="section-surface" @click.capture="handleServicePageClick">
     <section class="section-padding">
       <div class="section-background"><div class="section-grid" /></div>
       <div class="section-container relative z-10">
@@ -190,7 +218,7 @@ useHead({
                 <span>{{ factor }}</span>
               </li>
             </ul>
-            <NuxtLink to="/#contact" class="btn-primary mt-7 min-h-11 justify-center sm:justify-start">Demander un périmètre et un devis</NuxtLink>
+            <NuxtLink to="/#contact" data-service-cta-placement="budget" class="btn-primary mt-7 min-h-11 justify-center sm:justify-start">Demander un périmètre et un devis</NuxtLink>
           </div>
         </div>
       </div>
@@ -207,16 +235,23 @@ useHead({
             <NuxtLink to="/cas-clients-valais" class="btn-secondary min-h-11 justify-center">Voir tous les cas clients</NuxtLink>
           </div>
 
-          <div v-if="approvedCases.length" class="mt-10 grid gap-6 md:grid-cols-3">
-            <article v-for="project in approvedCases" :key="project.id" class="overflow-hidden rounded-3xl border border-violet-500/15 bg-white/80 dark:border-white/10 dark:bg-white/[0.04]">
-              <img v-if="project.image" :src="project.image" :alt="`Aperçu du projet ${project.title}`" class="aspect-[16/9] w-full object-cover" loading="lazy" decoding="async">
-              <div class="p-6">
-                <p v-if="project.clientLabel" class="text-xs font-bold uppercase tracking-[0.14em] text-violet-600 dark:text-violet-300">{{ project.clientLabel }}</p>
-                <h3 class="mt-2 font-display text-xl font-bold text-gray-950 dark:text-white">{{ project.title }}</h3>
-                <p class="mt-3 line-clamp-4 leading-7 text-gray-600 dark:text-gray-300">{{ project.description }}</p>
-                <NuxtLink :to="`/projets/${project.slug}`" class="mt-5 inline-flex min-h-11 items-center font-semibold text-violet-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:text-violet-200">Lire l’étude de cas <span class="ml-2" aria-hidden="true">→</span></NuxtLink>
+          <div v-if="featuredCase" class="mt-10 overflow-hidden rounded-[2rem] border border-violet-500/15 bg-white/85 shadow-xl shadow-violet-500/5 dark:border-white/10 dark:bg-white/[0.04]">
+            <div class="grid lg:grid-cols-[1.08fr_0.92fr]">
+              <img v-if="featuredCase.image" :src="featuredCase.image" :alt="`Aperçu du projet ${featuredCase.title}`" class="h-full min-h-64 w-full object-cover" loading="lazy" decoding="async">
+              <div class="flex flex-col justify-center p-6 sm:p-8 lg:p-10">
+                <p class="text-xs font-bold uppercase tracking-[0.16em] text-cyan-700 dark:text-cyan-300">Étude de cas vérifiée</p>
+                <h3 class="mt-3 font-display text-3xl font-bold text-gray-950 dark:text-white">{{ featuredCase.title }}</h3>
+                <p class="mt-4 leading-7 text-gray-600 dark:text-gray-300">{{ featuredCase.outcome || featuredCase.description }}</p>
+                <blockquote v-if="featuredReview" class="mt-5 border-l-2 border-violet-500 pl-4 text-sm italic leading-6 text-gray-600 dark:text-gray-300">
+                  “{{ featuredReview.content }}”
+                  <footer class="mt-2 not-italic font-semibold text-gray-900 dark:text-white">{{ featuredReview.author }}, {{ featuredReview.role }}</footer>
+                </blockquote>
+                <div class="mt-6 flex flex-col gap-3 sm:flex-row">
+                  <NuxtLink :to="`/projets/${featuredCase.slug}`" class="btn-primary min-h-11 justify-center">Lire l’étude de cas</NuxtLink>
+                  <NuxtLink to="/#contact" data-service-cta-placement="case_study" class="btn-secondary min-h-11 justify-center">Présenter mon projet</NuxtLink>
+                </div>
               </div>
-            </article>
+            </div>
           </div>
           <p v-else class="mt-8 max-w-3xl rounded-3xl border border-violet-500/15 bg-white/70 p-6 leading-7 text-gray-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-gray-300">
             Les réalisations visibles dans le portfolio permettent déjà d’examiner les interfaces et les types de projets livrés. Les études détaillées apparaissent ici seulement après validation de leur contenu par le client.

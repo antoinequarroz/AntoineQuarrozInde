@@ -54,11 +54,11 @@ export default defineCachedEventHandler(async (event) => {
   const config = useRuntimeConfig()
   const apiKey = String(config.posthogPersonalApiKey || '').trim()
   const projectId = String(config.posthogProjectId || '').trim()
-  const empty = { projectId, periodDays: 30, totals: null, sources: [], trend: [], content: [], funnel: [], weekly: null, dataQuality: null, recommendations: [] }
+  const empty = { projectId, periodDays: 30, totals: null, sources: [], trend: [], content: [], funnel: [], serviceFunnel: [], weekly: null, dataQuality: null, recommendations: [] }
   if (!apiKey || !projectId) return { configured: false, ...empty }
 
   try {
-    const [summary, sources, trend, content, weekly] = await Promise.all([
+    const [summary, sources, trend, content, weekly, serviceFunnelQuery] = await Promise.all([
       queryPostHog(apiKey, projectId, 'site_admin_summary_30d', `
         SELECT uniqExactIf(distinct_id, event = '$pageview'), countIf(event = '$pageview'), countIf(event = 'contact_sent'),
           countIf(event = 'newsletter_subscribed'), countIf(event = 'booking_clicked'), countIf(event = 'booking_confirmed'),
@@ -95,6 +95,13 @@ export default defineCachedEventHandler(async (event) => {
           countIf(event = 'public_app_error')
         FROM (SELECT *, if(timestamp >= now() - INTERVAL 7 DAY, 'current', 'previous') AS period FROM events
           PREWHERE timestamp >= now() - INTERVAL 14 DAY WHERE ${SITE_FILTER}) GROUP BY period`),
+      queryPostHog(apiKey, projectId, 'site_admin_pme_service_funnel_30d', `
+        SELECT
+          uniqExactIf(distinct_id, event = '$pageview' AND toString(properties.$pathname) = '/creation-site-internet-valais'),
+          uniqExactIf(distinct_id, event = 'service_cta_clicked' AND toString(properties.service_path) = '/creation-site-internet-valais'),
+          uniqExactIf(distinct_id, event = 'contact_form_started' AND toString(properties.origin_path) = '/creation-site-internet-valais'),
+          uniqExactIf(distinct_id, event = 'contact_sent' AND toString(properties.origin_path) = '/creation-site-internet-valais')
+        FROM events PREWHERE timestamp >= now() - INTERVAL 30 DAY WHERE ${SITE_FILTER}`),
     ])
 
     const metrics = summary.results?.[0] || []
@@ -115,6 +122,13 @@ export default defineCachedEventHandler(async (event) => {
       { key: 'intent', label: 'Clic vers le contact', value: current.contactIntents },
       { key: 'conversion', label: 'Demande envoyée', value: current.contacts },
     ].map((step, index, steps) => ({ ...step, rate: index ? percentage(step.value, steps[index - 1]?.value || 0) : 100 }))
+    const serviceMetrics = serviceFunnelQuery.results?.[0] || []
+    const serviceFunnel = [
+      { key: 'visit', label: 'Visite de la page PME', value: numeric(serviceMetrics[0]) },
+      { key: 'cta', label: 'Clic sur « Présenter mon projet »', value: numeric(serviceMetrics[1]) },
+      { key: 'form_start', label: 'Début du formulaire', value: numeric(serviceMetrics[2]) },
+      { key: 'form_sent', label: 'Formulaire envoyé', value: numeric(serviceMetrics[3]) },
+    ].map((step, index, steps) => ({ ...step, rate: index ? percentage(step.value, steps[index - 1]?.value || 0) : 100 }))
 
     return {
       configured: true, projectId, periodDays: 30,
@@ -125,7 +139,7 @@ export default defineCachedEventHandler(async (event) => {
       },
       sources: (sources.results || []).map(row => ({ source: String(row[0] || 'Direct / inconnu'), visitors: numeric(row[1]), pageviews: numeric(row[2]) })),
       trend: Array.from({ length: 30 }, (_, index) => { const date = calendarDate(index - 29); const point = trendByDate.get(date); return { date, visitors: point?.visitors || 0, pageviews: point?.pageviews || 0 } }),
-      content: contentRows, funnel, weekly: { current, previous }, dataQuality: quality, recommendations: recommendations(current, previous, contentRows, quality),
+      content: contentRows, funnel, serviceFunnel, weekly: { current, previous }, dataQuality: quality, recommendations: recommendations(current, previous, contentRows, quality),
     }
   }
   catch (error: any) {

@@ -12,10 +12,11 @@ const { t, locale } = useI18n()
 const localePath = useLocalePath()
 const { track } = useMarketing()
 const store = useProjectsStore()
+const reviewsStore = useReviewsStore()
 const runtimeConfig = useRuntimeConfig()
 const siteUrl = String(runtimeConfig.public.siteUrl).replace(/\/+$/, '')
 
-await store.ensureLoaded()
+await Promise.all([store.ensureLoaded(), reviewsStore.ensureLoaded()])
 
 const project = computed(() => store.projects.find(item => (
   item.slug === route.params.slug
@@ -48,6 +49,14 @@ const pageDescription = computed(() => project.value?.seoDescription || (project
 const socialImage = computed(() => resolvePublicSocialImage(siteUrl, project.value?.image))
 const publicLiveUrl = computed(() => project.value?.liveUrl || project.value?.caseStudyLiveUrl)
 const publicCodeUrl = computed(() => project.value?.codeUrl || project.value?.caseStudyCodeUrl)
+const clientReview = computed(() => {
+  const current = project.value
+  if (!current) return null
+  const names = [current.title, current.clientLabel]
+    .filter(Boolean)
+    .map(value => String(value).toLocaleLowerCase('fr'))
+  return reviewsStore.visible.find(review => names.includes(String(review.company || '').toLocaleLowerCase('fr'))) ?? null
+})
 const socialImageAlt = computed(() => socialImage.value.isFallback
   ? t('seo.social.default_image_alt')
   : t('seo.social.project_image_alt', { title: project.value?.title ?? '' }))
@@ -227,7 +236,19 @@ useHead(() => ({
     <section v-if="project.galleryImages.length" class="section-container py-16 md:py-24">
       <h2 class="font-display text-3xl font-bold text-gray-950 dark:text-white">{{ t('case_study.gallery') }}</h2>
       <div class="mt-8 grid gap-5 md:grid-cols-2">
-        <img v-for="(image, index) in project.galleryImages" :key="image" :src="image" :alt="`${project.title} — ${t('case_study.gallery_image', { number: index + 1 })}`" class="aspect-[4/3] w-full rounded-3xl border border-violet-500/10 object-cover dark:border-white/10" loading="lazy" decoding="async">
+        <figure v-for="(image, index) in project.galleryImages" :key="image">
+          <img :src="image" :alt="`${project.title} — ${project.slug === 'physiobaur' ? (index === 0 ? 'ancienne version' : 'version actuelle') : t('case_study.gallery_image', { number: index + 1 })}`" class="aspect-[4/3] w-full rounded-3xl border border-violet-500/10 object-cover dark:border-white/10" loading="lazy" decoding="async">
+          <figcaption v-if="project.slug === 'physiobaur'" class="mt-3 text-center text-sm font-semibold text-gray-600 dark:text-gray-300">{{ index === 0 ? 'Avant : première version' : 'Après : version actuelle' }}</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section v-if="clientReview" class="section-container pb-16 md:pb-24" aria-labelledby="client-review-title">
+      <div class="mx-auto max-w-4xl rounded-[2rem] border border-cyan-500/20 bg-gradient-to-br from-violet-500/10 to-cyan-400/10 p-6 sm:p-10">
+        <p class="text-xs font-bold uppercase tracking-[0.18em] text-cyan-700 dark:text-cyan-300">Témoignage client</p>
+        <h2 id="client-review-title" class="sr-only">Témoignage du client</h2>
+        <blockquote class="mt-4 font-display text-xl font-semibold leading-9 text-gray-950 dark:text-white sm:text-2xl">“{{ clientReview.content }}”</blockquote>
+        <p class="mt-5 text-sm font-semibold text-gray-700 dark:text-gray-200">{{ clientReview.author }} · {{ clientReview.role }}<span v-if="clientReview.company"> · {{ clientReview.company }}</span></p>
       </div>
     </section>
 
