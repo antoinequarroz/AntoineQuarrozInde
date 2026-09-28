@@ -54,21 +54,21 @@ function renderScene() {
     if (boundedProgress < 0.12) {
       const entry = boundedProgress / 0.12
       const easedEntry = 1 - (1 - entry) ** 2
-      x = -60 + 60 * easedEntry
+      x = -52 + 52 * easedEntry
     }
     else if (boundedProgress > 0.88) {
       const exit = (boundedProgress - 0.88) / 0.12
       angle = Math.PI * 2
-      x = 60 * exit ** 2
+      x = 52 * exit ** 2
     }
     else {
       angle = ((boundedProgress - 0.12) / 0.76) * Math.PI * 2
-      x = Math.sin(angle) * 38
+      x = Math.sin(angle) * 31
     }
 
     const depthAxis = Math.cos(angle)
     const front = (depthAxis + 1) / 2
-    const y = depthAxis * 23
+    const y = depthAxis * 18
     const scale = 0.6 + front * 0.65
     const rotateY = angle * 180 / Math.PI
     const depth = -170 + front * 340
