@@ -98,7 +98,7 @@ const content = computed(() => {
       verified: 'Published on Google Maps', manual: 'Verified client testimonial', demo: 'Local preview · not published', fallback: 'Read verified client feedback directly on my Google Business Profile.',
       swipe: 'Swipe to browse testimonials', progress: 'Testimonial scroll progress', clientRole: 'Client collaboration', ctaEyebrow: 'The next story',
       ctaTitle: 'Your project could be next.', ctaBody: 'New testimonials are added only after the client has approved their name, role and words.',
-      ctaAction: 'Talk about your project', linkHint: 'Links mentioned by the client remain clickable.',
+      ctaAction: 'Talk about your project',
     }
   }
   if (locale.value === 'de') {
@@ -109,7 +109,7 @@ const content = computed(() => {
       verified: 'Auf Google Maps veröffentlicht', manual: 'Bestätigte Kundenstimme', demo: 'Lokale Vorschau · nicht veröffentlicht', fallback: 'Lesen Sie verifizierte Kundenbewertungen direkt in meinem Google-Unternehmensprofil.',
       swipe: 'Wischen, um Kundenstimmen zu entdecken', progress: 'Fortschritt der Kundenstimmen', clientRole: 'Kundenzusammenarbeit', ctaEyebrow: 'Die nächste Geschichte',
       ctaTitle: 'Ihr Projekt könnte das nächste sein.', ctaBody: 'Neue Kundenstimmen erscheinen erst nach Freigabe von Name, Funktion und Inhalt.',
-      ctaAction: 'Projekt besprechen', linkHint: 'Vom Kunden genannte Links bleiben anklickbar.',
+      ctaAction: 'Projekt besprechen',
     }
   }
   return {
@@ -119,7 +119,7 @@ const content = computed(() => {
     verified: 'Publié sur Google Maps', manual: 'Témoignage client vérifié', demo: 'Aperçu local · non publié', fallback: 'Retrouvez les avis vérifiés directement sur ma fiche Google.',
     swipe: 'Balayez pour parcourir les témoignages', progress: 'Progression dans les témoignages', clientRole: 'Client accompagné', ctaEyebrow: 'La prochaine histoire',
     ctaTitle: 'Votre projet pourrait être le prochain.', ctaBody: 'Chaque nouveau témoignage est publié seulement après validation du nom, du poste et des mots du client.',
-    ctaAction: 'Parler de votre projet', linkHint: 'Les liens cités par le client restent accessibles.',
+    ctaAction: 'Parler de votre projet',
   }
 })
 
@@ -244,7 +244,6 @@ onBeforeUnmount(() => {
                   </template>
                 </blockquote>
 
-                <p class="mt-5 text-xs text-gray-500 dark:text-white/45">{{ content.linkHint }}</p>
                 <div v-if="review.relativePublishTime || review.visitDate || review.translated" class="mt-4 flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500 dark:text-white/45">
                   <span v-if="review.relativePublishTime">{{ review.relativePublishTime }}</span>
                   <span v-if="review.visitDate">{{ content.visited }} : {{ formatVisitDate(review.visitDate) }}</span>
