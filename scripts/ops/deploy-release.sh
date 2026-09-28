@@ -107,6 +107,18 @@ install_hermes_tokens_from_stdin
 # and makes the missing variable explicit in the CI log.
 bash scripts/ops/validate-production-env.sh "$PWD/.env"
 
+# Source maps need a narrowly scoped PostHog key while the image is built.
+# BuildKit mounts it for this one RUN instruction, so it is never copied into
+# the image, committed tree, Docker history, or application runtime.
+posthog_source_map_secret="$(mktemp)"
+trap 'rm -f "$posthog_source_map_secret"' EXIT
+chmod 600 "$posthog_source_map_secret"
+sed -n 's/^POSTHOG_SOURCE_MAP_API_KEY=//p' "$PWD/.env" | head -n 1 > "$posthog_source_map_secret"
+if ! grep -q '^phx_' "$posthog_source_map_secret"; then
+  echo "POSTHOG_SOURCE_MAP_API_KEY is missing or invalid." >&2
+  exit 1
+fi
+
 previous_image="$(docker inspect --format '{{.Image}}' "$container_name" 2>/dev/null || true)"
 if [[ -n "$previous_image" ]]; then
   docker image tag "$previous_image" "$image_name:$previous_tag"
@@ -148,6 +160,9 @@ git archive --format=tar HEAD \
       --pull \
       --build-arg "APP_VERSION=$APP_VERSION" \
       --build-arg "APP_BUILD_TIME=$APP_BUILD_TIME" \
+      --build-arg "POSTHOG_PROJECT_ID=281423" \
+      --build-arg "POSTHOG_HOST=https://eu.posthog.com" \
+      --secret "id=posthog_source_map_api_key,src=$posthog_source_map_secret" \
       --tag "$image_name:$candidate_tag" \
       -
 docker compose up -d --no-build --remove-orphans

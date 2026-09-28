@@ -40,7 +40,11 @@ describe('PostHog public analytics scope', () => {
       readFile('Caddyfile', 'utf8'),
     ])
 
-    expect(nuxtConfig).toContain("host: process.env.NUXT_PUBLIC_POSTHOG_HOST || '/ingest'")
+    expect(nuxtConfig).toContain("host: process.env.POSTHOG_HOST || process.env.NUXT_PUBLIC_POSTHOG_HOST || '/ingest'")
+    expect(nuxtConfig).toContain("api_host: process.env.NUXT_PUBLIC_POSTHOG_HOST || '/ingest'")
+    expect(nuxtConfig).toContain("host: process.env.POSTHOG_INGESTION_HOST || 'https://eu.i.posthog.com'")
+    expect(nuxtConfig).toContain('enableExceptionAutocapture: true')
+    expect(nuxtConfig).toContain('enabled: Boolean(process.env.POSTHOG_SOURCE_MAP_API_KEY)')
     expect(nuxtConfig).toContain('capture_performance: {')
     expect(nuxtConfig).toContain('web_vitals: true')
     expect(nuxtConfig).toContain("web_vitals_allowed_metrics: ['LCP', 'CLS', 'FCP', 'INP']")

@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1.7
 FROM node:22.22-alpine@sha256:e58326d0d441090181ac150dc2078d3e2cf6a0d42e809aebba3ef5880935ffdd AS deps
 WORKDIR /app
 COPY package*.json ./
@@ -5,9 +6,15 @@ RUN npm ci --legacy-peer-deps
 
 FROM node:22.22-alpine@sha256:e58326d0d441090181ac150dc2078d3e2cf6a0d42e809aebba3ef5880935ffdd AS build
 WORKDIR /app
+ARG POSTHOG_PROJECT_ID=281423
+ARG POSTHOG_HOST=https://eu.posthog.com
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN npm run build
+RUN --mount=type=secret,id=posthog_source_map_api_key,required=true \
+    POSTHOG_SOURCE_MAP_API_KEY="$(cat /run/secrets/posthog_source_map_api_key)" \
+    POSTHOG_PROJECT_ID="$POSTHOG_PROJECT_ID" \
+    POSTHOG_HOST="$POSTHOG_HOST" \
+    npm run build
 
 FROM node:22.22-alpine@sha256:e58326d0d441090181ac150dc2078d3e2cf6a0d42e809aebba3ef5880935ffdd AS runner
 WORKDIR /app
