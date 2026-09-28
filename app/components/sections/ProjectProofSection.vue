@@ -23,14 +23,6 @@ const screens = [
   { light: '/showcase-tools/analyse.png', dark: '/showcase-tools/analyse-dark.png', alt: 'Analyse des performances' },
 ]
 
-const trajectories = [
-  { start: [-72, 42, 1.38, -18, 38], middle: [-38, -19, 0.92, -8, 25], end: [-68, -58, 0.62, 16, -42] },
-  { start: [-18, 64, 0.72, -12, 22], middle: [0, -35, 0.72, 2, -8], end: [54, -58, 0.52, 16, 38] },
-  { start: [70, 30, 0.74, 18, -34], middle: [39, -18, 0.9, 8, -24], end: [73, 42, 0.55, -14, 42] },
-  { start: [54, 72, 0.62, 18, -38], middle: [-28, 27, 1.08, 6, -18], end: [-62, 54, 0.62, -18, 38] },
-  { start: [-64, -52, 0.66, -16, 34], middle: [31, 27, 1.08, -6, 20], end: [16, 70, 0.7, 12, -30] },
-] as const
-
 function clamp(value: number) {
   return Math.min(1, Math.max(0, value))
 }
@@ -38,10 +30,6 @@ function clamp(value: number) {
 function smoothstep(from: number, to: number, value: number) {
   const progress = clamp((value - from) / (to - from))
   return progress * progress * (3 - 2 * progress)
-}
-
-function mix(from: number, to: number, progress: number) {
-  return from + (to - from) * progress
 }
 
 function renderScene() {
@@ -53,35 +41,38 @@ function renderScene() {
   const viewport = Math.max(1, window.innerHeight)
   const travel = Math.max(1, rect.height - viewport)
   const progress = reducedMotion ? 0.5 : clamp(-rect.top / travel)
-  const arrival = smoothstep(0.08, 0.46, progress)
-  const departure = smoothstep(0.56, 0.94, progress)
-  const visibility = smoothstep(0.05, 0.2, progress) * (1 - smoothstep(0.8, 0.96, progress))
+  const orbitProgress = clamp((progress - 0.06) / 0.88)
+  const visibility = smoothstep(0.04, 0.16, progress) * (1 - smoothstep(0.84, 0.97, progress))
+  const orbitRotation = orbitProgress * Math.PI * 2 * 1.08
 
   stageRef.value.querySelectorAll<HTMLElement>('.tool-showcase__screen').forEach((screen, index) => {
-    const path = trajectories[index] ?? trajectories[0]!
-    const from = path.start
-    const center = path.middle
-    const to = path.end
-    const x = mix(mix(from[0], center[0], arrival), to[0], departure)
-    const y = mix(mix(from[1], center[1], arrival), to[1], departure)
-    const scale = mix(mix(from[2], center[2], arrival), to[2], departure)
-    const rotateZ = mix(mix(from[3], center[3], arrival), to[3], departure)
-    const rotateY = mix(mix(from[4], center[4], arrival), to[4], departure)
-    const depth = Math.abs(rotateY) / 42
+    const angle = -Math.PI * 0.56 + index * (Math.PI * 2 / screens.length) + orbitRotation
+    const horizontal = Math.cos(angle)
+    const vertical = Math.sin(angle)
+    const front = (vertical + 1) / 2
+    const x = horizontal * 43
+    const y = vertical * 31
+    const scale = 0.5 + front * 0.76
+    const rotateY = horizontal * -76
+    const rotateZ = horizontal * -7
+    const depth = -150 + front * 280
 
     screen.style.setProperty('--screen-x', `${x.toFixed(2)}vw`)
     screen.style.setProperty('--screen-y', `${y.toFixed(2)}vh`)
     screen.style.setProperty('--screen-scale', scale.toFixed(4))
     screen.style.setProperty('--screen-rotate-z', `${rotateZ.toFixed(2)}deg`)
     screen.style.setProperty('--screen-rotate-y', `${rotateY.toFixed(2)}deg`)
-    screen.style.setProperty('--screen-z', `${mix(-90, 80, 1 - depth).toFixed(2)}px`)
-    screen.style.setProperty('--screen-opacity', visibility.toFixed(4))
+    screen.style.setProperty('--screen-z', `${depth.toFixed(2)}px`)
+    screen.style.setProperty('--screen-opacity', `${(visibility * (0.72 + front * 0.28)).toFixed(4)}`)
+    screen.style.zIndex = `${Math.round(front * 10) + 1}`
   })
 
-  const titleOpacity = smoothstep(0.23, 0.4, progress) * (1 - smoothstep(0.7, 0.86, progress))
-  const titleScale = mix(0.88, 1, smoothstep(0.24, 0.48, progress))
+  const titleOpacity = smoothstep(0.2, 0.35, progress) * (1 - smoothstep(0.7, 0.86, progress))
+  const titleScale = 0.9 + smoothstep(0.22, 0.42, progress) * 0.1
+  const titleBlur = (1 - smoothstep(0.22, 0.4, progress)) * 10 + smoothstep(0.72, 0.86, progress) * 10
   stageRef.value.style.setProperty('--title-opacity', titleOpacity.toFixed(4))
   stageRef.value.style.setProperty('--title-scale', titleScale.toFixed(4))
+  stageRef.value.style.setProperty('--title-blur', `${titleBlur.toFixed(2)}px`)
 }
 
 function scheduleRender() {
@@ -150,6 +141,7 @@ onBeforeUnmount(() => {
 .tool-showcase__stage {
   --title-opacity: 0;
   --title-scale: 0.88;
+  --title-blur: 10px;
   position: sticky;
   top: 0;
   min-height: 100svh;
@@ -193,6 +185,7 @@ onBeforeUnmount(() => {
   letter-spacing: -0.05em;
   text-align: center;
   opacity: var(--title-opacity);
+  filter: blur(var(--title-blur));
   transform: translate(-50%, -50%) scale(var(--title-scale));
   will-change: transform, opacity;
 }
