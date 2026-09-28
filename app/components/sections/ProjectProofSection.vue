@@ -54,22 +54,22 @@ function renderScene() {
     if (boundedProgress < 0.12) {
       const entry = boundedProgress / 0.12
       const easedEntry = 1 - (1 - entry) ** 2
-      x = -68 + 68 * easedEntry
+      x = -60 + 60 * easedEntry
     }
     else if (boundedProgress > 0.88) {
       const exit = (boundedProgress - 0.88) / 0.12
       angle = Math.PI * 2
-      x = 68 * exit ** 2
+      x = 60 * exit ** 2
     }
     else {
       angle = ((boundedProgress - 0.12) / 0.76) * Math.PI * 2
-      x = Math.sin(angle) * 43
+      x = Math.sin(angle) * 38
     }
 
     const depthAxis = Math.cos(angle)
     const front = (depthAxis + 1) / 2
-    const y = depthAxis * 31
-    const scale = 0.56 + front * 0.74
+    const y = depthAxis * 23
+    const scale = 0.6 + front * 0.65
     const rotateY = angle * 180 / Math.PI
     const depth = -170 + front * 340
 
@@ -162,8 +162,8 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .tool-showcase {
-  height: 450svh;
-  min-height: 3000px;
+  height: 380svh;
+  min-height: 2600px;
 }
 
 .tool-showcase__stage {
@@ -248,7 +248,7 @@ onBeforeUnmount(() => {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: clamp(190px, 18vw, 320px);
+  width: clamp(170px, 16vw, 280px);
   aspect-ratio: 1.6;
   margin: 0;
   opacity: var(--screen-opacity);
