@@ -16,12 +16,14 @@ const copy = computed(() => {
 })
 
 const screens = [
-  { light: '/showcase-tools/dashboard.png', dark: '/showcase-tools/dashboard-dark.png', alt: 'Tableau de bord de pilotage' },
-  { light: '/showcase-tools/crm.png', dark: '/showcase-tools/crm-dark.png', alt: 'Interface CRM et prospection' },
-  { light: '/showcase-tools/facturation.png', dark: '/showcase-tools/facturation-dark.png', alt: 'Tableau de bord de facturation' },
-  { light: '/showcase-tools/devis.png', dark: '/showcase-tools/devis-dark.png', alt: 'Gestion des devis' },
-  { light: '/showcase-tools/analyse.png', dark: '/showcase-tools/analyse-dark.png', alt: 'Analyse des performances' },
+  { light: '/showcase-tools/dashboard.png', dark: '/showcase-tools/dashboard-dark.png', alt: 'Tableau de bord de pilotage', offset: 0 },
+  { light: '/showcase-tools/crm.png', dark: '/showcase-tools/crm-dark.png', alt: 'Interface CRM et prospection', offset: 0.1 },
+  { light: '/showcase-tools/facturation.png', dark: '/showcase-tools/facturation-dark.png', alt: 'Tableau de bord de facturation', offset: 0.2 },
+  { light: '/showcase-tools/devis.png', dark: '/showcase-tools/devis-dark.png', alt: 'Gestion des devis', offset: 0.3 },
+  { light: '/showcase-tools/analyse.png', dark: '/showcase-tools/analyse-dark.png', alt: 'Analyse des performances', offset: 0.4 },
 ]
+
+const cardDuration = 0.6
 
 function clamp(value: number) {
   return Math.min(1, Math.max(0, value))
@@ -37,39 +39,59 @@ function renderScene() {
   if (!sectionRef.value || !stageRef.value || !isVisible) return
 
   const reducedMotion = Boolean(motionQuery?.matches)
+  const staticLayout = reducedMotion || window.innerWidth < 768
   const rect = sectionRef.value.getBoundingClientRect()
   const viewport = Math.max(1, window.innerHeight)
   const travel = Math.max(1, rect.height - viewport)
   const progress = reducedMotion ? 0.5 : clamp(-rect.top / travel)
-  const orbitProgress = clamp((progress - 0.06) / 0.88)
-  const visibility = smoothstep(0.04, 0.16, progress) * (1 - smoothstep(0.84, 0.97, progress))
-  const orbitRotation = orbitProgress * Math.PI * 2 * 1.08
-
   stageRef.value.querySelectorAll<HTMLElement>('.tool-showcase__screen').forEach((screen, index) => {
-    const angle = -Math.PI * 0.56 + index * (Math.PI * 2 / screens.length) + orbitRotation
-    const horizontal = Math.cos(angle)
-    const vertical = Math.sin(angle)
-    const front = (vertical + 1) / 2
-    const x = horizontal * 43
-    const y = vertical * 31
-    const scale = 0.5 + front * 0.76
-    const rotateY = horizontal * -76
-    const rotateZ = horizontal * -7
-    const depth = -150 + front * 280
+    const localProgress = (progress - screens[index]!.offset) / cardDuration
+    const visible = staticLayout || (localProgress >= 0 && localProgress <= 1)
+    const boundedProgress = clamp(localProgress)
+    let angle = 0
+    let x = 0
+
+    if (boundedProgress < 0.12) {
+      const entry = boundedProgress / 0.12
+      const easedEntry = 1 - (1 - entry) ** 2
+      x = -68 + 68 * easedEntry
+    }
+    else if (boundedProgress > 0.88) {
+      const exit = (boundedProgress - 0.88) / 0.12
+      angle = Math.PI * 2
+      x = 68 * exit ** 2
+    }
+    else {
+      angle = ((boundedProgress - 0.12) / 0.76) * Math.PI * 2
+      x = Math.sin(angle) * 43
+    }
+
+    const depthAxis = Math.cos(angle)
+    const front = (depthAxis + 1) / 2
+    const y = depthAxis * 31
+    const scale = 0.56 + front * 0.74
+    const rotateY = angle * 180 / Math.PI
+    const depth = -170 + front * 340
 
     screen.style.setProperty('--screen-x', `${x.toFixed(2)}vw`)
     screen.style.setProperty('--screen-y', `${y.toFixed(2)}vh`)
     screen.style.setProperty('--screen-scale', scale.toFixed(4))
-    screen.style.setProperty('--screen-rotate-z', `${rotateZ.toFixed(2)}deg`)
     screen.style.setProperty('--screen-rotate-y', `${rotateY.toFixed(2)}deg`)
     screen.style.setProperty('--screen-z', `${depth.toFixed(2)}px`)
-    screen.style.setProperty('--screen-opacity', `${(visibility * (0.72 + front * 0.28)).toFixed(4)}`)
+    screen.style.setProperty('--screen-opacity', visible ? '1' : '0')
+    screen.style.visibility = visible ? 'visible' : 'hidden'
     screen.style.zIndex = `${Math.round(front * 10) + 1}`
   })
 
-  const titleOpacity = smoothstep(0.2, 0.35, progress) * (1 - smoothstep(0.7, 0.86, progress))
-  const titleScale = 0.9 + smoothstep(0.22, 0.42, progress) * 0.1
-  const titleBlur = (1 - smoothstep(0.22, 0.4, progress)) * 10 + smoothstep(0.72, 0.86, progress) * 10
+  const titleOpacity = progress <= 0.22 || progress >= 0.78
+    ? 0
+    : progress < 0.42
+      ? smoothstep(0.22, 0.42, progress)
+      : progress <= 0.58
+        ? 1
+        : 1 - smoothstep(0.58, 0.78, progress)
+  const titleScale = 0.97 + 0.03 * titleOpacity
+  const titleBlur = (1 - titleOpacity) * 12
   stageRef.value.style.setProperty('--title-opacity', titleOpacity.toFixed(4))
   stageRef.value.style.setProperty('--title-scale', titleScale.toFixed(4))
   stageRef.value.style.setProperty('--title-blur', `${titleBlur.toFixed(2)}px`)
@@ -124,8 +146,14 @@ onBeforeUnmount(() => {
           class="tool-showcase__screen"
           :class="`tool-showcase__screen--${index + 1}`"
         >
-          <img :src="screen.light" :alt="screen.alt" class="tool-showcase__image dark:hidden" loading="lazy" decoding="async">
-          <img :src="screen.dark" alt="" class="tool-showcase__image hidden dark:block" loading="lazy" decoding="async">
+          <div class="tool-showcase__face tool-showcase__face--front">
+            <img :src="screen.light" :alt="screen.alt" class="tool-showcase__image dark:hidden" loading="lazy" decoding="async">
+            <img :src="screen.dark" alt="" class="tool-showcase__image hidden dark:block" loading="lazy" decoding="async">
+          </div>
+          <div class="tool-showcase__face tool-showcase__face--back" aria-hidden="true">
+            <img :src="screen.light" alt="" class="tool-showcase__image dark:hidden" loading="lazy" decoding="async">
+            <img :src="screen.dark" alt="" class="tool-showcase__image hidden dark:block" loading="lazy" decoding="async">
+          </div>
         </figure>
       </div>
     </div>
@@ -140,8 +168,8 @@ onBeforeUnmount(() => {
 
 .tool-showcase__stage {
   --title-opacity: 0;
-  --title-scale: 0.88;
-  --title-blur: 10px;
+  --title-scale: 0.97;
+  --title-blur: 12px;
   position: sticky;
   top: 0;
   min-height: 100svh;
@@ -215,27 +243,34 @@ onBeforeUnmount(() => {
   --screen-y: 0px;
   --screen-scale: 1;
   --screen-opacity: 1;
-  --screen-rotate-z: 0deg;
   --screen-rotate-y: 0deg;
   --screen-z: 0px;
   position: absolute;
   top: 50%;
   left: 50%;
-  width: clamp(195px, 20vw, 320px);
-  aspect-ratio: 1.48;
-  overflow: hidden;
+  width: clamp(190px, 18vw, 320px);
+  aspect-ratio: 1.6;
   margin: 0;
-  border: 1px solid rgb(148 163 184 / 0.22);
-  border-radius: 1.15rem;
-  background: rgb(255 255 255);
-  box-shadow: 0 30px 85px rgb(15 23 42 / 0.22), 0 0 0 1px rgb(255 255 255 / 0.1);
   opacity: var(--screen-opacity);
-  transform: translate3d(calc(-50% + var(--screen-x)), calc(-50% + var(--screen-y)), var(--screen-z)) rotateZ(var(--screen-rotate-z)) rotateY(var(--screen-rotate-y)) scale(var(--screen-scale));
+  transform: translate3d(calc(-50% + var(--screen-x)), calc(-50% + var(--screen-y)), var(--screen-z)) rotateY(var(--screen-rotate-y)) scale(var(--screen-scale));
   transform-style: preserve-3d;
   will-change: transform, opacity;
 }
 
-:global(.dark .tool-showcase__screen) {
+.tool-showcase__face {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border: 1px solid rgb(0 0 0 / 0.1);
+  border-radius: 1rem;
+  background: white;
+  backface-visibility: hidden;
+  box-shadow: 0 30px 85px rgb(15 23 42 / 0.22), 0 0 0 1px rgb(255 255 255 / 0.1);
+}
+
+.tool-showcase__face--back { transform: rotateY(180deg); }
+
+:global(.dark .tool-showcase__face) {
   border-color: rgb(255 255 255 / 0.13);
   background: rgb(11 11 18);
   box-shadow: 0 32px 90px rgb(0 0 0 / 0.48), 0 0 32px rgb(124 58 237 / 0.08);
@@ -248,24 +283,8 @@ onBeforeUnmount(() => {
   object-position: top left;
 }
 
-.tool-showcase__screen--1 .tool-showcase__image { transform: scale(1.01); }
-
-.tool-showcase__screen--2 {
-  width: clamp(175px, 17vw, 270px);
-}
-
-.tool-showcase__screen--4 {
-  width: clamp(235px, 25vw, 400px);
-}
-
-.tool-showcase__screen--5 {
-  width: clamp(235px, 25vw, 405px);
-}
-
 @media (max-width: 1023px) and (min-width: 768px) {
-  .tool-showcase__screen { width: clamp(165px, 23vw, 230px); }
-  .tool-showcase__screen--4,
-  .tool-showcase__screen--5 { width: clamp(210px, 29vw, 300px); }
+  .tool-showcase__screen { width: clamp(190px, 28vw, 300px); }
 }
 
 @media (max-width: 767px) {
