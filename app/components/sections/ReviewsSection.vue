@@ -307,7 +307,7 @@ onBeforeUnmount(() => {
 .review-card::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(125deg, rgba(255, 255, 255, .8), transparent 32%, transparent 72%, rgba(34, 211, 238, .06)); }
 .review-quote-mark { position: absolute; right: 1.5rem; top: -4.5rem; font-family: Georgia, serif; font-size: 17rem; line-height: 1; color: rgba(124, 58, 237, .07); user-select: none; }
 .review-source-pill { display: inline-flex; align-items: center; gap: .5rem; border: 1px solid rgb(6 182 212 / .2); border-radius: 9999px; background: rgb(6 182 212 / .07); padding: .375rem .75rem; font-size: .75rem; font-weight: 600; color: rgb(21 94 117); }
-.review-inline-link { color: rgb(8 145 178); text-decoration: underline; text-decoration-thickness: .08em; text-underline-offset: .16em; overflow-wrap: anywhere; transition: color 150ms ease; }
+.review-inline-link { display: inline-flex; min-height: 2.75rem; align-items: center; color: rgb(8 145 178); text-decoration: underline; text-decoration-thickness: .08em; text-underline-offset: .16em; overflow-wrap: anywhere; transition: color 150ms ease; }
 .review-inline-link:hover { color: rgb(109 40 217); }
 .review-inline-link:focus-visible { border-radius: .2rem; outline: 2px solid rgb(34 211 238); outline-offset: 3px; }
 .review-external-button { display: grid; width: 2.75rem; height: 2.75rem; flex: 0 0 auto; place-items: center; border: 1px solid rgb(107 114 128 / .2); border-radius: 9999px; color: rgb(8 145 178); transition: transform 150ms ease, border-color 150ms ease, background-color 150ms ease; }
