@@ -50,7 +50,7 @@ const breadcrumbs = resolvePublicBreadcrumbTrail(siteUrl, [
 const canonicalUrl = breadcrumbs.items.at(-1)!.url
 const serviceJsonLd = resolvePublicService(siteUrl, {
   ...service,
-  serviceType: 'Création de site web pour PME',
+  serviceType: service.name,
 })
 
 const useCases = [
