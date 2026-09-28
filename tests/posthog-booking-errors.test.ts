@@ -12,12 +12,12 @@ describe('PostHog booking and public error signals', () => {
     expect(source).not.toContain('event.data.booking')
   })
 
-  it('captures only bounded public error metadata', () => {
+  it('captures native exceptions only on public production pages', () => {
     const source = read('app/plugins/posthog-public.client.ts')
-    expect(source).toContain("posthog?.capture('public_app_error'")
-    expect(source).toContain('capturedErrors >= 5')
-    expect(source).toContain("error_name: errorName")
-    expect(source).not.toContain('error_message')
-    expect(source).not.toContain('error_stack')
+    expect(source).toContain('capture_exceptions: true')
+    expect(source).toContain("event.event === '$exception' && !isPostHogPublicPath(window.location.pathname)")
+    expect(source).toContain('posthog?.captureException(error)')
+    expect(source).not.toContain("window.addEventListener('error'")
+    expect(source).not.toContain("window.addEventListener('unhandledrejection'")
   })
 })

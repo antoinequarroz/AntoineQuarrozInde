@@ -27,6 +27,7 @@ required_names=(
   HERMES_READ_TOKEN
   HERMES_PUBLISH_TOKEN
   ENSEMBLE_SUPABASE_ANON_KEY
+  POSTHOG_SOURCE_MAP_API_KEY
 )
 
 missing_names=()
@@ -45,6 +46,7 @@ fi
 supabase_url="$(read_env_value SUPABASE_URL)"
 read_token="$(read_env_value HERMES_READ_TOKEN)"
 publish_token="$(read_env_value HERMES_PUBLISH_TOKEN)"
+posthog_source_map_key="$(read_env_value POSTHOG_SOURCE_MAP_API_KEY)"
 
 [[ "$supabase_url" =~ ^https://[A-Za-z0-9.-]+\.supabase\.co/?$ ]] || {
   echo "SUPABASE_URL is invalid; refusing to restart containers." >&2
@@ -56,6 +58,10 @@ publish_token="$(read_env_value HERMES_PUBLISH_TOKEN)"
 }
 [[ "$publish_token" =~ ^[a-f0-9]{64}$ ]] || {
   echo "HERMES_PUBLISH_TOKEN is invalid; refusing to restart containers." >&2
+  exit 78
+}
+[[ "$posthog_source_map_key" =~ ^phx_[A-Za-z0-9_-]{40,}$ ]] || {
+  echo "POSTHOG_SOURCE_MAP_API_KEY is invalid; refusing to build the release." >&2
   exit 78
 }
 

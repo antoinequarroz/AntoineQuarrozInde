@@ -16,14 +16,27 @@ export default defineNuxtConfig({
     '@posthog/nuxt',
   ],
 
+  sourcemap: {
+    client: 'hidden',
+  },
+
+  nitro: {
+    rollupConfig: {
+      output: {
+        sourcemapExcludeSources: false,
+      },
+    },
+  },
+
   posthogConfig: {
     // The project token is intentionally public. Private API access remains server-only.
     publicKey: process.env.NUXT_PUBLIC_POSTHOG_KEY || 'phc_pEpzDYuscdeuHAfWFJTpgyDZT3dxWVFm4y38DUxA2epS',
     // Keep browser ingestion first-party so content blockers do not silently
     // remove part of the audience. Server-side business events stay on the
     // direct EU ingestion host through posthogIngestionHost below.
-    host: process.env.NUXT_PUBLIC_POSTHOG_HOST || '/ingest',
+    host: process.env.POSTHOG_HOST || process.env.NUXT_PUBLIC_POSTHOG_HOST || '/ingest',
     clientConfig: {
+      api_host: process.env.NUXT_PUBLIC_POSTHOG_HOST || '/ingest',
       defaults: '2026-05-30',
       cookieless_mode: 'always',
       person_profiles: 'never',
@@ -39,6 +52,16 @@ export default defineNuxtConfig({
       disable_surveys: true,
       advanced_disable_feature_flags: true,
       capture_exceptions: false,
+    },
+    serverConfig: {
+      host: process.env.POSTHOG_INGESTION_HOST || 'https://eu.i.posthog.com',
+      enableExceptionAutocapture: true,
+      disable_capture_url_hashes: true,
+    },
+    sourcemaps: {
+      enabled: Boolean(process.env.POSTHOG_SOURCE_MAP_API_KEY),
+      projectId: process.env.POSTHOG_PROJECT_ID || '281423',
+      personalApiKey: process.env.POSTHOG_SOURCE_MAP_API_KEY ?? '',
     },
   },
 
@@ -267,4 +290,3 @@ export default defineNuxtConfig({
     strict: true,
   },
 })
-
