@@ -106,8 +106,8 @@ await useAsyncData(`index-data-${locale.value}`, () =>
   <div>
     <SectionsHeroSplineSection />
     <SectionsAboutSection />
-    <SectionsProjectProofSection />
     <SectionsServicesSection />
+    <SectionsProjectProofSection />
     <SectionsPortfolioSection />
     <SectionsBlogSection />
     <SectionsReviewsSection />
