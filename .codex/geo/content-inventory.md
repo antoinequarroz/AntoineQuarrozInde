@@ -11,6 +11,7 @@
 | /blog/remplacer-excel-outil-metier-criteres-etapes | fond | Outils métier | fr | 2026-09-21 | validé |
 
 | /blog/application-web-ou-mobile-choisir-selon-usages-reels | fond | Applications | fr | 2026-09-22 | validé |
+| /blog/mesurer-automatisation-ia-gain-temps | fond | Intelligence artificielle | fr | 2026-09-29 | validé |
 
 ## Prérequis infra
 
