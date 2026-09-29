@@ -17,6 +17,7 @@ const servicePaths = [
   '/creation-site-internet-valais',
   '/refonte-site-web-valais',
   '/application-mobile-valais',
+  '/audit-ia-pme',
 ]
 
 type ProofVariant =
@@ -282,7 +283,7 @@ describe('AQ-SEO-010 public structured data', () => {
   unixIt.each(['valid', 'valid-no-deep-content'] as const)('accepts the %s public graph', async (variant) => {
     const origin = await startProofServer(variant)
     const result = await runProof(origin)
-    expect(result.stdout).toContain('Service and breadcrumb data is valid on 4 service page(s)')
+    expect(result.stdout).toContain('Service and breadcrumb data is valid on 5 service page(s)')
   })
 
   unixIt.each([

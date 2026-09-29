@@ -478,6 +478,7 @@ test('service pages expose an accessible breadcrumb without JavaScript', async (
     '/creation-site-internet-valais',
     '/refonte-site-web-valais',
     '/application-mobile-valais',
+    '/audit-ia-pme',
   ]
   const context = await browser.newContext({ javaScriptEnabled: false })
   const page = await context.newPage()
@@ -503,6 +504,7 @@ test('service pages answer decision questions and expose proof and contact witho
     '/creation-site-internet-valais',
     '/refonte-site-web-valais',
     '/application-mobile-valais',
+    '/audit-ia-pme',
   ]
   const expectedHeadings = [
     'Quels livrables sont inclus ?',

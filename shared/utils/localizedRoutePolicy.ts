@@ -53,6 +53,7 @@ export const LOCALIZED_ROUTE_POLICY = [
   frenchOnlyFamily('website-creation-service', 'creation-site-internet-valais', '/creation-site-internet-valais'),
   frenchOnlyFamily('website-redesign-service', 'refonte-site-web-valais', '/refonte-site-web-valais'),
   frenchOnlyFamily('mobile-application-service', 'application-mobile-valais', '/application-mobile-valais'),
+  frenchOnlyFamily('ai-audit-service', 'audit-ia-pme', '/audit-ia-pme'),
   frenchOnlyFamily('blog-index', 'blog', '/blog', 'app/pages/blog/index.vue'),
   frenchOnlyFamily('blog-article', 'blog-slug', '/blog/**', 'app/pages/blog/[slug].vue'),
   frenchOnlyFamily('ia-sme-checklist', 'ressources-checklist-ia-pme', '/ressources/checklist-ia-pme'),

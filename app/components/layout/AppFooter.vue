@@ -52,6 +52,7 @@ const localSeoLinks = [
   { label: 'Création de site en Valais', href: '/creation-site-internet-valais' },
   { label: 'Refonte de site en Valais', href: '/refonte-site-web-valais' },
   { label: 'Application mobile en Valais', href: '/application-mobile-valais' },
+  { label: 'Audit IA pour PME', href: '/audit-ia-pme' },
 ]
 </script>
 

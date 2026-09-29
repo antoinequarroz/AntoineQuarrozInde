@@ -82,6 +82,9 @@ function selectService(service: { key: ServiceKey }) {
           <NuxtLink to="/application-mobile-valais" class="inline-flex min-h-11 items-center rounded-lg border border-violet-500/20 px-3 py-1.5 text-xs text-violet-700 dark:text-violet-200">
             Apps mobiles en Valais
           </NuxtLink>
+          <NuxtLink to="/audit-ia-pme" class="inline-flex min-h-11 items-center rounded-lg border border-cyan-500/25 px-3 py-1.5 text-xs text-cyan-800 transition-[background-color,border-color,transform] duration-150 hover:bg-cyan-50 active:scale-[0.96] dark:text-cyan-200 dark:hover:bg-cyan-500/10">
+            Audit IA pour PME
+          </NuxtLink>
         </div>
       </div>
 

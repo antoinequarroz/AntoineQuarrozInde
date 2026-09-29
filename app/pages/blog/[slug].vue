@@ -22,6 +22,15 @@ await store.ensureLoaded()
 
 const article = computed(() => store.published.find(a => a.slug === route.params.slug))
 const isIaPmeArticle = computed(() => article.value?.slug === 'ia-pme-commencer-sans-exposer-donnees')
+const isAiArticle = computed(() => {
+  const signals = [article.value?.title, ...(article.value?.tags ?? [])]
+    .filter(Boolean)
+    .join(' ')
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLocaleLowerCase('fr')
+  return /(^|\W)ia($|\W)|intelligence artificielle|automatisation|agent/.test(signals)
+})
 
 if (!article.value) {
   throw createError({ statusCode: 404, message: 'Article non trouvé' })
@@ -178,10 +187,18 @@ useHead(() => ({
           <!-- eslint-disable vue/no-v-html -->
           <div class="text-gray-600 dark:text-gray-300" v-html="renderSafeMarkdown(article.content)" />
           <aside class="my-10 overflow-hidden rounded-3xl border border-cyan-500/20 bg-gradient-to-br from-violet-500/10 via-white/70 to-cyan-400/10 p-6 dark:via-white/[0.04] sm:p-8" aria-labelledby="article-service-title">
-            <p class="text-xs font-bold uppercase tracking-[0.18em] text-cyan-700 dark:text-cyan-300">Votre projet en Valais</p>
-            <h2 id="article-service-title" class="mt-3 font-display text-2xl font-bold text-gray-950 dark:text-white">Besoin d’un site clair pour votre PME&nbsp;?</h2>
-            <p class="mt-3 max-w-2xl leading-7 text-gray-600 dark:text-gray-300">Découvrez ma méthode, les livrables et les projets déjà réalisés avant de me présenter votre besoin.</p>
-            <NuxtLink to="/creation-site-internet-valais" class="btn-primary mt-6 min-h-11 justify-center sm:justify-start">Voir la création de site pour PME</NuxtLink>
+            <template v-if="isAiArticle">
+              <p class="text-xs font-bold uppercase tracking-[0.18em] text-cyan-700 dark:text-cyan-300">Passer de l’idée au test</p>
+              <h2 id="article-service-title" class="mt-3 font-display text-2xl font-bold text-gray-950 dark:text-white">Un processus de votre PME mérite-t-il vraiment de l’IA&nbsp;?</h2>
+              <p class="mt-3 max-w-2xl leading-7 text-gray-600 dark:text-gray-300">L’audit permet de comparer une règle simple, une automatisation et un usage IA avant de lancer un pilote mesurable.</p>
+              <NuxtLink to="/audit-ia-pme" class="btn-primary mt-6 min-h-11 justify-center sm:justify-start">Découvrir l’audit IA pour PME</NuxtLink>
+            </template>
+            <template v-else>
+              <p class="text-xs font-bold uppercase tracking-[0.18em] text-cyan-700 dark:text-cyan-300">Votre projet en Valais</p>
+              <h2 id="article-service-title" class="mt-3 font-display text-2xl font-bold text-gray-950 dark:text-white">Besoin d’un site clair pour votre PME&nbsp;?</h2>
+              <p class="mt-3 max-w-2xl leading-7 text-gray-600 dark:text-gray-300">Découvrez ma méthode, les livrables et les projets déjà réalisés avant de me présenter votre besoin.</p>
+              <NuxtLink to="/creation-site-internet-valais" class="btn-primary mt-6 min-h-11 justify-center sm:justify-start">Voir la création de site pour PME</NuxtLink>
+            </template>
           </aside>
           <BlogLeadMagnetSignup v-if="isIaPmeArticle" compact />
           <BlogDiagnosticCta />
