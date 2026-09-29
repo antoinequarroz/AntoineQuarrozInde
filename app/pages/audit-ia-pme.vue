@@ -38,19 +38,19 @@ const decisionContent = resolvePublicServiceDecisionContent({
 })
 
 const service = Object.freeze({
-  name: 'Audit IA pour PME en Valais et en Suisse',
+  name: 'Trouvez le bon premier usage de l’IA pour votre PME.',
   description: decisionContent.introduction,
   path: servicePath,
-  areaServed: 'Suisse',
+  areaServed: 'Valais',
 })
 const breadcrumbs = resolvePublicBreadcrumbTrail(siteUrl, [
   { name: 'Accueil', path: '/' },
-  { name: service.name, path: service.path },
+  { name: 'Audit IA pour PME en Valais', path: service.path },
 ])
 const canonicalUrl = breadcrumbs.items.at(-1)!.url
 const serviceJsonLd = resolvePublicService(siteUrl, {
   ...service,
-  serviceType: 'Audit et cadrage d’un projet d’intelligence artificielle pour PME',
+  serviceType: service.name,
 })
 
 const goodStartingPoints = [
