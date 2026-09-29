@@ -38,7 +38,8 @@ describe('AQ-SEO-001 canonical public domain', () => {
     const caddyfile = await readFile('Caddyfile', 'utf8')
 
     expect(caddyfile).toMatch(/antoinequarroz\.ch \{\s+redir https:\/\/www\.antoinequarroz\.ch\{uri\} permanent\s+\}/)
-    expect(caddyfile).toMatch(/www\.antoinequarroz\.ch \{[\s\S]*reverse_proxy web:3000[\s\S]*\}/)
+    expect(caddyfile).toMatch(/www\.antoinequarroz\.ch \{[\s\S]*reverse_proxy antoinequarroz-web:3000[\s\S]*\}/)
+    expect(caddyfile).not.toMatch(/reverse_proxy web:3000/)
     expect(caddyfile).not.toContain('antoinequarroz.ch, www.antoinequarroz.ch')
   })
 
