@@ -15,6 +15,7 @@ const requiredServicePaths = [
   '/creation-site-internet-valais',
   '/refonte-site-web-valais',
   '/application-mobile-valais',
+  '/audit-ia-pme',
 ]
 const expectedSections = [
   ['deliverables', 'Quels livrables sont inclus ?'],

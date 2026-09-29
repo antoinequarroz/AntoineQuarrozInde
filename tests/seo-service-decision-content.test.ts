@@ -15,6 +15,7 @@ const servicePages = [
   'app/pages/creation-site-internet-valais.vue',
   'app/pages/refonte-site-web-valais.vue',
   'app/pages/application-mobile-valais.vue',
+  'app/pages/audit-ia-pme.vue',
 ]
 const servicePaths = servicePages.map(path => path.replace(/^app\/pages|\.vue$/g, ''))
 const execFileAsync = promisify(execFile)
@@ -279,7 +280,7 @@ describe('AQ-SEO-011 service decision content', () => {
     const origin = await startDecisionProofServer('valid')
     const result = await runDecisionProof(origin)
 
-    expect(result.stdout).toContain('Service decision content is valid on 4 service page(s)')
+    expect(result.stdout).toContain('Service decision content is valid on 5 service page(s)')
   })
 
   unixIt.each([

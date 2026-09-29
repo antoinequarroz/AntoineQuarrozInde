@@ -54,7 +54,7 @@ export default defineCachedEventHandler(async (event) => {
   const config = useRuntimeConfig()
   const apiKey = String(config.posthogPersonalApiKey || '').trim()
   const projectId = String(config.posthogProjectId || '').trim()
-  const empty = { projectId, periodDays: 30, totals: null, sources: [], trend: [], content: [], funnel: [], serviceFunnel: [], weekly: null, dataQuality: null, recommendations: [] }
+  const empty = { projectId, periodDays: 30, totals: null, sources: [], trend: [], content: [], funnel: [], serviceFunnel: [], auditServiceFunnel: [], weekly: null, dataQuality: null, recommendations: [] }
   if (!apiKey || !projectId) return { configured: false, ...empty }
 
   try {
@@ -95,12 +95,16 @@ export default defineCachedEventHandler(async (event) => {
           countIf(event = 'public_app_error')
         FROM (SELECT *, if(timestamp >= now() - INTERVAL 7 DAY, 'current', 'previous') AS period FROM events
           PREWHERE timestamp >= now() - INTERVAL 14 DAY WHERE ${SITE_FILTER}) GROUP BY period`),
-      queryPostHog(apiKey, projectId, 'site_admin_pme_service_funnel_30d', `
+      queryPostHog(apiKey, projectId, 'site_admin_service_funnels_30d', `
         SELECT
           uniqExactIf(distinct_id, event = '$pageview' AND toString(properties.$pathname) = '/creation-site-internet-valais'),
           uniqExactIf(distinct_id, event = 'service_cta_clicked' AND toString(properties.service_path) = '/creation-site-internet-valais'),
           uniqExactIf(distinct_id, event = 'contact_form_started' AND toString(properties.origin_path) = '/creation-site-internet-valais'),
-          uniqExactIf(distinct_id, event = 'contact_sent' AND toString(properties.origin_path) = '/creation-site-internet-valais')
+          uniqExactIf(distinct_id, event = 'contact_sent' AND toString(properties.origin_path) = '/creation-site-internet-valais'),
+          uniqExactIf(distinct_id, event = '$pageview' AND toString(properties.$pathname) = '/audit-ia-pme'),
+          uniqExactIf(distinct_id, event = 'service_cta_clicked' AND toString(properties.service_path) = '/audit-ia-pme'),
+          uniqExactIf(distinct_id, event = 'contact_form_started' AND toString(properties.origin_path) = '/audit-ia-pme'),
+          uniqExactIf(distinct_id, event = 'contact_sent' AND toString(properties.origin_path) = '/audit-ia-pme')
         FROM events PREWHERE timestamp >= now() - INTERVAL 30 DAY WHERE ${SITE_FILTER}`),
     ])
 
@@ -129,6 +133,12 @@ export default defineCachedEventHandler(async (event) => {
       { key: 'form_start', label: 'Début du formulaire', value: numeric(serviceMetrics[2]) },
       { key: 'form_sent', label: 'Formulaire envoyé', value: numeric(serviceMetrics[3]) },
     ].map((step, index, steps) => ({ ...step, rate: index ? percentage(step.value, steps[index - 1]?.value || 0) : 100 }))
+    const auditServiceFunnel = [
+      { key: 'visit', label: 'Visite de la page Audit IA', value: numeric(serviceMetrics[4]) },
+      { key: 'cta', label: 'Clic sur « Présenter mon processus »', value: numeric(serviceMetrics[5]) },
+      { key: 'form_start', label: 'Début du formulaire', value: numeric(serviceMetrics[6]) },
+      { key: 'form_sent', label: 'Formulaire envoyé', value: numeric(serviceMetrics[7]) },
+    ].map((step, index, steps) => ({ ...step, rate: index ? percentage(step.value, steps[index - 1]?.value || 0) : 100 }))
 
     return {
       configured: true, projectId, periodDays: 30,
@@ -139,7 +149,7 @@ export default defineCachedEventHandler(async (event) => {
       },
       sources: (sources.results || []).map(row => ({ source: String(row[0] || 'Direct / inconnu'), visitors: numeric(row[1]), pageviews: numeric(row[2]) })),
       trend: Array.from({ length: 30 }, (_, index) => { const date = calendarDate(index - 29); const point = trendByDate.get(date); return { date, visitors: point?.visitors || 0, pageviews: point?.pageviews || 0 } }),
-      content: contentRows, funnel, serviceFunnel, weekly: { current, previous }, dataQuality: quality, recommendations: recommendations(current, previous, contentRows, quality),
+      content: contentRows, funnel, serviceFunnel, auditServiceFunnel, weekly: { current, previous }, dataQuality: quality, recommendations: recommendations(current, previous, contentRows, quality),
     }
   }
   catch (error: any) {

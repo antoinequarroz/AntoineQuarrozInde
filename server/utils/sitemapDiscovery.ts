@@ -27,6 +27,7 @@ export const sitemapStaticPaths = [
   '/creation-site-internet-valais',
   '/refonte-site-web-valais',
   '/application-mobile-valais',
+  '/audit-ia-pme',
   '/en',
   '/de',
   '/blog',

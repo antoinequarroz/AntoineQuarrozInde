@@ -21,6 +21,7 @@ const proofFrenchPaths = [
   '/creation-site-internet-valais',
   '/refonte-site-web-valais',
   '/application-mobile-valais',
+  '/audit-ia-pme',
   '/blog',
   '/cas-clients-valais',
 ]
@@ -151,12 +152,13 @@ function policyWithApprovedEnglish(overrides: Partial<LocalizedRouteFamily['vari
 }
 
 describe('AQ-SEO-005 French-only route policy', () => {
-  it('declares the exhaustive set of ten French-only route families', () => {
+  it('declares the exhaustive set of eleven French-only route families', () => {
     expect(LOCALIZED_ROUTE_POLICY.map(family => [family.routeName, family.path])).toEqual([
       ['developpeur-web-valais', '/developpeur-web-valais'],
       ['creation-site-internet-valais', '/creation-site-internet-valais'],
       ['refonte-site-web-valais', '/refonte-site-web-valais'],
       ['application-mobile-valais', '/application-mobile-valais'],
+      ['audit-ia-pme', '/audit-ia-pme'],
       ['blog', '/blog'],
       ['blog-slug', '/blog/**'],
       ['ressources-checklist-ia-pme', '/ressources/checklist-ia-pme'],
@@ -175,7 +177,7 @@ describe('AQ-SEO-005 French-only route policy', () => {
   it('builds i18n page restrictions without affecting routes outside the manifest', () => {
     const pages = createI18nPagesConfig()
 
-    expect(Object.keys(pages)).toHaveLength(10)
+    expect(Object.keys(pages)).toHaveLength(11)
     for (const family of LOCALIZED_ROUTE_POLICY) {
       expect(pages[family.routeName]).toEqual({ fr: undefined, en: false, de: false })
     }

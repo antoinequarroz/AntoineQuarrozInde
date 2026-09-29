@@ -25,11 +25,13 @@ describe('PME service proof and conversion path', () => {
     const dashboard = read('app/pages/admin/analytics/index.vue')
     expect(contact).toContain("sessionStorage.getItem('aq_contact_origin')")
     expect(contact).toContain('origin_path: contactOriginPath.value')
-    expect(endpoint).toContain('site_admin_pme_service_funnel_30d')
+    expect(endpoint).toContain('site_admin_service_funnels_30d')
     expect(endpoint).toContain("event = 'service_cta_clicked'")
     expect(endpoint).toContain("event = 'contact_form_started'")
     expect(endpoint).toContain("event = 'contact_sent'")
     expect(dashboard).toContain('posthog.serviceFunnel')
+    expect(endpoint).toContain("properties.$pathname) = '/audit-ia-pme'")
+    expect(dashboard).toContain('posthog.auditServiceFunnel')
   })
 
   it('keeps the root URL in French and exposes explicit alternate locales', () => {
