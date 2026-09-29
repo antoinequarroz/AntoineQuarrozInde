@@ -12,7 +12,7 @@ const { trackPostHog } = usePostHogEvent()
 
 const servicePath = '/audit-ia-pme'
 const decisionContent = resolvePublicServiceDecisionContent({
-  introduction: 'J’aide les PME suisses à choisir un premier usage de l’intelligence artificielle qui répond à un besoin réel, protège les données de l’entreprise et peut être mesuré avant d’investir davantage.',
+  introduction: 'J’aide les PME du Valais et d’ailleurs en Suisse à choisir un premier usage de l’intelligence artificielle qui répond à un besoin réel, protège les données de l’entreprise et peut être mesuré avant d’investir davantage.',
   deliverables: [
     'Une cartographie courte du processus, des personnes concernées et du temps consacré aujourd’hui.',
     'Une classification des données utilisées et des précautions à prévoir avant tout test.',
