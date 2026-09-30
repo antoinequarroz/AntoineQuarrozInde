@@ -1,7 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { createError } from 'h3'
 
-export const HERMES_MOBILE_MAX_BYTES = 128 * 1024
+export const HERMES_MOBILE_MAX_BYTES = 2 * 1024 * 1024
 
 function invalid(): never {
   throw createError({ statusCode: 400, message: 'Instantané Hermes invalide.' })
@@ -58,11 +58,14 @@ export function validateHermesMobileSnapshot(value: unknown) {
     if (!['À relire', 'À reprendre', 'Relu'].includes(decision)) invalid()
     const contentVersion = optionalText(row.contentVersion, 64)
     if (contentVersion && !/^[0-9a-f]{64}$/.test(contentVersion)) invalid()
+    const reportText = optionalText(row.reportText, 64 * 1024)
+    if (reportText && (!contentVersion || Buffer.byteLength(reportText, 'utf8') > 64 * 1024)) invalid()
     return {
       id: text(row.id, 180), title: text(row.title, 260), projectId: optionalText(row.projectId, 180), decision,
-      addedAt: isoDate(row.addedAt), contentVersion, digest: contentVersion, excerpt: optionalText(row.excerpt, 400),
+      addedAt: isoDate(row.addedAt), contentVersion, digest: contentVersion, excerpt: optionalText(row.excerpt, 400), reportText,
     }
   })
+  if (reviews.reduce((bytes, review) => bytes + Buffer.byteLength(review.reportText ?? '', 'utf8'), 0) > 512 * 1024) invalid()
   const projectIds = new Set(projects.map(item => item.id))
   if (projectIds.size !== projects.length || profiles.length !== new Set(profiles.map(item => item.name)).size
     || missions.length !== new Set(missions.map(item => item.id)).size || reviews.length !== new Set(reviews.map(item => item.id)).size

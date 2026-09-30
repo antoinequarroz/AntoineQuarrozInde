@@ -29,6 +29,24 @@ describe('Hermes mobile snapshot boundary', () => {
     expect(parsed.missions[0]?.projectId).toBe('project:1')
   })
 
+  it('preserves only explicitly shared versioned full responses', () => {
+    const parsed = validateHermesMobileSnapshot({ ...snapshot, reviews: [{
+      ...snapshot.reviews[0], reportText: 'Réponse complète avec **sa mise en forme**.',
+      prompt: 'private prompt', content: 'private raw content',
+    }] })
+    expect(parsed.reviews[0]?.reportText).toBe('Réponse complète avec **sa mise en forme**.')
+    expect(JSON.stringify(parsed)).not.toContain('private prompt')
+    expect(JSON.stringify(parsed)).not.toContain('private raw content')
+    expect(validateHermesMobileSnapshot(snapshot).reviews[0]?.reportText).toBeNull()
+    expect(() => validateHermesMobileSnapshot({ ...snapshot, reviews: [{ ...snapshot.reviews[0], contentVersion: null, reportText: 'Réponse' }] })).toThrow()
+  })
+
+  it('limits UTF-8 report bytes individually and across the workspace', () => {
+    expect(() => validateHermesMobileSnapshot({ ...snapshot, reviews: [{ ...snapshot.reviews[0], reportText: 'é'.repeat(40_000) }] })).toThrow()
+    expect(() => validateHermesMobileSnapshot({ ...snapshot, reviews: Array.from({ length: 9 }, (_, index) => ({ ...snapshot.reviews[0], id: `r-${index}`, reportText: 'a'.repeat(64 * 1024) })) })).toThrow()
+    expect(validateHermesMobileSnapshot({ ...snapshot, reviews: [{ ...snapshot.reviews[0], reportText: 'a'.repeat(64 * 1024) }] }).reviews[0]?.reportText?.length).toBe(64 * 1024)
+  })
+
   it('rejects broken project links and unsupported review states', () => {
     expect(() => validateHermesMobileSnapshot({ ...snapshot, missions: [{ ...snapshot.missions[0], projectId: 'unknown' }] })).toThrow()
     expect(() => validateHermesMobileSnapshot({ ...snapshot, reviews: [{ ...snapshot.reviews[0], decision: 'Approuvé et publié' }] })).toThrow()
