@@ -12,6 +12,7 @@
 
 | /blog/application-web-ou-mobile-choisir-selon-usages-reels | fond | Applications | fr | 2026-09-22 | validé |
 | /blog/mesurer-automatisation-ia-gain-temps | fond | Intelligence artificielle | fr | 2026-09-29 | validé |
+| /blog/chatgpt-claude-copilot-gemini-quel-outil-pme-suisse | fond | Intelligence artificielle | fr | 2026-09-30 | validé |
 
 ## Prérequis infra
 
