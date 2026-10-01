@@ -27,3 +27,7 @@
 | Ressource | Persona | Placement | Tag LuMail | Inscrits |
 |---|---|---|---|---:|
 | Checklist pilote IA en PME sur 30 jours | Responsable de PME suisse | Article « IA dans une PME » et `/ressources/checklist-ia-pme` ; PDF envoyé immédiatement par e-mail après consentement | `lead-magnet`, `checklist-ia-pme` | 0 |
+
+## Publication du 1er octobre 2026
+
+- Article 024 : [Hébergement d’un site web en Suisse : quels critères pour une PME ?](https://www.antoinequarroz.ch/blog/hebergement-site-web-suisse-criteres-pme) — public, vérifié ; grille de comparaison, FAQ, sources PFPDT/OFCS et lien vers la page de service.
