@@ -9,3 +9,6 @@
 - 2026-09-30 — article-023 publié après reprise manuelle du flux. Comparaison centrée sur les offres professionnelles, l’écosystème de travail, la gouvernance des données et un pilote de 30 jours ; sources officielles OpenAI, Anthropic, Microsoft, Google Workspace et PFPDT. Couverture 1200 × 675 vérifiée et brouillons LinkedIn/X créés en statut « À valider ».
 
 - 2026-10-01 — article-024 publié à 06:38 Europe/Zurich via API Hermes depuis un worktree propre de origin/main. Sources PFPDT/OFCS vérifiées, couverture native 1200 × 675 contrôlée, page SSR et BlogPosting vérifiés ; brouillons LinkedIn et X créés en statut draft avec clés stables.
+
+- 2026-10-05 — Sujets remplacés selon la demande vocale d’Antoine du 4 octobre : lundi, retour personnel sur le développement agentique (pas un comparatif) ; vendredi, Ensemble et les coulisses de sa création, application en cours de développement. Les fonctions et captures seront vérifiées avant rédaction ; aucun résultat personnel chiffré sans mesure.
+- 2026-10-05 — article-026 publié via API Hermes : sources techniques vérifiées, retour personnel sans résultats chiffrés inventés, couverture native 1200 × 675 lisible, page publique et sitemap contrôlés. Brouillons LinkedIn/X créés en draft ; UTM normalisés par le flux de publication.
