@@ -34,4 +34,4 @@
 
 ## Préparation du 6 octobre 2026
 
-- article-027 : EnvVault, retour d’expérience personnel ; article et fiche projet préparés. Publication en attente de création de la fiche dans le CMS ; ne pas marquer comme publié.
+- article-027 : EnvVault, retour d’expérience personnel ; article publié et fiche projet publique : /blog/envvault-code-github-configurations et /projets/envvault.
