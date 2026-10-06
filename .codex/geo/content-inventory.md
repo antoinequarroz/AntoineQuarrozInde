@@ -31,3 +31,7 @@
 ## Publication du 1er octobre 2026
 
 - Article 024 : [Hébergement d’un site web en Suisse : quels critères pour une PME ?](https://www.antoinequarroz.ch/blog/hebergement-site-web-suisse-criteres-pme) — public, vérifié ; grille de comparaison, FAQ, sources PFPDT/OFCS et lien vers la page de service.
+
+## Préparation du 6 octobre 2026
+
+- article-027 : EnvVault, retour d’expérience personnel ; article et fiche projet préparés. Publication en attente de création de la fiche dans le CMS ; ne pas marquer comme publié.

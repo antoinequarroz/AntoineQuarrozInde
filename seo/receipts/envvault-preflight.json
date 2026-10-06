@@ -1,0 +1,11 @@
+{
+  "date": "2026-10-06",
+  "article": "article-027",
+  "slug": "envvault-code-github-configurations",
+  "publicDuplicateCheck": "Aucun titre 27 ni slug EnvVault dans API publique",
+  "envvaultSourceCommit": "2cd8238a8181f7f6b0bbafebfdcca734c962559d",
+  "status": "prepared_not_published",
+  "blocker": "Connexion admin requise pour créer la fiche projet avant publication de l’article",
+  "cover": "seo/covers/article-027-envvault.png",
+  "facts": "Fonctions confrontées au code crypto/vault et README/SECURITY ; récit fourni par Antoine ; aucun chiffre de performance inventé"
+}
