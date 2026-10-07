@@ -1,23 +1,19 @@
 {
-  "checkedAt": "2026-10-07T05:52:51.390902+00:00",
+  "checkedAt": "2026-10-07T06:26:48.787352+00:00",
   "article": "article-028",
-  "date": "2026-10-07",
-  "status": "prepared_cover_size_blocked",
-  "public_duplicate": false,
-  "sources_verified": true,
-  "copy_reviewed": true,
-  "cover_visual_reviewed": true,
-  "cover_actual_size": [
+  "status": "published_verified",
+  "topicReplacedByUser": true,
+  "publicationReceipt": "article-028-publication-result.json",
+  "publicHTTP": 200,
+  "coverHTTP": 200,
+  "sourcesVerified": true,
+  "copyReviewed": true,
+  "coverNativeOriginal": true,
+  "coverSourceSize": [
     1672,
     941
   ],
-  "cover_required_size": [
-    1200,
-    675
-  ],
-  "native_generation_attempts": 2,
-  "blocking": "Native generation and native resize both returned 1672x941, not required 1200x675. No publication performed. No social drafts sent.",
-  "minimal_action": "Export the saved native cover at 1200x675 before using the prepared payload; do not request article approval again.",
-  "runtime_report": "FRIDAY prior run preflight blocked by missing optional competitor context; manual publication path is available.",
-  "cockpit_snapshot": "Collected snapshot last read Oct 6, cannot confirm current Oct 7 connection."
+  "coverVisualReviewed": true,
+  "note": "New human-requested topic published with native high-resolution landscape cover; source is not exactly 1200x675. No claim of measured time savings or completed personal-engine features.",
+  "socialReceipt": "article-028-social-results.json"
 }
