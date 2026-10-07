@@ -1,0 +1,23 @@
+{
+  "checkedAt": "2026-10-07T05:52:51.390902+00:00",
+  "article": "article-028",
+  "date": "2026-10-07",
+  "status": "prepared_cover_size_blocked",
+  "public_duplicate": false,
+  "sources_verified": true,
+  "copy_reviewed": true,
+  "cover_visual_reviewed": true,
+  "cover_actual_size": [
+    1672,
+    941
+  ],
+  "cover_required_size": [
+    1200,
+    675
+  ],
+  "native_generation_attempts": 2,
+  "blocking": "Native generation and native resize both returned 1672x941, not required 1200x675. No publication performed. No social drafts sent.",
+  "minimal_action": "Export the saved native cover at 1200x675 before using the prepared payload; do not request article approval again.",
+  "runtime_report": "FRIDAY prior run preflight blocked by missing optional competitor context; manual publication path is available.",
+  "cockpit_snapshot": "Collected snapshot last read Oct 6, cannot confirm current Oct 7 connection."
+}
