@@ -38,6 +38,8 @@ jobs:
       - name: Audit exact packages shipped in the standalone server
         run: npm run quality:runtime-security
       - run: npm run quality:budgets
+      - name: Verify the source-free Docker dependency layer
+        run: docker build --target deps --tag antoinequarroz-deps-ci .
 
   accessibility:
     if: github.event_name == 'pull_request'
