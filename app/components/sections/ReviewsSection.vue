@@ -189,7 +189,7 @@ onBeforeUnmount(() => {
     <div class="section-container relative z-10 grid items-center gap-8 lg:grid-cols-[1fr_auto] lg:gap-14">
       <div>
         <span class="badge mb-5">{{ content.badge }}</span>
-        <h2 id="reviews-title" class="section-heading text-left">{{ content.titleA }}<br><span class="section-heading-gradient">{{ content.titleB }}</span></h2>
+        <h2 id="reviews-title" class="section-heading text-left">{{ content.titleA }}<br><span class="section-heading-gradient review-heading-gradient">{{ content.titleB }}</span></h2>
         <p class="mt-5 max-w-xl text-base leading-7 text-gray-600 dark:text-white/60">{{ content.fallback }}</p>
       </div>
       <a :href="googleStore.googleMapsUri" target="_blank" rel="noopener noreferrer" class="review-primary-link">
@@ -206,7 +206,7 @@ onBeforeUnmount(() => {
 
     <header class="reviews-intro section-container relative z-10 flex min-h-[52svh] flex-col items-center justify-center py-20 text-center">
       <span class="badge mb-6">{{ content.badge }}</span>
-      <h2 id="reviews-title" class="section-heading max-w-4xl">{{ content.titleA }}<br><span class="section-heading-gradient">{{ content.titleB }}</span></h2>
+      <h2 id="reviews-title" class="section-heading max-w-4xl">{{ content.titleA }}<br><span class="section-heading-gradient review-heading-gradient">{{ content.titleB }}</span></h2>
       <p class="mt-6 max-w-2xl text-base leading-7 text-gray-600 dark:text-white/60">{{ content.subtitle }}</p>
       <a v-if="googleReviews.length && googleStore.googleMapsUri" :href="googleStore.googleMapsUri" target="_blank" rel="noopener noreferrer" class="review-score mt-7 inline-flex items-center gap-3">
         <span class="text-sm tracking-[0.08em] text-amber-400" aria-hidden="true">★★★★★</span>
@@ -218,12 +218,12 @@ onBeforeUnmount(() => {
     <div ref="railHost" class="reviews-rail-host relative z-10" :style="{ height: railHeight }">
       <div class="reviews-sticky">
         <div class="section-container flex items-center justify-between gap-6 pt-24 lg:pt-28">
-          <p class="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-700 dark:text-cyan-300">{{ content.badge }}</p>
+          <p class="text-xs font-semibold uppercase tracking-[0.16em] text-violet-700 dark:text-violet-300">{{ content.badge }}</p>
           <p class="text-xs text-gray-500 dark:text-white/45 lg:hidden">{{ content.swipe }}</p>
           <div class="hidden items-center gap-3 lg:flex">
             <span class="text-xs text-gray-500 dark:text-white/45">{{ String(Math.max(1, Math.ceil(railProgress * (reviews.length + 1)))).padStart(2, '0') }} / {{ String(reviews.length + 1).padStart(2, '0') }}</span>
             <div class="h-px w-28 overflow-hidden bg-gray-300 dark:bg-white/15" role="progressbar" :aria-label="content.progress" aria-valuemin="0" aria-valuemax="100" :aria-valuenow="Math.round(railProgress * 100)">
-              <div class="h-full origin-left bg-gradient-to-r from-violet-500 to-cyan-400" :style="{ transform: `scaleX(${railProgress})` }" />
+              <div class="h-full origin-left bg-gradient-to-r from-violet-500 to-fuchsia-500" :style="{ transform: `scaleX(${railProgress})` }" />
             </div>
           </div>
         </div>
@@ -234,7 +234,7 @@ onBeforeUnmount(() => {
               <div aria-hidden="true" class="review-quote-mark">“</div>
               <div class="relative z-10 flex h-full flex-col">
                 <div class="flex items-center justify-between gap-4">
-                  <span class="review-source-pill"><span class="h-1.5 w-1.5 rounded-full bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,.9)]" />{{ review.source === 'google' ? content.verified : review.source === 'demo' ? content.demo : content.manual }}</span>
+                  <span class="review-source-pill"><span class="h-1.5 w-1.5 rounded-full bg-violet-400 shadow-[0_0_10px_rgba(167,139,250,.9)]" />{{ review.source === 'google' ? content.verified : review.source === 'demo' ? content.demo : content.manual }}</span>
                   <span v-if="review.rating" role="img" class="text-sm tracking-[0.08em] text-amber-400" :aria-label="`${review.rating} ${content.rating}`"><span aria-hidden="true">{{ '★'.repeat(review.rating) }}</span></span>
                 </div>
 
@@ -252,7 +252,7 @@ onBeforeUnmount(() => {
 
                 <footer class="mt-7 flex items-center gap-4 border-t border-gray-200/80 pt-6 dark:border-white/10">
                   <img v-if="review.avatar" :src="review.avatar" :alt="review.author" class="h-12 w-12 rounded-full object-cover ring-2 ring-white dark:ring-white/10" loading="lazy" referrerpolicy="no-referrer">
-                  <div v-else class="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-gradient-to-br from-violet-500 to-cyan-400 font-display text-sm font-bold text-white">{{ authorInitials(review) }}</div>
+                  <div v-else class="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 font-display text-sm font-bold text-white">{{ authorInitials(review) }}</div>
                   <div class="min-w-0 flex-1">
                     <a v-if="review.authorUri" :href="review.authorUri" target="_blank" rel="noopener noreferrer" class="font-semibold text-gray-950 underline-offset-4 hover:underline dark:text-white">{{ review.author }}</a>
                     <div v-else class="font-semibold text-gray-950 dark:text-white">{{ review.author }}</div>
@@ -268,7 +268,7 @@ onBeforeUnmount(() => {
             <aside class="review-card review-cta-card">
               <div class="relative z-10 flex h-full flex-col justify-between">
                 <div>
-                  <p class="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-700 dark:text-cyan-300">{{ content.ctaEyebrow }}</p>
+                  <p class="text-xs font-semibold uppercase tracking-[0.18em] text-violet-700 dark:text-violet-300">{{ content.ctaEyebrow }}</p>
                   <h3 class="mt-6 max-w-md font-display text-3xl font-semibold leading-tight text-gray-950 sm:text-4xl dark:text-white">{{ content.ctaTitle }}</h3>
                   <p class="mt-6 max-w-md text-base leading-7 text-gray-600 dark:text-white/60">{{ content.ctaBody }}</p>
                 </div>
@@ -291,35 +291,36 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.reviews-showcase { position: relative; overflow: clip; background: linear-gradient(180deg, rgb(250 250 255) 0%, rgb(244 247 252) 100%); }
-.reviews-grid { position: absolute; inset: 0; opacity: .32; background-image: linear-gradient(rgba(99, 102, 241, .08) 1px, transparent 1px), linear-gradient(90deg, rgba(99, 102, 241, .08) 1px, transparent 1px); background-size: 48px 48px; mask-image: linear-gradient(to bottom, transparent, black 14%, black 88%, transparent); }
+.review-heading-gradient { background-image: linear-gradient(135deg, #7c3aed, #d946ef); }
+.reviews-showcase { position: relative; overflow: clip; background: linear-gradient(180deg, rgb(250 250 255) 0%, rgb(250 245 255) 100%); }
+.reviews-grid { position: absolute; inset: 0; opacity: .32; background-image: linear-gradient(rgba(139, 92, 246, .08) 1px, transparent 1px), linear-gradient(90deg, rgba(139, 92, 246, .08) 1px, transparent 1px); background-size: 48px 48px; mask-image: linear-gradient(to bottom, transparent, black 14%, black 88%, transparent); }
 .reviews-aurora { position: absolute; width: 34rem; height: 34rem; border-radius: 9999px; filter: blur(95px); opacity: .13; pointer-events: none; }
 .reviews-aurora-left { left: -18rem; top: 12%; background: #7c3aed; }
-.reviews-aurora-right { right: -16rem; bottom: 0; background: #06b6d4; }
+.reviews-aurora-right { right: -16rem; bottom: 0; background: #a855f7; }
 .reviews-sticky { position: sticky; top: 0; height: 100svh; overflow: hidden; }
 .reviews-track-viewport { height: calc(100svh - 8.5rem); overflow: hidden; outline: none; }
-.reviews-track-viewport:focus-visible { box-shadow: inset 0 0 0 2px rgb(34 211 238); }
+.reviews-track-viewport:focus-visible { box-shadow: inset 0 0 0 2px rgb(167 139 250); }
 .reviews-track { display: flex; width: max-content; height: 100%; align-items: center; gap: clamp(3rem, 7vw, 7rem); padding: 0 11vw; will-change: transform; }
 .review-card { position: relative; width: clamp(38rem, 48vw, 49rem); height: clamp(28rem, 68svh, 31rem); flex: 0 0 auto; overflow: hidden; border: 1px solid rgb(255 255 255 / .75); border-radius: 2rem; background: rgb(255 255 255 / .9); padding: clamp(1.65rem, 2.5vw, 2.5rem); box-shadow: 0 32px 90px -42px rgb(30 20 70 / .5); backdrop-filter: blur(20px); scroll-snap-align: center; transition: border-color 220ms ease, box-shadow 220ms ease; }
 .review-card:nth-child(odd) { transform: translateY(-3.5svh); }
 .review-card:nth-child(even) { transform: translateY(3.5svh); }
-.review-card:hover { border-color: rgb(34 211 238 / .35); box-shadow: 0 40px 110px -46px rgb(34 211 238 / .4); }
-.review-card::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(125deg, rgba(255, 255, 255, .8), transparent 32%, transparent 72%, rgba(34, 211, 238, .06)); }
+.review-card:hover { border-color: rgb(167 139 250 / .35); box-shadow: 0 40px 110px -46px rgb(167 139 250 / .4); }
+.review-card::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(125deg, rgba(255, 255, 255, .8), transparent 32%, transparent 72%, rgba(167, 139, 250, .06)); }
 .review-quote-mark { position: absolute; right: 1.5rem; top: -4.5rem; font-family: Georgia, serif; font-size: 17rem; line-height: 1; color: rgba(124, 58, 237, .07); user-select: none; }
-.review-source-pill { display: inline-flex; align-items: center; gap: .5rem; border: 1px solid rgb(6 182 212 / .2); border-radius: 9999px; background: rgb(6 182 212 / .07); padding: .375rem .75rem; font-size: .75rem; font-weight: 600; color: rgb(21 94 117); }
-.review-inline-link { display: inline-flex; min-height: 2.75rem; align-items: center; color: rgb(8 145 178); text-decoration: underline; text-decoration-thickness: .08em; text-underline-offset: .16em; overflow-wrap: anywhere; transition: color 150ms ease; }
+.review-source-pill { display: inline-flex; align-items: center; gap: .5rem; border: 1px solid rgb(139 92 246 / .2); border-radius: 9999px; background: rgb(139 92 246 / .07); padding: .375rem .75rem; font-size: .75rem; font-weight: 600; color: rgb(109 40 217); }
+.review-inline-link { display: inline-flex; min-height: 2.75rem; align-items: center; color: rgb(124 58 237); text-decoration: underline; text-decoration-thickness: .08em; text-underline-offset: .16em; overflow-wrap: anywhere; transition: color 150ms ease; }
 .review-inline-link:hover { color: rgb(109 40 217); }
-.review-inline-link:focus-visible { border-radius: .2rem; outline: 2px solid rgb(34 211 238); outline-offset: 3px; }
-.review-external-button { display: grid; width: 2.75rem; height: 2.75rem; flex: 0 0 auto; place-items: center; border: 1px solid rgb(107 114 128 / .2); border-radius: 9999px; color: rgb(8 145 178); transition: transform 150ms ease, border-color 150ms ease, background-color 150ms ease; }
-.review-external-button:hover { transform: translateY(-2px); border-color: rgb(34 211 238 / .7); background: rgb(6 182 212 / .07); }
+.review-inline-link:focus-visible { border-radius: .2rem; outline: 2px solid rgb(167 139 250); outline-offset: 3px; }
+.review-external-button { display: grid; width: 2.75rem; height: 2.75rem; flex: 0 0 auto; place-items: center; border: 1px solid rgb(107 114 128 / .2); border-radius: 9999px; color: rgb(124 58 237); transition: transform 150ms ease, border-color 150ms ease, background-color 150ms ease; }
+.review-external-button:hover { transform: translateY(-2px); border-color: rgb(167 139 250 / .7); background: rgb(139 92 246 / .07); }
 .review-external-button:active { transform: scale(.96); }
 .review-primary-link, .review-secondary-link { display: inline-flex; min-height: 3rem; align-items: center; justify-content: center; gap: .65rem; border-radius: 1rem; padding: .75rem 1.25rem; font-size: .875rem; font-weight: 700; transition: transform 150ms ease, color 150ms ease, background-color 150ms ease, box-shadow 150ms ease; }
-.review-primary-link { background: linear-gradient(135deg, rgb(109 40 217), rgb(8 145 178)); color: white; box-shadow: 0 15px 35px -18px rgb(8 145 178 / .8); }
+.review-primary-link { background: linear-gradient(135deg, rgb(124 58 237), rgb(192 38 211)); color: white; box-shadow: 0 15px 35px -18px rgb(124 58 237 / .8); }
 .review-primary-link:hover { transform: translateY(-2px); box-shadow: 0 20px 42px -18px rgb(109 40 217 / .8); }
 .review-primary-link:active, .review-secondary-link:active { transform: scale(.96); }
-.review-secondary-link { border: 1px solid rgb(6 182 212 / .22); color: rgb(21 94 117); }
-.review-secondary-link:hover { background: rgb(6 182 212 / .08); }
-.review-cta-card { background: linear-gradient(145deg, rgb(255 255 255 / .94), rgb(240 253 250 / .9)); }
+.review-secondary-link { border: 1px solid rgb(139 92 246 / .22); color: rgb(109 40 217); }
+.review-secondary-link:hover { background: rgb(139 92 246 / .08); }
+.review-cta-card { background: linear-gradient(145deg, rgb(255 255 255 / .94), rgb(250 245 255 / .9)); }
 
 @media (max-width: 1023px) {
   .reviews-rail-host { height: auto !important; padding-bottom: 5rem; }
@@ -350,9 +351,9 @@ onBeforeUnmount(() => {
 html.dark .reviews-showcase { background: linear-gradient(180deg, #080711 0%, #0c0b18 100%); }
 html.dark .reviews-showcase .reviews-grid { opacity: .2; }
 html.dark .reviews-showcase .review-card { border-color: rgb(255 255 255 / .1); background: rgb(12 11 24 / .9); }
-html.dark .reviews-showcase .review-card::after { background: linear-gradient(125deg, rgba(255, 255, 255, .04), transparent 35%, transparent 72%, rgba(34, 211, 238, .04)); }
-html.dark .reviews-showcase .review-source-pill { color: rgb(165 243 252); }
-html.dark .reviews-showcase .review-inline-link { color: rgb(103 232 249); }
-html.dark .reviews-showcase .review-secondary-link { border-color: rgb(255 255 255 / .12); color: rgb(165 243 252); }
-html.dark .reviews-showcase .review-cta-card { background: linear-gradient(145deg, rgb(17 15 34 / .96), rgb(7 30 38 / .92)); }
+html.dark .reviews-showcase .review-card::after { background: linear-gradient(125deg, rgba(255, 255, 255, .04), transparent 35%, transparent 72%, rgba(167, 139, 250, .04)); }
+html.dark .reviews-showcase .review-source-pill { color: rgb(221 214 254); }
+html.dark .reviews-showcase .review-inline-link { color: rgb(196 181 253); }
+html.dark .reviews-showcase .review-secondary-link { border-color: rgb(255 255 255 / .12); color: rgb(221 214 254); }
+html.dark .reviews-showcase .review-cta-card { background: linear-gradient(145deg, rgb(17 15 34 / .96), rgb(30 20 52 / .92)); }
 </style>
