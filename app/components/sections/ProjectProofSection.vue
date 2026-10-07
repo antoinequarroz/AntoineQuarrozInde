@@ -223,10 +223,16 @@ onBeforeUnmount(() => {
 .tool-showcase__number {
   font-size: 1.18em;
   font-weight: 900;
-  color: rgb(8 145 178);
+  color: rgb(124 58 237);
+  background-image: linear-gradient(135deg, #7c3aed, #d946ef);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
-:global(.dark .tool-showcase__number) { color: rgb(34 211 238); }
+:global(.dark .tool-showcase__number) {
+  background-image: linear-gradient(135deg, #a78bfa, #e879f9);
+}
 
 .tool-showcase__screens {
   position: absolute;

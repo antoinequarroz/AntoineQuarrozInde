@@ -2,7 +2,9 @@
 
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
-  devtools: { enabled: true },
+  // DevTools currently imports the removed simple-git default export. Keep
+  // its optional UI off while using the security-patched simple-git 4 release.
+  devtools: { enabled: false },
 
   modules: [
     '@nuxtjs/tailwindcss',
