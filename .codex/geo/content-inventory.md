@@ -31,3 +31,5 @@
 ## Publication du 1er octobre 2026
 
 - Article 024 : [Hébergement d’un site web en Suisse : quels critères pour une PME ?](https://www.antoinequarroz.ch/blog/hebergement-site-web-suisse-criteres-pme) — public, vérifié ; grille de comparaison, FAQ, sources PFPDT/OFCS et lien vers la page de service.
+
+| 29 | Droits d’accès et traçabilité : que prévoir dans une application métier ? | https://www.antoinequarroz.ch/blog/droits-acces-tracabilite-application-metier | Applications | 2026-10-08 | publié |
