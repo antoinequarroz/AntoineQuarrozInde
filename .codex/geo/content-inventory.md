@@ -31,3 +31,5 @@
 ## Publication du 1er octobre 2026
 
 - Article 024 : [Hébergement d’un site web en Suisse : quels critères pour une PME ?](https://www.antoinequarroz.ch/blog/hebergement-site-web-suisse-criteres-pme) — public, vérifié ; grille de comparaison, FAQ, sources PFPDT/OFCS et lien vers la page de service.
+
+- 2026-10-07 — Article 28 : /blog/creer-contenu-ia-hyperframes-moteur-video-sur-mesure — création de contenu avec IA, HyperFrames de HeyGen et moteur vidéo personnel en développement ; publié via API Hermes, page publique vérifiée.
