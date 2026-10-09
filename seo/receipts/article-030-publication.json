@@ -1,0 +1,12 @@
+{
+  "status": "published",
+  "idempotent": false,
+  "article": {
+    "id": 35,
+    "title": "30. Répèt : pourquoi je développe une application pour les sociétés musicales",
+    "slug": "repet-application-societes-musicales",
+    "published": true,
+    "published_at": "2026-10-09T09:18:39.66631+00:00",
+    "cover_image": "https://oxlrljszatejqxhclmbu.supabase.co/storage/v1/object/public/media/hermes/dac776a71075c2661353ebd90377485e1e95dda30f2d99e006b062ff8eedecbf.png"
+  }
+}

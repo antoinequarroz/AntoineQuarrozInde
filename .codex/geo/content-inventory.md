@@ -31,3 +31,5 @@
 ## Publication du 1er octobre 2026
 
 - Article 024 : [Hébergement d’un site web en Suisse : quels critères pour une PME ?](https://www.antoinequarroz.ch/blog/hebergement-site-web-suisse-criteres-pme) — public, vérifié ; grille de comparaison, FAQ, sources PFPDT/OFCS et lien vers la page de service.
+
+| 30 | Répèt : pourquoi je développe une application pour les sociétés musicales | Applications | /blog/repet-application-societes-musicales | 2026-10-09 | Publié ; CMS 35 |
