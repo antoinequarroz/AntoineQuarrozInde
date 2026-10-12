@@ -85,6 +85,7 @@ useHead({
         </p>
 
         <UiServiceDecisionContent :content="decisionContent" />
+        <BlogServiceResources service-path="/application-mobile-valais" />
       </div>
     </div>
   </section>

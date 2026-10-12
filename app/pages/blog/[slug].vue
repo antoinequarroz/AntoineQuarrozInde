@@ -11,6 +11,7 @@ import {
 import { resolvePublicBreadcrumbTrail } from '~~/shared/utils/publicStructuredData'
 import { resolveArticleMediaVariants } from '~~/shared/utils/articleMediaVariants'
 import { renderSafeMarkdown } from '~~/shared/utils/safeMarkdown'
+import { articleHub, articleContactContext, relatedArticles, articlePath } from '~~/shared/utils/articleLinking'
 
 const route = useRoute()
 const { t } = useI18n()
@@ -22,18 +23,9 @@ await store.ensureLoaded()
 
 const article = computed(() => store.published.find(a => a.slug === route.params.slug))
 const isIaPmeArticle = computed(() => article.value?.slug === 'ia-pme-commencer-sans-exposer-donnees')
-const contactContext = computed(() => article.value?.slug === 'estimer-budget-reel-site-internet-suisse'
-  ? 'budget' as const
-  : article.value?.slug === 'préparer-la-création-d’un-site-vitrine-en-valais-:-la-checklist' ? 'site' as const : 'diagnostic' as const)
-const isAiArticle = computed(() => {
-  const signals = [article.value?.title, ...(article.value?.tags ?? [])]
-    .filter(Boolean)
-    .join(' ')
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .toLocaleLowerCase('fr')
-  return /(^|\W)ia($|\W)|intelligence artificielle|automatisation|agent/.test(signals)
-})
+const contactContext = computed(() => articleContactContext(article.value!))
+const hub = computed(() => articleHub(article.value!))
+const related = computed(() => relatedArticles(store.published, article.value!))
 
 if (!article.value) {
   throw createError({ statusCode: 404, message: 'Article non trouvé' })
@@ -187,25 +179,25 @@ useHead(() => ({
           <p class="text-lg text-gray-600 dark:text-gray-300 leading-relaxed mb-6 font-medium">
             {{ article.excerpt }}
           </p>
-          <NuxtLink v-if="contactContext !== 'diagnostic'" to="/creation-site-internet-valais" class="mb-6 inline-flex min-h-11 items-center font-semibold text-violet-700 underline underline-offset-4 dark:text-violet-300">Voir mon accompagnement pour créer votre site en Valais</NuxtLink>
+          <NuxtLink v-if="hub.path !== '/blog'" :to="hub.path" class="mb-6 inline-flex min-h-11 items-center font-semibold text-violet-700 underline underline-offset-4 dark:text-violet-300">{{ hub.cta }}</NuxtLink>
           <!-- eslint-disable vue/no-v-html -->
           <div class="text-gray-600 dark:text-gray-300" v-html="renderSafeMarkdown(article.content)" />
-          <aside class="my-10 overflow-hidden rounded-3xl border border-cyan-500/20 bg-gradient-to-br from-violet-500/10 via-white/70 to-cyan-400/10 p-6 dark:via-white/[0.04] sm:p-8" aria-labelledby="article-service-title">
-            <template v-if="isAiArticle">
-              <p class="text-xs font-bold uppercase tracking-[0.18em] text-cyan-700 dark:text-cyan-300">Passer de l’idée au test</p>
-              <h2 id="article-service-title" class="mt-3 font-display text-2xl font-bold text-gray-950 dark:text-white">Un processus de votre PME mérite-t-il vraiment de l’IA&nbsp;?</h2>
-              <p class="mt-3 max-w-2xl leading-7 text-gray-600 dark:text-gray-300">L’audit permet de comparer une règle simple, une automatisation et un usage IA avant de lancer un pilote mesurable.</p>
-              <NuxtLink to="/audit-ia-pme" class="btn-primary mt-6 min-h-11 justify-center sm:justify-start">Découvrir l’audit IA pour PME</NuxtLink>
-            </template>
-            <template v-else>
-              <p class="text-xs font-bold uppercase tracking-[0.18em] text-cyan-700 dark:text-cyan-300">Votre projet en Valais</p>
-              <h2 id="article-service-title" class="mt-3 font-display text-2xl font-bold text-gray-950 dark:text-white">Besoin d’un site clair pour votre PME&nbsp;?</h2>
-              <p class="mt-3 max-w-2xl leading-7 text-gray-600 dark:text-gray-300">Découvrez ma méthode, les livrables et les projets déjà réalisés avant de me présenter votre besoin.</p>
-              <NuxtLink to="/creation-site-internet-valais" class="btn-primary mt-6 min-h-11 justify-center sm:justify-start">Voir la création de site pour PME</NuxtLink>
-            </template>
+          <aside class="my-10 rounded-3xl border border-violet-500/20 bg-gradient-to-br from-violet-500/10 to-purple-500/5 p-6 sm:p-8" aria-labelledby="article-service-title">
+            <p class="text-xs font-bold uppercase tracking-[0.18em] text-violet-700 dark:text-violet-300">{{ hub.label }}</p>
+            <h2 id="article-service-title" class="mt-3 font-display text-2xl font-bold text-gray-950 dark:text-white">{{ hub.title }}</h2>
+            <p class="mt-3 leading-7 text-gray-600 dark:text-gray-300">{{ hub.body }}</p>
+            <NuxtLink :to="hub.path" class="btn-primary mt-6 min-h-11 justify-center sm:justify-start">{{ hub.cta }}</NuxtLink>
           </aside>
+          <nav v-if="related.length" aria-label="Articles pour approfondir" class="mb-10 rounded-2xl border border-violet-500/15 p-6">
+            <h2 class="font-display text-xl font-bold text-gray-950 dark:text-white">Pour approfondir ce sujet</h2>
+            <ul class="mt-3 space-y-2">
+              <li v-for="item in related" :key="item.slug">
+                <NuxtLink :to="articlePath(item)" class="inline-flex min-h-11 items-center font-semibold leading-6 text-violet-700 underline underline-offset-4 dark:text-violet-300">{{ item.title }}</NuxtLink>
+              </li>
+            </ul>
+          </nav>
           <BlogLeadMagnetSignup v-if="isIaPmeArticle" compact />
-          <BlogDiagnosticCta :context="contactContext" />
+          <BlogDiagnosticCta v-if="hub.path !== '/blog'" :context="contactContext" />
           <BlogNewsletterSignup v-if="!isIaPmeArticle" />
         </div>
 

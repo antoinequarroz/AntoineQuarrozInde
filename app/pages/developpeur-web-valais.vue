@@ -113,6 +113,7 @@ const zones = [
         </div>
 
         <UiServiceDecisionContent :content="decisionContent" />
+        <BlogServiceResources service-path="/developpeur-web-valais" />
       </div>
     </div>
   </section>

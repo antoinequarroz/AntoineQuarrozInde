@@ -276,5 +276,6 @@ useHead({
         </div>
       </div>
     </section>
+    <div class="section-container pb-16"><div class="mx-auto max-w-5xl"><BlogServiceResources service-path="/creation-site-internet-valais" /></div></div>
   </div>
 </template>

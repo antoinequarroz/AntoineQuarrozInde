@@ -43,8 +43,10 @@
 ## 6. Fonctionnalités clés
 
 1. Sites vitrine : https://www.antoinequarroz.ch/creation-site-internet-valais
-2. CMS sur mesure : https://www.antoinequarroz.ch/
-3. Applications web et mobiles : https://www.antoinequarroz.ch/
+2. Refonte : https://www.antoinequarroz.ch/refonte-site-web-valais
+3. CMS et applications métier : https://www.antoinequarroz.ch/developpeur-web-valais
+4. Applications mobiles : https://www.antoinequarroz.ch/application-mobile-valais
+5. IA et automatisation : https://www.antoinequarroz.ch/audit-ia-pme
 
 ## 7. Concurrents
 

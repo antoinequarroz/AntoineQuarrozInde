@@ -234,6 +234,7 @@ useHead({
             </NuxtLink>
           </div>
         </div>
+        <BlogServiceResources service-path="/audit-ia-pme" />
       </div>
     </section>
   </main>

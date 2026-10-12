@@ -3,9 +3,10 @@
 | Cluster | Requêtes et prompts | Intention | Famille | Priorité | Hub | Statut |
 |---|---|---|---|---|---|---|
 | Création de site | création site internet Valais, budget site internet Suisse, préparer site vitrine | commerciale et how-to | foundational-article | haute | /creation-site-internet-valais | en cours |
-| Refonte | audit refonte site, quand refaire son site | how-to | foundational-article | haute | /creation-site-internet-valais | à faire |
-| Outils métier | remplacer Excel PME, application métier Valais | commerciale et how-to | comparison-page / foundational-article | haute | / | en cours |
-| Applications | application web ou mobile | commerciale | comparison-page | moyenne | / | à faire |
+| Refonte | audit refonte site, quand refaire son site, refonte site conserver SEO | how-to | foundational-article | haute | /refonte-site-web-valais | en cours |
+| Outils métier | remplacer Excel PME, application métier Valais | commerciale et how-to | comparison-page / foundational-article | haute | /developpeur-web-valais | en cours |
+| Applications | application web ou mobile | commerciale | comparison-page | moyenne | /application-mobile-valais | en cours |
+| Intelligence artificielle | IA PME, automatisation, pilote IA | how-to | foundational-article | haute | /audit-ia-pme | en cours |
 
 ## Rejetés
 

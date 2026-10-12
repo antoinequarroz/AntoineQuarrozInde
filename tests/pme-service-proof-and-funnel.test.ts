@@ -4,10 +4,10 @@ import { describe, expect, it } from 'vitest'
 const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
 
 describe('PME service proof and conversion path', () => {
-  it('links every article to the PME service page', () => {
+  it('routes articles to their relevant thematic service', () => {
     const article = read('app/pages/blog/[slug].vue')
-    expect(article).toContain('to="/creation-site-internet-valais"')
-    expect(article).toContain('Voir la création de site pour PME')
+    expect(article).toContain('articleHub(article.value!)')
+    expect(article).toContain(':to="hub.path"')
   })
 
   it('renders an approved case study as a visible proof with its review and CTA', () => {
