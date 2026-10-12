@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import { articlePath, hubArticles } from '~~/shared/utils/articleLinking'
 const props = defineProps<{ servicePath: string }>()
-const store = useArticlesStore()
-await store.ensureLoaded()
-const resources = computed(() => hubArticles(store.published, props.servicePath))
+// Keep the SSR payload small: service pages need links, not every article body.
+// Read anonymously so an authenticated preview never includes private drafts.
+const { data: articles } = await useAsyncData('public-article-link-index', async () => {
+  const rows = await $fetch<Array<{ slug: string; title: string; published: boolean; published_at: string | null }>>('/api/articles')
+  return rows.map(row => ({ slug: row.slug, title: row.title, published: row.published, publishedAt: row.published_at }))
+})
+const resources = computed(() => hubArticles(articles.value ?? [], props.servicePath))
 </script>
 
 <template>
