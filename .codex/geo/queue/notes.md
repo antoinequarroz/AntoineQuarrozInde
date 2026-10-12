@@ -9,3 +9,5 @@
 - 2026-09-30 — article-023 publié après reprise manuelle du flux. Comparaison centrée sur les offres professionnelles, l’écosystème de travail, la gouvernance des données et un pilote de 30 jours ; sources officielles OpenAI, Anthropic, Microsoft, Google Workspace et PFPDT. Couverture 1200 × 675 vérifiée et brouillons LinkedIn/X créés en statut « À valider ».
 
 - 2026-10-01 — article-024 publié à 06:38 Europe/Zurich via API Hermes depuis un worktree propre de origin/main. Sources PFPDT/OFCS vérifiées, couverture native 1200 × 675 contrôlée, page SSR et BlogPosting vérifiés ; brouillons LinkedIn et X créés en statut draft avec clés stables.
+
+- 2026-10-09 — article-030 : sujet remplacé par Ensemble à la demande explicite d’Antoine, nom actuel Répèt confirmé dans le dépôt et sur repet.ch. Article publié par API Hermes, couverture 1200 × 675 vérifiée, page SSR/BlogPosting et sitemap vérifiés ; brouillons LinkedIn et X en statut draft. Publication effective à 09:18:39 UTC (11:18 Zurich), sans prétendre au respect du créneau 06:30. Collecte du Cockpit toujours interrompue depuis le 7 octobre, blocage déjà signalé. Aucun contact ni envoi social.
