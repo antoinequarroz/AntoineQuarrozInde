@@ -1,0 +1,12 @@
+{
+  "status": "published",
+  "idempotent": false,
+  "article": {
+    "id": 36,
+    "title": "31. De l’idée à la mise en ligne : les étapes d’un projet web bien cadré",
+    "slug": "idee-mise-en-ligne-projet-web-bien-cadre",
+    "published": true,
+    "published_at": "2026-10-12T05:42:32.991366+00:00",
+    "cover_image": "https://oxlrljszatejqxhclmbu.supabase.co/storage/v1/object/public/media/hermes/4a769956c78594f3acf29a4cd6d1d01a72c471c7302d5c6d31b5f49f18a144e9.png"
+  }
+}

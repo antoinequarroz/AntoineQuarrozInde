@@ -31,3 +31,5 @@
 ## Publication du 1er octobre 2026
 
 - Article 024 : [Hébergement d’un site web en Suisse : quels critères pour une PME ?](https://www.antoinequarroz.ch/blog/hebergement-site-web-suisse-criteres-pme) — public, vérifié ; grille de comparaison, FAQ, sources PFPDT/OFCS et lien vers la page de service.
+
+| 31 | De l’idée à la mise en ligne : les étapes d’un projet web bien cadré | Gestion de projet | /blog/idee-mise-en-ligne-projet-web-bien-cadre | 2026-10-12 | Publié ; CMS 36 |
