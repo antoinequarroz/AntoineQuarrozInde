@@ -1,0 +1,14 @@
+{
+  "status": "published",
+  "articleId": 34,
+  "url": "https://www.antoinequarroz.ch/blog/droits-acces-tracabilite-application-metier",
+  "publishedAt": "2026-10-08T06:42:27.663482+00:00",
+  "coverImage": "https://oxlrljszatejqxhclmbu.supabase.co/storage/v1/object/public/media/hermes/e7ad23bfb9e815772405ccbfce9094c039137286f9c54870e05ba2f4aaa1fed6.png",
+  "idempotent": false,
+  "verified": [
+    "HTTP 200",
+    "titre et contenu SSR",
+    "BlogPosting",
+    "lien service"
+  ]
+}
