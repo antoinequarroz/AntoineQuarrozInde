@@ -134,6 +134,15 @@ const renderTurnstile = () => {
   })
 }
 
+// The form mounts after the lazy script can already be ready. Render when
+// its container appears as well, so opening the form later gets a token.
+watch(turnstileContainer, (container) => {
+  if (container) {
+    beginTurnstileLoad()
+    renderTurnstile()
+  }
+}, { flush: 'post' })
+
 onMounted(() => {
   window.addEventListener('aq:service-selected', handleServiceSelected)
   window.addEventListener('aq:contact-open', handleContactOpen)
