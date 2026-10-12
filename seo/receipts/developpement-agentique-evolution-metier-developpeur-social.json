@@ -1,0 +1,28 @@
+[
+  {
+    "status": 200,
+    "post": {
+      "id": "400713c7-a1d8-48c2-b02a-3e407b1dd0d8",
+      "platform": "linkedin",
+      "status": "draft",
+      "version": 1,
+      "media_kind": null,
+      "media_url": null,
+      "media_title": null
+    },
+    "idempotent": false
+  },
+  {
+    "status": 200,
+    "post": {
+      "id": "8181b620-eba8-4eaa-865f-9df38e3794f1",
+      "platform": "x",
+      "status": "draft",
+      "version": 1,
+      "media_kind": null,
+      "media_url": null,
+      "media_title": null
+    },
+    "idempotent": false
+  }
+]

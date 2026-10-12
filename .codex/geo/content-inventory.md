@@ -31,3 +31,5 @@
 ## Publication du 1er octobre 2026
 
 - Article 024 : [Hébergement d’un site web en Suisse : quels critères pour une PME ?](https://www.antoinequarroz.ch/blog/hebergement-site-web-suisse-criteres-pme) — public, vérifié ; grille de comparaison, FAQ, sources PFPDT/OFCS et lien vers la page de service.
+
+- 2026-10-05 — Article 26 : [Développement agentique : ce qui change dans ma façon de développer](https://www.antoinequarroz.ch/blog/developpement-agentique-evolution-metier-developpeur). Retour personnel fondé sur les projets Hermes et le flux éditorial, boucle agent/outils, cadrage, vérification et coûts complets ; sources officielles OpenAI et Anthropic.
