@@ -22,6 +22,9 @@ await store.ensureLoaded()
 
 const article = computed(() => store.published.find(a => a.slug === route.params.slug))
 const isIaPmeArticle = computed(() => article.value?.slug === 'ia-pme-commencer-sans-exposer-donnees')
+const contactContext = computed(() => article.value?.slug === 'estimer-budget-reel-site-internet-suisse'
+  ? 'budget' as const
+  : article.value?.slug === 'préparer-la-création-d’un-site-vitrine-en-valais-:-la-checklist' ? 'site' as const : 'diagnostic' as const)
 const isAiArticle = computed(() => {
   const signals = [article.value?.title, ...(article.value?.tags ?? [])]
     .filter(Boolean)
@@ -184,6 +187,7 @@ useHead(() => ({
           <p class="text-lg text-gray-600 dark:text-gray-300 leading-relaxed mb-6 font-medium">
             {{ article.excerpt }}
           </p>
+          <NuxtLink v-if="contactContext !== 'diagnostic'" to="/creation-site-internet-valais" class="mb-6 inline-flex min-h-11 items-center font-semibold text-violet-700 underline underline-offset-4 dark:text-violet-300">Voir mon accompagnement pour créer votre site en Valais</NuxtLink>
           <!-- eslint-disable vue/no-v-html -->
           <div class="text-gray-600 dark:text-gray-300" v-html="renderSafeMarkdown(article.content)" />
           <aside class="my-10 overflow-hidden rounded-3xl border border-cyan-500/20 bg-gradient-to-br from-violet-500/10 via-white/70 to-cyan-400/10 p-6 dark:via-white/[0.04] sm:p-8" aria-labelledby="article-service-title">
@@ -201,7 +205,7 @@ useHead(() => ({
             </template>
           </aside>
           <BlogLeadMagnetSignup v-if="isIaPmeArticle" compact />
-          <BlogDiagnosticCta />
+          <BlogDiagnosticCta :context="contactContext" />
           <BlogNewsletterSignup v-if="!isIaPmeArticle" />
         </div>
 

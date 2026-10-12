@@ -15,7 +15,7 @@ describe('PostHog booking and public error signals', () => {
   it('captures native exceptions only on public production pages', () => {
     const source = read('app/plugins/posthog-public.client.ts')
     expect(source).toContain('capture_exceptions: true')
-    expect(source).toContain("event.event === '$exception' && !isPostHogPublicPath(window.location.pathname)")
+    expect(source).toContain("if (!isPostHogPublicPath(window.location.pathname)) return null")
     expect(source).toContain('posthog?.captureException(error)')
     expect(source).not.toContain("window.addEventListener('error'")
     expect(source).not.toContain("window.addEventListener('unhandledrejection'")

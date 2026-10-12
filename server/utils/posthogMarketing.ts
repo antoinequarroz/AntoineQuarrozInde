@@ -1,7 +1,9 @@
+import { SITE_ANALYTICS_FILTER, marketingJourneyQuery, renderJourneyRows } from './analyticsReportQuality'
+
 type QueryResult = { results?: unknown[][] }
 
 const APP_HOST = 'https://eu.posthog.com'
-const HOST_FILTER = "toString(properties.$host) IN ('antoinequarroz.ch', 'www.antoinequarroz.ch')"
+const HOST_FILTER = SITE_ANALYTICS_FILTER
 
 async function queryPostHog(apiKey: string, projectId: string, name: string, hogql: string) {
   return await $fetch<QueryResult>(`${APP_HOST}/api/projects/${encodeURIComponent(projectId)}/query/`, {
@@ -27,7 +29,7 @@ function metrics(row: unknown[] = []) {
 }
 
 export async function buildPostHogMarketingReport(apiKey: string, projectId: string) {
-  const [comparison, sources, content] = await Promise.all([
+  const [comparison, sources, content, journeys, quality] = await Promise.all([
     queryPostHog(apiKey, projectId, 'hermes_marketing_weekly', `
       SELECT period, uniqExactIf(distinct_id, event = '$pageview'), countIf(event = '$pageview'),
         uniqExactIf(distinct_id, event = '$pageview' AND (startsWith(toString(properties.$pathname), '/blog/') OR startsWith(toString(properties.$pathname), '/projets/'))),
@@ -50,6 +52,14 @@ export async function buildPostHogMarketingReport(apiKey: string, projectId: str
       FROM events PREWHERE timestamp >= now() - INTERVAL 7 DAY WHERE event = '$pageview' AND ${HOST_FILTER}
         AND (startsWith(toString(properties.$pathname), '/blog/') OR startsWith(toString(properties.$pathname), '/projets/'))
       GROUP BY path ORDER BY count() DESC LIMIT 5`),
+    queryPostHog(apiKey, projectId, 'hermes_marketing_journeys', marketingJourneyQuery()),
+    queryPostHog(apiKey, projectId, 'hermes_marketing_quality', `SELECT
+      countIf(event IN ('crm_lead_created', 'client_won', 'quote_accepted', 'invoice_created') AND coalesce(toString(properties.traffic_classification), '') = 'test'),
+      countIf(event IN ('crm_lead_created', 'client_won', 'quote_accepted', 'invoice_created') AND coalesce(toString(properties.traffic_classification), '') NOT IN ('production', 'test')),
+      countIf(lower(coalesce(toString(properties.is_test), '')) IN ('true', '1') OR lower(coalesce(toString(properties.is_internal), '')) IN ('true', '1') OR coalesce(toString(properties.$browser), '') = 'HeadlessChrome'),
+      countIf(event = '$pageview' AND coalesce(toString(properties.aq_traffic), '') != 'public')
+      FROM events PREWHERE timestamp >= now() - INTERVAL 7 DAY
+      WHERE toString(properties.$host) IN ('antoinequarroz.ch', 'www.antoinequarroz.ch')`),
   ])
   const periods = new Map((comparison.results || []).map(row => [String(row[0]), row.slice(1)]))
   const current = metrics(periods.get('current')); const previous = metrics(periods.get('previous'))
@@ -64,17 +74,30 @@ export async function buildPostHogMarketingReport(apiKey: string, projectId: str
       : 'Conserver les appels à l’action pendant une nouvelle semaine.')
   }
   if (current.formStarted >= 3 && current.contacts === 0) recommendations.push('Examiner le formulaire : plusieurs démarrages n’aboutissent à aucune demande.')
+  const journeyRows = renderJourneyRows(journeys.results || [])
+  const qualityRow = quality.results?.[0] || []
+  const dataQuality = { excludedBusinessTests: number(qualityRow[0]), unclassifiedBusinessEvents: number(qualityRow[1]),
+    flaggedInternalOrTestEvents: number(qualityRow[2]), legacyPageviews: number(qualityRow[3]) }
+  if (dataQuality.unclassifiedBusinessEvents) recommendations.unshift('Ne pas attribuer l’historique commercial : les événements sans classification vérifiée sont exclus des résultats.')
   const alerts = [
     ...(current.publicErrors > 0 ? [{ key: 'public_errors', level: 'critical', title: 'Erreurs publiques détectées', detail: `${current.publicErrors} erreur(s) sur sept jours.` }] : []),
-    ...(current.contacts > current.crmLeads ? [{ key: 'crm_gap', level: 'critical', title: 'Demandes non reliées au CRM', detail: `${current.contacts - current.crmLeads} demande(s) sans prospect créé.` }] : []),
+    // Separate browser/server counters do not prove that a particular request
+    // failed to reach the CRM. Only a correlated workflow can establish that.
     ...(current.contentVisitors >= 10 && current.contactIntents === 0 ? [{ key: 'cta_gap', level: 'attention', title: 'Contenus sans intention de contact', detail: 'Les contenus sont lus mais aucun clic de contact n’est observé.' }] : []),
     ...(current.formAbandoned >= 3 ? [{ key: 'form_abandonment', level: 'attention', title: 'Abandons du formulaire', detail: `${current.formAbandoned} abandon(s) observé(s).` }] : []),
   ]
   return {
     schemaVersion: 1, generatedAt: new Date().toISOString(), periodDays: 7, current, previous,
+    dataQuality,
+    journeys: { status: journeyRows.length ? 'measured' : 'awaiting_data', unit: 'visitor_session', windowHours: 24,
+      steps: ['visit', 'contact_clicked', 'contact_form_started', 'contact_sent'], rows: journeyRows },
     sources: (sources.results || []).map(row => ({ source: String(row[0]), pageviews: number(row[1]) })),
     content: (content.results || []).map(row => ({ path: String(row[0]), visitors: number(row[1]), pageviews: number(row[2]) })),
     recommendations: recommendations.slice(0, 3), alerts,
-    limits: ['Les étapes commerciales sont agrégées avec des identifiants hachés et ne contiennent aucune donnée de contact.', 'Le clic et la confirmation d’un rendez-vous restent comptés séparément.'],
+    limits: ['Les tests, visites internes signalées et navigateurs automatisés sont exclus. Les anciennes visites non classées ne peuvent pas être requalifiées avec certitude.',
+      'Les événements commerciaux sans classification production vérifiée sont exclus ; aucune vente n’est attribuée au SEO par ces compteurs.',
+      'Les compteurs globaux sont indépendants. Seul le tableau des parcours relie une visite, un clic, un démarrage et un envoi dans cet ordre, par visiteur et session, sous 24 heures.',
+      'Les parcours utilisent la page et la source d’entrée de la session ; les nouvelles propriétés ne réparent pas rétroactivement l’historique. Les sessions récentes peuvent encore aboutir.',
+      'Le clic et la confirmation d’un rendez-vous restent comptés séparément.'],
   }
 }

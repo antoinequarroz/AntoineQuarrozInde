@@ -1,8 +1,10 @@
+import { SITE_ANALYTICS_FILTER } from '../../utils/analyticsReportQuality'
+
 type PostHogQueryResult = { columns?: string[], results?: unknown[][] }
 
 const POSTHOG_APP_HOST = 'https://eu.posthog.com'
 const SITE_HOSTS = "('antoinequarroz.ch', 'www.antoinequarroz.ch')"
-const SITE_FILTER = `toString(properties.$host) IN ${SITE_HOSTS}`
+const SITE_FILTER = SITE_ANALYTICS_FILTER
 
 async function queryPostHog(apiKey: string, projectId: string, name: string, query: string) {
   return await $fetch<PostHogQueryResult>(`${POSTHOG_APP_HOST}/api/projects/${encodeURIComponent(projectId)}/query/`, {

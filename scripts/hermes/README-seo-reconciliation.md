@@ -28,3 +28,11 @@ python3 scripts/hermes/reconcile_seo_report.py --gsc-export seo/search-console-d
 Même si la collecte échoue, produire la réconciliation : l'échec remplace le snapshot par `not_measured`, puis le rapport signale la mesure indisponible au lieu de recycler des chiffres anciens. Le rapport refuse les snapshots API de plus de 36 heures. Une réponse Google réussie mais sans lignes est distinguée d'un défaut d'accès. La fenêtre mesure 28 jours de recherche web en données finales, avec trois jours de marge pour le traitement Google. Les totaux sont obtenus sans dimensions ; les requêtes anonymisées ou absentes du classement ne sont pas reconstituées par addition des lignes visibles.
 
 État d'installation du connecteur et de ses tests : prêt à installer. La collecte automatique n'est considérée connectée qu'après un appel Google authentifié réussi et vérification de la configuration de la mission. La création ou l'octroi d'un nouvel accès Google nécessite la confirmation explicite de l'utilisateur dans le navigateur.
+
+## Lecture et qualité des mesures
+
+Search Console collecte jusqu’à 1000 pages et requêtes et les classe par impressions, y compris lorsque tous les clics sont à zéro. Le rapport indique la taille de l’extrait affiché, les limites Google, la propriété domaine (avec ses sous-domaines), ainsi que les totaux de la période précédente. Sa période finale de 28 jours ne doit pas être comparée directement aux sept jours PostHog.
+
+Le rapport marketing distingue les compteurs globaux des parcours séquentiels par visiteur/session, source et page d’entrée. Seul le tableau des parcours relie visite → clic contact → ouverture → envoi dans cet ordre, sous 24 heures. Les nouvelles propriétés ne sont pas présentes dans l’historique ; `awaiting_data` n’est pas un taux nul ni un abandon prouvé.
+
+Les navigateurs automatisés et visites internes signalées sont exclus. Le navigateur d’un membre interne authentifié mémorise l’exclusion avec `aq_analytics_exclude=1` dans son stockage local. Les tests métier identifiables sont classés côté serveur à partir du client de la même organisation ; aucun nom ni email n’est transmis à PostHog. Les événements commerciaux historiques sans classification sont séparés et exclus des résultats, sans suppression ni réécriture de l’historique. Les montants ne constituent jamais une attribution SEO.

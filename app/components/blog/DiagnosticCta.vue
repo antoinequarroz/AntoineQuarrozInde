@@ -4,6 +4,7 @@ const route = useRoute()
 const localePath = useLocalePath()
 const { track } = useMarketing()
 const { trackPostHog } = usePostHogEvent()
+const props = withDefaults(defineProps<{ context?: 'diagnostic' | 'site' | 'budget' }>(), { context: 'diagnostic' })
 
 const copy = computed(() => locale.value === 'en' ? {
   eyebrow: 'Complimentary diagnostic',
@@ -17,6 +18,18 @@ const copy = computed(() => locale.value === 'en' ? {
   body: 'Zeigen Sie mir die Tabelle, wiederkehrende Aufgabe oder das Werkzeug, das Sie ausbremst. Sie erhalten eine klare Einschätzung zur passenden Lösung.',
   cta: 'Erste Einschätzung erhalten',
   trust: 'Unverbindlich · Persönliche Antwort innerhalb eines Werktags · Vertraulicher Austausch',
+} : props.context === 'budget' ? {
+  eyebrow: 'Votre projet de site',
+  title: 'Parlons du budget de votre site',
+  body: 'Présentez-moi votre activité, les pages prévues et les fonctionnalités utiles. Je vous aiderai à préciser le périmètre avant de préparer une estimation adaptée.',
+  cta: 'Présenter mon projet pour une estimation',
+  trust: 'Sans engagement · Réponse personnelle sous un jour ouvrable · Échange confidentiel',
+} : props.context === 'site' ? {
+  eyebrow: 'Passer de la checklist au projet',
+  title: 'Votre site vitrine commence par un besoin clair',
+  body: 'Vous avez réuni vos objectifs et vos contenus ? Présentez-moi votre activité et ce que votre site doit permettre de faire. Nous préciserons les prochaines étapes ensemble.',
+  cta: 'Présenter mon projet de site',
+  trust: 'Sans engagement · Réponse personnelle sous un jour ouvrable · Échange confidentiel',
 } : {
   eyebrow: 'Premier diagnostic offert',
   title: 'Ce processus vous fait perdre trop de temps ?',

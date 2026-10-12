@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto'
+import { classifyBusinessIdentity, type AnalyticsTraffic } from '../../shared/utils/analyticsQuality'
 
 export const POSTHOG_BUSINESS_EVENTS = [
   'crm_lead_created',
@@ -33,6 +34,7 @@ type BusinessEventInput = {
   channel?: string | null
   lastChannel?: string | null
   projectId?: string | number | null
+  trafficClassification?: AnalyticsTraffic
 }
 
 const ALLOWED_CHANNELS = new Set(['organic_search', 'generative_ai', 'direct', 'campaign', 'unknown_referral'])
@@ -62,6 +64,7 @@ export function buildPostHogBusinessPayload(input: BusinessEventInput, projectTo
       $host: 'www.antoinequarroz.ch',
       $process_person_profile: false,
       source_system: 'crm',
+      traffic_classification: input.trafficClassification || 'unclassified',
       event_schema_version: 2,
       event_origin: input.origin,
       entity_type: input.entityType,
@@ -82,9 +85,16 @@ export async function capturePostHogBusinessEvent(input: BusinessEventInput) {
 
   const host = String(config.posthogIngestionHost || 'https://eu.i.posthog.com').replace(/\/+$/, '')
   try {
+    const clientId = input.clientId ?? (input.entityType === 'client' ? input.entityId : null)
+    let trafficClassification: AnalyticsTraffic = 'unclassified'
+    if (clientId !== null) {
+      const { data, error } = await getSupabaseAdmin().from('clients').select('name,email')
+        .eq('organization_id', input.organizationId).eq('id', clientId).maybeSingle()
+      if (!error) trafficClassification = classifyBusinessIdentity(data)
+    }
     await $fetch(`${host}/i/v0/e/`, {
       method: 'POST',
-      body: buildPostHogBusinessPayload(input, projectToken),
+      body: buildPostHogBusinessPayload({ ...input, trafficClassification }, projectToken),
       timeout: 2_000,
     })
     return true

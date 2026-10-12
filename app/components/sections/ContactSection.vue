@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { classifyAcquisition } from '~~/shared/utils/acquisitionChannel'
+import { classifyBusinessIdentity } from '~~/shared/utils/analyticsQuality'
 
 const { t, locale } = useI18n()
 const { track } = useMarketing()
@@ -22,6 +23,7 @@ const nameInputRef = ref<HTMLInputElement | null>(null)
 const submissionId = ref('')
 const postHogFormStarted = ref(false)
 const postHogFormCompleted = ref(false)
+const postHogAbandonCaptured = ref(false)
 const contactOriginPath = ref('')
 
 const form = reactive({
@@ -86,6 +88,7 @@ async function openContactForm(source = 'cta') {
   formOpen.value = true
   if (wasClosed) {
     track('contact_form_open', { source })
+    trackPostHog('contact_clicked', { source_path: window.location.pathname, contact_type: 'form', placement: source })
     if (!postHogFormStarted.value) {
       postHogFormStarted.value = true
       contactOriginPath.value = sessionStorage.getItem('aq_contact_origin') || window.location.pathname
@@ -159,13 +162,20 @@ onMounted(() => {
   else beginTurnstileLoad()
 })
 
-onBeforeUnmount(() => {
-  if (postHogFormStarted.value && !postHogFormCompleted.value && status.value !== 'sending') {
+function captureFormAbandonment() {
+  if (!postHogAbandonCaptured.value && postHogFormStarted.value && !postHogFormCompleted.value && status.value !== 'sending') {
+    postHogAbandonCaptured.value = true
     trackPostHog('contact_form_abandoned', {
+      is_test: classifyBusinessIdentity({ name: form.name, email: form.email }) === 'test',
       source_path: window.location.pathname,
       origin_path: contactOriginPath.value || window.location.pathname,
     })
   }
+}
+onMounted(() => window.addEventListener('pagehide', captureFormAbandonment))
+onBeforeUnmount(() => {
+  captureFormAbandonment()
+  window.removeEventListener('pagehide', captureFormAbandonment)
   window.removeEventListener('aq:service-selected', handleServiceSelected)
   window.removeEventListener('aq:contact-open', handleContactOpen)
   turnstileObserver?.disconnect()
@@ -210,6 +220,7 @@ async function handleSubmit() {
     postHogFormCompleted.value = true
     track('contact_form_submit_success')
     trackPostHog('contact_sent', {
+      is_test: classifyBusinessIdentity({ name: form.name, email: form.email }) === 'test',
       channel: contactResult.acquisitionChannel || classifyAcquisition({
         utmSource: attribution.value.utmSource,
         referrerHost: attribution.value.referrerHost,
