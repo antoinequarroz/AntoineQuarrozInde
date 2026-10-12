@@ -15,7 +15,7 @@ describe('PME service proof and conversion path', () => {
     expect(page).toContain('const featuredCase')
     expect(page).toContain('const featuredReview')
     expect(page).toContain('Une réalisation en Valais')
-    expect(page).toContain('featuredReview.description')
+    expect(page).toContain('featuredReview.content')
     expect(page).toContain('Présenter mon projet')
     expect(page).toContain("trackPostHog('service_cta_clicked'")
   })
