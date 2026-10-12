@@ -1,0 +1,31 @@
+{
+  "title": "EnvVault",
+  "slug": "envvault",
+  "category": "software",
+  "tags": [
+    "Rust",
+    "Tauri",
+    "React",
+    "age",
+    "SFTP"
+  ],
+  "description": "EnvVault est mon outil de sauvegarde chiffrée et versionnée des fichiers .env sélectionnés. Né du besoin de reprendre mes projets après avoir supprimé leurs dossiers locaux, il permet de conserver les configurations séparément du code. Projet personnel en développement, sans audit de sécurité indépendant.",
+  "codeUrl": "https://github.com/antoinequarroz/envvault",
+  "portfolioVisible": true,
+  "caseStudyPublished": false,
+  "projectRole": "Conception du parcours, développement de l’application de bureau et du cœur Rust.",
+  "challenge": "Mon ordinateur manquait de place. Je conservais le code sur GitHub puis supprimais les dossiers locaux, mais les fichiers .env exclus de Git disparaissaient avec eux. À chaque reprise, je devais retrouver les clés. Mes copies dans des fichiers séparés ne me convenaient plus côté protection.",
+  "projectScope": "Application de bureau en français et en anglais et outil en ligne de commande. Sélection des fichiers .env, sauvegardes versionnées, vérification, restauration et récupération. Stockage distant SFTP facultatif.",
+  "keyDecisions": "Chiffrer les fichiers et leurs manifestes avant stockage avec age ; conserver la clé privée dans le trousseau du système ; garder la sélection des fichiers explicite ; ne pas afficher les valeurs dans l’interface normale ; ne pas remplacer silencieusement les fichiers lors d’une restauration.",
+  "approach": "Partir d’un besoin personnel, concevoir le parcours de sauvegarde et de reprise, développer un cœur Rust partagé entre la ligne de commande et une interface Tauri/React. Vérifier les protections et leurs limites à partir du code et de la documentation.",
+  "solution": "Choisir les fichiers, créer une sauvegarde chiffrée, retrouver l’historique, vérifier puis restaurer dans un dossier choisi. Un export de récupération protégé par une phrase secrète permet de préparer un changement d’ordinateur. Le transfert distant envoie seulement des objets déjà chiffrés.",
+  "outcome": "Les fonctions sont présentes dans le projet. EnvVault reste en développement : aucun audit indépendant ni gain de temps chiffré annoncé. Un ordinateur compromis et la perte de tous les éléments de récupération restent hors des protections promises.",
+  "deliverables": [
+    "Application de bureau Tauri / React",
+    "Cœur Rust partagé",
+    "Outil en ligne de commande",
+    "Documentation du format et du modèle de sécurité"
+  ],
+  "seoTitle": "EnvVault : sauvegarder et retrouver les configurations .env",
+  "seoDescription": "Pourquoi j’ai créé EnvVault : sauvegardes chiffrées, historique et restauration des fichiers .env. Découvrez ce projet personnel et ses limites."
+}
