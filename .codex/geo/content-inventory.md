@@ -31,3 +31,7 @@
 ## Publication du 1er octobre 2026
 
 - Article 024 : [Hébergement d’un site web en Suisse : quels critères pour une PME ?](https://www.antoinequarroz.ch/blog/hebergement-site-web-suisse-criteres-pme) — public, vérifié ; grille de comparaison, FAQ, sources PFPDT/OFCS et lien vers la page de service.
+
+## Publication du 2 octobre 2026
+
+- Article 025 : [Agent IA ou automatisation classique : que faut-il vraiment pour votre PME ?](https://www.antoinequarroz.ch/blog/agent-ia-ou-automatisation-classique-pme) — public et vérifié ; méthode de choix et pilote limité, exemples fictifs, FAQ, sources primaires et maillage vers les guides IA et le service.

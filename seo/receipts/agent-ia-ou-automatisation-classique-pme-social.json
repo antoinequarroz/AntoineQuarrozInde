@@ -1,0 +1,33 @@
+{
+  "posts": [
+    {
+      "platform": "linkedin",
+      "status": 200,
+      "post": {
+        "id": "236f6dda-72bc-4f23-822a-12caaca433d2",
+        "platform": "linkedin",
+        "status": "draft",
+        "version": 1,
+        "media_kind": null,
+        "media_url": null,
+        "media_title": null
+      },
+      "idempotent": false
+    },
+    {
+      "platform": "x",
+      "status": 200,
+      "post": {
+        "id": "4f9198dd-b7df-4678-af1c-a4cf3dedb877",
+        "platform": "x",
+        "status": "draft",
+        "version": 1,
+        "media_kind": null,
+        "media_url": null,
+        "media_title": null
+      },
+      "idempotent": false
+    }
+  ],
+  "utm": "injected at publication: platform / social / article_agent-ia-ou-automatisation-classique-pme"
+}
