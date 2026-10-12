@@ -4,7 +4,7 @@ const route = useRoute()
 const localePath = useLocalePath()
 const { track } = useMarketing()
 const { trackPostHog } = usePostHogEvent()
-const props = withDefaults(defineProps<{ context?: 'diagnostic' | 'site' | 'budget' }>(), { context: 'diagnostic' })
+const props = withDefaults(defineProps<{ context?: 'diagnostic' | 'site' | 'budget' | 'refonte' }>(), { context: 'diagnostic' })
 
 const copy = computed(() => locale.value === 'en' ? {
   eyebrow: 'Complimentary diagnostic',
@@ -18,6 +18,12 @@ const copy = computed(() => locale.value === 'en' ? {
   body: 'Zeigen Sie mir die Tabelle, wiederkehrende Aufgabe oder das Werkzeug, das Sie ausbremst. Sie erhalten eine klare Einschätzung zur passenden Lösung.',
   cta: 'Erste Einschätzung erhalten',
   trust: 'Unverbindlich · Persönliche Antwort innerhalb eines Werktags · Vertraulicher Austausch',
+} : props.context === 'refonte' ? {
+  eyebrow: 'Votre site actuel',
+  title: 'Votre site doit-il être corrigé ou refait ?',
+  body: 'Présentez-moi son adresse et les difficultés rencontrées. Nous préciserons ce qui mérite d’être conservé, corrigé ou reconstruit avant de définir un périmètre.',
+  cta: 'Faire le point sur mon site actuel',
+  trust: 'Sans engagement · Réponse personnelle sous un jour ouvrable · Échange confidentiel',
 } : props.context === 'budget' ? {
   eyebrow: 'Votre projet de site',
   title: 'Parlons du budget de votre site',
@@ -26,8 +32,8 @@ const copy = computed(() => locale.value === 'en' ? {
   trust: 'Sans engagement · Réponse personnelle sous un jour ouvrable · Échange confidentiel',
 } : props.context === 'site' ? {
   eyebrow: 'Passer de la checklist au projet',
-  title: 'Votre site vitrine commence par un besoin clair',
-  body: 'Vous avez réuni vos objectifs et vos contenus ? Présentez-moi votre activité et ce que votre site doit permettre de faire. Nous préciserons les prochaines étapes ensemble.',
+  title: 'Votre site commence par un besoin clair',
+  body: 'Présentez-moi votre activité, vos objectifs et ce que votre site doit permettre de faire. Nous préciserons les prochaines étapes ensemble.',
   cta: 'Présenter mon projet de site',
   trust: 'Sans engagement · Réponse personnelle sous un jour ouvrable · Échange confidentiel',
 } : {
