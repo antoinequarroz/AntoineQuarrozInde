@@ -133,13 +133,18 @@ def fetch_snapshot(credentials, request=request_json, now=None):
         raise SearchConsoleError('Invalid Google totals response')
     summary = rows[0] if rows else {'clicks': 0, 'impressions': 0, 'ctr': 0, 'position': None}
     tables = {}
-    for name, dimension, limit in [('Dates', 'date', 28), ('Requêtes', 'query', 25), ('Pages', 'page', 25)]:
+    for name, dimension, limit in [('Dates', 'date', 28), ('Requêtes', 'query', 1000), ('Pages', 'page', 1000), ('Pays', 'country', 100), ('Appareils', 'device', 10)]:
         response = request(url, dict(base, dimensions=[dimension], rowLimit=limit), token=token)
         results = response.get('rows', [])
         if not isinstance(results, list):
             raise SearchConsoleError('Invalid Google dimension response')
+        results = sorted(results, key=lambda row: row['keys'][0]) if dimension == 'date' else sorted(results, key=lambda row: row['impressions'], reverse=True)
         tables[name] = [{'Dimension': row['keys'][0], 'Clics': row['clicks'], 'Impressions': row['impressions'], 'CTR': '%.2f%%' % (row['ctr'] * 100), 'Position': row['position']} for row in results]
-    return {'status': 'direct_api', 'property': PROPERTY, 'capturedAt': now.isoformat(), 'period': {'startDate': start.isoformat(), 'endDate': end.isoformat(), 'days': 28, 'searchType': 'web', 'dataState': 'final'}, 'summary': {k: summary.get(k) for k in ('clicks', 'impressions', 'ctr', 'position')}, 'tables': tables, 'limitation': 'Google Search Analytics final data only; latency and anonymized queries apply. Totals come from a separate query without dimensions, not the sum of visible queries.'}
+    prior_end = start - timedelta(days=1)
+    prior_start = prior_end - timedelta(days=27)
+    previous = request(url, dict(base, startDate=prior_start.isoformat(), endDate=prior_end.isoformat()), token=token).get('rows', [])
+    prior_summary = previous[0] if previous else {'clicks': 0, 'impressions': 0, 'ctr': 0, 'position': None}
+    return {'status': 'direct_api', 'property': PROPERTY, 'capturedAt': now.isoformat(), 'period': {'startDate': start.isoformat(), 'endDate': end.isoformat(), 'days': 28, 'searchType': 'web', 'dataState': 'final'}, 'summary': {k: summary.get(k) for k in ('clicks', 'impressions', 'ctr', 'position')}, 'previous': {'startDate': prior_start.isoformat(), 'endDate': prior_end.isoformat(), 'summary': {k: prior_summary.get(k) for k in ('clicks', 'impressions', 'ctr', 'position')}}, 'tables': tables, 'limitation': 'Propriété domaine incluant les sous-domaines ; données web finales. Les tables sont triées par impressions et limitées à 1000 pages/requêtes ; Google peut masquer des lignes ou anonymiser des requêtes. Les totaux proviennent d’une requête distincte sans dimensions. La période Google de 28 jours diffère des 7 jours PostHog.'}
 
 
 def atomic_write(path, value):

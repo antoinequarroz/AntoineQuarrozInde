@@ -88,11 +88,17 @@ def render(v):
     if gsc.get('summary'):
         summary = gsc['summary']
         lines += [f"- {summary['clicks']} clics ; {summary['impressions']} impressions ; CTR {summary['ctr'] * 100:.2f} % ; position moyenne : {summary['position']}."]
+    if gsc.get('previous'):
+        previous = gsc['previous']; summary = previous['summary']
+        lines += [f"- Comparaison : {previous['startDate']} au {previous['endDate']} — {summary['clicks']} clics, {summary['impressions']} impressions."]
     for name, rows in v['searchConsole'].get('tables', {}).items():
         lines += ['', '### ' + name, '']
         if rows:
             keys = list(rows[0]); lines += ['| ' + ' | '.join(keys) + ' |', '| ' + ' | '.join(['---'] * len(keys)) + ' |']
-            lines += ['| ' + ' | '.join(str(row.get(k, '')).replace('|','/') for k in keys) + ' |' for row in rows[:10]]
+            ordered = sorted(rows, key=lambda row: row.get('Dimension', '')) if name == 'Dates' else sorted(rows, key=lambda row: float(row.get('Impressions', 0)), reverse=True) if 'Impressions' in keys else rows
+            displayed = ordered if name == 'Dates' else ordered[:10]
+            lines += ['| ' + ' | '.join(str(row.get(k, '')).replace('|','/') for k in keys) + ' |' for row in displayed]
+            if len(displayed) < len(rows): lines += [f"\nAffichage : {len(displayed)} lignes sur {len(rows)} retournées ; extrait, pas totalité du trafic."]
     lines += ['', '## Limites', ''] + ['- ' + x for x in v['limitations']]
     if v['searchConsole'].get('limitation'): lines += ['- ' + v['searchConsole']['limitation']]
     return '\n'.join(lines) + '\n'

@@ -1,4 +1,6 @@
 import { isPostHogProductionHost, isPostHogPublicPath, safeAnalyticsPath, stripAnalyticsUrlQuery } from '~/utils/posthog'
+import { publicJourneyProperties } from '~/utils/analyticsJourney'
+import { excludeInternalVisit } from '~~/shared/utils/analyticsQuality'
 
 const DOWNLOAD_EXTENSION = /\.(?:pdf|zip|docx?|xlsx?|csv|pptx?)$/i
 
@@ -15,15 +17,26 @@ export default defineNuxtPlugin({
   setup(nuxtApp) {
     const router = useRouter()
     const posthog = usePostHog()
+    const auth = useAuthStore()
     if (!isPostHogProductionHost(window.location.hostname)) return
     let currentPath = ''
     let pageStartedAt = Date.now()
+    watch(() => auth.organizations, (organizations) => {
+      if (auth.isAuthenticated && organizations.some(org => ['owner', 'admin', 'manager', 'viewer'].includes(org.role))) {
+        try { localStorage.setItem('aq_analytics_exclude', '1') } catch {}
+      }
+    }, { immediate: true })
 
     posthog?.set_config({
       capture_exceptions: true,
       before_send(event) {
         if (!event) return event
-        if (event.event === '$exception' && !isPostHogPublicPath(window.location.pathname)) return null
+        let optedOut = false
+        try { optedOut = localStorage.getItem('aq_analytics_exclude') === '1' } catch {}
+        const staff = auth.isAuthenticated && (!auth.organizations.length || auth.organizations.some(org => ['owner', 'admin', 'manager', 'viewer'].includes(org.role)))
+        if (excludeInternalVisit({ staff, webdriver: navigator.webdriver, userAgent: navigator.userAgent, optedOut }) || event.properties?.is_test === true) return null
+        if (!isPostHogPublicPath(window.location.pathname)) return null
+        event.properties = { ...event.properties, ...publicJourneyProperties(currentPath || window.location.pathname), aq_traffic: 'public', aq_analytics_version: 3 }
         for (const key of ['$current_url', '$referrer']) {
           if (key in event.properties) event.properties[key] = stripAnalyticsUrlQuery(event.properties[key])
         }
@@ -77,6 +90,7 @@ export default defineNuxtPlugin({
         const contactDestination = destination.origin === window.location.origin
           && (destination.pathname === '/contact' || destination.hash === '#contact' || destination.hash === '#contact-form')
         if (contactDestination || destination.protocol === 'mailto:' || destination.host === 'cal.com' || destination.host.endsWith('.cal.com')) {
+          try { sessionStorage.setItem('aq_contact_origin', window.location.pathname) } catch {}
           posthog?.capture('contact_clicked', { ...properties, contact_type: destination.protocol === 'mailto:' ? 'email' : destination.host.includes('cal.com') ? 'booking' : 'form' })
         }
         if (destination.origin !== window.location.origin && !['mailto:', 'tel:'].includes(destination.protocol)) {

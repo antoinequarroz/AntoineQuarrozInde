@@ -24,6 +24,22 @@ OAUTH = {'type': 'authorized_user', 'client_id': 'fixture', 'client_secret': 'fi
 
 
 class SearchConsoleTests(unittest.TestCase):
+    def test_report_sorts_zero_click_pages_by_impressions_and_compares_periods(self):
+        requests = []
+        def fake(url, body, **kwargs):
+            requests.append(body)
+            if url == gsc.TOKEN_URL: return {'access_token': 'fixture', 'scope': gsc.SCOPE}
+            if not body.get('dimensions'): return {'rows': [{'clicks': 2, 'impressions': 50, 'ctr': .04, 'position': 10}]}
+            return {'rows': [
+                {'keys': ['low'], 'clicks': 0, 'impressions': 1, 'ctr': 0, 'position': 10},
+                {'keys': ['service'], 'clicks': 0, 'impressions': 64, 'ctr': 0, 'position': 10},
+            ]}
+        result = gsc.fetch_snapshot(OAUTH, fake, datetime(2026, 10, 12, 12, tzinfo=timezone.utc))
+        self.assertEqual(result['tables']['Pages'][0]['Dimension'], 'service')
+        self.assertTrue(any(body.get('dimensions') == ['page'] and body['rowLimit'] >= 1000 for body in requests))
+        self.assertEqual(result['previous']['startDate'], '2026-08-15')
+        self.assertEqual(result['previous']['endDate'], '2026-09-11')
+
     def test_totals_do_not_sum_anonymized_or_truncated_query_rows(self):
         requests = []
 

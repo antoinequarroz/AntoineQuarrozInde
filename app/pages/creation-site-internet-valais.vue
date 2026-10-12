@@ -10,6 +10,7 @@ const runtimeConfig = useRuntimeConfig()
 const siteUrl = runtimeConfig.public.siteUrl.replace(/\/+$/, '')
 const projectsStore = useProjectsStore()
 const reviewsStore = useReviewsStore()
+const auth = useAuthStore()
 const { trackPostHog } = usePostHogEvent()
 
 await Promise.all([projectsStore.ensureLoaded(), reviewsStore.ensureLoaded()])
@@ -106,10 +107,12 @@ const frequentlyAskedQuestions = [
 
 const approvedCases = computed(() => projectsStore.projects.filter(project => (
   project.caseStudyPublished
-  && project.caseStudyApprovedAt
+  // The public API already gates this flag on approval and omits private
+  // approval metadata. Authenticated rows still need the explicit date.
+  && (!auth.isAuthenticated || project.caseStudyApprovedAt)
   && project.relatedServicePaths.includes(service.path)
-)).slice(0, 3))
-const featuredCase = computed(() => approvedCases.value[0] ?? null)
+)))
+const featuredCase = computed(() => approvedCases.value.find(project => project.slug === 'physiobaur') ?? approvedCases.value[0] ?? null)
 const featuredReview = computed(() => {
   const project = featuredCase.value
   if (!project) return null
@@ -160,8 +163,8 @@ useHead({
 </script>
 
 <template>
-  <main class="section-surface" @click.capture="handleServicePageClick">
-    <section class="section-padding">
+  <div class="section-surface" @click.capture="handleServicePageClick">
+    <section class="section-padding !pt-28 md:!pt-32">
       <div class="section-background"><div class="section-grid" /></div>
       <div class="section-container relative z-10">
         <div class="mx-auto max-w-5xl">
@@ -171,6 +174,29 @@ useHead({
           <p data-service-description data-service-introduction data-service-offer data-service-audience data-service-area class="section-subtitle max-w-3xl">
             {{ service.description }}
           </p>
+
+          <div class="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+            <NuxtLink to="/#contact-form" data-service-cta-placement="introduction" class="btn-primary min-h-12 justify-center">Présenter mon projet de site</NuxtLink>
+            <NuxtLink v-if="featuredCase" :to="`/projets/${featuredCase.slug}`" class="btn-secondary min-h-12 justify-center">Voir le site de {{ featuredCase.title }}</NuxtLink>
+          </div>
+          <p class="mt-3 text-sm leading-6 text-gray-600 dark:text-gray-300">Premier avis sans engagement · Réponse personnelle sous un jour ouvrable</p>
+
+          <article v-if="featuredCase" class="mt-10 grid overflow-hidden rounded-3xl border border-violet-500/15 bg-white/80 shadow-lg shadow-violet-500/5 dark:border-white/10 dark:bg-white/[0.04] md:grid-cols-[0.9fr_1.1fr]">
+            <NuxtLink :to="`/projets/${featuredCase.slug}`" class="block" :aria-label="`Découvrir la réalisation ${featuredCase.title}`">
+              <img v-if="featuredCase.image" :src="featuredCase.galleryImages.at(-1) || featuredCase.image" :alt="`Le site ${featuredCase.title}, réalisé par Antoine Quarroz`" class="aspect-[16/10] h-full w-full object-cover object-top" width="800" height="500" loading="lazy" decoding="async">
+            </NuxtLink>
+            <div class="flex flex-col justify-center p-6 sm:p-8">
+              <p class="text-xs font-bold uppercase tracking-[0.16em] text-violet-700 dark:text-violet-300">Une réalisation en Valais</p>
+              <h2 class="mt-3 font-display text-2xl font-bold text-gray-950 dark:text-white">{{ featuredCase.title }}</h2>
+              <p class="mt-3 leading-7 text-gray-600 dark:text-gray-300">{{ featuredCase.description }}</p>
+              <blockquote v-if="featuredReview" class="mt-5 border-l-2 border-violet-500 pl-4 leading-7 text-gray-700 dark:text-gray-200">
+                {{ featuredReview.content }}
+                <footer class="mt-3 text-sm font-semibold">{{ featuredReview.author }} · {{ featuredReview.role }}</footer>
+              </blockquote>
+              <NuxtLink :to="`/projets/${featuredCase.slug}`" class="mt-5 inline-flex min-h-11 items-center font-semibold text-violet-700 underline underline-offset-4 dark:text-violet-300">Voir le projet et les choix de réalisation</NuxtLink>
+            </div>
+          </article>
+          <NuxtLink v-if="featuredCase" to="/cas-clients-valais" class="mt-4 inline-flex min-h-11 items-center font-semibold text-violet-700 underline underline-offset-4 dark:text-violet-300">Voir tous les cas clients</NuxtLink>
 
           <UiServiceDecisionContent :content="decisionContent" />
         </div>
@@ -224,41 +250,6 @@ useHead({
       </div>
     </section>
 
-    <section class="border-y border-violet-500/10 bg-violet-50/55 py-16 dark:border-white/10 dark:bg-white/[0.025] md:py-24" aria-labelledby="proof-title">
-      <div class="section-container">
-        <div class="mx-auto max-w-5xl">
-          <div class="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p class="text-sm font-bold uppercase tracking-[0.18em] text-cyan-700 dark:text-cyan-300">Preuves publiées</p>
-              <h2 id="proof-title" class="mt-3 font-display text-3xl font-bold text-gray-950 dark:text-white sm:text-4xl">Des projets présentés avec leur contexte</h2>
-            </div>
-            <NuxtLink to="/cas-clients-valais" class="btn-secondary min-h-11 justify-center">Voir tous les cas clients</NuxtLink>
-          </div>
-
-          <div v-if="featuredCase" class="mt-10 overflow-hidden rounded-[2rem] border border-violet-500/15 bg-white/85 shadow-xl shadow-violet-500/5 dark:border-white/10 dark:bg-white/[0.04]">
-            <div class="grid lg:grid-cols-[1.08fr_0.92fr]">
-              <img v-if="featuredCase.image" :src="featuredCase.image" :alt="`Aperçu du projet ${featuredCase.title}`" class="h-full min-h-64 w-full object-cover" loading="lazy" decoding="async">
-              <div class="flex flex-col justify-center p-6 sm:p-8 lg:p-10">
-                <p class="text-xs font-bold uppercase tracking-[0.16em] text-cyan-700 dark:text-cyan-300">Étude de cas vérifiée</p>
-                <h3 class="mt-3 font-display text-3xl font-bold text-gray-950 dark:text-white">{{ featuredCase.title }}</h3>
-                <p class="mt-4 leading-7 text-gray-600 dark:text-gray-300">{{ featuredCase.outcome || featuredCase.description }}</p>
-                <blockquote v-if="featuredReview" class="mt-5 border-l-2 border-violet-500 pl-4 text-sm italic leading-6 text-gray-600 dark:text-gray-300">
-                  “{{ featuredReview.content }}”
-                  <footer class="mt-2 not-italic font-semibold text-gray-900 dark:text-white">{{ featuredReview.author }}, {{ featuredReview.role }}</footer>
-                </blockquote>
-                <div class="mt-6 flex flex-col gap-3 sm:flex-row">
-                  <NuxtLink :to="`/projets/${featuredCase.slug}`" class="btn-primary min-h-11 justify-center">Lire l’étude de cas</NuxtLink>
-                  <NuxtLink to="/#contact" data-service-cta-placement="case_study" class="btn-secondary min-h-11 justify-center">Présenter mon projet</NuxtLink>
-                </div>
-              </div>
-            </div>
-          </div>
-          <p v-else class="mt-8 max-w-3xl rounded-3xl border border-violet-500/15 bg-white/70 p-6 leading-7 text-gray-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-gray-300">
-            Les réalisations visibles dans le portfolio permettent déjà d’examiner les interfaces et les types de projets livrés. Les études détaillées apparaissent ici seulement après validation de leur contenu par le client.
-          </p>
-        </div>
-      </div>
-    </section>
 
     <section class="py-16 md:py-24" aria-labelledby="faq-title">
       <div class="section-container">
@@ -285,5 +276,5 @@ useHead({
         </div>
       </div>
     </section>
-  </main>
+  </div>
 </template>
