@@ -1,0 +1,19 @@
+{
+  "checkedAt": "2026-10-07T06:26:48.787352+00:00",
+  "article": "article-028",
+  "status": "published_verified",
+  "topicReplacedByUser": true,
+  "publicationReceipt": "article-028-publication-result.json",
+  "publicHTTP": 200,
+  "coverHTTP": 200,
+  "sourcesVerified": true,
+  "copyReviewed": true,
+  "coverNativeOriginal": true,
+  "coverSourceSize": [
+    1672,
+    941
+  ],
+  "coverVisualReviewed": true,
+  "note": "New human-requested topic published with native high-resolution landscape cover; source is not exactly 1200x675. No claim of measured time savings or completed personal-engine features.",
+  "socialReceipt": "article-028-social-results.json"
+}
