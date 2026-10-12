@@ -42,8 +42,17 @@ def direct_gsc(path):
         return {'status': 'not_measured', 'reason': 'No direct Search Console export supplied'}
     if Path(path).suffix == '.json':
         value = json.loads(Path(path).read_text())
-        if value.get('status') != 'direct_export' or not isinstance(value.get('tables'), dict):
+        if value.get('status') == 'not_measured':
+            return {'status': 'not_measured', 'reason': value.get('reason', 'Direct Google measurement unavailable')}
+        if value.get('status') not in ('direct_export', 'direct_api') or not isinstance(value.get('tables'), dict):
             raise ValueError('Invalid direct Search Console snapshot')
+        if value['status'] == 'direct_api':
+            captured = datetime.fromisoformat(value.get('capturedAt', '').replace('Z', '+00:00'))
+            if captured.tzinfo is None:
+                raise ValueError('Search Console API capture date without timezone')
+            age = datetime.now(timezone.utc) - captured
+            if age > timedelta(hours=36) or age < -timedelta(minutes=10):
+                return {'status': 'not_measured', 'reason': 'Search Console API snapshot is stale or has an invalid capture date'}
         return value
     tables = {}
     with zipfile.ZipFile(path) as archive:
@@ -68,6 +77,17 @@ def reconcile(export=None):
 
 def render(v):
     lines = ['# Correctif du rapport SEO Hermes', '', 'Réconciliation du ' + v['generatedAt'], '', '## Publications réellement publiques', '', f"- {v['publishedLast7Days']} articles publiés sur les sept derniers jours, vérifiés dans le CMS public.", '- Le compteur de fichiers locaux ne mesure pas la publication.', '', '## Exploration', '', '- OAI-SearchBot : ' + ('autorisé' if v['crawlers']['OAI-SearchBot']['allowed'] else 'bloqué'), '- GPTBot : ' + ('autorisé' if v['crawlers']['GPTBot']['allowed'] else 'bloqué') + ' (entraînement ; ne pas assimiler ce choix à un blocage de la recherche ChatGPT).', '', '## Search Console', '', '- État : ' + v['searchConsole']['status']]
+    gsc = v['searchConsole']
+    if gsc.get('capturedAt'):
+        lines += ['- Collecte : ' + gsc['capturedAt']]
+    if gsc.get('reason'):
+        lines += ['- Mesure indisponible : ' + gsc['reason']]
+    if gsc.get('period'):
+        period = gsc['period']
+        lines += [f"- Période Google : {period['startDate']} au {period['endDate']} (données finales, recherche web)."]
+    if gsc.get('summary'):
+        summary = gsc['summary']
+        lines += [f"- {summary['clicks']} clics ; {summary['impressions']} impressions ; CTR {summary['ctr'] * 100:.2f} % ; position moyenne : {summary['position']}."]
     for name, rows in v['searchConsole'].get('tables', {}).items():
         lines += ['', '### ' + name, '']
         if rows:
