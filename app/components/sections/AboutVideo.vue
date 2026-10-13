@@ -296,7 +296,7 @@ onBeforeUnmount(() => {
 .about-film__status { flex: 1; text-align: right; margin-right: 10px; font-size: 12px; color: var(--film-muted); }
 .about-film__cc { font-size: 12px; font-weight: 700; color: var(--film-muted); }
 .about-film__cc--active { color: #ddd6fe; background: rgb(139 92 246 / .25); text-decoration: underline; text-underline-offset: 5px; }
-.about-film__progress { appearance: none; display: block; width: 100%; height: 24px; margin: 0; cursor: pointer; background: transparent; }
+.about-film__progress { appearance: none; display: block; width: 100%; height: 44px; margin: 0; cursor: pointer; background: transparent; }
 .about-film__progress::-webkit-slider-runnable-track { height: 3px; border-radius: 3px; background: linear-gradient(to right, #a78bfa var(--film-progress), #32273f var(--film-progress)); }
 .about-film__progress::-moz-range-track { height: 3px; border-radius: 3px; background: #32273f; }
 .about-film__progress::-moz-range-progress { height: 3px; background: #a78bfa; }
