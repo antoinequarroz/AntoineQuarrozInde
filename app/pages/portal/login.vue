@@ -10,13 +10,18 @@ const sendingRecovery = ref(false)
 
 async function submit() {
   errorMessage.value = ''
-  if (await auth.login(email.value, password.value, { deferOrganizationsUntilMfaChallenge: true })) {
-    const redirect = safePortalRedirect(route.query.redirect)
-    await navigateTo(auth.requiresMfaChallenge
-      ? { path: '/admin/security', query: { redirect } }
-      : redirect, { replace: true })
+  try {
+    if (await auth.login(email.value, password.value, { deferOrganizationsUntilMfaChallenge: true })) {
+      const redirect = safePortalRedirect(route.query.redirect)
+      await navigateTo(auth.requiresMfaChallenge
+        ? { path: '/admin/security', query: { redirect } }
+        : redirect, { replace: true })
+    }
+    else errorMessage.value = 'E-mail ou mot de passe incorrect.'
   }
-  else errorMessage.value = 'E-mail ou mot de passe incorrect.'
+  catch {
+    errorMessage.value = 'La connexion est temporairement indisponible. Vérifiez votre connexion puis réessayez.'
+  }
 }
 
 async function sendRecovery() {

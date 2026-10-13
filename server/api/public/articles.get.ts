@@ -6,12 +6,24 @@ import { resolveCanonicalPublicOrganizationId } from '../../utils/publicOrganiza
 
 const PUBLIC_ERROR_MESSAGE = 'Les articles sont temporairement indisponibles.'
 
-export default defineEventHandler(async () => {
+export default defineEventHandler(async (event) => {
+  const requestedLimit = getQuery(event).limit
+  let limit: number | undefined
+  if (requestedLimit !== undefined) {
+    if (typeof requestedLimit !== 'string' || !/^[1-9]\d*$/.test(requestedLimit)) {
+      throw createError({ statusCode: 400, statusMessage: 'Limite d’articles invalide.' })
+    }
+    limit = Number(requestedLimit)
+    if (!Number.isSafeInteger(limit) || limit > 50) {
+      throw createError({ statusCode: 400, statusMessage: 'Limite d’articles invalide.' })
+    }
+  }
+
   try {
     const organizationId = await resolveCanonicalPublicOrganizationId()
     if (!organizationId) throw new Error('Canonical public organization not found')
 
-    const { data, error } = await getSupabaseAdmin()
+    let query = getSupabaseAdmin()
       .from('articles')
       .select(PUBLIC_ARTICLE_SUMMARY_COLUMNS)
       .eq('organization_id', organizationId)
@@ -19,6 +31,9 @@ export default defineEventHandler(async () => {
       .order('published_at', { ascending: false, nullsFirst: false })
       .order('created_at', { ascending: false })
       .order('slug', { ascending: true })
+
+    if (limit !== undefined) query = query.limit(limit)
+    const { data, error } = await query
 
     if (error) throw error
     return (data ?? []).map(serializePublicArticleSummary)

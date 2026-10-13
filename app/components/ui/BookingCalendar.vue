@@ -17,6 +17,9 @@ type CalEmbedMessage = {
 }
 
 let bookingConfirmationCaptured = false
+const bookingCard = ref<HTMLElement | null>(null)
+let bookingObserver: IntersectionObserver | null = null
+let embedInitialized = false
 
 const bookingUrl = computed(() => {
   const value = String(config.public.bookingUrl || '').trim()
@@ -81,6 +84,14 @@ function initializeCalEmbed() {
   })
 }
 
+function prepareCalEmbed() {
+  if (embedInitialized || !bookingPath.value) return
+  embedInitialized = true
+  bookingObserver?.disconnect()
+  bookingObserver = null
+  initializeCalEmbed()
+}
+
 function captureConfirmedBooking(event: MessageEvent<CalEmbedMessage>) {
   if (!['https://cal.com', 'https://app.cal.com'].includes(event.origin)) return
   if (event.data?.type !== 'bookingSuccessfulV2') return
@@ -92,11 +103,21 @@ function captureConfirmedBooking(event: MessageEvent<CalEmbedMessage>) {
 
 onMounted(() => {
   bookingConfirmationCaptured = false
-  initializeCalEmbed()
   window.addEventListener('message', captureConfirmedBooking)
+
+  if (bookingPath.value && bookingCard.value && typeof IntersectionObserver !== 'undefined') {
+    bookingObserver = new IntersectionObserver((entries) => {
+      if (entries.some(entry => entry.isIntersecting)) prepareCalEmbed()
+    }, { rootMargin: '400px 0px' })
+    bookingObserver.observe(bookingCard.value)
+  }
 })
 
-onBeforeUnmount(() => window.removeEventListener('message', captureConfirmedBooking))
+onBeforeUnmount(() => {
+  bookingObserver?.disconnect()
+  bookingObserver = null
+  window.removeEventListener('message', captureConfirmedBooking)
+})
 
 const content = computed(() => {
   if (locale.value === 'en') return {
@@ -139,7 +160,12 @@ function openContactFallback() {
 </script>
 
 <template>
-  <div class="card-glass flex h-full flex-col gap-5 p-4 md:gap-6 md:p-8">
+  <div
+    ref="bookingCard"
+    class="card-glass flex h-full flex-col gap-5 p-4 md:gap-6 md:p-8"
+    @pointerenter="prepareCalEmbed"
+    @focusin="prepareCalEmbed"
+  >
     <div>
       <h3 class="font-display text-base font-semibold leading-tight text-gray-900 dark:text-white md:text-lg">{{ content.title }}</h3>
       <p class="mt-2 text-sm leading-relaxed text-gray-500 dark:text-gray-400">{{ content.desc }}</p>

@@ -10,11 +10,13 @@ async function submit() {
   if (password.value.length < 10) { message.value = 'Utilisez au moins 10 caractères.'; return }
   if (password.value !== confirmation.value) { message.value = 'Les mots de passe ne correspondent pas.'; return }
   saving.value = true
-  const client = useSupabaseClient()
-  const { error } = await client.auth.updateUser({ password: password.value })
-  if (error) { saving.value = false; message.value = 'Le lien est invalide ou expiré. Demandez une nouvelle invitation.'; return }
-  const { data: sessionData } = await client.auth.getSession()
+  let passwordSaved = false
   try {
+    const client = await useSupabaseClient()
+    const { error } = await client.auth.updateUser({ password: password.value })
+    if (error) { message.value = 'Le lien est invalide ou expiré. Demandez une nouvelle invitation.'; return }
+    passwordSaved = true
+    const { data: sessionData } = await client.auth.getSession()
     await $fetch('/api/portal/activate', {
       method: 'POST',
       headers: sessionData.session?.access_token ? { Authorization: `Bearer ${sessionData.session.access_token}` } : undefined,
@@ -22,8 +24,12 @@ async function submit() {
     await navigateTo('/portal')
   }
   catch {
+    message.value = passwordSaved
+      ? 'Le mot de passe est enregistré, mais l’espace n’a pas pu être activé. Contactez Antoine.'
+      : 'L’activation n’a pas pu démarrer. Vérifiez votre connexion puis réessayez.'
+  }
+  finally {
     saving.value = false
-    message.value = 'Le mot de passe est enregistré, mais l’espace n’a pas pu être activé. Contactez Antoine.'
   }
 }
 </script>

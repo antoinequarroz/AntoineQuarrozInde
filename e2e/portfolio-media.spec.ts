@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { navigateToFixtureHomepage } from './helpers/fixtureHomepage'
 
 const originalArtwork = [
   'https://raw.githubusercontent.com/antoinequarroz/lifxp/main/assets/brand/lifxp-ui-direction.png',
@@ -41,50 +42,10 @@ async function openFixtureHomepage(page: Page) {
   // The public API runs server-side on a direct homepage load. Enter through
   // the real home link so its client-side GET can use deterministic fixtures
   // without changing a database or depending on production project rows.
-  await page.goto('/mentions-legales', { waitUntil: 'domcontentloaded' })
-  // This control remains disabled in SSR until the header's mounted hook runs.
-  // Vue's root app flag alone can precede hydration of the actual home link.
-  await expect(page.locator('#mobile-menu-trigger')).toBeEnabled()
-  await page.waitForFunction(() => {
-    const app = (document.querySelector('#__nuxt') as HTMLElement & {
-      __vue_app__?: { $nuxt?: { isHydrating: boolean } }
-    })?.__vue_app__
-    return app?.$nuxt?.isHydrating === false
-  })
-  const homeLink = page.getByRole('link', { name: /^AQ —/ })
-  await expect(homeLink).toBeVisible()
-  await homeLink.focus()
-  // Match Nuxt's scrollBehavior: page loading, its transition, then a frame.
-  // Arm this before Enter, and wait one extra frame beyond its restoration.
-  await page.evaluate(() => {
-    const app = (document.querySelector('#__nuxt') as HTMLElement & {
-      __vue_app__?: { $nuxt?: {
-        hooks: { hookOnce: (name: string, callback: () => void) => void }
-        '~transitionPromise'?: Promise<unknown>
-      } }
-    })?.__vue_app__?.$nuxt
-    if (!app) throw new Error('Nuxt is not ready for fixture navigation')
-    ;(window as Window & { portfolioNavigationReady?: Promise<void> }).portfolioNavigationReady = new Promise(resolve => {
-      app.hooks.hookOnce('page:loading:end', () => {
-        void Promise.resolve(app['~transitionPromise']).then(() => {
-          requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
-        })
-      })
-    })
-  })
-  const [fixtureResponse] = await Promise.all([
-    page.waitForResponse(response => new URL(response.url()).pathname === '/api/projects'
-      && response.request().method() === 'GET'),
-    homeLink.press('Enter'),
-  ])
+  const fixtureResponse = await navigateToFixtureHomepage(page, '/api/projects')
   expect(await fixtureResponse.json()).toEqual(projects)
-  await page.evaluate(() => (window as Window & { portfolioNavigationReady?: Promise<void> }).portfolioNavigationReady)
-  await expect(page).toHaveURL(/\/$/)
   await expect(page.locator('[data-mobile-project-card]')).toHaveCount(projects.length)
   await expect(page.locator('[data-mobile-project-carousel]')).toHaveAttribute('data-carousel-ready', 'true')
-  await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
-  // A later route scroll restoration must not undo the approach gesture.
-  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0)
   await expect.poll(() => page.locator('#portfolio').evaluate(element => element.getBoundingClientRect().top))
     .toBeGreaterThan(2 * (page.viewportSize()?.height || 800))
   // Give native lazy loading and the approach observer time to reveal any

@@ -56,6 +56,7 @@ async function callPublicArticles(rows: Row[], options: { organizationId?: strin
   vi.stubGlobal('defineEventHandler', (handler: unknown) => handler)
   vi.stubGlobal('getSupabaseAdmin', () => ({ from: vi.fn(() => query) }))
   vi.stubGlobal('createError', eventError)
+  vi.stubGlobal('getQuery', () => ({}))
   vi.stubGlobal('PUBLIC_ARTICLE_SUMMARY_COLUMNS', PUBLIC_ARTICLE_SUMMARY_COLUMNS)
   vi.stubGlobal('serializePublicArticleSummary', serializePublicArticleSummary)
 

@@ -16,15 +16,20 @@ onMounted(() => {
 async function handleLogin() {
   if (!email.value || !password.value) return
   error.value = ''
-  const ok = await auth.login(email.value, password.value, { deferOrganizationsUntilMfa: true })
-  if (ok) {
-    const redirect = safeAdminRedirect(route.query.redirect)
-    await navigateTo(auth.requiresAdminMfa
-      ? { path: '/admin/security', query: { redirect } }
-      : redirect, { replace: true })
-  } else {
-    error.value = 'Identifiants invalides.'
-    password.value = ''
+  try {
+    const ok = await auth.login(email.value, password.value, { deferOrganizationsUntilMfa: true })
+    if (ok) {
+      const redirect = safeAdminRedirect(route.query.redirect)
+      await navigateTo(auth.requiresAdminMfa
+        ? { path: '/admin/security', query: { redirect } }
+        : redirect, { replace: true })
+    } else {
+      error.value = 'Identifiants invalides.'
+      password.value = ''
+    }
+  }
+  catch {
+    error.value = 'La connexion est temporairement indisponible. Vérifiez votre connexion puis réessayez.'
   }
 }
 </script>
