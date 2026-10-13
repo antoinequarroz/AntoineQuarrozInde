@@ -26,14 +26,17 @@ async function openArticleFixtures(page: Page) {
   await page.locator('#blog').scrollIntoViewIfNeeded()
 }
 
-test('mobile home serializes only article summaries and keeps account and calendar scripts deferred', async ({ page }) => {
+test('mobile home serializes only article summaries and keeps account and calendar scripts deferred', async ({ page, request }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.route('**/api/marketing-event', route => route.fulfill({ json: { ok: true } }))
   const requests: string[] = []
   const sdkChecks: Promise<boolean>[] = []
   page.on('request', request => requests.push(request.url()))
   page.on('response', response => {
-    if (response.request().resourceType() === 'script' && new URL(response.url()).pathname.startsWith('/_nuxt/')) {
+    const pathname = new URL(response.url()).pathname
+    // Prefetch responses may be typed as "other" rather than "script". They
+    // still cost mobile bandwidth even when their code is not executed.
+    if (pathname.startsWith('/_nuxt/') && pathname.endsWith('.js')) {
       sdkChecks.push(response.text().then(source => /supabase-js|GoTrueClient|PostgrestClient/.test(source)))
     }
   })
@@ -52,6 +55,13 @@ test('mobile home serializes only article summaries and keeps account and calend
   expect(articles.some(article => 'content' in article)).toBe(false)
   await expect(page.locator('#mobile-menu-trigger')).toBeEnabled()
   await expect(page.locator('#contact a[data-cal-link]')).toHaveCount(1)
+  const scriptHints = await page.locator('link[rel="prefetch"][as="script"]').evaluateAll(links =>
+    links.map(link => (link as HTMLLinkElement).href).filter(href => new URL(href).pathname.startsWith('/_nuxt/')))
+  for (const href of scriptHints) {
+    const hintedScript = await request.get(href)
+    expect(hintedScript.ok()).toBe(true)
+    expect(await hintedScript.text()).not.toMatch(/supabase-js|GoTrueClient|PostgrestClient/)
+  }
   await page.waitForTimeout(600)
   expect((await Promise.all(sdkChecks)).some(Boolean)).toBe(false)
   expect(requests.some(url => url.includes('/embed/embed.js'))).toBe(false)
