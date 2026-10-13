@@ -72,7 +72,7 @@ const copy = computed(() => {
 .cinema-scene__card--design { left: calc(50% - clamp(220px, 31vw, 460px)); top: 42%; --exit-x: -180px; --exit-y: -45px; --rotation: -8deg; --exit-rotation: -10deg; }
 .cinema-scene__card--code { right: calc(50% - clamp(220px, 31vw, 460px)); top: 43%; --exit-x: 180px; --exit-y: -30px; --rotation: 7deg; --exit-rotation: 12deg; }
 .cinema-scene__card--experience { left: calc(50% - 88px); top: 72%; --exit-x: 0px; --exit-y: 110px; --rotation: -3deg; --exit-rotation: 7deg; }
-.cinema-scene__number { margin-right: 10px; font-size: 10px; font-weight: 600; color: #8b5cf6; }
+.cinema-scene__number { margin-right: 10px; font-size: 10px; font-weight: 600; color: #7c3aed; }
 .cinema-scene__label { font-size: 14px; font-weight: 600; }
 .cinema-scene__swatches { display: flex; margin-top: 20px; gap: 6px; }
 .cinema-scene__swatches i { height: 24px; flex: 1; border-radius: 6px; background: #8b5cf6; }
@@ -89,6 +89,7 @@ const copy = computed(() => {
 .cinema-scene__cue { position: absolute; bottom: 22px; inset-inline: 0; display: flex; justify-content: center; align-items: center; gap: 9px; font-size: 11px; letter-spacing: .04em; color: #7c3aed; transform: translateY(calc(var(--scene-exit) * 30px + var(--scene-arrival))); }
 .cinema-scene__cue svg { width: 15px; height: 15px; }
 :global(.dark .cinema-scene__card) { color: #ede9fe; background: #181323; border-color: rgb(167 139 250 / .2); }
+:global(.dark .cinema-scene__number) { color: #c4b5fd; }
 :global(.dark .cinema-scene__cue) { color: #c4b5fd; }
 @media (max-width: 767px) {
   .cinema-scene__halo { width: 92%; aspect-ratio: 1; }
