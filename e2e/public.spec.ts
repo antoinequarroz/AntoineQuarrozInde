@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 
 test('landing page exposes the main conversion paths', async ({ page }) => {
   await page.goto('/')
@@ -88,10 +88,7 @@ test('mobile service cards keep an even vertical rhythm', async ({ page }) => {
   expect(Math.abs(firstGap - secondGap)).toBeLessThanOrEqual(1)
 })
 
-test('mobile landing keeps every visible interactive target touch friendly', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 })
-  await page.goto('/')
-
+async function expectTouchFriendlyTargets(page: Page) {
   const smallTargets = await page.locator('a, button, input, select, textarea').evaluateAll(elements => (
     elements
       .map((element) => {
@@ -108,6 +105,24 @@ test('mobile landing keeps every visible interactive target touch friendly', asy
   ))
 
   expect(smallTargets).toEqual([])
+}
+
+test('mobile landing keeps every visible interactive target touch friendly', async ({ page, browser }) => {
+  const viewport = { width: 390, height: 844 }
+  // The server-rendered first paint must also be usable before hydration.
+  const serverContext = await browser.newContext({ javaScriptEnabled: false, viewport })
+  try {
+    const serverPage = await serverContext.newPage()
+    await serverPage.goto('/')
+    await expectTouchFriendlyTargets(serverPage)
+  }
+  finally { await serverContext.close() }
+
+  await page.setViewportSize(viewport)
+  await page.goto('/')
+  await expectTouchFriendlyTargets(page)
+  await expect(page.locator('.video-scroll-hero__controls button').first()).toBeVisible()
+  await expectTouchFriendlyTargets(page)
 })
 
 test('analytics failure never blocks the primary contact path', async ({ page }) => {

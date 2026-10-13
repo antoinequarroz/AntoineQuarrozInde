@@ -51,7 +51,7 @@ const copy = computed(() => {
         </div>
       </template>
       <template #default="{ controlsTarget }">
-        <SectionsAboutVideo ref="presentation" :controls-target="controlsTarget" />
+        <SectionsAboutVideo ref="presentation" :controls-target="controlsTarget" external-controls />
       </template>
     </UiVideoScrollHero>
     <div class="presentation-cinema__after">

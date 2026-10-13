@@ -1,5 +1,5 @@
 <script setup lang="ts">
-defineProps<{ controlsTarget?: HTMLElement | null }>()
+defineProps<{ controlsTarget?: HTMLElement | null; externalControls?: boolean }>()
 const { locale } = useI18n()
 const video = shallowRef<HTMLVideoElement | null>(null)
 const frame = shallowRef<HTMLElement | null>(null)
@@ -221,7 +221,8 @@ onBeforeUnmount(() => {
         <span aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.7c0-.8.9-1.3 1.6-.9l10 6.3c.7.4.7 1.4 0 1.8l-10 6.3c-.7.4-1.6-.1-1.6-.9V5.7Z" /></svg></span>
       </button>
     </div>
-    <Teleport :to="controlsTarget || 'body'" :disabled="!controlsTarget || expanded">
+    <!-- Wait for the external target rather than painting controls inside the scaled picture during hydration. -->
+    <Teleport v-if="!externalControls || controlsTarget || expanded" :to="controlsTarget || 'body'" :disabled="!controlsTarget || expanded">
       <div class="about-film__controls">
         <div class="about-film__toolbar">
           <button type="button" class="about-film__icon-button" :aria-label="playLabel" :title="playLabel" @click="togglePlayback">
