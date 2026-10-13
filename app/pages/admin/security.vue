@@ -19,7 +19,6 @@ type TotpEnrollment = {
 
 const auth = useAuthStore()
 const route = useRoute()
-const client = useSupabaseClient()
 
 const factors = ref<TotpFactor[]>([])
 const selectedFactorId = ref('')
@@ -111,6 +110,7 @@ async function loadFactors(options: { refreshAssurance?: boolean } = {}) {
       }
     }
 
+    const client = await useSupabaseClient()
     const { data, error } = await client.auth.mfa.listFactors()
     if (error) throw error
     factors.value = data.all.filter((factor): factor is TotpFactor => factor.factor_type === 'totp')
@@ -132,6 +132,7 @@ async function startEnrollment() {
   actionError.value = ''
   statusMessage.value = ''
   try {
+    const client = await useSupabaseClient()
     const { data, error } = await client.auth.mfa.enroll({
       factorType: 'totp',
       friendlyName: nextFactorName(),
@@ -168,6 +169,7 @@ async function verifyFactor(factorId: string) {
   actionError.value = ''
   statusMessage.value = ''
   try {
+    const client = await useSupabaseClient()
     const { error } = await client.auth.mfa.challengeAndVerify({
       factorId,
       code: verificationCode.value,
@@ -215,6 +217,7 @@ async function cancelEnrollment() {
 
   submitting.value = true
   try {
+    const client = await useSupabaseClient()
     const { error } = await client.auth.mfa.unenroll({ factorId: currentEnrollment.factorId })
     if (error) throw error
     statusMessage.value = 'Configuration annulée.'
@@ -246,6 +249,7 @@ async function removeFactor(factor: TotpFactor) {
   actionError.value = ''
   statusMessage.value = ''
   try {
+    const client = await useSupabaseClient()
     const { error } = await client.auth.mfa.unenroll({ factorId: factor.id })
     if (error) throw error
     pendingRemovalFactorId.value = null

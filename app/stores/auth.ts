@@ -90,7 +90,7 @@ export const useAuthStore = defineStore('auth', () => {
     mfaAssuranceKnown.value = false
     mfaError.value = ''
     try {
-      const client = useSupabaseClient()
+      const client = await useSupabaseClient()
       const { data, error } = await client.auth.mfa.getAuthenticatorAssuranceLevel()
       if (error) throw error
 
@@ -111,7 +111,7 @@ export const useAuthStore = defineStore('auth', () => {
     deferOrganizationsUntilMfa?: boolean
     deferOrganizationsUntilMfaChallenge?: boolean
   } = {}) {
-    const client = useSupabaseClient()
+    const client = await useSupabaseClient()
     let { data } = await client.auth.getSession()
     let session = data.session
 
@@ -153,7 +153,7 @@ export const useAuthStore = defineStore('auth', () => {
   ): Promise<boolean> {
     loading.value = true
     try {
-      const client = useSupabaseClient()
+      const client = await useSupabaseClient()
       const { data, error } = await client.auth.signInWithPassword({ email, password })
       if (error || !data.session) return false
       isAuthenticated.value = true
@@ -175,7 +175,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function logout() {
-    const client = useSupabaseClient()
+    const client = await useSupabaseClient()
     await client.auth.signOut()
     isAuthenticated.value = false
     accessToken.value = null

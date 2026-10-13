@@ -86,7 +86,7 @@ useHead(() => ({
 }))
 
 const projectsStore = useProjectsStore()
-const articlesStore = useArticlesStore()
+const articlesStore = useHomepageArticlesStore()
 const reviewsStore = useReviewsStore()
 const googleReviewsStore = useGoogleReviewsStore()
 

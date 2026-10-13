@@ -60,7 +60,7 @@ describe('auth store MFA ordering', () => {
     vi.stubGlobal('computed', <T>(getter: () => T) => ({ get value() { return getter() } }))
     vi.stubGlobal('defineStore', (_name: string, setup: () => unknown) => setup)
     vi.stubGlobal('useRuntimeConfig', () => runtime)
-    vi.stubGlobal('useSupabaseClient', () => ({
+    vi.stubGlobal('useSupabaseClient', async () => ({
       auth: {
         getSession: vi.fn(async () => ({
           data: {

@@ -1,11 +1,16 @@
 ﻿import { createI18nPagesConfig } from './shared/utils/localizedRoutePolicy'
 import { pwaPrecachePatterns, shouldCachePublicImage, shouldUsePublicOfflineFallback } from './shared/utils/pwaCachePolicy'
+import { deferAccountSdkResourceHints } from './shared/utils/resourceHintPolicy'
 
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   // DevTools currently imports the removed simple-git default export. Keep
   // its optional UI off while using the security-patched simple-git 4 release.
   devtools: { enabled: false },
+
+  hooks: {
+    'build:manifest': deferAccountSdkResourceHints,
+  },
 
   modules: [
     '@nuxtjs/tailwindcss',

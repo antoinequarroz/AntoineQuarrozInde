@@ -1,8 +1,8 @@
 <script setup lang="ts">
 const { t, locale } = useI18n()
-const store = useArticlesStore()
+const store = useHomepageArticlesStore()
 
-const articles = computed(() => store.published.slice(0, 3))
+const articles = computed(() => store.articles)
 
 const stackItems = computed(() =>
   articles.value.map(article => ({
@@ -10,11 +10,10 @@ const stackItems = computed(() =>
     title: article.title,
     description: article.excerpt,
     imageSrc: article.coverImage,
-    href: `/blog/${article.slug}`,
+    href: `/blog/${encodeURIComponent(article.slug)}`,
     ctaLabel: t('blog.read'),
     tag: article.tags?.[0] || 'Article',
     readTime: article.readTime,
-    content: article.content,
     createdAt: article.createdAt,
   })),
 )
@@ -33,20 +32,47 @@ interface ArticlePreview {
 }
 
 const selectedArticle = ref<ArticlePreview | null>(null)
+const previewLoading = ref(false)
+const previewError = ref(false)
+let previewRequestVersion = 0
 const articleDialogOpen = computed({
   get: () => selectedArticle.value !== null,
   set: (open) => {
-    if (!open) selectedArticle.value = null
+    if (!open) closeArticlePreview()
   },
 })
 
-function openArticlePreview(item: ArticlePreview) {
-  selectedArticle.value = item
+async function openArticlePreview(item: ArticlePreview) {
+  const version = ++previewRequestVersion
+  selectedArticle.value = { ...item }
+  previewLoading.value = true
+  previewError.value = false
+  try {
+    const preview = await store.fetchArticlePreview(String(item.id))
+    if (version !== previewRequestVersion || !selectedArticle.value) return
+    selectedArticle.value = {
+      ...selectedArticle.value,
+      title: preview.title,
+      description: preview.excerpt,
+      content: preview.content,
+    }
+  }
+  catch {
+    if (version === previewRequestVersion) previewError.value = true
+  }
+  finally {
+    if (version === previewRequestVersion) previewLoading.value = false
+  }
 }
 
 function closeArticlePreview() {
+  previewRequestVersion += 1
   selectedArticle.value = null
+  previewLoading.value = false
+  previewError.value = false
 }
+
+onBeforeUnmount(() => { previewRequestVersion += 1 })
 
 const { dialogRef, handleDialogKeydown } = useAccessibleDialog(
   articleDialogOpen,
@@ -138,9 +164,11 @@ const { dialogRef, handleDialogKeydown } = useAccessibleDialog(
             </button>
           </div>
 
-          <div class="p-5 overflow-y-auto max-h-[52vh] no-scrollbar">
+          <div class="p-5 overflow-y-auto max-h-[52vh] no-scrollbar" :aria-busy="previewLoading">
             <p class="text-sm text-white/75 leading-relaxed mb-4">{{ selectedArticle.description }}</p>
-            <div class="whitespace-pre-line text-base text-white/88 leading-relaxed">
+            <p v-if="previewLoading" role="status" class="text-sm text-white/70">Chargement de l’article…</p>
+            <p v-else-if="previewError" role="status" class="text-sm text-white/70">L’aperçu est temporairement indisponible. Vous pouvez ouvrir l’article complet ci-dessous.</p>
+            <div v-else class="whitespace-pre-line text-base text-white/88 leading-relaxed">
               {{ selectedArticle.content }}
             </div>
           </div>

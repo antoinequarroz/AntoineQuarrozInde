@@ -93,7 +93,7 @@ jobs:
           # E2E account. The candidate gate stays hermetic and receives no
           # production database credential.
           E2E_BASE_URL=http://127.0.0.1:3100 npm run test:e2e -- e2e/public.spec.ts --project=chromium --grep-invert @live-data
-          E2E_BASE_URL=http://127.0.0.1:3100 npm run test:e2e -- e2e/portfolio-media.spec.ts e2e/pwa-cache.spec.ts --project=chromium
+          E2E_BASE_URL=http://127.0.0.1:3100 npm run test:e2e -- e2e/portfolio-media.spec.ts e2e/pwa-cache.spec.ts e2e/homepage-payload.spec.ts --project=chromium
           npm run quality:seo:lab -- http://127.0.0.1:3100
       - name: Preserve candidate SEO baseline
         if: always()

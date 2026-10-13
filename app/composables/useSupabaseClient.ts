@@ -1,10 +1,12 @@
-import { createClient } from '@supabase/supabase-js'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
-let client: ReturnType<typeof createClient> | null = null
+let clientPromise: Promise<SupabaseClient> | null = null
 
 export function useSupabaseClient() {
-  if (client) return client
+  if (clientPromise) return clientPromise
 
+  // Capture Nuxt's context before awaiting the SDK. Public pages share the
+  // lightweight auth store but only private account actions need this client.
   const config = useRuntimeConfig()
   const supabaseUrl = config.public.supabaseUrl
   const supabaseKey = config.public.supabaseAnonKey || config.public.supabasePublishableKey
@@ -13,6 +15,12 @@ export function useSupabaseClient() {
     throw createError({ statusCode: 500, message: 'Supabase client config is missing' })
   }
 
-  client = createClient(supabaseUrl, supabaseKey)
-  return client
+  clientPromise = import('@supabase/supabase-js')
+    .then(({ createClient }) => createClient(supabaseUrl, supabaseKey))
+    .catch((error) => {
+      // A failed chunk load must not prevent a later login attempt.
+      clientPromise = null
+      throw error
+    })
+  return clientPromise
 }
