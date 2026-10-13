@@ -4,7 +4,9 @@ test.use({ serviceWorkers: 'allow', viewport: { width: 390, height: 844 } })
 
 test('PWA installs a small shell and handles only public offline navigations', async ({ context, page }) => {
   test.setTimeout(90_000)
-  await page.goto('/')
+  const initialResponse = await page.goto('/')
+  expect(initialResponse?.status()).toBe(200)
+  await expect(page).toHaveTitle(/Antoine Quarroz/i)
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'La connexion est interrompue.' })).toHaveCount(0)
 
@@ -31,7 +33,7 @@ test('PWA installs a small shell and handles only public offline navigations', a
       const cache = await caches.open(name)
       for (const request of await cache.keys()) paths.push(new URL(request.url).pathname)
     }
-    return paths.filter(path => path === '/' || /^\/(?:admin|portal|api)(?:\/|$)/.test(path))
+    return paths.filter(path => path === '/' || /^\/(?:admin|portal|api|ingest)(?:\/|$)/.test(path))
   })
   expect(cachedNavigations).toEqual([])
 
@@ -45,7 +47,8 @@ test('PWA installs a small shell and handles only public offline navigations', a
     await expect(page.goto(path), path).rejects.toThrow(/ERR_INTERNET_DISCONNECTED|ERR_FAILED/)
   }
   await context.setOffline(false)
-  await page.goto('/')
+  const restoredResponse = await page.goto('/')
+  expect(restoredResponse?.status()).toBe(200)
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'La connexion est interrompue.' })).toHaveCount(0)
 })
