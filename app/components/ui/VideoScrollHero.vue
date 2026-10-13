@@ -99,7 +99,7 @@ onBeforeUnmount(() => {
 .video-scroll-hero__heading { position: absolute; top: 24px; inset-inline: 20px; text-align: center; opacity: var(--video-scroll-heading-opacity, 1); pointer-events: none; }
 .video-scroll-hero__media { width: min(100%, calc(var(--video-scroll-height, calc(100svh - 12rem)) * 16 / 9)); transform: scale(var(--video-scroll-scale, var(--video-scroll-start))); transform-origin: center; }
 .video-scroll-hero__footer { position: relative; width: min(600px, 100%); justify-self: center; text-align: center; }
-.video-scroll-hero__controls { border-radius: 16px; overflow: hidden; box-shadow: 0 12px 40px -24px rgb(109 40 217 / .35); }
+.video-scroll-hero__controls { min-height: 104px; border-radius: 16px; overflow: hidden; box-shadow: 0 12px 40px -24px rgb(109 40 217 / .35); }
 @media (max-width: 767px) {
   .video-scroll-hero { height: 175svh; }
   .video-scroll-hero__stage { top: 4.5rem; height: calc(100svh - 4.5rem); padding-inline: 12px; }
