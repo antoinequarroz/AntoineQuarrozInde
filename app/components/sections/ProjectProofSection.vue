@@ -10,9 +10,9 @@ let motionQuery: MediaQueryList | null = null
 let isVisible = false
 
 const copy = computed(() => {
-  if (locale.value === 'en') return { number: '15+', title: 'custom tools for your SME' }
-  if (locale.value === 'de') return { number: '15+', title: 'massgeschneiderte Tools für Ihr KMU' }
-  return { number: '+15', title: 'outils sur mesure pour votre PME' }
+  if (locale.value === 'en') return { number: '15+', title: 'custom tools for your SME', hint: 'Swipe to explore the tools' }
+  if (locale.value === 'de') return { number: '15+', title: 'massgeschneiderte Tools für Ihr KMU', hint: 'Wischen, um die Tools zu entdecken' }
+  return { number: '+15', title: 'outils sur mesure pour votre PME', hint: 'Glissez pour découvrir les outils' }
 })
 
 const screens = [
@@ -42,6 +42,22 @@ function renderScene() {
   const staticLayout = reducedMotion || window.innerWidth < 768
   const rect = sectionRef.value.getBoundingClientRect()
   const viewport = Math.max(1, window.innerHeight)
+
+  // The mobile carousel has no sticky scroll timeline. Keep its heading readable
+  // and give the cards a small entrance driven by their position in the viewport.
+  if (staticLayout) {
+    const reveal = reducedMotion ? 1 : smoothstep(0, 1, (viewport * 0.9 - rect.top) / (viewport * 0.65))
+    stageRef.value.style.setProperty('--title-opacity', '1')
+    stageRef.value.style.setProperty('--title-scale', '1')
+    stageRef.value.style.setProperty('--title-blur', '0px')
+    stageRef.value.querySelectorAll<HTMLElement>('.tool-showcase__screen').forEach((screen) => {
+      screen.style.setProperty('--screen-mobile-y', `${((1 - reveal) * 20).toFixed(2)}px`)
+      screen.style.setProperty('--screen-mobile-scale', (0.97 + reveal * 0.03).toFixed(4))
+      screen.style.visibility = 'visible'
+    })
+    return
+  }
+
   const travel = Math.max(1, rect.height - viewport)
   const progress = reducedMotion ? 0.5 : clamp(-rect.top / travel)
   stageRef.value.querySelectorAll<HTMLElement>('.tool-showcase__screen').forEach((screen, index) => {
@@ -124,6 +140,7 @@ onBeforeUnmount(() => {
 
 <template>
   <section
+    id="tools"
     ref="sectionRef"
     aria-labelledby="tool-showcase-title"
     class="tool-showcase relative bg-surface-light-secondary dark:bg-surface-dark-secondary"
@@ -138,6 +155,10 @@ onBeforeUnmount(() => {
         <span class="tool-showcase__number">{{ copy.number }}</span>
         <span>{{ copy.title }}</span>
       </h2>
+
+      <p class="tool-showcase__hint" aria-hidden="true">
+        {{ copy.hint }} <span>→</span>
+      </p>
 
       <div class="tool-showcase__screens" aria-hidden="true">
         <figure
@@ -244,6 +265,8 @@ onBeforeUnmount(() => {
   perspective-origin: 50% 50%;
 }
 
+.tool-showcase__hint { display: none; }
+
 .tool-showcase__screen {
   --screen-x: 0px;
   --screen-y: 0px;
@@ -297,13 +320,13 @@ onBeforeUnmount(() => {
   .tool-showcase {
     height: auto;
     min-height: 0;
-    padding: 5.5rem 0;
+    padding: 4.5rem 0 3.5rem;
   }
 
   .tool-showcase__stage {
     position: relative;
     min-height: 0;
-    overflow: visible;
+    overflow: hidden;
   }
 
   .tool-showcase__title {
@@ -312,9 +335,33 @@ onBeforeUnmount(() => {
     left: auto;
     width: min(100% - 2.5rem, 32rem);
     margin: 0 auto;
-    font-size: clamp(2.6rem, 12vw, 4rem);
+    font-size: clamp(2.35rem, 10.5vw, 3.8rem);
+    line-height: 1.06;
+    gap: 0.35rem;
     opacity: 1;
+    filter: none;
     transform: none;
+    will-change: auto;
+  }
+
+  .tool-showcase__number { font-size: 1.4em; }
+
+  .tool-showcase__hint {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.65rem;
+    margin: 1.4rem 1.25rem 0;
+    color: rgb(100 116 139);
+    font-size: 0.8rem;
+  }
+
+  :global(.dark .tool-showcase__hint) { color: rgb(167 139 250); }
+
+  .tool-showcase__hint span {
+    font-size: 1.1rem;
+    line-height: 1;
   }
 
   .tool-showcase__screens {
@@ -324,7 +371,7 @@ onBeforeUnmount(() => {
     grid-auto-columns: min(84vw, 350px);
     grid-auto-flow: column;
     gap: 1rem;
-    margin-top: 3.5rem;
+    margin-top: 1.75rem;
     padding: 0 1.25rem 1.25rem;
     overflow-x: auto;
     overscroll-behavior-inline: contain;
@@ -348,7 +395,8 @@ onBeforeUnmount(() => {
     margin: 0;
     opacity: 1;
     rotate: 0deg;
-    transform: none;
+    transform: translateY(var(--screen-mobile-y, 0px)) scale(var(--screen-mobile-scale, 1));
+    transform-origin: center top;
     scroll-snap-align: center;
     will-change: auto;
   }
@@ -356,7 +404,39 @@ onBeforeUnmount(() => {
 
 @media (prefers-reduced-motion: reduce) {
   .tool-showcase { height: auto; min-height: 100svh; }
-  .tool-showcase__stage { position: relative; }
-  .tool-showcase__screen { will-change: auto; }
+  .tool-showcase__stage { position: relative; padding: 4.5rem 0; }
+  .tool-showcase__title {
+    position: relative;
+    inset: auto;
+    margin: 0 auto;
+    opacity: 1;
+    filter: none;
+    transform: none;
+    will-change: auto;
+  }
+  .tool-showcase__screens {
+    position: relative;
+    inset: auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.25rem;
+    margin-top: 2rem;
+    padding: 0 1.25rem;
+    perspective: none;
+  }
+  .tool-showcase__screen {
+    position: relative;
+    inset: auto;
+    width: 100%;
+    opacity: 1;
+    transform: none;
+    will-change: auto;
+  }
+}
+
+@media (max-width: 767px) and (prefers-reduced-motion: reduce) {
+  .tool-showcase { min-height: 0; }
+  .tool-showcase__stage { padding: 0; }
+  .tool-showcase__screens { grid-template-columns: none; }
 }
 </style>
