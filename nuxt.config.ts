@@ -1,4 +1,5 @@
 ﻿import { createI18nPagesConfig } from './shared/utils/localizedRoutePolicy'
+import { pwaPrecachePatterns, shouldCachePublicImage, shouldUsePublicOfflineFallback } from './shared/utils/pwaCachePolicy'
 
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
@@ -100,6 +101,7 @@ export default defineNuxtConfig({
     '/portal': { headers: { 'X-Robots-Tag': 'noindex, nofollow' } },
     '/portal/**': { headers: { 'X-Robots-Tag': 'noindex, nofollow' } },
     '/offline': { headers: { 'X-Robots-Tag': 'noindex, nofollow' } },
+    '/offline.htm': { headers: { 'X-Robots-Tag': 'noindex, nofollow' } },
     '/ressources/checklist-ia-pme': { headers: { 'X-Robots-Tag': 'noindex, follow' } },
   },
 
@@ -136,16 +138,33 @@ export default defineNuxtConfig({
       ],
     },
     workbox: {
-      // Route and Spline JavaScript is cached on first use below. Excluding it
-      // from precache avoids downloading every route and multi-megabyte 3D
-      // engine chunk during service-worker installation.
-      globPatterns: ['**/*.{css,html,png,svg,ico,woff2}'],
-      navigateFallback: '/',
-      navigateFallbackDenylist: [/^\/api\//, /^\/admin\//],
+      globPatterns: pwaPrecachePatterns,
+      // SSR navigations must still reach the server online. Only a failed
+      // public navigation gets the self-contained precached offline page.
+      navigateFallback: null,
       cleanupOutdatedCaches: true,
       clientsClaim: true,
       skipWaiting: true,
       runtimeCaching: [
+        {
+          urlPattern: shouldUsePublicOfflineFallback,
+          handler: 'NetworkOnly',
+          options: {
+            precacheFallback: { fallbackURL: '/offline.htm' },
+          },
+        },
+        {
+          urlPattern: shouldCachePublicImage,
+          handler: 'StaleWhileRevalidate',
+          options: {
+            cacheName: 'public-content-images-v1',
+            expiration: {
+              maxEntries: 40,
+              maxAgeSeconds: 60 * 60 * 24 * 30,
+            },
+            cacheableResponse: { statuses: [200] },
+          },
+        },
         {
           urlPattern: /^https:\/\/(?:www\.)?antoinequarroz\.ch\/_nuxt\/.*\.js$/i,
           handler: 'CacheFirst',

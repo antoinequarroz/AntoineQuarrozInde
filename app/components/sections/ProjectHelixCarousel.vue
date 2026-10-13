@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Project } from '~/types'
 import { getHelixAngleStep, getHelixTrackHeightVh, resolveHelixLayoutTotal } from '~/utils/projectHelixLayout'
+import { resolveProjectPreview } from '~/utils/projectPreview'
 
 type PortfolioCategory = 'all' | Project['category']
 
@@ -23,6 +24,8 @@ const mobileActiveIndex = ref(0)
 const mobileReady = ref(false)
 const desktopReady = ref(false)
 const prefersReducedMotion = ref(false)
+const isDesktopViewport = ref(false)
+const imagesReady = ref(false)
 const desktopImageIndexes = ref(new Set<number>())
 
 let cards: HTMLElement[] = []
@@ -38,9 +41,14 @@ let visualProgressReady = false
 let observer: IntersectionObserver | null = null
 let sectionIsNear = false
 let motionQuery: MediaQueryList | null = null
+let desktopQuery: MediaQueryList | null = null
 
 function updateMotionPreference() {
   prefersReducedMotion.value = Boolean(motionQuery?.matches)
+}
+
+function updateViewportPreference() {
+  isDesktopViewport.value = Boolean(desktopQuery?.matches)
 }
 let metrics = {
   top: 0,
@@ -97,6 +105,7 @@ const selectionCountLabel = computed(() => t(
 // and its upcoming neighbours mounted so the helix remains visually seamless
 // while avoiding an eager download of projects that are still behind it.
 function warmDesktopImages(index: number) {
+  if (!imagesReady.value || !isDesktopViewport.value || prefersReducedMotion.value) return
   const total = props.projects.length
   if (!total) return
 
@@ -111,7 +120,13 @@ function warmDesktopImages(index: number) {
 }
 
 function shouldRenderDesktopImage(index: number) {
-  return desktopImageIndexes.value.has(index)
+  return imagesReady.value && isDesktopViewport.value && !prefersReducedMotion.value
+    && desktopImageIndexes.value.has(index)
+}
+
+function shouldRenderMobileImage(index: number) {
+  return imagesReady.value && (!isDesktopViewport.value || prefersReducedMotion.value)
+    && Math.abs(index - mobileActiveIndex.value) <= 1
 }
 
 function categoryLabel(category: PortfolioCategory) {
@@ -354,8 +369,11 @@ async function refreshProjects() {
 
 onMounted(async () => {
   motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+  desktopQuery = window.matchMedia('(min-width: 768px)')
   updateMotionPreference()
+  updateViewportPreference()
   motionQuery.addEventListener('change', updateMotionPreference)
+  desktopQuery.addEventListener('change', updateViewportPreference)
   await nextTick()
   collectCards()
   measure()
@@ -366,8 +384,9 @@ onMounted(async () => {
   scheduleMobileIndex()
   desktopReady.value = true
 
-  observer = new IntersectionObserver(([entry]) => {
+  const onIntersection = ([entry]: IntersectionObserverEntry[]) => {
     sectionIsNear = Boolean(entry?.isIntersecting)
+    if (sectionIsNear) imagesReady.value = true
     if (!sectionIsNear) lastRenderSample = 0
     cards.forEach((card) => {
       card.style.willChange = sectionIsNear ? 'transform, opacity' : 'auto'
@@ -376,8 +395,15 @@ onMounted(async () => {
       progressBarRef.value.style.willChange = sectionIsNear ? 'transform' : 'auto'
     }
     if (sectionIsNear) scheduleRender()
-  }, { rootMargin: '100% 0px' })
-  if (rootRef.value) observer.observe(rootRef.value)
+  }
+  if ('IntersectionObserver' in window) {
+    observer = new IntersectionObserver(onIntersection, { rootMargin: '100% 0px' })
+    if (rootRef.value) observer.observe(rootRef.value)
+  }
+  else {
+    imagesReady.value = true
+    sectionIsNear = true
+  }
 
   window.addEventListener('scroll', scheduleRender, { passive: true })
   window.addEventListener('resize', scheduleMeasure, { passive: true })
@@ -389,6 +415,13 @@ watch(activeSourceIndex, (index) => {
   void keepActiveNavVisible()
 })
 
+watch([imagesReady, isDesktopViewport, prefersReducedMotion], async () => {
+  await nextTick()
+  collectCards()
+  measure()
+  warmDesktopImages(activeSourceIndex.value)
+})
+
 onBeforeUnmount(() => {
   observer?.disconnect()
   window.removeEventListener('scroll', scheduleRender)
@@ -397,6 +430,7 @@ onBeforeUnmount(() => {
   if (resizeFrame) window.cancelAnimationFrame(resizeFrame)
   if (mobileScrollFrame) window.cancelAnimationFrame(mobileScrollFrame)
   motionQuery?.removeEventListener('change', updateMotionPreference)
+  desktopQuery?.removeEventListener('change', updateViewportPreference)
 })
 </script>
 
@@ -436,7 +470,7 @@ onBeforeUnmount(() => {
             class="min-w-[84vw] snap-center overflow-hidden rounded-[1.35rem] border border-violet-500/15 bg-white/80 shadow-xl shadow-violet-500/10 dark:border-white/10 dark:bg-white/[0.04] max-[430px]:min-w-[88vw] max-[390px]:min-w-[91vw] max-[390px]:rounded-[1.2rem]"
           >
             <div class="relative h-48 overflow-hidden bg-[#10101b] max-[430px]:h-44 max-[390px]:h-40">
-              <img v-if="project.image" :src="project.image" :alt="project.title" class="h-full w-full object-cover" loading="lazy" decoding="async">
+              <img v-if="project.image && shouldRenderMobileImage(index)" v-bind="resolveProjectPreview(project.image)" :alt="project.title" class="h-full w-full object-cover" loading="lazy" decoding="async">
               <div v-else class="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(139,92,246,0.42),transparent_36%),radial-gradient(circle_at_72%_72%,rgba(34,211,238,0.28),transparent_34%)]" />
               <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
               <div class="absolute inset-x-4 bottom-4">
@@ -537,7 +571,7 @@ onBeforeUnmount(() => {
             >
               <div data-helix-surface class="relative h-full w-full overflow-hidden rounded-[inherit] border border-violet-500/15 bg-white/95 dark:border-white/15 dark:bg-[#11111b]">
                 <div data-helix-image class="relative h-36 overflow-hidden bg-[#10101b] xl:h-44">
-                  <img v-if="project.image && shouldRenderDesktopImage(index)" :src="project.image" :alt="project.title" class="h-full w-full object-cover" loading="lazy" decoding="async">
+                  <img v-if="project.image && shouldRenderDesktopImage(index)" v-bind="resolveProjectPreview(project.image)" :alt="project.title" class="h-full w-full object-cover" loading="lazy" decoding="async">
                   <div v-else class="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(139,92,246,0.42),transparent_36%),radial-gradient(circle_at_72%_72%,rgba(34,211,238,0.28),transparent_34%)]" />
                   <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
                   <span class="absolute left-4 top-4 rounded-full bg-black/45 px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-white">{{ categoryLabel(project.category) }}</span>
