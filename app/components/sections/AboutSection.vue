@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const { t } = useI18n()
+const localePath = useLocalePath()
 
 const imageError = ref(false)
 const photoSrc = '/about.jpg'
@@ -175,6 +176,14 @@ const tools = [
               </p>
             </div>
           </div>
+
+          <NuxtLink
+            :to="`${localePath('/')}#presentation`"
+            class="mt-4 inline-flex min-h-11 items-center gap-2 rounded-lg px-2 text-sm font-semibold text-violet-700 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-violet-500 dark:text-violet-300"
+          >
+            <svg aria-hidden="true" class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.7c0-.8.9-1.3 1.6-.9l10 6.3c.7.4.7 1.4 0 1.8l-10 6.3c-.7.4-1.6-.1-1.6-.9V5.7Z" /></svg>
+            {{ t('about.video_link') }}
+          </NuxtLink>
 
           <!-- Séparateur -->
           <div class="my-8 h-px bg-gradient-to-r from-violet-500/20 via-fuchsia-400/10 to-transparent" />
