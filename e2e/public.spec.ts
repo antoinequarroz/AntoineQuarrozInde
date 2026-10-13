@@ -125,6 +125,33 @@ test('mobile landing keeps every visible interactive target touch friendly', asy
   await expectTouchFriendlyTargets(page)
 })
 
+test('mobile presentation loads only its responsive preview and waits to load the film', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  const mediaRequests: string[] = []
+  page.on('request', request => {
+    if (request.url().includes('/videos/presentation/')) mediaRequests.push(request.url())
+  })
+  await page.goto('/')
+  await expect(page.locator('.video-scroll-hero__controls button').first()).toBeVisible()
+  expect(mediaRequests.filter(url => url.endsWith('.mp4'))).toEqual([])
+  expect(mediaRequests.some(url => /affiche-paysage\./.test(url))).toBe(false)
+
+  await page.locator('#presentation').scrollIntoViewIfNeeded()
+  const preview = page.locator('#presentation picture img')
+  await expect.poll(() => preview.evaluate(image => (image as HTMLImageElement).currentSrc))
+    .toContain('affiche-portrait.webp')
+  await expect.poll(() => preview.evaluate(image => (image as HTMLImageElement).naturalWidth)).toBeGreaterThan(0)
+  expect(mediaRequests.some(url => /affiche-paysage\./.test(url))).toBe(false)
+  expect(mediaRequests.filter(url => url.endsWith('.mp4'))).toEqual([])
+
+  const movieRequest = page.waitForRequest(request => request.url().endsWith('/antoine-portrait.mp4'))
+  await page.locator('#presentation .about-film__start').click()
+  await movieRequest
+  await expect(page.locator('#presentation video')).toHaveAttribute('poster', '/videos/presentation/affiche-portrait.webp')
+  expect(mediaRequests.some(url => url.endsWith('/antoine-paysage.mp4'))).toBe(false)
+})
+
 test('analytics failure never blocks the primary contact path', async ({ page }) => {
   await page.route('**/api/marketing-event', route => route.abort())
   await page.goto('/')

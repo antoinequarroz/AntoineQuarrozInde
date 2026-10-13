@@ -43,7 +43,7 @@ const copy = computed(() => {
   }
 })
 
-const poster = computed(() => `/videos/presentation/affiche-${portrait.value ? 'portrait' : 'paysage'}.jpg`)
+const poster = computed(() => `/videos/presentation/affiche-${portrait.value ? 'portrait' : 'paysage'}.webp`)
 const progress = computed(() => Math.min(100, currentTime.value / duration.value * 100))
 const playLabel = computed(() => playing.value ? copy.value.pause : ended.value ? copy.value.replay : copy.value.play)
 
@@ -78,6 +78,9 @@ async function playVideo(manual = false) {
   }
   if (!started.value) {
     player.muted = muted.value
+    // The responsive, lazy picture owns the first preview. Set the video poster
+    // only when playback starts, after the viewport has selected its format.
+    player.poster = poster.value
     player.src = `/videos/presentation/antoine-${portrait.value ? 'portrait' : 'paysage'}.mp4`
     started.value = true
   }
@@ -199,7 +202,6 @@ onBeforeUnmount(() => {
       <video
         ref="video"
         class="about-film__player"
-        :poster="poster"
         :aria-label="copy.title"
         :muted="muted"
         preload="none"
@@ -214,7 +216,9 @@ onBeforeUnmount(() => {
         <track kind="subtitles" src="/videos/presentation/sous-titres-fr.vtt" srclang="fr" label="Français" @load="syncCaptions">
       </video>
       <picture v-if="!started || ended" class="about-film__poster">
+        <source media="(max-width: 767px)" srcset="/videos/presentation/affiche-portrait.webp" type="image/webp">
         <source media="(max-width: 767px)" srcset="/videos/presentation/affiche-portrait.jpg">
+        <source srcset="/videos/presentation/affiche-paysage.webp" type="image/webp">
         <img src="/videos/presentation/affiche-paysage.jpg" alt="" width="1920" height="1080" loading="lazy" decoding="async">
       </picture>
       <button v-if="!playing" type="button" class="about-film__start" :aria-label="playLabel" @click="playVideo(true)">
