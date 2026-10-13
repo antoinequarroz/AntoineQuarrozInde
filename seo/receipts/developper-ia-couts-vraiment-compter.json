@@ -1,0 +1,18 @@
+{
+  "status": "published",
+  "articleId": 37,
+  "url": "https://www.antoinequarroz.ch/blog/developper-ia-couts-vraiment-compter",
+  "httpStatus": 200,
+  "cover": "https://oxlrljszatejqxhclmbu.supabase.co/storage/v1/object/public/media/hermes/51fdc6e39f9995709246a94728f275cce254a9d9be1a09ccc408dae79cf0e2ad.png",
+  "coverDimensions": [
+    1200,
+    675
+  ],
+  "sourceUrls": [
+    "https://docs.github.com/en/copilot/get-started/plans",
+    "https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents"
+  ],
+  "verifiedAt": "2026-10-13",
+  "rendering": "SSR title, headings, table, cover and structured data verified",
+  "sourceVerification": "Primary documents read with web tool; Anthropic rejects urllib automated requests with HTTP 403"
+}

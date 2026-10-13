@@ -76,3 +76,7 @@ Aucune parmi les 31 articles de ce périmètre : chaque article est accessible d
 ## Publication du 1er octobre 2026
 
 - Article 024 : [Hébergement d’un site web en Suisse : quels critères pour une PME ?](https://www.antoinequarroz.ch/blog/hebergement-site-web-suisse-criteres-pme) — public, vérifié ; grille de comparaison, FAQ, sources PFPDT/OFCS et lien vers la page de service.
+
+## Publication du 13 octobre 2026
+
+- Article 032 : [Développer avec l’IA : quels coûts faut-il vraiment compter ?](https://www.antoinequarroz.ch/blog/developper-ia-couts-vraiment-compter) — public et vérifié ; méthode de cadrage, exemple fictif, sources GitHub/Anthropic et liens internes vers le hub IA et trois articles complémentaires.

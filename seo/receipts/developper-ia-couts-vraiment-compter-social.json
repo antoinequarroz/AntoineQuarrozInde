@@ -1,0 +1,35 @@
+{
+  "drafts": [
+    {
+      "post": {
+        "id": "2d03269f-c9fc-45ff-8f08-6b6d8ac1dece",
+        "platform": "linkedin",
+        "status": "draft",
+        "version": 1,
+        "media_kind": null,
+        "media_url": null,
+        "media_title": null
+      },
+      "idempotent": false
+    },
+    {
+      "post": {
+        "id": "bde97036-ba43-4079-992e-857496271a6c",
+        "platform": "x",
+        "status": "draft",
+        "version": 1,
+        "media_kind": null,
+        "media_url": null,
+        "media_title": null
+      },
+      "idempotent": false
+    }
+  ],
+  "platforms": [
+    "linkedin",
+    "x"
+  ],
+  "approval": "required",
+  "published": false,
+  "utm": "Publication flow tracked_social_content injects platform/social/article_slug; no social publication triggered"
+}
