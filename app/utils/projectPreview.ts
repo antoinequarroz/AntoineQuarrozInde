@@ -4,7 +4,7 @@ export interface ProjectPreview {
   readonly sizes?: string
 }
 
-const carouselPreviewSizes = '(min-width: 1280px) 280px, (min-width: 768px) 260px, (max-width: 390px) 91vw, (max-width: 430px) 88vw, 84vw'
+const carouselPreviewSizes = '(min-width: 768px) and (prefers-reduced-motion: reduce) 84vw, (min-width: 1280px) 280px, (min-width: 768px) 260px, (max-width: 390px) 91vw, (max-width: 430px) 88vw, 84vw'
 
 function responsivePreview(name: string): ProjectPreview {
   return {
