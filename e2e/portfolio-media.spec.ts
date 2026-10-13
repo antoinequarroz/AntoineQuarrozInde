@@ -194,6 +194,9 @@ test('reduced motion uses the horizontal portfolio without loading its hidden he
   await expect(carousel).toBeVisible()
   await expect(page.locator('[data-helix-card]')).toHaveCount(0)
   await expect(carousel.locator('img')).toHaveCount(2)
+  // Wide horizontal cards must receive the large preview even at DPR 1.
+  await expect.poll(() => carousel.locator('[data-mobile-project-card]').first().locator('img')
+    .evaluate(image => (image as HTMLImageElement).currentSrc)).toMatch(/\/lifxp-0b05f10e-800\.webp$/)
   await scrollMobileProject(page, 5)
   await expect(carousel.locator('img')).toHaveCount(3)
   await expect.poll(() => carousel.locator('[aria-current="true"] img').evaluate(image => (image as HTMLImageElement).naturalWidth))
