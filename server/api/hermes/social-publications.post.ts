@@ -5,7 +5,7 @@ export default defineEventHandler(async (event) => {
   const supabase = getSupabaseAdmin()
   const action = String(body.action || '')
   if (action === 'readiness') {
-    const platform = validateSocialPlatform(body.platform)
+    const platform = requireAutomatedSocialPlatform(body.platform)
     const state = ['ready', 'blocked', 'unknown'].includes(String(body.state)) ? String(body.state) : 'unknown'
     const message = String(body.message || '').trim().slice(0, 300)
     if (!message) throw createError({ statusCode: 400, message: 'Message requis.' })
@@ -39,6 +39,7 @@ export default defineEventHandler(async (event) => {
   const { data, error } = await supabase.from('social_posts').update({
     ...updates, version: version + 1, updated_at: new Date().toISOString(),
   }).eq('organization_id', organization.id).eq('id', id).eq('status', 'publishing').eq('version', version)
+    .in('platform', ['linkedin', 'x'])
     .select('id,status,version').maybeSingle()
   if (error) throw createError({ statusCode: 500, message: error.message })
   if (!data) throw createError({ statusCode: 409, message: 'État de publication incompatible.' })

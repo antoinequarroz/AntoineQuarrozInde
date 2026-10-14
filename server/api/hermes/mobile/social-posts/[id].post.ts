@@ -6,6 +6,7 @@ import {
   nextSocialPublicationAt,
   validateExpectedVersion,
   validateSocialContent,
+  requireAutomatedSocialPlatform,
 } from '../../../../utils/socialPublication'
 
 const ALLOWED_ACTIONS = ['save', 'reject', 'approve_scheduled', 'approve_now'] as const
@@ -27,6 +28,7 @@ export default defineEventHandler(async (event) => {
     .eq('organization_id', device.organization_id).eq('id', id).maybeSingle()
   if (currentError) throw createError({ statusCode: 500, message: 'Publication indisponible.' })
   if (!current) throw createError({ statusCode: 404, message: 'Brouillon introuvable.' })
+  requireAutomatedSocialPlatform(current.platform)
   if (!['draft', 'failed'].includes(current.status)) {
     throw createError({ statusCode: 409, message: 'Cette version ne peut plus être modifiée.' })
   }
