@@ -1,0 +1,44 @@
+{
+  "status": "published_verified",
+  "url": "https://www.antoinequarroz.ch/blog/formulaire-contact-details-vraie-demande",
+  "articleId": 38,
+  "title": "33. Formulaire de contact : les détails qui facilitent une vraie demande",
+  "publishedAt": "2026-10-14T06:48:06.340048+00:00",
+  "idempotent": false,
+  "verifiedText": "Je distingue trois étapes : aider la personne à expliquer son besoin",
+  "httpStatus": 200,
+  "cover": {
+    "url": "https://oxlrljszatejqxhclmbu.supabase.co/storage/v1/object/public/media/hermes/b2e286defe80c354c40b24172d0e1ef9609b33f6e55cd553eea2cc9f776d89ad.png",
+    "httpStatus": 200,
+    "mime": "image/png",
+    "width": 1200,
+    "height": 675,
+    "sha256": "e1dfd53b77100fbe7271c58adcd953da3d610dac50c899cf0a934ac65bb3b725"
+  },
+  "social": [
+    {
+      "platform": "linkedin",
+      "sourceKey": "formulaire-contact-details-vraie-demande-linkedin",
+      "id": "03dc8c27-60de-450a-850e-ed33bd4a9334",
+      "status": "draft",
+      "version": 1,
+      "alreadyPresent": false,
+      "retryIdempotent": true
+    },
+    {
+      "platform": "x",
+      "sourceKey": "formulaire-contact-details-vraie-demande-x",
+      "id": "2e714dc3-1913-43e4-9c22-4ce18f173097",
+      "status": "draft",
+      "version": 1,
+      "alreadyPresent": false,
+      "retryIdempotent": true
+    }
+  ],
+  "sourceUrls": [
+    "https://www.w3.org/WAI/tutorials/forms/",
+    "https://www.w3.org/WAI/test-evaluate/preliminary/#forms",
+    "https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/input",
+    "https://www.w3.org/WAI/tutorials/forms/notifications/"
+  ]
+}
