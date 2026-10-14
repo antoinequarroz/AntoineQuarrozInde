@@ -80,3 +80,7 @@ Aucune parmi les 31 articles de ce périmètre : chaque article est accessible d
 ## Publication du 13 octobre 2026
 
 - Article 032 : [Développer avec l’IA : quels coûts faut-il vraiment compter ?](https://www.antoinequarroz.ch/blog/developper-ia-couts-vraiment-compter) — public et vérifié ; méthode de cadrage, exemple fictif, sources GitHub/Anthropic et liens internes vers le hub IA et trois articles complémentaires.
+
+## Publication du 14 octobre 2026
+
+- Article 033 : [Formulaire de contact : les détails qui facilitent une vraie demande](https://www.antoinequarroz.ch/blog/formulaire-contact-details-vraie-demande) — public et vérifié ; méthode de recette, exemple fictif, champs/mobile/erreurs/confirmation, sources W3C WAI et MDN. Page SSR, canonical, BlogPosting, couverture native PNG 1200 × 675, sitemap et liens entrants depuis `/blog` et `/creation-site-internet-valais` vérifiés. Liens contextuels vers le hub Création de site, la checklist et le cadrage de projet.
