@@ -1,6 +1,8 @@
 import { expect, test } from '@playwright/test'
 import { adminCredentialsConfigured, loginAdmin } from './helpers/admin-auth'
 
+test.use({ trace: 'off', screenshot: 'off', video: 'off' })
+
 test('Instagram observations and draft review stay separate from automatic publication', async ({ page }) => {
   test.setTimeout(120_000)
   test.skip(!adminCredentialsConfigured, 'E2E administrator credentials are required')
