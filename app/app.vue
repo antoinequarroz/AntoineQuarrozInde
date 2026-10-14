@@ -2,6 +2,10 @@
 import { resolvePublicSocialImage } from '~~/shared/utils/publicSeoIdentity'
 
 const { locale, t } = useI18n()
+const preferredMotion = usePreferredReducedMotion()
+const pageTransition = computed(() => preferredMotion.value === 'reduce'
+  ? false
+  : { name: 'page', mode: 'out-in' as const })
 const runtimeConfig = useRuntimeConfig()
 const defaultSocialImage = computed(() => resolvePublicSocialImage(
   String(runtimeConfig.public.siteUrl),
@@ -32,7 +36,7 @@ useSeoMeta({
     <div>
         <NuxtRouteAnnouncer />
         <NuxtLayout>
-            <NuxtPage :transition="{ name: 'page', mode: 'out-in' }" />
+            <NuxtPage :transition="pageTransition" />
         </NuxtLayout>
         <UiAppToast />
     </div>

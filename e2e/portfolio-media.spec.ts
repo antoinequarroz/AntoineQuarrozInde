@@ -1,6 +1,8 @@
 import { expect, test, type Page } from '@playwright/test'
 import { navigateToFixtureHomepage } from './helpers/fixtureHomepage'
 
+test.describe.configure({ retries: 0 })
+
 const originalArtwork = [
   'https://raw.githubusercontent.com/antoinequarroz/lifxp/main/assets/brand/lifxp-ui-direction.png',
   'https://remembeyes.expo.app/assets/assets/images/demo-contact-sheet.e5c717eb137491492e784a22cb8ee1cf.png',
@@ -34,6 +36,11 @@ async function openFixtureHomepage(page: Page) {
   })
   await page.route('**/api/marketing-event', route => route.fulfill({ json: { ok: true } }))
   await page.route('**/api/projects', route => route.fulfill({ json: projects }))
+  // All homepage dependencies participate in its async navigation. Keep the
+  // portfolio fixture independent of a live article database or Google API.
+  await page.route('**/api/public/articles?*', route => route.fulfill({ json: [] }))
+  await page.route('**/api/reviews', route => route.fulfill({ json: [] }))
+  await page.route('**/api/google-reviews?*', route => route.fulfill({ json: { configured: false, reviews: [] } }))
   await page.route('https://portfolio-fixtures.invalid/**', route => route.fulfill({
     contentType: 'image/svg+xml',
     body: '<svg xmlns="http://www.w3.org/2000/svg" width="480" height="300"><rect width="480" height="300" fill="#7c3aed"/></svg>',
