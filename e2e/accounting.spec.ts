@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test'
 import { adminCredentialsConfigured, loginAdmin } from './helpers/admin-auth'
 
 test.use({ trace: 'off', screenshot: 'off', video: 'off' })
+test.describe.configure({ retries: 0 })
 
 const accountingSummary = {
   from: '2026-01-01',
@@ -58,8 +59,15 @@ test('admin can inspect accounting and create recurring draft schedules', async 
   await expect.poll(() => createdBodies.length).toBe(1)
   expect(createdBodies[0]).toMatchObject({ clientId: 12, cadence: 'monthly', items: [{ unitPriceCents: 15_000 }] })
 
-  await page.getByRole('button', { name: 'Générer les échéances' }).focus()
-  await expect(page.getByRole('button', { name: 'Générer les échéances' })).toBeFocused()
+  // Receiving the POST precedes createProfile's reload, which temporarily
+  // removes the recurrence section. Wait for its remounted form and finally
+  // state before focusing the button, so a reload cannot discard that focus.
+  await expect(page.getByRole('form', { name: 'Nouvelle facture récurrente' })).toHaveAttribute('aria-busy', 'false')
+  await expect(page.getByRole('button', { name: 'Créer la récurrence' })).toBeEnabled()
+  const generateButton = page.getByRole('button', { name: 'Générer les échéances' })
+  await expect(generateButton).toBeEnabled()
+  await generateButton.focus()
+  await expect(generateButton).toBeFocused()
 
   if (process.env.VISUAL_CAPTURE) {
     await page.screenshot({ path: testInfo.outputPath('aq052-057-accounting-desktop.png'), fullPage: true })

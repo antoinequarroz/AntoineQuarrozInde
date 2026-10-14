@@ -7,6 +7,53 @@ test('landing page exposes the main conversion paths', async ({ page }) => {
   await expect(page.getByRole('link', { name: /contact|parler|projet/i }).first()).toBeVisible()
 })
 
+test.describe('reduced-motion page navigation', () => {
+  test.describe.configure({ retries: 0 })
+
+  test('replaces the old page and restores normal transitions when the preference changes', async ({ page }) => {
+    const hydrationWarnings: string[] = []
+    page.on('console', message => {
+      if (/hydration.*mismatch/i.test(message.text())) hydrationWarnings.push(message.text())
+    })
+    await page.route('**/api/marketing-event', route => route.fulfill({ json: { ok: true } }))
+    await page.route('**/api/projects', route => route.fulfill({ json: [] }))
+    await page.route('**/api/public/articles?*', route => route.fulfill({ json: [] }))
+    await page.route('**/api/reviews', route => route.fulfill({ json: [] }))
+    await page.route('**/api/google-reviews?*', route => route.fulfill({ json: { configured: false, reviews: [] } }))
+
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await page.goto('/mentions-legales', { waitUntil: 'domcontentloaded' })
+    await expect(page.locator('#mobile-menu-trigger')).toBeEnabled()
+    await page.evaluate(() => {
+      const scope = window as Window & { pageTransitionsObserved?: number }
+      scope.pageTransitionsObserved = 0
+      new MutationObserver(() => {
+        if (document.querySelector('#main-content .page-enter-active, #main-content .page-leave-active')) {
+          scope.pageTransitionsObserved! += 1
+        }
+      }).observe(document.querySelector('#main-content')!, { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] })
+    })
+
+    const homeLink = page.getByRole('link', { name: /^AQ —/ })
+    await homeLink.press('Enter')
+    await expect(page).toHaveURL(/\/$/)
+    await expect(page.locator('#hero h1')).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Mentions légales', exact: true })).toHaveCount(0)
+    await page.getByRole('link', { name: 'Mentions légales', exact: true }).click()
+    await expect(page).toHaveURL(/\/mentions-legales$/)
+    await expect(page.getByRole('heading', { name: 'Mentions légales', exact: true })).toBeVisible()
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0)
+    expect(await page.evaluate(() => (window as Window & { pageTransitionsObserved?: number }).pageTransitionsObserved)).toBe(0)
+
+    await page.emulateMedia({ reducedMotion: 'no-preference' })
+    await homeLink.press('Enter')
+    await expect(page.locator('#hero h1')).toBeVisible()
+    await expect.poll(() => page.evaluate(() => (window as Window & { pageTransitionsObserved?: number }).pageTransitionsObserved || 0)).toBeGreaterThan(0)
+    await expect(page.locator('.page-enter-active, .page-leave-active')).toHaveCount(0)
+    expect(hydrationWarnings).toEqual([])
+  })
+})
+
 test('hero remains usable without JavaScript and with reduced motion', async ({ browser }) => {
   const noScriptContext = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 390, height: 844 } })
   const noScriptPage = await noScriptContext.newPage()
