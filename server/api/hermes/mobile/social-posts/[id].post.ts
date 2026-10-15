@@ -24,11 +24,12 @@ export default defineEventHandler(async (event) => {
 
   const supabase = getSupabaseAdmin()
   const { data: current, error: currentError } = await supabase.from('social_posts')
-    .select('platform,status,article_url')
+    .select('platform,status,article_url,media_images')
     .eq('organization_id', device.organization_id).eq('id', id).maybeSingle()
   if (currentError) throw createError({ statusCode: 500, message: 'Publication indisponible.' })
   if (!current) throw createError({ statusCode: 404, message: 'Brouillon introuvable.' })
   requireAutomatedSocialPlatform(current.platform)
+  if (action.startsWith('approve_')) requireAutomaticSocialMedia(current.media_images)
   if (!['draft', 'failed'].includes(current.status)) {
     throw createError({ statusCode: 409, message: 'Cette version ne peut plus être modifiée.' })
   }

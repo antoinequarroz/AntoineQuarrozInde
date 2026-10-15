@@ -10,7 +10,7 @@ export default defineEventHandler(async (event) => {
   const { data, error } = await getSupabaseAdmin().from('social_posts').update({
     content, status: 'approved', publish_after: null, last_error: null,
     version: version + 1, updated_at: new Date().toISOString(),
-  }).eq('organization_id', org.id).eq('id', id).eq('platform', 'instagram')
+  }).eq('organization_id', org.id).eq('id', id).eq('platform', 'instagram').eq('media_images', '[]')
     .in('status', ['draft', 'failed']).eq('version', version)
     .select('id,content,status,publish_after,version,updated_at').maybeSingle()
   if (error) throw createError({ statusCode: 500, message: 'La relecture n’a pas été enregistrée.' })
