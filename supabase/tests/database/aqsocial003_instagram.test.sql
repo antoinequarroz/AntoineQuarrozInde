@@ -19,8 +19,9 @@ select public.store_instagram_insight('00000000-0000-0000-0000-000000000801','20
 select public.store_instagram_insight('00000000-0000-0000-0000-000000000801','2026-10-14T13:00:00Z','{"metrics":{"reach":0}}');
 select is((select snapshot #>> '{metrics,reach}' from public.social_insights where organization_id='00000000-0000-0000-0000-000000000801'),'1333','out-of-order delivery preserves newer observation');
 select is((select count(*) from public.social_insights where organization_id='00000000-0000-0000-0000-000000000802'),0::bigint,'foreign tenant has no observation');
-insert into public.social_posts(id,organization_id,platform,source_key,article_title,article_url,content,status,publish_after) values('00000000-0000-0000-0000-000000000812','00000000-0000-0000-0000-000000000801','linkedin','li-test','LinkedIn','https://www.antoinequarroz.ch/','Approved LinkedIn','approved',now()-interval '1 minute');
-select is((select count(*) from public.claim_social_post('00000000-0000-0000-0000-000000000802','00000000-0000-0000-0000-000000000812',1)),0::bigint,'other tenant cannot claim publication');
-select is((select count(*) from public.claim_social_post('00000000-0000-0000-0000-000000000801','00000000-0000-0000-0000-000000000812',1)),1::bigint,'existing LinkedIn publisher still works');
+insert into public.social_posts(id,organization_id,platform,source_key,article_title,article_url,content) values('00000000-0000-0000-0000-000000000812','00000000-0000-0000-0000-000000000801','linkedin','li-test','LinkedIn','https://www.antoinequarroz.ch/','Approved LinkedIn');
+do $$begin perform public.approve_social_post('00000000-0000-0000-0000-000000000801','00000000-0000-0000-0000-000000000812',1,'Approved LinkedIn',now()-interval '1 minute'); end$$;
+select is((select count(*) from public.claim_social_post('00000000-0000-0000-0000-000000000802','00000000-0000-0000-0000-000000000812',2)),0::bigint,'other tenant cannot claim publication');
+select is((select count(*) from public.claim_social_post('00000000-0000-0000-0000-000000000801','00000000-0000-0000-0000-000000000812',2)),1::bigint,'existing LinkedIn publisher still works with an explicit approval');
 select * from finish();
 rollback;

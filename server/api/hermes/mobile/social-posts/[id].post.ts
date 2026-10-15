@@ -60,9 +60,17 @@ export default defineEventHandler(async (event) => {
     updates.last_error = null
   }
 
-  const { data, error } = await supabase.from('social_posts').update(updates)
-    .eq('organization_id', device.organization_id).eq('id', id).eq('version', version)
-    .select('id,content,status,publish_after,version,updated_at').maybeSingle()
+  const approving = action === 'approve_scheduled' || action === 'approve_now'
+  const result = approving
+    ? await supabase.rpc('approve_social_post', {
+        p_organization_id: device.organization_id, p_post_id: id, p_expected_version: version,
+        p_content: content, p_publish_after: updates.publish_after,
+      })
+    : await supabase.from('social_posts').update(updates)
+        .eq('organization_id', device.organization_id).eq('id', id).eq('version', version)
+        .select('id,content,status,publish_after,publication_mode,version,updated_at').maybeSingle()
+  const { error } = result
+  const data = approving ? result.data?.[0] : result.data
   if (error) throw createError({ statusCode: 500, message: 'La publication n’a pas été mise à jour.' })
   if (!data) throw createError({ statusCode: 409, message: 'Le brouillon a changé. Actualise avant de continuer.' })
 

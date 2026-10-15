@@ -144,4 +144,9 @@ print(json.dumps([module.tracked_article_url(base, p) for p in ('linkedin','x','
     expect(lumail).toContain('utm_source=lumail&utm_medium=email')
     expect(linkedin).not.toContain('utm_source=old')
   })
+
+  it('verifies media transports and approval races without any provider write', () => {
+    const suite = new URL('../scripts/hermes/test_social_media_publisher.py', import.meta.url).pathname
+    expect(() => execFileSync('python3', [suite], { encoding: 'utf8', stdio: 'pipe' })).not.toThrow()
+  })
 })
