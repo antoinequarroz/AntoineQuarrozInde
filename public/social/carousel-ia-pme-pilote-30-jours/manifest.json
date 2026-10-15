@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "pages": [
+    { "src": "slide-1.png", "alt": "Pilote IA pour PME : une méthode en 30 jours. Couverture du carrousel." },
+    { "src": "slide-2.png", "alt": "Pilote IA pour PME : page 2 du carrousel." },
+    { "src": "slide-3.png", "alt": "Pilote IA pour PME : page 3 du carrousel." },
+    { "src": "slide-4.png", "alt": "Pilote IA pour PME : page 4 du carrousel." },
+    { "src": "slide-5.png", "alt": "Pilote IA pour PME : page 5 du carrousel." },
+    { "src": "slide-6.png", "alt": "Pilote IA pour PME : page 6 du carrousel." },
+    { "src": "slide-7.png", "alt": "Pilote IA pour PME : page 7 du carrousel." }
+  ]
+}

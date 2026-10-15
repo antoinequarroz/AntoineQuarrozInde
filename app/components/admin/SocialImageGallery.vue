@@ -45,7 +45,7 @@ async function upload(event: Event) {
     <div class="flex items-center justify-between gap-3"><h3 class="text-sm font-semibold">{{ draft.length > 1 ? `Carrousel · ${draft.length} images` : 'Visuel joint' }}</h3><span v-if="draft.length" class="text-xs text-violet-600 dark:text-violet-300">À relire avant envoi</span></div>
     <div v-if="draft.length" class="mt-3 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-3" tabindex="0" aria-label="Feuilleter les visuels">
       <figure v-for="(image, index) in draft" :key="image.url" class="w-[min(68vw,20rem)] shrink-0 snap-center rounded-lg bg-white p-2 dark:bg-black/20">
-        <a :href="image.url" target="_blank" rel="noopener noreferrer" :aria-label="`Ouvrir le visuel ${index + 1} en grand`"><img :src="image.url" :alt="image.alt" loading="lazy" class="aspect-[4/5] w-full rounded-md object-contain"></a>
+        <a :href="image.url" target="_blank" rel="noopener noreferrer" :aria-label="`Ouvrir le visuel ${index + 1} en grand`"><img :src="image.url" :alt="image.alt" loading="lazy" class="w-full rounded-md object-contain" :class="platform === 'x' ? 'aspect-video' : 'aspect-[4/5]'"></a>
         <figcaption class="my-2 text-xs">{{ index + 1 }} / {{ draft.length }} · <a :href="image.url" target="_blank" rel="noopener noreferrer" class="underline">Ouvrir l’original ↗</a></figcaption>
         <template v-if="editable">
           <label class="block text-xs">Description du visuel {{ index + 1 }}<input v-model="image.alt" maxlength="500" class="input-field mt-1 w-full" :disabled="busy || uploading" @input="change"></label>

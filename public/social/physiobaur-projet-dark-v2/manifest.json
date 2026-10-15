@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "pages": [
+    {
+      "src": "slide-1.png",
+      "alt": "Présentation du projet PhysioBaur, créé par Antoine Quarroz."
+    },
+    {
+      "src": "slide-2.png",
+      "alt": "Un site pensé pour les patients : aperçu sur ordinateur en mode sombre."
+    },
+    {
+      "src": "slide-3.png",
+      "alt": "Les bonnes informations aux bons endroits : soins, coordonnées et contact."
+    },
+    {
+      "src": "slide-4.png",
+      "alt": "Votre site dans leur poche : aperçu du site PhysioBaur sur mobile."
+    },
+    {
+      "src": "slide-5.png",
+      "alt": "Témoignage de Christophe Baur sur l’écoute, la disponibilité et le souci du détail."
+    },
+    {
+      "src": "slide-6.png",
+      "alt": "Vous avez une idée ? Je la rends réelle. Parlons de votre projet."
+    }
+  ]
+}

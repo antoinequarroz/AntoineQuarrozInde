@@ -69,7 +69,7 @@ jobs:
           npx playwright install --with-deps chromium
       - run: npx playwright test e2e/accessibility.spec.ts --project=chromium --grep @credential-free
       - name: Verify mixed carousel editing and explicit consent
-        run: npx playwright test e2e/social-mixed-media.spec.ts --project=chromium
+        run: npx playwright test e2e/social-mixed-media.spec.ts e2e/social-document-carousel.spec.ts --project=chromium
 
   seo-quality:
     needs: quality

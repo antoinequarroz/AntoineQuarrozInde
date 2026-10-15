@@ -97,11 +97,6 @@ function platformLabel(platform: Platform) { return ({ linkedin: 'LinkedIn', x: 
 function limit(platform: Platform) { return platform === 'x' ? 280 : platform === 'instagram' ? 2200 : 3000 }
 function characterCount(content: string) { return [...content].length }
 function hasDocument(post: SocialPost) { return post.media_kind === 'document' && Boolean(post.media_url) }
-function documentSlides(post: SocialPost) {
-  if (!post.media_url) return []
-  const base = post.media_url.replace(/\.pdf(?:\?.*)?$/i, '')
-  return Array.from({ length: 7 }, (_, index) => `${base}/slide-${index + 1}.png`)
-}
 function openConfirmation(post: SocialPost, mode: 'scheduled' | 'now' | 'text' | 'media') {
   confirmationMode.value = mode
   confirmationPost.value = post
@@ -201,25 +196,7 @@ onMounted(load)
         <div class="flex items-start justify-between gap-3"><div><div class="flex flex-wrap items-center gap-2"><span class="text-xs font-bold uppercase tracking-wider text-violet-600 dark:text-violet-300">{{ platformLabel(post.platform) }}</span><span class="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600 dark:bg-white/[0.07] dark:text-gray-300">{{ statusLabel(post.status) }}</span></div><h2 class="mt-2 font-display text-lg font-semibold text-gray-950 dark:text-white">{{ post.article_title }}</h2></div><span class="text-xs tabular-nums" :class="characterCount(post.content) > limit(post.platform) ? 'text-red-600' : 'text-gray-400'">{{ characterCount(post.content) }}/{{ limit(post.platform) }}</span></div>
         <a :href="post.article_url" target="_blank" rel="noopener noreferrer" class="mt-2 truncate text-xs font-medium text-violet-600 hover:underline dark:text-violet-300">Voir le lien associé ↗</a>
         <p v-if="post.platform === 'instagram' && !hasMedia(post)" class="mt-3 text-xs text-gray-500 dark:text-gray-400">Ajoute les images et vidéos au brouillon pour relire l’ensemble ici. Sans média joint, seule la validation du texte est disponible, sans envoi ni programmation. <a v-if="post.studioContentId" :href="`http://127.0.0.1:3108/?hermesContent=${post.studioContentId}`" target="_blank" rel="noopener noreferrer" class="text-violet-600 underline dark:text-violet-300">Ouvrir dans le studio sur ce Mac ↗</a></p>
-        <section v-if="hasDocument(post)" class="mt-4 overflow-hidden rounded-xl border border-violet-200/80 bg-violet-50/60 dark:border-violet-400/20 dark:bg-violet-500/[0.06]" aria-label="Carrousel LinkedIn joint">
-          <div class="flex items-center justify-between gap-3 border-b border-violet-200/70 px-4 py-3 dark:border-violet-400/15">
-            <div class="min-w-0">
-              <span class="inline-flex rounded-full bg-violet-600 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-white">Carrousel joint</span>
-              <p class="mt-2 truncate text-sm font-semibold text-gray-950 dark:text-white">{{ post.media_title || 'Document LinkedIn' }}</p>
-              <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">PDF feuilletable · joint automatiquement à la publication</p>
-            </div>
-            <a :href="post.media_url!" target="_blank" rel="noopener noreferrer" class="shrink-0 rounded-lg border border-violet-200 bg-white px-3 py-2 text-xs font-semibold text-violet-700 transition-colors hover:bg-violet-50 dark:border-violet-400/20 dark:bg-white/[0.05] dark:text-violet-200">Ouvrir ↗</a>
-          </div>
-          <div class="bg-white/80 p-4 dark:bg-[#0b0b11]" :aria-label="`Aperçu du carrousel ${post.media_title || ''}`">
-            <div class="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-3" tabindex="0">
-              <figure v-for="(slide, index) in documentSlides(post)" :key="slide" class="relative w-[min(78vw,18rem)] shrink-0 snap-center overflow-hidden rounded-xl border border-gray-200 bg-[#07070d] shadow-sm dark:border-white/[0.1]">
-                <img :src="slide" :alt="`Page ${index + 1} sur 7 du carrousel ${post.media_title || ''}`" class="aspect-[4/5] h-auto w-full object-cover" :loading="index === 0 ? 'eager' : 'lazy'">
-                <figcaption class="absolute bottom-2 right-2 rounded-full bg-black/75 px-2 py-1 text-[11px] font-semibold tabular-nums text-white backdrop-blur-sm">{{ index + 1 }} / 7</figcaption>
-              </figure>
-            </div>
-            <p class="mt-1 text-center text-xs font-medium text-gray-500 dark:text-gray-400">Fais défiler horizontalement pour relire les 7 pages avant publication.</p>
-          </div>
-        </section>
+        <AdminSocialDocumentPreview v-if="hasDocument(post)" :url="post.media_url!" :title="post.media_title || 'Document LinkedIn'" />
         <AdminSocialMediaGallery v-if="!hasDocument(post) && usesMixedGallery(post)" :media="post.media_items" :legacy-images="post.media_images" :editable="['draft', 'failed'].includes(post.status)" :busy="busyId === post.id" @save="saveMedia(post, $event)" @dirty="dirtyMedia[post.id] = $event" />
         <AdminSocialImageGallery v-else-if="!hasDocument(post)" :images="post.media_images || []" :platform="post.platform" :editable="['draft', 'failed'].includes(post.status)" :busy="busyId === post.id" @save="saveImages(post, $event)" @dirty="dirtyMedia[post.id] = $event" />
         <button v-if="post.platform === 'instagram' && !usesMixedGallery(post) && ['draft', 'failed'].includes(post.status)" type="button" class="mt-2 min-h-11 self-start text-sm font-semibold text-violet-700 underline dark:text-violet-300" :disabled="busyId === post.id || dirtyMedia[post.id]" @click="mixedEditing[post.id] = true">Créer un carrousel avec cette image</button>
