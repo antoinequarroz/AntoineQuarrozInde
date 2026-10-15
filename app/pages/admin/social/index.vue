@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { socialApprovalRequest } from '~/utils/socialApproval'
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 
 type Platform = 'linkedin' | 'x' | 'instagram'
@@ -123,10 +124,11 @@ async function approve() {
   if (!post || !confirmationAccepted.value) return
   busyId.value = post.id
   try {
-    const result = await $fetch<Partial<SocialPost> & { id: string }>(`/api/admin/social-posts/${post.id}/${confirmationMode.value === 'media' ? 'review-media' : post.platform === 'instagram' ? 'review-instagram' : 'approve'}`, {
+    const request = socialApprovalRequest(confirmationMode.value)
+    const result = await $fetch<Partial<SocialPost> & { id: string }>(`/api/admin/social-posts/${post.id}/${request.action}`, {
       method: 'POST', headers: auth.authHeader(), body: {
         mode: confirmationMode.value,
-        confirmation: confirmationMode.value === 'media' ? 'VALIDER_TEXTE_ET_VISUELS' : confirmationMode.value === 'text' ? 'VALIDER_TEXTE_INSTAGRAM' : confirmationMode.value === 'now' ? 'PUBLIER_MAINTENANT' : 'PROGRAMMER_POUR_18H',
+        confirmation: request.confirmation,
         content: post.content,
         version: post.version,
       },

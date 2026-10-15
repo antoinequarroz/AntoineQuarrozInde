@@ -142,6 +142,9 @@ export async function resolveHermesOrganization() {
 export function validateAutomaticSocialPost(post: { platform: unknown, media_images?: unknown }) {
   const platform = validateSocialPlatform(post.platform)
   const images = validateSocialImages(post.media_images ?? [], platform, String(useRuntimeConfig().public.supabaseUrl || ''))
+  if (images.some(image => !/\.(?:jpe?g|png)$/i.test(new URL(image.url).pathname))) {
+    throw createError({ statusCode: 400, message: 'Pour publier depuis le site, ajoute des images JPEG ou PNG.' })
+  }
   if (platform === 'instagram' && !images.length) {
     throw createError({ statusCode: 400, message: 'Instagram nécessite au moins une image pour publier depuis le site.' })
   }

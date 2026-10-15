@@ -24,7 +24,7 @@ async function upload(event: Event) {
   emit('dirty', true)
   try {
     for (const file of files) {
-      if (!(props.platform === 'instagram' ? ['image/jpeg'] : ['image/jpeg', 'image/png', 'image/webp']).includes(file.type) || file.size > 5 * 1024 * 1024) throw new Error(props.platform === 'instagram' ? 'Instagram : images JPEG de 5 Mo maximum.' : 'Images JPG, PNG ou WebP de 5 Mo maximum.')
+      if (!(props.platform === 'instagram' ? ['image/jpeg'] : ['image/jpeg', 'image/png']).includes(file.type) || file.size > 5 * 1024 * 1024) throw new Error(props.platform === 'instagram' ? 'Instagram : images JPEG de 5 Mo maximum.' : 'Images JPG ou PNG de 5 Mo maximum.')
       const dataUrl = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader()
         reader.onload = () => resolve(String(reader.result))
@@ -54,7 +54,7 @@ async function upload(event: Event) {
       </figure>
     </div>
     <template v-if="editable">
-      <label class="mt-3 block text-xs font-medium">Ajouter des images ({{ platform === 'instagram' ? 'JPEG' : 'JPG, PNG, WebP' }}, 5 Mo maximum)<input type="file" multiple :accept="platform === 'instagram' ? 'image/jpeg' : 'image/jpeg,image/png,image/webp'" class="mt-2 block w-full text-xs" :disabled="busy || uploading" @change="upload"></label>
+      <label class="mt-3 block text-xs font-medium">Ajouter des images ({{ platform === 'instagram' ? 'JPEG' : 'JPG, PNG' }}, 5 Mo maximum)<input type="file" multiple :accept="platform === 'instagram' ? 'image/jpeg' : 'image/jpeg,image/png'" class="mt-2 block w-full text-xs" :disabled="busy || uploading" @change="upload"></label>
       <p v-if="uploading" role="status" class="mt-2 text-xs">Téléversement en cours…</p>
       <button v-if="changed" type="button" class="mt-3 min-h-11 rounded-lg bg-violet-600 px-4 text-sm font-semibold text-white disabled:opacity-50" :disabled="busy || uploading || draft.some(image => !image.alt.trim())" @click="emit('save', draft)">Enregistrer les visuels</button>
     </template>

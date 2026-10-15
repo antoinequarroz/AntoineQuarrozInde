@@ -296,7 +296,7 @@ def prepare_images(post: dict) -> list[dict]:
         if not isinstance(image, dict) or not isinstance(image.get("url"), str) or not isinstance(image.get("alt"), str):
             raise ValueError("Description d'image invalide.")
         url = approved_image_url(image["url"])
-        if not image["alt"].strip() or len(image["alt"]) > (300 if platform == "linkedin" else 1000):
+        if not image["alt"].strip() or len(image["alt"]) > 500:
             raise ValueError("La description de l'image est absente ou trop longue pour ce reseau.")
         maximum = {"x": 5, "instagram": 8, "linkedin": 10}[platform] * 1024 * 1024
         request = urllib.request.Request(url, headers={"User-Agent": "hermes-antoinequarroz/1.0"})

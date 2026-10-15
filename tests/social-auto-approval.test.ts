@@ -58,6 +58,7 @@ it('requires saved JPEG images for Instagram but no clickable link in its captio
   expect(calls.find(c => c.name === 'rpc')!.args[1].p_content).toBe('Une légende Instagram')
 })
 it('does not authorize Instagram text-only or unsupported media', () => {
+  expect(() => validateAutomaticSocialPost({ platform: 'linkedin', media_images: [{ ...image, url: image.url.replace('.jpg', '.webp') }] })).toThrow(/JPEG ou PNG/)
   expect(() => validateAutomaticSocialPost({ platform: 'instagram', media_images: [] })).toThrow(/image/)
   expect(() => validateAutomaticSocialPost({ platform: 'instagram', media_images: [{ ...image, url: image.url.replace('.jpg', '.png') }] })).toThrow(/JPEG/)
 })
