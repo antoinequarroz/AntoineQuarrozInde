@@ -1,4 +1,5 @@
 import { validateSocialImages } from './socialImages'
+import { validateSocialMediaItems } from './socialMedia'
 export const SOCIAL_PLATFORMS = ['linkedin', 'x', 'instagram'] as const
 export const SOCIAL_INSTAGRAM_REVIEW_CONFIRMATION = 'VALIDER_TEXTE_INSTAGRAM'
 export const SOCIAL_STATUSES = ['draft', 'approved', 'publishing', 'published', 'rejected', 'failed'] as const
@@ -103,9 +104,11 @@ export function validateSocialDraftInput(body: Record<string, unknown>) {
     throw createError({ statusCode: 400, message: 'Seul un PDF officiel du site peut être joint à LinkedIn.' })
   }
   const mediaImages = validateSocialImages(body.mediaImages ?? [], platform, body.mediaImages ? String(useRuntimeConfig().public.supabaseUrl || '') : '')
-  if (mediaKind && mediaImages.length) throw createError({ statusCode: 400, message: 'Choisis un PDF ou des images.' })
+  const mediaItems = validateSocialMediaItems(body.mediaItems ?? [], platform, body.mediaItems ? String(useRuntimeConfig().public.supabaseUrl || '') : '')
+  if (Number(Boolean(mediaKind)) + Number(Boolean(mediaImages.length)) + Number(Boolean(mediaItems.length)) > 1) throw createError({ statusCode: 400, message: 'Choisis un PDF, des images ou un carrousel mixte.' })
   return {
     mediaImages,
+    mediaItems,
     platform,
     sourceKey: requiredText(body.sourceKey, 'Clé source', 180),
     articleTitle: requiredText(body.articleTitle, 'Titre', 180),
@@ -139,13 +142,15 @@ export async function resolveHermesOrganization() {
 }
 
 // Only the site presents the image preview and collects approval for these media.
-export function validateAutomaticSocialPost(post: { platform: unknown, media_images?: unknown }) {
+export function validateAutomaticSocialPost(post: { platform: unknown, media_images?: unknown, media_items?: unknown, media_kind?: unknown }) {
   const platform = validateSocialPlatform(post.platform)
   const images = validateSocialImages(post.media_images ?? [], platform, String(useRuntimeConfig().public.supabaseUrl || ''))
+  const media = validateSocialMediaItems(post.media_items ?? [], platform, String(useRuntimeConfig().public.supabaseUrl || ''))
+  if (media.length && (images.length || post.media_kind)) throw createError({ statusCode: 400, message: 'Les pièces jointes sont incompatibles.' })
   if (images.some(image => !/\.(?:jpe?g|png)$/i.test(new URL(image.url).pathname))) {
     throw createError({ statusCode: 400, message: 'Pour publier depuis le site, ajoute des images JPEG ou PNG.' })
   }
-  if (platform === 'instagram' && !images.length) {
+  if (platform === 'instagram' && !images.length && !media.length) {
     throw createError({ statusCode: 400, message: 'Instagram nécessite au moins une image pour publier depuis le site.' })
   }
   if (platform === 'instagram' && images.some(image => !/\.jpe?g$/i.test(new URL(image.url).pathname))) {

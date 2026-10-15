@@ -5,7 +5,7 @@ export default defineEventHandler(async (event) => {
   const supabase = getSupabaseAdmin()
   const [posts, connections] = await Promise.all([
     supabase.from('social_posts')
-      .select('id,platform,article_title,article_url,content,media_kind,media_url,media_title,media_images,status,external_post_url,last_error,publish_after,published_at,version,created_at,updated_at')
+      .select('id,platform,article_title,article_url,content,media_kind,media_url,media_title,media_images,media_items,status,external_post_url,last_error,publish_after,published_at,version,created_at,updated_at')
       .eq('organization_id', device.organization_id)
       .in('platform', ['linkedin', 'x'])
       .neq('status', 'rejected')

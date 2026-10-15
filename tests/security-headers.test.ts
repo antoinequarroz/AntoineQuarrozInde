@@ -30,7 +30,7 @@ async function listen(headers: Record<string, string>) {
 }
 
 const expectedHeaders = {
-  'Content-Security-Policy': "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://*.posthog.com https://unpkg.com https://challenges.cloudflare.com https://app.cal.com; script-src-attr 'none'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.posthog.com https://*.supabase.co wss://*.supabase.co https://prod.spline.design https://unpkg.com https://www.gstatic.com https://challenges.cloudflare.com https://app.cal.com https://cal.com; frame-src 'self' blob: https://challenges.cloudflare.com https://app.cal.com https://cal.com; worker-src 'self' blob: data:; media-src 'self' blob:; manifest-src 'self'; upgrade-insecure-requests",
+  'Content-Security-Policy': "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://*.posthog.com https://unpkg.com https://challenges.cloudflare.com https://app.cal.com; script-src-attr 'none'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.posthog.com https://*.supabase.co wss://*.supabase.co https://prod.spline.design https://unpkg.com https://www.gstatic.com https://challenges.cloudflare.com https://app.cal.com https://cal.com; frame-src 'self' blob: https://challenges.cloudflare.com https://app.cal.com https://cal.com; worker-src 'self' blob: data:; media-src 'self' blob: https://oxlrljszatejqxhclmbu.supabase.co/storage/v1/object/public/social-videos/; manifest-src 'self'; upgrade-insecure-requests",
   'Permissions-Policy': 'camera=(), geolocation=(), microphone=()',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
   'Strict-Transport-Security': 'max-age=31536000',
@@ -59,7 +59,9 @@ describe('public security headers', () => {
     expect(caddyfile).toContain('https://prod.spline.design')
     expect(caddyfile).toContain('https://www.gstatic.com')
     expect(caddyfile).toContain('https://challenges.cloudflare.com')
-    expect(caddyfile).toMatch(/request_body\s*\{\s*max_size 8MB\s*\}/)
+    expect(caddyfile).toMatch(/request_body @standardRequest\s*\{\s*max_size 8MB\s*\}/)
+    expect(caddyfile).toContain('@standardRequest not path /api/admin/social-video-upload')
+    expect(caddyfile).toMatch(/request_body \/api\/admin\/social-video-upload\s*\{\s*max_size 28MB\s*\}/)
   })
 
   it('keeps the production proof after the canonical-domain check', async () => {

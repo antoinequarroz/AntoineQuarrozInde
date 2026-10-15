@@ -57,7 +57,7 @@ it('validates text only with explicit consent, matching tenant, platform, status
   result.data = { id: 'post-id', status: 'approved', version: 8 }
   await handler({ body: { version: 7, content: 'Texte', confirmation: SOCIAL_INSTAGRAM_REVIEW_CONFIRMATION } } as any)
   expect(calls.filter(call => call.name === 'eq').map(call => call.args)).toEqual([
-    ['organization_id', 'allowed-org'], ['id', 'post-id'], ['platform', 'instagram'], ['media_images', '[]'], ['version', 7],
+    ['organization_id', 'allowed-org'], ['id', 'post-id'], ['platform', 'instagram'], ['media_images', '[]'], ['media_items', '[]'], ['version', 7],
   ])
   expect(calls.find(call => call.name === 'update')?.args[0]).toMatchObject({ status: 'approved', publish_after: null, version: 8 })
   expect(calls.find(call => call.name === 'in')?.args).toEqual(['status', ['draft', 'failed']])
