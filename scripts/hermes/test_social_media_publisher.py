@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import struct
+import subprocess
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -34,6 +35,21 @@ def post(platform="instagram", count=1):
 
 def image(index=0):
     return {"url": f"https://www.antoinequarroz.ch/social/physio-{index}.jpg", "alt": f"Écran {index}", "data": jpeg(), "mime": "image/jpeg"}
+
+
+def mixed_post():
+    result = post(count=6)
+    result.update(media_images=[], media_kind=None)
+    result["media_items"] = [{"type": "video" if i in (1, 3) else "image", "url": f"https://oxlrljszatejqxhclmbu.supabase.co/storage/v1/object/public/social-videos/uploads/00000000-0000-0000-0000-000000000a01/00000000-0000-0000-0000-{i:012d}.mp4" if i in (1, 3) else f"https://www.antoinequarroz.ch/social/physio-{i}.jpg", "alt": f"Écran {i}"} for i in range(6)]
+    result["approval_fingerprint"] = publisher.approval_fingerprint(result)
+    return result
+
+
+def mp4_metadata():
+    return {"streams": [{"codec_type": "video", "codec_name": "h264", "pix_fmt": "yuv420p", "field_order": "progressive", "width": 1080, "height": 1350, "avg_frame_rate": "30/1"}], "format": {"duration": "7"}}
+
+
+MP4_HEADER = struct.pack(">I", 24) + b"ftypisom" + b"\0" * 12
 
 
 class Response:
@@ -87,7 +103,140 @@ class ImageValidationTests(unittest.TestCase):
         self.assertIsNone(publisher.NoRedirect().redirect_request(None, None, 307, "redirect", {}, "https://evil.example"))
 
 
+class MixedValidationTests(unittest.TestCase):
+    def test_real_probe_only_receives_bounded_private_tempfile_and_deletes_it(self):
+        def probe(args, **kwargs):
+            path = Path(args[-1])
+            self.assertTrue(path.is_file())
+            self.assertEqual(path.read_bytes(), MP4_HEADER)
+            self.assertIn("file,pipe", args)
+            self.assertEqual(kwargs["timeout"], 30)
+            self.assertTrue(kwargs["check"])
+            self.local_path = path
+            return subprocess.CompletedProcess(args, 0, stdout=json.dumps(mp4_metadata()))
+        with patch.object(publisher.shutil, "which", return_value="/usr/bin/ffprobe"), patch.object(publisher.subprocess, "run", side_effect=probe):
+            result = publisher.instagram_video_metadata(MP4_HEADER)
+        self.assertEqual((result["width"], result["height"], result["duration"], result["fps"]), (1080, 1350, 7, 30))
+        self.assertFalse(self.local_path.exists())
+
+    def test_missing_probe_invalid_header_failure_and_timeout_are_closed(self):
+        with patch.object(publisher.shutil, "which", return_value=None), self.assertRaisesRegex(ValueError, "ffprobe"):
+            publisher.instagram_video_metadata(MP4_HEADER)
+        with patch.object(publisher.subprocess, "run") as probe, self.assertRaises(ValueError):
+            publisher.instagram_video_metadata(b"not an mp4")
+        probe.assert_not_called()
+        for error in (subprocess.TimeoutExpired("ffprobe", 30), subprocess.CalledProcessError(1, "ffprobe", stderr="private diagnostic")):
+            with patch.object(publisher.shutil, "which", return_value="ffprobe"), patch.object(publisher.subprocess, "run", side_effect=error), self.assertRaisesRegex(ValueError, "verification du MP4"):
+                publisher.instagram_video_metadata(MP4_HEADER)
+
+    def test_metadata_limits_codecs_track_count_and_rotation(self):
+        variants = []
+        for field, value in (("codec_name", "hevc"), ("pix_fmt", "yuv444p"), ("width", 2000), ("height", 2000), ("avg_frame_rate", "22/1"), ("avg_frame_rate", "61/1"), ("field_order", "tt"), ("side_data_list", [{"rotation": 90}])):
+            item = mp4_metadata(); item["streams"][0][field] = value; variants.append(item)
+        for duration in ("2.99", "60.01", "nan"):
+            item = mp4_metadata(); item["format"]["duration"] = duration; variants.append(item)
+        for audio in ({"codec_type": "audio", "codec_name": "mp3", "channels": 2, "sample_rate": "48000"}, {"codec_type": "audio", "codec_name": "aac", "channels": 3, "sample_rate": "48000"}, {"codec_type": "audio", "codec_name": "aac", "channels": 2, "sample_rate": "96000"}):
+            item = mp4_metadata(); item["streams"].append(audio); variants.append(item)
+        item = mp4_metadata(); item["streams"].append(copy.deepcopy(item["streams"][0])); variants.append(item)
+        for metadata in variants:
+            with self.subTest(metadata=metadata), patch.object(publisher.shutil, "which", return_value="ffprobe"), patch.object(publisher.subprocess, "run", return_value=subprocess.CompletedProcess([], 0, json.dumps(metadata))), self.assertRaises(ValueError):
+                publisher.instagram_video_metadata(MP4_HEADER)
+
+    def test_optional_aac_and_silent_videos_are_supported(self):
+        for audio in ([], [{"codec_type": "audio", "codec_name": "aac", "channels": 2, "sample_rate": "48000"}]):
+            metadata = mp4_metadata(); metadata["streams"].extend(audio)
+            with patch.object(publisher.shutil, "which", return_value="ffprobe"), patch.object(publisher.subprocess, "run", return_value=subprocess.CompletedProcess([], 0, json.dumps(metadata))):
+                self.assertEqual(publisher.instagram_video_metadata(MP4_HEADER)["duration"], 7)
+
+    def test_preflight_reads_all_six_in_order_and_discards_video_bytes(self):
+        calls = []
+        def download(request, **kwargs):
+            calls.append(request.full_url)
+            return Response(MP4_HEADER, "video/mp4") if request.full_url.endswith(".mp4") else Response(jpeg())
+        with patch.object(publisher, "secure_open", side_effect=download), patch.object(publisher, "instagram_video_metadata", return_value={"width": 1080, "height": 1350, "duration": 7, "fps": 30}) as probe:
+            result = publisher.prepare_media_items(mixed_post())
+        self.assertEqual(calls, [item["url"] for item in mixed_post()["media_items"]])
+        self.assertEqual([item["type"] for item in result], ["image", "video", "image", "video", "image", "image"])
+        self.assertEqual(probe.call_count, 2)
+        self.assertNotIn("data", result[1])
+
+    def test_other_platform_attachments_type_and_unsafe_urls_fail_before_download(self):
+        variants = []
+        for key, value in (("platform", "x"), ("platform", "linkedin"), ("media_images", [image()]), ("media_kind", "carousel"), ("media_url", "https://site/doc.pdf")):
+            item = mixed_post(); item[key] = value; variants.append(item)
+        for changes in ({"type": "reel"}, {"url": "https://evil.example/a.mp4"}, {"url": "https://www.antoinequarroz.ch/social/a.mp4"}, {"url": "https://www.antoinequarroz.ch/social/a.mp4?token=x"}, {"url": "https://www.antoinequarroz.ch/social/%2e%2e/a.mp4"}, {"url": "https://www.antoinequarroz.ch/social/a.jpg"}, {"alt": ""}):
+            item = mixed_post(); item["media_items"][0].update(changes if changes.get("type") == "reel" else {})
+            if changes.get("type") != "reel": item["media_items"][0] = {**item["media_items"][1], **changes}
+            variants.append(item)
+        for item in variants:
+            with self.subTest(item=item), patch.object(publisher, "secure_open") as network, self.assertRaises(ValueError):
+                publisher.prepare_media_items(item)
+            network.assert_not_called()
+
+    def test_declared_size_mime_and_ratio_mismatch_are_rejected(self):
+        for response in (Response(b"invalid", "text/html"), Response(jpeg(), "image/png")):
+            with patch.object(publisher, "secure_open", return_value=response), self.assertRaises(ValueError):
+                publisher.prepare_media_items(mixed_post())
+        response = Response(jpeg()); response.headers["Content-Length"] = str(publisher.MAX_INSTAGRAM_MIXED_IMAGE_BYTES + 1)
+        with patch.object(publisher, "secure_open", return_value=response), self.assertRaisesRegex(RuntimeError, "taille"):
+            publisher.prepare_media_items(mixed_post())
+        with patch.object(publisher, "secure_open", side_effect=lambda request, **kwargs: Response(MP4_HEADER, "video/mp4") if request.full_url.endswith(".mp4") else Response(jpeg())), patch.object(publisher, "instagram_video_metadata", return_value={"width": 1080, "height": 1080}), self.assertRaisesRegex(ValueError, "meme ratio"):
+            publisher.prepare_media_items(mixed_post())
+
+
 class ApprovalTests(unittest.TestCase):
+    def test_mixed_fingerprint_signs_type_alt_url_and_order_without_changing_legacy(self):
+        original = mixed_post()
+        self.assertTrue(publisher.verified_approval(original))
+        for field, value in (("type", "image"), ("url", "https://www.antoinequarroz.ch/social/replaced.mp4"), ("alt", "Nouvelle description")):
+            edited = copy.deepcopy(original); edited["media_items"][1][field] = value
+            self.assertFalse(publisher.verified_approval(edited))
+        edited = copy.deepcopy(original); edited["media_items"].reverse()
+        self.assertFalse(publisher.verified_approval(edited))
+        legacy = post(); with_empty = {**legacy, "media_items": []}
+        self.assertEqual(publisher.approval_fingerprint(legacy), publisher.approval_fingerprint(with_empty))
+
+    def test_queue_capability_is_sent_for_list_and_claim(self):
+        for payload in (None, {"action": "claim", "id": "post", "version": 2}):
+            with patch.object(publisher, "secure_open", return_value=Response(b"{}", "application/json")) as network:
+                publisher.site_request("https://www.antoinequarroz.ch", "private", payload=payload)
+            headers = {key.lower(): value for key, value in network.call_args.args[0].header_items()}
+            self.assertEqual(headers["x-hermes-social-capabilities"], "instagram-mixed-v1")
+
+    def test_mixed_dry_run_and_real_flow_validate_all_media_before_claim(self):
+        for dry_run in (True, False):
+            queued = mixed_post(); events = []
+            def site(*args, payload=None, **kwargs):
+                if payload is None: return {"posts": [queued]}
+                events.append(payload["action"])
+                return {"post": {**queued, "version": 3}} if payload["action"] == "claim" else {}
+            def prepare(item):
+                self.assertEqual(item, queued); events.append("preflight-all-six")
+                return queued["media_items"]
+            with patch.object(publisher, "connection_state", return_value=("ready", "ready")), patch.object(publisher, "site_request", side_effect=site), patch.object(publisher, "prepare_media_items", side_effect=prepare), patch.object(publisher, "publish_instagram", return_value={"id": "999"}) as publish:
+                result = publisher.process_approved("https://site", "private", dry_run=dry_run)
+            self.assertEqual(events[:4], ["readiness"] * 3 + ["preflight-all-six"])
+            if dry_run:
+                self.assertEqual(events[4:], []); publish.assert_not_called()
+                self.assertFalse(result["externalWrite"])
+            else:
+                self.assertEqual(events[4:], ["claim", "complete"])
+                self.assertEqual(publish.call_args.args[1], queued["media_items"])
+
+    def test_mixed_invalid_video_never_claims_and_changed_claim_never_publishes(self):
+        queued = mixed_post()
+        for invalid in (True, False):
+            actions = []
+            def site(*args, payload=None, **kwargs):
+                if payload is None: return {"posts": [queued]}
+                actions.append(payload["action"])
+                changed = copy.deepcopy(queued); changed["media_items"][1]["type"] = "image"
+                return {"post": changed} if payload["action"] == "claim" else {}
+            with patch.object(publisher, "connection_state", return_value=("ready", "ready")), patch.object(publisher, "site_request", side_effect=site), patch.object(publisher, "prepare_media_items", side_effect=ValueError("Video invalide") if invalid else None, return_value=queued["media_items"]), patch.object(publisher, "publish_instagram") as publish:
+                publisher.process_approved("https://site", "private", dry_run=False)
+            publish.assert_not_called()
+            self.assertEqual(actions[3:], ["preflight_fail"] if invalid else ["claim", "fail"])
+
     def test_local_x_draft_cannot_silently_drop_an_image_attachment(self):
         with tempfile.TemporaryDirectory() as folder:
             project = Path(folder); root = project / "seo/social/a-valider"; root.mkdir(parents=True)
@@ -199,6 +348,41 @@ class ApprovalTests(unittest.TestCase):
 
 
 class TransportTests(unittest.TestCase):
+    def test_mixed_instagram_children_keep_order_and_wait_before_parent_and_only_public_write(self):
+        calls = []
+        def instagram(path, query=None, payload=None):
+            calls.append((path, query, payload))
+            if path.endswith("/media_publish"): return {"id": "999"}
+            if query and query.get("fields") == "status_code": return {"status_code": "FINISHED"}
+            if query: return {"permalink": "https://www.instagram.com/p/abc123/"}
+            return {"id": str(100 + len(calls))}
+        with patch.object(publisher, "instagram_call", side_effect=instagram):
+            publisher.publish_instagram("caption", mixed_post()["media_items"])
+        bodies = [body for path, _, body in calls if path.endswith("/media")]
+        for item, body in zip(mixed_post()["media_items"], bodies[:6]):
+            expected = {"media_type": "VIDEO", "video_url": item["url"], "is_carousel_item": True} if item["type"] == "video" else {"image_url": item["url"], "is_carousel_item": True, "alt_text": item["alt"]}
+            self.assertEqual(body, expected)
+        self.assertEqual(bodies[6], {"media_type": "CAROUSEL", "children": "101,103,105,107,109,111", "caption": "caption"})
+        final_index = next(i for i, (path, _, _) in enumerate(calls) if path.endswith("/media_publish"))
+        self.assertEqual(sum(query == {"fields": "status_code"} for _, query, _ in calls[:final_index]), 7)
+        self.assertEqual(sum(path.endswith("/media_publish") for path, _, _ in calls), 1)
+
+    def test_video_polling_waits_one_minute_and_stops_after_five_minutes(self):
+        with patch.object(publisher, "instagram_call", return_value={"id": "123", "status_code": "IN_PROGRESS"}) as call, patch.object(publisher.time, "sleep") as sleep, self.assertRaisesRegex(ValueError, "traite encore"):
+            publisher.instagram_container({"media_type": "VIDEO", "video_url": "https://site/v.mp4", "is_carousel_item": True}, video=True)
+        self.assertEqual(call.call_count, 7)  # one creation, six status reads
+        self.assertEqual([row.args[0] for row in sleep.call_args_list], [60.0] * 5)
+
+    def test_failed_video_never_creates_parent_or_publishes(self):
+        calls = []
+        def instagram(path, query=None, payload=None):
+            calls.append((path, query, payload))
+            if query: return {"status_code": "ERROR" if len(calls) == 4 else "FINISHED"}
+            return {"id": "123"}
+        with patch.object(publisher, "instagram_call", side_effect=instagram), self.assertRaises(ValueError):
+            publisher.publish_instagram("caption", mixed_post()["media_items"])
+        self.assertFalse(any(path.endswith("/media_publish") or (payload and payload.get("media_type") == "CAROUSEL") for path, _, payload in calls))
+
     @patch.dict(os.environ, {"LINKEDIN_ACCESS_TOKEN": "secret", "LINKEDIN_PERSON_URN": "urn:li:person:antoine"})
     def test_linkedin_single_and_multi_image_payloads_keep_alts_and_order(self):
         for count in (1, 3):

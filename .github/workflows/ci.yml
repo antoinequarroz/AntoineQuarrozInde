@@ -32,7 +32,14 @@ jobs:
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=high
       - run: bash -n scripts/ops/*.sh
+      - name: Install the video metadata validator
+        run: |
+          sudo rm -f /etc/apt/sources.list.d/google-chrome.list /etc/apt/sources.list.d/google-chrome.sources
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
       - run: npm test
+      - name: Verify social transports without publishing
+        run: python3 -m unittest discover -s scripts/hermes -p 'test_social_media_publisher.py'
       - run: npm run typecheck
       - run: npm run build
       - name: Audit exact packages shipped in the standalone server
@@ -61,6 +68,8 @@ jobs:
           sudo rm -f /etc/apt/sources.list.d/google-chrome.list /etc/apt/sources.list.d/google-chrome.sources
           npx playwright install --with-deps chromium
       - run: npx playwright test e2e/accessibility.spec.ts --project=chromium --grep @credential-free
+      - name: Verify mixed carousel editing and explicit consent
+        run: npx playwright test e2e/social-mixed-media.spec.ts --project=chromium
 
   seo-quality:
     needs: quality

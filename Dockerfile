@@ -24,7 +24,7 @@ ARG APP_BUILD_TIME=unknown
 ENV NODE_ENV=production
 ENV APP_VERSION=$APP_VERSION
 ENV APP_BUILD_TIME=$APP_BUILD_TIME
-RUN apk add --no-cache typst font-liberation
+RUN apk add --no-cache typst font-liberation ffmpeg
 COPY --chown=node:node --from=build /app/.output ./.output
 COPY --chown=node:node --from=build /app/typst ./typst
 USER node

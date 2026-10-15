@@ -12,9 +12,9 @@ export default defineEventHandler(async (event) => {
   }
   const images = validateSocialImages(body.images, current.platform, String(useRuntimeConfig().public.supabaseUrl || ''))
   const { data, error } = await db.from('social_posts').update({
-    media_images: images, publication_mode: 'manual', approved_version: null, approval_fingerprint: null, version: version + 1, updated_at: new Date().toISOString(),
+    media_images: images, media_items: [], publication_mode: 'manual', approved_version: null, approval_fingerprint: null, publish_after: null, version: version + 1, updated_at: new Date().toISOString(),
   }).eq('organization_id', org.id).eq('id', id).eq('version', version).in('status', ['draft', 'failed'])
-    .select('id,media_images,publication_mode,version,updated_at').maybeSingle()
+    .select('id,media_images,media_items,publication_mode,version,updated_at').maybeSingle()
   if (error) throw createError({ statusCode: 500, message: 'Les visuels n’ont pas été enregistrés.' })
   if (!data) throw createError({ statusCode: 409, message: 'Le brouillon a changé. Actualise la page.' })
   await logAudit({ organizationId: org.id, actorUserId: user.id, action: 'social.post.images.updated', entityType: 'social_post', entityId: id })

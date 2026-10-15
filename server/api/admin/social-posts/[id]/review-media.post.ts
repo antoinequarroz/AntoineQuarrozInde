@@ -7,9 +7,9 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'Confirmation explicite de la relecture des textes et visuels requise.' })
   }
   const db = getSupabaseAdmin()
-  const { data: current } = await db.from('social_posts').select('platform,media_images')
+  const { data: current } = await db.from('social_posts').select('platform,media_images,media_items')
     .eq('organization_id', org.id).eq('id', id).maybeSingle()
-  if (!current?.media_images?.length) throw createError({ statusCode: 409, message: 'Aucun visuel à valider.' })
+  if (!current?.media_images?.length && !current?.media_items?.length) throw createError({ statusCode: 409, message: 'Aucun visuel à valider.' })
   const content = validateSocialContent(current.platform, body.content)
   const { data, error } = await db.from('social_posts').update({
     content, status: 'approved', publication_mode: 'manual', approved_version: null, approval_fingerprint: null, publish_after: null, last_error: null,

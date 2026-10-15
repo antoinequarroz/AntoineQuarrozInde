@@ -9,7 +9,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'Confirmation explicite requise.' })
   }
   const supabase = getSupabaseAdmin()
-  const { data: current } = await supabase.from('social_posts').select('platform,status,publication_mode,article_url,media_images')
+  const { data: current } = await supabase.from('social_posts').select('platform,status,publication_mode,article_url,media_images,media_items,media_kind')
     .eq('organization_id', org.id).eq('id', id).maybeSingle()
   if (!current) throw createError({ statusCode: 404, message: 'Brouillon introuvable.' })
   validateAutomaticSocialPost(current)

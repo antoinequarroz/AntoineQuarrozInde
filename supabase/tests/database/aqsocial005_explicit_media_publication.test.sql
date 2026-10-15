@@ -48,7 +48,7 @@ select is((select count(*) from public.approve_social_post('00000000-0000-0000-0
 select throws_ok($$select * from public.approve_social_post('00000000-0000-0000-0000-000000000a01','00000000-0000-0000-0000-000000000a11',1,'Un café ☕',null)$$,
  '22023','Automatic publication requires a schedule','automatic approval requires explicit timing');
 select throws_ok($$select * from public.approve_social_post('00000000-0000-0000-0000-000000000a01','00000000-0000-0000-0000-000000000a14',1,'Instagram text',now())$$,
- '22023','Instagram automatic publication requires images','Instagram text-only stays manual');
+ '22023','Instagram automatic publication requires media','Instagram text-only stays manual');
 
 select is((select count(*) from public.approve_social_post('00000000-0000-0000-0000-000000000a01','00000000-0000-0000-0000-000000000a11',1,'Un café ☕',now()-interval '1 minute')),1::bigint,
  'explicit carousel approval atomically succeeds');
