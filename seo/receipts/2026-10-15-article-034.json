@@ -1,0 +1,52 @@
+{
+  "publication": {
+    "status": 200,
+    "data": {
+      "article": {
+        "id": 39,
+        "slug": "site-multilingue-suisse-au-dela-traduction",
+        "title": "34. Un site multilingue en Suisse : ce qu’il faut prévoir au-delà de la traduction",
+        "published": true,
+        "published_at": "2026-10-15T07:21:21.390318+00:00",
+        "cover_image": "https://oxlrljszatejqxhclmbu.supabase.co/storage/v1/object/public/media/hermes/81c6ea4868181db98b5fe79eac08eaedbf642b1724361af7353430e1482cb399.png"
+      },
+      "idempotent": false
+    }
+  },
+  "url": "https://www.antoinequarroz.ch/blog/site-multilingue-suisse-au-dela-traduction",
+  "social": [
+    {
+      "status": 200,
+      "data": {
+        "post": {
+          "id": "bd96c2fa-e274-43d1-b464-91c9b3e9fcfa",
+          "platform": "linkedin",
+          "status": "draft",
+          "version": 1,
+          "media_kind": null,
+          "media_url": null,
+          "media_title": null
+        },
+        "idempotent": false
+      }
+    },
+    {
+      "status": 200,
+      "data": {
+        "post": {
+          "id": "e941a7bf-4979-4f86-9a2a-0a42382aafdb",
+          "platform": "x",
+          "status": "draft",
+          "version": 1,
+          "media_kind": null,
+          "media_url": null,
+          "media_title": null
+        },
+        "idempotent": false
+      }
+    }
+  ],
+  "publicVerified": true,
+  "coverDimensions": "1200x675",
+  "articleId": 39
+}
