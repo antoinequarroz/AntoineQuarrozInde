@@ -51,12 +51,9 @@ async function openMockedDraft(page: Page) {
     return route.fulfill({ status: 500, json: { message: `Unexpected mock request: ${request.method()} ${path}` } })
   })
 
-  // Only the browser's auth SDK receives this synthetic session. Every admin
-  // request is intercepted above, so the test needs no live account or token.
-  await page.goto('/admin/login')
-  await expect(page.getByLabel(/mot de passe/i)).toBeVisible()
-  const supabaseUrl = await page.evaluate(() => String((window as any).__NUXT__.config.public.supabaseUrl))
-  expect(supabaseUrl).toMatch(/^https?:\/\//)
+  // Let the hydrated login form and auth SDK establish this synthetic session.
+  // Nuxt deletes window.__NUXT__ after reviving its payload, so it cannot be
+  // used as a stable runtime configuration source in a production build.
   const now = Math.floor(Date.now() / 1000)
   const user = { id: '00000000-0000-0000-0000-000000000030', email: 'ant30@example.invalid', aud: 'authenticated', role: 'authenticated', factors: [], app_metadata: {}, user_metadata: {}, identities: [], created_at: new Date().toISOString() }
   const jwt = [
@@ -64,12 +61,26 @@ async function openMockedDraft(page: Page) {
     Buffer.from(JSON.stringify({ sub: user.id, aud: 'authenticated', role: 'authenticated', aal: 'aal2', exp: now + 3600, iat: now })).toString('base64url'),
     Buffer.from('synthetic-browser-only-signature').toString('base64url'),
   ].join('.')
-  await page.route(`${new URL(supabaseUrl).origin}/auth/v1/**`, route => route.fulfill({ json: user }))
-  await page.evaluate(({ key, session }) => localStorage.setItem(key, JSON.stringify(session)), {
-    key: `sb-${new URL(supabaseUrl).hostname.split('.')[0]}-auth-token`,
-    session: { access_token: jwt, refresh_token: 'synthetic-browser-only-refresh', expires_at: now + 3600, expires_in: 3600, token_type: 'bearer', user },
+  const session = { access_token: jwt, refresh_token: 'synthetic-browser-only-refresh', expires_at: now + 3600, expires_in: 3600, token_type: 'bearer', user }
+  const signIns: string[] = []
+  await page.route('**/auth/v1/**', route => {
+    const request = route.request()
+    const url = new URL(request.url())
+    if (url.pathname.endsWith('/token') && url.searchParams.get('grant_type') === 'password') {
+      expect(request.postDataJSON()).toMatchObject({ email: user.email, password: 'synthetic-browser-only-password' })
+      signIns.push('password')
+      return route.fulfill({ json: session })
+    }
+    if (url.pathname.endsWith('/user')) return route.fulfill({ json: user })
+    return route.fulfill({ status: 500, json: { message: `Unexpected mock auth request: ${request.method()} ${url.pathname}` } })
   })
-  await page.goto('/admin/social')
+  await page.goto('/admin/login?redirect=/admin/social')
+  await expect(page.getByLabel(/email/i)).toBeEnabled()
+  await page.getByLabel(/email/i).fill(user.email)
+  await page.getByLabel(/mot de passe/i).fill('synthetic-browser-only-password')
+  await page.getByRole('button', { name: /se connecter/i }).click()
+  await expect(page).toHaveURL(url => url.pathname.replace(/\/$/, '') === '/admin/social')
+  expect(signIns).toEqual(['password'])
   const card = page.getByRole('article').filter({ has: page.getByRole('heading', { name: post.article_title, exact: true }) })
   await expect(card.getByRole('heading', { name: 'Carrousel · 4 images et 2 vidéos', exact: true })).toBeVisible()
   return { card, writes }
