@@ -17,12 +17,16 @@ export default defineEventHandler(async (event) => {
   }
 
   const updates: Record<string, unknown> = { version: version + 1, updated_at: new Date().toISOString() }
-  if (action === 'save') updates.content = validateSocialContent(current.platform, body.content)
+  if (action === 'save') {
+    updates.content = validateSocialContent(current.platform, body.content)
+    updates.status = 'draft'
+    updates.publish_after = null
+  }
   if (action === 'reject') { updates.status = 'rejected'; updates.publish_after = null }
   if (action === 'restore') { updates.status = 'draft'; updates.publish_after = null }
   const { data, error } = await supabase.from('social_posts').update(updates)
     .eq('organization_id', org.id).eq('id', id).eq('version', version)
-    .select('id,content,status,version,updated_at').maybeSingle()
+    .select('id,content,status,publish_after,version,updated_at').maybeSingle()
   if (error) throw createError({ statusCode: 500, message: error.message })
   if (!data) throw createError({ statusCode: 409, message: 'Le brouillon a changé. Recharge la page.' })
   await logAudit({ organizationId: org.id, actorUserId: user.id, action: `social.post.${action}`, entityType: 'social_post', entityId: id })

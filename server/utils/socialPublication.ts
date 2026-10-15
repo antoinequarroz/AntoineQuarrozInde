@@ -1,3 +1,4 @@
+import { validateSocialImages } from './socialImages'
 export const SOCIAL_PLATFORMS = ['linkedin', 'x', 'instagram'] as const
 export const SOCIAL_INSTAGRAM_REVIEW_CONFIRMATION = 'VALIDER_TEXTE_INSTAGRAM'
 export const SOCIAL_STATUSES = ['draft', 'approved', 'publishing', 'published', 'rejected', 'failed'] as const
@@ -85,7 +86,7 @@ export function requireAutomatedSocialPlatform(value: unknown) {
 export function validateSocialDraftInput(body: Record<string, unknown>) {
   const platform = validateSocialPlatform(body.platform)
   const articleUrl = requiredText(body.articleUrl, 'Lien public associé', 500)
-  if (articleUrl !== SITE_HOME && !articleUrl.startsWith(ARTICLE_PREFIX) && !articleUrl.startsWith(RESOURCE_PREFIX)) {
+  if (articleUrl !== SITE_HOME && !articleUrl.startsWith(ARTICLE_PREFIX) && !articleUrl.startsWith(RESOURCE_PREFIX) && !articleUrl.startsWith(`${SITE_HOME}projets/`)) {
     throw createError({ statusCode: 400, message: 'Le lien doit être une page publique du site officiel.' })
   }
   const sourcePath = body.sourcePath == null ? null : requiredText(body.sourcePath, 'Chemin source', 300)
@@ -101,7 +102,10 @@ export function validateSocialDraftInput(body: Record<string, unknown>) {
   if (mediaKind && (platform !== 'linkedin' || mediaKind !== 'document' || !mediaUrl?.startsWith(SOCIAL_DOCUMENT_PREFIX) || !mediaUrl.endsWith('.pdf'))) {
     throw createError({ statusCode: 400, message: 'Seul un PDF officiel du site peut être joint à LinkedIn.' })
   }
+  const mediaImages = validateSocialImages(body.mediaImages ?? [], platform, body.mediaImages ? String(useRuntimeConfig().public.supabaseUrl || '') : '')
+  if (mediaKind && mediaImages.length) throw createError({ statusCode: 400, message: 'Choisis un PDF ou des images.' })
   return {
+    mediaImages,
     platform,
     sourceKey: requiredText(body.sourceKey, 'Clé source', 180),
     articleTitle: requiredText(body.articleTitle, 'Titre', 180),
