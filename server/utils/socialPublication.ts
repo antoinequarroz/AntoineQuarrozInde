@@ -137,3 +137,19 @@ export async function resolveHermesOrganization() {
   if (error || !data) throw createError({ statusCode: 500, message: 'Organisation introuvable.' })
   return data
 }
+
+// Only the site presents the image preview and collects approval for these media.
+export function validateAutomaticSocialPost(post: { platform: unknown, media_images?: unknown }) {
+  const platform = validateSocialPlatform(post.platform)
+  const images = validateSocialImages(post.media_images ?? [], platform, String(useRuntimeConfig().public.supabaseUrl || ''))
+  if (images.some(image => !/\.(?:jpe?g|png)$/i.test(new URL(image.url).pathname))) {
+    throw createError({ statusCode: 400, message: 'Pour publier depuis le site, ajoute des images JPEG ou PNG.' })
+  }
+  if (platform === 'instagram' && !images.length) {
+    throw createError({ statusCode: 400, message: 'Instagram nécessite au moins une image pour publier depuis le site.' })
+  }
+  if (platform === 'instagram' && images.some(image => !/\.jpe?g$/i.test(new URL(image.url).pathname))) {
+    throw createError({ statusCode: 400, message: 'Pour Instagram, ajoute des images JPEG avant de valider la publication.' })
+  }
+  return platform
+}

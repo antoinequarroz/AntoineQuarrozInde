@@ -12,7 +12,7 @@ export default defineEventHandler(async (event) => {
   if (!current?.media_images?.length) throw createError({ statusCode: 409, message: 'Aucun visuel à valider.' })
   const content = validateSocialContent(current.platform, body.content)
   const { data, error } = await db.from('social_posts').update({
-    content, status: 'approved', publish_after: null, last_error: null,
+    content, status: 'approved', publication_mode: 'manual', approved_version: null, approval_fingerprint: null, publish_after: null, last_error: null,
     version: version + 1, updated_at: new Date().toISOString(),
   }).eq('organization_id', org.id).eq('id', id).in('status', ['draft', 'failed']).eq('version', version)
     .select('id,content,status,publish_after,version,updated_at').maybeSingle()

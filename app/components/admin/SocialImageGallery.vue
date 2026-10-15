@@ -24,7 +24,7 @@ async function upload(event: Event) {
   emit('dirty', true)
   try {
     for (const file of files) {
-      if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) throw new Error('Images JPG, PNG ou WebP de 5 Mo maximum.')
+      if (!(props.platform === 'instagram' ? ['image/jpeg'] : ['image/jpeg', 'image/png']).includes(file.type) || file.size > 5 * 1024 * 1024) throw new Error(props.platform === 'instagram' ? 'Instagram : images JPEG de 5 Mo maximum.' : 'Images JPG ou PNG de 5 Mo maximum.')
       const dataUrl = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader()
         reader.onload = () => resolve(String(reader.result))
@@ -42,7 +42,7 @@ async function upload(event: Event) {
 </script>
 <template>
   <section class="mt-4 min-w-0 rounded-xl border border-violet-200 bg-violet-50/50 p-4 dark:border-violet-400/20 dark:bg-violet-500/5" aria-label="Images jointes">
-    <div class="flex items-center justify-between gap-3"><h3 class="text-sm font-semibold">{{ draft.length > 1 ? `Carrousel · ${draft.length} images` : 'Visuel joint' }}</h3><span v-if="draft.length" class="text-xs text-violet-600 dark:text-violet-300">Publication manuelle</span></div>
+    <div class="flex items-center justify-between gap-3"><h3 class="text-sm font-semibold">{{ draft.length > 1 ? `Carrousel · ${draft.length} images` : 'Visuel joint' }}</h3><span v-if="draft.length" class="text-xs text-violet-600 dark:text-violet-300">À relire avant envoi</span></div>
     <div v-if="draft.length" class="mt-3 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-3" tabindex="0" aria-label="Feuilleter les visuels">
       <figure v-for="(image, index) in draft" :key="image.url" class="w-[min(68vw,20rem)] shrink-0 snap-center rounded-lg bg-white p-2 dark:bg-black/20">
         <a :href="image.url" target="_blank" rel="noopener noreferrer" :aria-label="`Ouvrir le visuel ${index + 1} en grand`"><img :src="image.url" :alt="image.alt" loading="lazy" class="aspect-[4/5] w-full rounded-md object-contain"></a>
@@ -54,10 +54,10 @@ async function upload(event: Event) {
       </figure>
     </div>
     <template v-if="editable">
-      <label class="mt-3 block text-xs font-medium">Ajouter des images (JPG, PNG, WebP, 5 Mo maximum)<input type="file" multiple accept="image/jpeg,image/png,image/webp" class="mt-2 block w-full text-xs" :disabled="busy || uploading" @change="upload"></label>
+      <label class="mt-3 block text-xs font-medium">Ajouter des images ({{ platform === 'instagram' ? 'JPEG' : 'JPG, PNG' }}, 5 Mo maximum)<input type="file" multiple :accept="platform === 'instagram' ? 'image/jpeg' : 'image/jpeg,image/png'" class="mt-2 block w-full text-xs" :disabled="busy || uploading" @change="upload"></label>
       <p v-if="uploading" role="status" class="mt-2 text-xs">Téléversement en cours…</p>
       <button v-if="changed" type="button" class="mt-3 min-h-11 rounded-lg bg-violet-600 px-4 text-sm font-semibold text-white disabled:opacity-50" :disabled="busy || uploading || draft.some(image => !image.alt.trim())" @click="emit('save', draft)">Enregistrer les visuels</button>
     </template>
-    <p v-if="draft.length" class="mt-3 text-xs text-gray-500">Relis le texte et chaque image. Après validation, tu publieras l’ensemble toi-même sur le réseau.</p>
+    <p v-if="draft.length" class="mt-3 text-xs text-gray-500">Relis le texte et chaque image avant d’autoriser leur publication sur le réseau.</p>
   </section>
 </template>
