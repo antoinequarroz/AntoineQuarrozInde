@@ -47,6 +47,21 @@ def payload(data):
         raise ValueError('Compte, lecture seule ou coût non confirmé.')
     fields = ('schemaVersion', 'expectedUsername', 'state', 'readOnly', 'publishingEnabled', 'collectedAt', 'lastSuccessfulAt', 'period', 'profile', 'metrics', 'media', 'chargedMicroUSD')
     snapshot = {name: source.get(name) for name in fields if name in source}
+    # The Python collector counts Unicode code points, whereas the website's
+    # preview limit counts UTF-16 units. Trim only media previews, never drafts.
+    if isinstance(snapshot.get('media'), list):
+        snapshot['media'] = [dict(item) for item in snapshot['media']]
+        for item in snapshot['media']:
+            caption = item.get('caption')
+            if isinstance(caption, str):
+                units = 0
+                preview = []
+                for character in caption:
+                    width = 2 if ord(character) > 0xffff else 1
+                    if units + width > 300: break
+                    preview.append(character)
+                    units += width
+                item['caption'] = ''.join(preview)
     # Never forward provider error text, credentials or a cache fingerprint.
     snapshot['errors'] = ['incomplete'] if source.get('errors') else []
     return {'snapshot': snapshot, 'drafts': [{'id': row['id'], 'caption': row['caption']} for row in data['drafts']]}
