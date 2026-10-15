@@ -12,6 +12,7 @@ export default defineEventHandler(async (event) => {
   const { data: current } = await supabase.from('social_posts').select('platform,status,article_url')
     .eq('organization_id', org.id).eq('id', id).maybeSingle()
   if (!current) throw createError({ statusCode: 404, message: 'Brouillon introuvable.' })
+  requireAutomatedSocialPlatform(current.platform)
   if (!['draft', 'failed'].includes(current.status)) throw createError({ statusCode: 409, message: 'Statut incompatible.' })
   const content = validateSocialContent(current.platform, body.content)
   if (!content.includes(current.article_url)) {

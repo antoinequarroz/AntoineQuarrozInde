@@ -19,6 +19,16 @@ describe('Supabase production migration baseline', () => {
         .digest('hex'),
     })))
 
-    expect(actual).toEqual(expected)
+    // The audit freezes the applied prefix, not future additive migrations.
+    // Never rewrite its hashes to make a pending migration look deployed.
+    expect(actual.slice(0, expected.length)).toEqual(expected)
+    const lastAuditedVersion = expected.at(-1)!.filename.slice(0, 14)
+    const pending = actual.slice(expected.length)
+    const versions = pending.map(item => item.filename.slice(0, 14))
+    expect(new Set(versions).size).toBe(versions.length)
+    for (const item of pending) {
+      expect(item.filename).toMatch(/^\d{14}_[a-z0-9_]+\.sql$/)
+      expect(item.filename.slice(0, 14) > lastAuditedVersion).toBe(true)
+    }
   })
 })

@@ -4,6 +4,7 @@ export default defineEventHandler(async (event) => {
   const { data, error } = await getSupabaseAdmin().from('social_posts')
     .select('id,platform,article_title,article_url,content,media_kind,media_url,media_title,version')
     .eq('organization_id', organization.id).eq('status', 'approved')
+    .in('platform', ['linkedin', 'x'])
     .lte('publish_after', new Date().toISOString())
     .order('created_at', { ascending: true }).limit(10)
   if (error) throw createError({ statusCode: 500, message: error.message })

@@ -185,6 +185,8 @@ onMounted(loadAnalytics)
       </div>
     </section>
 
+    <AdminSocialNetworkInsights />
+
     <div v-if="loadError" role="alert" class="rounded-xl border border-red-200 bg-red-50 p-5 text-red-900 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-100">
       <p class="font-semibold">Les statistiques sont indisponibles</p>
       <p class="mt-1 text-sm">{{ loadError }}</p>
