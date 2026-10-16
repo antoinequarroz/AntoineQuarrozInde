@@ -84,3 +84,7 @@ Aucune parmi les 31 articles de ce périmètre : chaque article est accessible d
 ## Publication du 14 octobre 2026
 
 - Article 033 : [Formulaire de contact : les détails qui facilitent une vraie demande](https://www.antoinequarroz.ch/blog/formulaire-contact-details-vraie-demande) — public et vérifié ; méthode de recette, exemple fictif, champs/mobile/erreurs/confirmation, sources W3C WAI et MDN. Page SSR, canonical, BlogPosting, couverture native PNG 1200 × 675, sitemap et liens entrants depuis `/blog` et `/creation-site-internet-valais` vérifiés. Liens contextuels vers le hub Création de site, la checklist et le cadrage de projet.
+
+## Publication du 16 octobre 2026
+
+- Article 035 : [MVP : comment choisir la première version utile de votre application](https://www.antoinequarroz.ch/blog/mvp-choisir-premiere-version-utile-application) : public le 16 octobre à 06:35 Europe/Zurich, id CMS 40. Grille de périmètre avec association fictive, parcours complet, prototype, critères d’utilité, FAQ et limites explicites. Sources primaires The Lean Startup, GOV.UK et W3C. Liens contextuels vers `/application-mobile-valais`, le cadrage de projet et EnvVault. Vérifications détaillées dans `seo/receipts/2026-10-16-article-035.json` ; deux brouillons LinkedIn/X en attente de validation, sans programmation.
