@@ -21,7 +21,6 @@
 #set text(font: ("Arial", "Liberation Sans"), size: 9.5pt, fill: ink, lang: "fr")
 #set par(leading: 0.65em)
 
-#let value-or-dash(value) = if value == none or value == "" { "—" } else { value }
 #let money(cents, currency) = {
   let amount = calc.round(cents) / 100
   [#amount #currency]
@@ -77,9 +76,8 @@
       columns: (1fr, auto),
       stroke: none,
       inset: (y: 1.2mm),
-      [Date], [#value-or-dash(data.at("issuedAt"))],
-      [Échéance], [#value-or-dash(data.at("dueAt"))],
-      [Statut], [#data.at("statusLabel")],
+      ..if data.at("issuedAt") != "" { ([Date], [#data.at("issuedAt")]) } else { () },
+      ..if data.at("documentTitle") != "Devis" and data.at("dueAt") != "" { ([Échéance], [#data.at("dueAt")]) } else { () },
       [Devise], [#data.at("currency")],
     )
   ],

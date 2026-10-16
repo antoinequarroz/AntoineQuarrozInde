@@ -15,7 +15,6 @@ type PdfDocData = {
   currency: string
   issuedAt?: string | null
   dueAt?: string | null
-  status?: string | null
   notes?: string | null
   subtotalCents: number
   taxCents: number
@@ -37,8 +36,7 @@ export async function buildBillingPdf(data: PdfDocData) {
   page.drawText(`Client: ${data.clientName}`, { x: 40, y, size: 12, font: regular })
   y -= 18
   if (data.issuedAt) { page.drawText(`Date: ${data.issuedAt}`, { x: 40, y, size: 11, font: regular }); y -= 16 }
-  if (data.dueAt) { page.drawText(`Echeance: ${data.dueAt}`, { x: 40, y, size: 11, font: regular }); y -= 16 }
-  if (data.status) { page.drawText(`Statut: ${data.status}`, { x: 40, y, size: 11, font: regular }); y -= 16 }
+  if (data.title !== 'Devis' && data.dueAt) { page.drawText(`Echeance: ${data.dueAt}`, { x: 40, y, size: 11, font: regular }); y -= 16 }
 
   y -= 10
   page.drawText('Lignes', { x: 40, y, size: 13, font: bold })

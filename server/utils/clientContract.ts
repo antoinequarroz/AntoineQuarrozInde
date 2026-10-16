@@ -7,6 +7,17 @@ const optionalId = (value: unknown) => {
   return Number.isInteger(id) && id > 0 ? id : null
 }
 
+function issuedDateInZurich(value: unknown) {
+  if (!value) return null
+  const date = new Date(String(value))
+  if (Number.isNaN(date.getTime())) return null
+  const parts = new Intl.DateTimeFormat('en', {
+    timeZone: 'Europe/Zurich', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).formatToParts(date)
+  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find(item => item.type === type)?.value || ''
+  return `${part('year')}-${part('month')}-${part('day')}`
+}
+
 export function normalizeContractPayload(body: Record<string, any>) {
   const number = text(body.number, 80)
   const title = text(body.title, 240)
@@ -47,12 +58,14 @@ export function normalizeContractPayload(body: Record<string, any>) {
 }
 
 export function contractSnapshot(contract: Record<string, any>, organization: Record<string, any>, client: Record<string, any>) {
+  const issuedAt = issuedDateInZurich(contract.created_at)
   return {
     schemaVersion: 1,
     contract: {
       number: contract.number,
       version: contract.version,
       title: contract.title,
+      ...(issuedAt ? { issuedAt } : {}),
       effectiveDate: contract.effective_date,
       startsAt: contract.starts_at,
       endsAt: contract.ends_at,

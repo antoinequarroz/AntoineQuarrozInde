@@ -10,16 +10,6 @@ type BillingDocumentInput = {
   items: Array<Record<string, any>>
 }
 
-const statusLabels: Record<string, string> = {
-  draft: 'Brouillon',
-  sent: 'Envoyé',
-  accepted: 'Accepté',
-  rejected: 'Refusé',
-  paid: 'Payé',
-  overdue: 'En retard',
-  cancelled: 'Annulé',
-}
-
 function partyFromOrganization(organization: Record<string, any>) {
   return {
     name: String(organization.billing_name || organization.name || ''),
@@ -64,8 +54,8 @@ export async function buildBillingDocument(input: BillingDocumentInput) {
     subject: String(document.title || ''),
     currency: currency === 'EUR' ? 'EUR' : 'CHF',
     issuedAt: String(document.issued_at || ''),
-    dueAt: String(kind === 'invoice' ? document.due_at || '' : document.valid_until || ''),
-    statusLabel: statusLabels[String(document.status)] || String(document.status || ''),
+    dueAt: kind === 'invoice' ? String(document.due_at || '') : '',
+    statusLabel: '',
     notes: String(document.notes || ''),
     terms: String(organization.billing_terms || ''),
     subtotalCents: Number(document.subtotal_cents ?? document.amount_cents ?? 0),
@@ -117,8 +107,7 @@ export async function buildBillingDocument(input: BillingDocumentInput) {
       clientName: typstData.client.name || '-',
       currency: typstData.currency,
       issuedAt: document.issued_at,
-      dueAt: kind === 'invoice' ? document.due_at : document.valid_until,
-      status: typstData.statusLabel,
+      dueAt: typstData.dueAt,
       notes: typstData.notes,
       subtotalCents: typstData.subtotalCents,
       taxCents: typstData.taxCents,

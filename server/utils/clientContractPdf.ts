@@ -156,11 +156,17 @@ export async function buildClientContractPdf(data: Record<string, any>, signatur
 
   const effectiveDate = contract.effectiveDate || 'À la date de signature'
   const period = [contract.startsAt, contract.endsAt].filter(Boolean).join(' au ') || 'Selon le calendrier convenu'
-  const metadataHeight = (wrap(effectiveDate, regular, 9.5, width - 134).length + wrap(period, regular, 9.5, width - 134).length) * 13.5 + 24
+  const metadata: Array<[string, string]> = []
+  if (contract.issuedAt) {
+    const issuedDate = new Date(`${contract.issuedAt}T12:00:00.000Z`)
+    if (!Number.isNaN(issuedDate.getTime())) metadata.push(['Date du contrat', new Intl.DateTimeFormat('fr-CH', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Zurich' }).format(issuedDate)])
+  }
+  metadata.push(['Entrée en vigueur', effectiveDate], ['Période', period])
+  const metadataHeight = metadata.reduce((height, [, value]) => height + wrap(value, regular, 9.5, width - 134).length * 13.5 + 5, 14)
   ensure(metadataHeight + 14)
   page.drawRectangle({ x: PAGE.margin, y: y - metadataHeight + 11, width, height: metadataHeight, color: COLORS.paper })
   y -= 5
-  for (const [label, value] of [['Entrée en vigueur', effectiveDate], ['Période', period]]) {
+  for (const [label, value] of metadata) {
     text(label, PAGE.margin + 12, y, 8.5, bold, COLORS.quiet)
     for (const line of wrap(value!, regular, 9.5, width - 134)) { text(line, PAGE.margin + 122, y); y -= 13.5 }
     y -= 5

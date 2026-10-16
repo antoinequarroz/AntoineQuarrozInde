@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { decodePDFRawStream, PDFArray, PDFDocument, PDFRawStream, StandardFonts } from 'pdf-lib'
-import { contractSnapshot, hashContractSnapshot } from '../server/utils/clientContract'
+import { contractDocumentData, contractSnapshot, hashContractSnapshot } from '../server/utils/clientContract'
 import { buildClientContractPdf } from '../server/utils/clientContractPdf'
 
 const contract = {
@@ -49,6 +49,26 @@ describe('client contracts', () => {
     const pdf = await buildClientContractPdf(contractSnapshot(contract, organization, client))
     expect(pdf.subarray(0, 4).toString()).toBe('%PDF')
     expect(pdf.length).toBeGreaterThan(2_000)
+  })
+
+  it('dates a new snapshot in Zurich independently of the effective date and preserves frozen versions', async () => {
+    const source = { ...contract, created_at: '2026-10-15T23:30:00.000Z', effective_date: null }
+    const snapshot = contractSnapshot(source, organization, client)
+    expect(snapshot.contract.issuedAt).toBe('2026-10-16')
+    expect(snapshot.contract.effectiveDate).toBeNull()
+    const { pages } = await readPdfText(await buildClientContractPdf(snapshot))
+    const text = pages.flat().map(run => run.text).join('')
+    expect(text).toContain('Date du contrat16 octobre 2026')
+    expect(text).toContain('Entrée en vigueurÀ la date de signature')
+
+    const frozen = contractSnapshot(contract, organization, client)
+    const fingerprint = hashContractSnapshot(frozen)
+    const loaded = contractDocumentData({ ...source, snapshot: frozen }, organization, client)
+    expect(loaded).toBe(frozen)
+    expect(loaded.contract).not.toHaveProperty('issuedAt')
+    expect(hashContractSnapshot(loaded)).toBe(fingerprint)
+    const oldPdf = await readPdfText(await buildClientContractPdf(loaded))
+    expect(oldPdf.pages.flat().map(run => run.text).join('')).not.toContain('Date du contrat')
   })
 
   it('preserves every clause across pages and keeps long identifiers within the printable area', async () => {
