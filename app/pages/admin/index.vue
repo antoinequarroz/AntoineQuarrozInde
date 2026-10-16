@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { ContactMessage } from '~/types'
-import { draftInvoiceTotals, outstandingInvoiceTotals } from '~/utils/outstandingInvoices'
+import { draftInvoiceTotals, invoiceThirtyDayCutoff, outstandingInvoiceTotals } from '~/utils/outstandingInvoices'
 import AdminAdminIcon from '~/components/admin/AdminIcon.vue'
 import AdminAdminEmptyState from '~/components/admin/AdminEmptyState.vue'
 import { buildCommercialTaskSuggestions, type CommercialTaskSuggestion } from '~/utils/commercialTaskPlan'
@@ -315,7 +315,7 @@ const monthRevenue = computed(() => {
 
 const draftInvoiceAmount = computed(() => draftInvoiceTotals(invoices.invoices))
 const totalOutstanding = computed(() => outstandingInvoiceTotals(invoices.invoices))
-const expectedRevenue = computed(() => outstandingInvoiceTotals(invoices.invoices, addDaysToIsoDate(todayIso.value, 30)))
+const expectedRevenue = computed(() => outstandingInvoiceTotals(invoices.invoices, invoiceThirtyDayCutoff(todayIso.value)))
 
 const quoteValue = computed(() => {
   const totals: Record<string, number> = {}
@@ -341,7 +341,7 @@ const metrics = computed(() => [
     value: sourceStates.invoices === 'ready' ? formatCurrencyTotals(expectedRevenue.value) : '—',
     meta: sourceStates.invoices === 'ready' ? `${overdueInvoices.value.length} facture(s) en retard` : 'Factures indisponibles',
     icon: 'receipt',
-    to: '/admin/invoices',
+    to: '/admin/invoices?status=outstanding-30-days',
     tone: 'text-rose-600 bg-rose-50 dark:text-rose-300 dark:bg-rose-500/10',
     bar: 'bg-rose-500',
   },

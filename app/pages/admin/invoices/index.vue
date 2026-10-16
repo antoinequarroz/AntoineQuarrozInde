@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Invoice } from '~/types'
 import { matchesInvoiceListFilter, parseInvoiceListFilter, type InvoiceListFilter } from '~/utils/invoiceListFilter'
+import { invoiceThirtyDayCutoff } from '~/utils/outstandingInvoices'
 import AdminViewSkeleton from '~/components/admin/AdminViewSkeleton.vue'
 import { printStructuredDocument } from '~/utils/printStructuredDocument'
 import { generateScorReference, getQrReferenceError, isQrIban, isValidSwissIban, normalizeIban } from '~~/shared/utils/swissQr'
@@ -148,10 +149,11 @@ const kanbanInvoices = computed(() =>
     items: filteredInvoices.value.filter(i => i.status === status),
   })),
 )
+const thirtyDayCutoff = computed(() => invoiceThirtyDayCutoff())
 const filteredInvoices = computed(() => {
   const q = search.value.trim().toLowerCase()
   return store.invoices.filter((x) => {
-    if (!matchesInvoiceListFilter(x, statusFilter.value)) return false
+    if (!matchesInvoiceListFilter(x, statusFilter.value, thirtyDayCutoff.value)) return false
     if (!q) return true
     return [x.number, x.notes || '', clientsById.value.get(x.clientId || 0)?.name || '', projectsById.value.get(x.projectId || 0)?.title || ''].join(' ').toLowerCase().includes(q)
   })
@@ -508,6 +510,7 @@ onBeforeUnmount(releasePdfPreview)
       <select v-model="statusFilter" class="input-field" aria-label="Filtrer les factures">
         <option value="all">Tous statuts</option>
         <option value="outstanding">À encaisser</option>
+        <option value="outstanding-30-days">À encaisser sous 30 jours</option>
         <option value="draft-invoices">Factures en brouillon</option>
         <option value="draft">{{ statusLabel('draft') }}</option>
         <option value="sent">{{ statusLabel('sent') }} / {{ statusLabel('overdue') }}</option>
