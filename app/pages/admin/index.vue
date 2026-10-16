@@ -3,6 +3,7 @@ import type { ContactMessage } from '~/types'
 import { draftInvoiceTotals, invoiceThirtyDayCutoff, outstandingInvoiceTotals } from '~/utils/outstandingInvoices'
 import { isQuoteAwaitingDecision } from '~/utils/quoteListFilter'
 import { isTaskDueToday, taskBusinessDate } from '~/utils/taskListFilter'
+import { isNewMessage } from '~/utils/messageListFilter'
 import AdminAdminIcon from '~/components/admin/AdminIcon.vue'
 import AdminAdminEmptyState from '~/components/admin/AdminEmptyState.vue'
 import { buildCommercialTaskSuggestions, type CommercialTaskSuggestion } from '~/utils/commercialTaskPlan'
@@ -289,9 +290,7 @@ const nextAppointments = computed(() =>
 )
 
 const newMessages = computed(() =>
-  messages.value
-    .filter(message => message.status === 'new')
-    .slice(0, 6),
+  messages.value.filter(isNewMessage),
 )
 
 const monthRevenue = computed(() => {
@@ -374,7 +373,7 @@ const metrics = computed(() => [
     value: sourceStates.messages === 'ready' ? newMessages.value.length : '—',
     meta: sourceStates.messages === 'ready' ? 'À lire dans la messagerie' : 'Messages indisponibles',
     icon: 'mail',
-    to: '/admin/messages',
+    to: '/admin/messages?status=new',
     tone: 'text-emerald-700 bg-emerald-50 dark:text-emerald-300 dark:bg-emerald-500/10',
     bar: 'bg-emerald-500',
   },
@@ -477,7 +476,7 @@ const commercialRows = computed(() => {
     tone: string
   }> = []
 
-  for (const message of sourceStates.messages === 'ready' ? newMessages.value : []) {
+  for (const message of sourceStates.messages === 'ready' ? newMessages.value.slice(0, 6) : []) {
     rows.push({
       id: `message-${message.id}`,
       type: 'Lead',
@@ -1041,7 +1040,7 @@ watch(() => auth.currentOrganizationId, (organizationId, previousOrganizationId)
       <aside class="rounded-lg border border-gray-200 bg-white shadow-sm dark:border-white/[0.08] dark:bg-[#111118]">
         <div class="flex items-center justify-between gap-3 border-b border-gray-100 px-4 py-3 dark:border-white/[0.06]">
           <div>
-            <h2 class="text-sm font-semibold text-gray-950 dark:text-white">Aujourd'hui</h2>
+            <h2 class="text-sm font-semibold text-gray-950 dark:text-white">Prochains rendez-vous</h2>
             <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Tes cinq prochains rendez-vous.</p>
           </div>
           <NuxtLink to="/admin/appointments" class="text-xs font-semibold text-gray-600 hover:text-gray-950 dark:text-gray-300 dark:hover:text-white">
@@ -1081,7 +1080,7 @@ watch(() => auth.currentOrganizationId, (organizationId, previousOrganizationId)
             <h2 class="text-sm font-semibold text-gray-950 dark:text-white">Décisions commerciales</h2>
             <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{{ sourceStates.invoices === 'ready' ? `${formatCurrencyTotals(monthRevenue)} encaissés ce mois-ci.` : 'Encaissements indisponibles.' }}</p>
           </div>
-          <NuxtLink to="/admin/clients" class="shrink-0 text-xs font-semibold text-gray-600 hover:text-gray-950 dark:text-gray-300 dark:hover:text-white">
+          <NuxtLink to="/admin/crm" class="shrink-0 text-xs font-semibold text-gray-600 hover:text-gray-950 dark:text-gray-300 dark:hover:text-white">
             CRM
           </NuxtLink>
         </div>

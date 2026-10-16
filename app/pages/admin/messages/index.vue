@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import type { ContactMessage } from '~/types'
+import { matchesMessageStatusFilter, parseMessageStatusFilter, type MessageStatusFilter } from '~/utils/messageListFilter'
 
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 
 const auth = useAuthStore()
 const toast = useToast()
 const route = useRoute()
+const router = useRouter()
 
 const loading = ref(true)
 const loadError = ref('')
@@ -15,12 +17,16 @@ const messages = ref<ContactMessage[]>([])
 const selected = ref<ContactMessage | null>(null)
 const replySubject = ref('')
 const replyBody = ref('')
-const statusFilter = ref<'all' | ContactMessage['status']>('all')
+const statusFilter = computed<MessageStatusFilter>({
+  get: () => parseMessageStatusFilter(route.query.status),
+  set: status => {
+    void router.replace({ query: { ...route.query, status: status === 'all' ? undefined : status, messageId: undefined } })
+  },
+})
 const tagInput = ref('')
 
 const filteredMessages = computed(() => {
-  if (statusFilter.value === 'all') return messages.value
-  return messages.value.filter(msg => msg.status === statusFilter.value)
+  return messages.value.filter(message => matchesMessageStatusFilter(message, statusFilter.value))
 })
 
 const statusMeta: Record<ContactMessage['status'], { label: string, classes: string }> = {
@@ -37,13 +43,7 @@ async function loadMessages() {
     messages.value = await $fetch<ContactMessage[]>('/api/messages', {
       headers: auth.authHeader(),
     })
-    if (selected.value) {
-      selected.value = messages.value.find(msg => msg.id === selected.value?.id) || null
-    }
-    const requestedId = Number(route.query.messageId || 0)
-    const requestedMessage = messages.value.find(message => message.id === requestedId)
-    const firstMessage = requestedId > 0 ? requestedMessage : messages.value.at(0)
-    if (!selected.value && firstMessage) openMessage(firstMessage)
+    selectVisibleMessage()
   }
   catch {
     loadError.value = 'Les messages ne peuvent pas être chargés. Réessaie dans quelques instants.'
@@ -54,27 +54,55 @@ async function loadMessages() {
 }
 
 function openMessage(message: ContactMessage) {
-  selected.value = message
+  selected.value = { ...message, tags: [...(message.tags || [])] }
   replySubject.value = message.subject ? `Re: ${message.subject}` : 'Re: Votre message'
   replyBody.value = `Bonjour ${message.name},\n\nMerci pour votre message.\n\nBien à vous,\nAntoine Quarroz`
 }
 
+function selectVisibleMessage() {
+  const requestedId = typeof route.query.messageId === 'string' ? Number(route.query.messageId) : 0
+  const next = Number.isSafeInteger(requestedId) && requestedId > 0
+    ? filteredMessages.value.find(message => message.id === requestedId)
+    : filteredMessages.value.find(message => message.id === selected.value?.id) || filteredMessages.value.at(0)
+  if (next?.id === selected.value?.id) return
+  if (next) openMessage(next)
+  else {
+    selected.value = null
+    replySubject.value = ''
+    replyBody.value = ''
+  }
+}
+
+function chooseMessage(message: ContactMessage) {
+  if (selected.value?.id !== message.id) openMessage(message)
+  void router.replace({ query: { ...route.query, messageId: String(message.id) } })
+}
+
 async function saveMeta() {
   if (!selected.value) return
+  const messageId = selected.value.id
+  const status = selected.value.status
+  const tags = [...(selected.value.tags || [])]
   saving.value = true
   try {
     const updated = await $fetch<ContactMessage>('/api/messages', {
       method: 'PUT',
       headers: auth.authHeader(),
       body: {
-        id: selected.value.id,
-        status: selected.value.status,
-        tags: selected.value.tags || [],
+        id: messageId,
+        status,
+        tags,
       },
     })
-    selected.value = updated
     const idx = messages.value.findIndex(msg => msg.id === updated.id)
     if (idx >= 0) messages.value[idx] = updated
+    if (selected.value?.id === messageId) {
+      selected.value = { ...updated, tags: [...(updated.tags || [])] }
+      if (!matchesMessageStatusFilter(updated, statusFilter.value)) {
+        await router.replace({ query: { ...route.query, messageId: undefined } })
+        selectVisibleMessage()
+      }
+    }
     toast.success('Message mis à jour')
   } catch {
     toast.error('Le message n’a pas pu être mis à jour')
@@ -130,12 +158,7 @@ async function sendReply() {
 
 onMounted(loadMessages)
 
-watch(statusFilter, () => {
-  if (selected.value && filteredMessages.value.some(message => message.id === selected.value?.id)) return
-  const next = filteredMessages.value.at(0)
-  selected.value = null
-  if (next) openMessage(next)
-})
+watch([() => route.query.status, () => route.query.messageId], selectVisibleMessage)
 </script>
 
 <template>
@@ -174,7 +197,7 @@ watch(statusFilter, () => {
               :key="`mobile-${msg.id}`"
               class="w-full rounded-xl border border-gray-100 dark:border-white/[0.06] bg-white dark:bg-[#111118] text-left p-3"
               :class="selected?.id === msg.id ? 'ring-1 ring-violet-500/60' : ''"
-              @click="openMessage(msg)"
+              @click="chooseMessage(msg)"
             >
               <div class="flex items-center justify-between gap-2">
                 <p class="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">{{ msg.name }}</p>
@@ -192,7 +215,7 @@ watch(statusFilter, () => {
               :key="msg.id"
               class="w-full text-left px-4 py-3 border-b border-gray-50 dark:border-white/[0.03] hover:bg-gray-50/70 dark:hover:bg-white/[0.03] transition-colors"
               :class="selected?.id === msg.id ? 'bg-violet-50/60 dark:bg-violet-500/10' : ''"
-              @click="openMessage(msg)"
+              @click="chooseMessage(msg)"
             >
               <div class="flex items-center justify-between gap-2">
                 <p class="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">{{ msg.name }}</p>
