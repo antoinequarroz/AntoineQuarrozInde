@@ -304,7 +304,7 @@ test('dashboard invoice cards open persistent, resettable filters', async ({ pag
   await loginAdmin(page)
   await selectSandboxOrganization(page)
 
-  for (const [label, filter] of [['Factures en brouillon', 'draft-invoices'], ['Total à encaisser', 'outstanding']] as const) {
+  for (const [label, filter] of [['Factures en brouillon', 'draft-invoices'], ['Total à encaisser', 'outstanding'], ['À encaisser sous 30 jours', 'outstanding-30-days']] as const) {
     await page.goto('/admin')
     await page.getByRole('region', { name: 'Indicateurs clés' }).getByRole('link', { name: new RegExp(label) }).click()
     await expect(page).toHaveURL(url => url.pathname === '/admin/invoices' && url.searchParams.get('status') === filter)

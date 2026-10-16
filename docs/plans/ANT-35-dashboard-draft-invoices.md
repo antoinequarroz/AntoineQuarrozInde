@@ -18,3 +18,9 @@ Validation : distinguer acompte émis et solde en brouillon ; passage du brouill
 Relier les cartes Brouillons et Total à encaisser à des filtres dédiés, avec les mêmes critères que leurs montants. Conserver les filtres au rechargement et lors des changements de query ; permettre de revenir à toutes les factures. Éviter qu’un détail hors filtre reste affiché. Tester le clic, le rechargement et la navigation, sans modifier les documents.
 
 Vérification du suivi : 907 tests Vitest et typecheck réussis. Les filtres URL utilisent les mêmes prédicats que les cartes ; un scénario E2E couvre les deux clics, le rechargement, la remise à zéro et le retour arrière. CI et livraison à vérifier.
+
+## Suivi : échéances sous 30 jours
+
+Ajouter la troisième carte au parcours filtré avec la même borne J+30 Europe/Zurich, inclusive et avec les impayés déjà en retard. Mutualiser les critères avec le montant, exclure les échéances absentes et J+31, et couvrir paiements, avoirs, rechargement et dates de changement d’heure/mois/année. Aucun document modifié.
+
+Vérification du suivi 30 jours : tests Vitest, typecheck et compilation réussis ; revue indépendante sans blocage. CI et contrôle du filtre en production à terminer.
