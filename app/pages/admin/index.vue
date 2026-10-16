@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { ContactMessage } from '~/types'
 import { draftInvoiceTotals, invoiceThirtyDayCutoff, outstandingInvoiceTotals } from '~/utils/outstandingInvoices'
+import { isQuoteAwaitingDecision } from '~/utils/quoteListFilter'
 import AdminAdminIcon from '~/components/admin/AdminIcon.vue'
 import AdminAdminEmptyState from '~/components/admin/AdminEmptyState.vue'
 import { buildCommercialTaskSuggestions, type CommercialTaskSuggestion } from '~/utils/commercialTaskPlan'
@@ -253,7 +254,7 @@ const overdueInvoices = computed(() =>
 
 const pendingQuotes = computed(() =>
   quotes.quotes
-    .filter(quote => quote.status === 'sent')
+    .filter(isQuoteAwaitingDecision)
     .sort((a, b) => String(a.validUntil || '').localeCompare(String(b.validUntil || ''))),
 )
 
@@ -359,7 +360,7 @@ const metrics = computed(() => [
     value: sourceStates.quotes === 'ready' ? formatCurrencyTotals(quoteValue.value) : '—',
     meta: sourceStates.quotes === 'ready' ? `${pendingQuotes.value.length} devis envoyé(s)` : 'Devis indisponibles',
     icon: 'file-plus',
-    to: '/admin/quotes',
+    to: '/admin/quotes?status=sent',
     tone: 'text-sky-600 bg-sky-50 dark:text-sky-300 dark:bg-sky-500/10',
     bar: 'bg-sky-500',
   },

@@ -4,6 +4,7 @@ import AdminAdminEmptyState from '~/components/admin/AdminEmptyState.vue'
 import AdminViewSkeleton from '~/components/admin/AdminViewSkeleton.vue'
 import { printStructuredDocument } from '~/utils/printStructuredDocument'
 import { downloadAdminPdf } from '~/utils/downloadAdminPdf'
+import { matchesQuoteListFilter, parseQuoteListFilter, type QuoteListFilter } from '~/utils/quoteListFilter'
 
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 
@@ -13,6 +14,7 @@ const invoices = useInvoicesStore()
 const projects = useProjectsStore()
 const auth = useAuthStore()
 const route = useRoute()
+const router = useRouter()
 const toast = useToast()
 const { statusLabel } = useBusinessLabels()
 
@@ -57,12 +59,16 @@ const selectedFormProject = computed(() => form.projectId ? projectsById.value.g
 const selectedId = ref<number | null>(null)
 const viewMode = ref<'table' | 'kanban'>('table')
 const search = ref('')
-const statusFilter = ref<'all' | Quote['status']>('all')
+const statusFilter = computed<QuoteListFilter>({
+  get: () => parseQuoteListFilter(route.query.status),
+  set: status => { void router.replace({ query: { ...route.query, status: status === 'all' ? undefined : status, quoteId: undefined } }) },
+})
+watch(() => route.query.search, value => { search.value = typeof value === 'string' ? value : '' }, { immediate: true })
 const runningAction = ref<string | null>(null)
 const loadError = ref('')
 const submitting = ref(false)
 const downloadingPdf = ref(false)
-const selectedQuote = computed(() => store.quotes.find(q => q.id === selectedId.value) ?? null)
+const selectedQuote = computed(() => filteredQuotes.value.find(q => q.id === selectedId.value) ?? null)
 const editingNotice = computed(() => {
   if (!editing.value) return ''
   if (editing.value.status === 'sent') return 'Ce devis a déjà été envoyé. Enregistre la correction, puis renvoie le PDF au client pour qu’il dispose de la nouvelle version.'
@@ -96,12 +102,20 @@ const kanbanQuotes = computed(() =>
 const filteredQuotes = computed(() => {
   const q = search.value.trim().toLowerCase()
   return store.quotes.filter((x) => {
-    const byStatus = statusFilter.value === 'all' || x.status === statusFilter.value
-    if (!byStatus) return false
+    if (!matchesQuoteListFilter(x, statusFilter.value)) return false
     if (!q) return true
     return [x.number, x.title, x.notes || '', clientsById.value.get(x.clientId || 0)?.name || '', projectsById.value.get(x.projectId || 0)?.title || ''].join(' ').toLowerCase().includes(q)
   })
 })
+watch([filteredQuotes, () => route.query.quoteId], ([visibleQuotes, quoteId]) => {
+  const requestedId = Number(quoteId || 0)
+  if (requestedId > 0) {
+    selectedId.value = visibleQuotes.some(quote => quote.id === requestedId) ? requestedId : null
+  }
+  else if (!visibleQuotes.some(quote => quote.id === selectedId.value)) {
+    selectedId.value = visibleQuotes.at(0)?.id ?? null
+  }
+}, { immediate: true })
 
 function formatAmount(amountCents: number, currency: string) {
   return `${(amountCents / 100).toFixed(2)} ${currency}`
@@ -292,7 +306,7 @@ async function del(id: number) {
   if (!confirm('Supprimer ce devis ?')) return
   try {
     await store.remove(id)
-    if (selectedId.value === id) selectedId.value = store.quotes[0]?.id ?? null
+    if (selectedId.value === id) selectedId.value = filteredQuotes.value.at(0)?.id ?? null
     toast.success('Devis supprimé')
   } catch {
     toast.error('Le devis n’a pas pu être supprimé')
@@ -470,14 +484,6 @@ onMounted(async () => {
       if (project?.clientId) form.clientId = project.clientId
     }
   }
-  const qStatus = String(route.query.status || '')
-  if (qStatus === 'draft' || qStatus === 'sent' || qStatus === 'accepted' || qStatus === 'rejected') statusFilter.value = qStatus
-  const qSearch = String(route.query.search || '')
-  if (qSearch) search.value = qSearch
-  const quoteId = Number(route.query.quoteId || 0)
-  selectedId.value = store.quotes.some(quote => quote.id === quoteId)
-    ? quoteId
-    : (quoteId > 0 ? null : (store.quotes.at(0)?.id ?? null))
 })
 </script>
 
