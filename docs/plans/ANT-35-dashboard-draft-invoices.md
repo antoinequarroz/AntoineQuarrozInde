@@ -1,6 +1,6 @@
 ---
 linear: https://linear.app/antoinequarroz/issue/ANT-35
-status: in_review
+status: done
 ---
 
 # Factures en brouillon
@@ -24,3 +24,13 @@ Vérification du suivi : 907 tests Vitest et typecheck réussis. Les filtres URL
 Ajouter la troisième carte au parcours filtré avec la même borne J+30 Europe/Zurich, inclusive et avec les impayés déjà en retard. Mutualiser les critères avec le montant, exclure les échéances absentes et J+31, et couvrir paiements, avoirs, rechargement et dates de changement d’heure/mois/année. Aucun document modifié.
 
 Vérification du suivi 30 jours : tests Vitest, typecheck et compilation réussis ; revue indépendante sans blocage. CI et contrôle du filtre en production à terminer.
+
+## Livraison du 16 octobre 2026
+
+La PR #275 est fusionnée dans `main` sous `99eead4d48110de84e13201c2e06c527f0d74500`. Les 909 tests Vitest, le typecheck et la compilation réussissent. Le run [38948682171](https://github.com/antoinequarroz/AntoineQuarrozInde/actions/runs/38948682171) a validé qualité, base de données, SEO, déploiement et suite E2E de production. Les contrôles d’accessibilité de la PR sont également réussis.
+
+La version publique et la santé de l’application et de la base sont vérifiées. Dans Dia, le clic de la troisième carte ouvre `status=outstanding-30-days`, conservé après rechargement. Le retour à « Tous statuts » rétablit la liste complète ; resélectionner le filtre retire les documents hors période et leur détail. Aucun document client modifié.
+
+Le premier déploiement a échoué faute d’espace disque et le rollback automatique a gardé le site sain. Le cache BuildKit inutilisé et 16 anciennes images du site sans tag ni conteneur référent ont été retirés. Les images actives/taguées et les deux versions récentes de secours sont conservées, ainsi que tous les volumes et toutes les données. La reprise de déploiement a réussi ; environ 2 Go restent libres.
+
+Suivi opérationnel distinct : le flux CI actuel ne gère pas la rétention des anciennes images. Envisager un seuil disque avant construction et une rétention ciblée du site, sans purge globale des autres applications.
