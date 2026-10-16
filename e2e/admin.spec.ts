@@ -319,3 +319,65 @@ test('dashboard invoice cards open persistent, resettable filters', async ({ pag
   await page.goBack()
   await expect(page.getByRole('combobox', { name: 'Filtrer les factures' })).toHaveValue('draft-invoices')
 })
+
+test('dashboard pending quote card shows only sent quotes with a persistent, resettable filter', async ({ page }) => {
+  test.skip(!adminCredentialsConfigured, 'E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD are required')
+  await loginAdmin(page)
+  await selectSandboxOrganization(page)
+
+  const documents = (['draft', 'sent', 'accepted', 'rejected'] as const).map((status, index) => ({
+    id: 903600 + index,
+    number: `ANT36-Q-${status.toUpperCase()}`,
+    client_id: null,
+    project_id: null,
+    title: `Devis de démonstration ${status}`,
+    amount_cents: 50000,
+    currency: 'CHF',
+    status,
+    issued_at: '2026-10-01',
+    valid_until: '2026-09-01',
+    notes: null,
+    created_at: '2026-10-01T08:00:00Z',
+  }))
+  await page.route('**/api/quotes', route => route.request().method() === 'GET'
+    ? route.fulfill({ json: documents })
+    : route.abort('blockedbyclient'))
+
+  await page.goto('/admin')
+  await page.getByRole('region', { name: 'Indicateurs clés' }).getByRole('link', { name: /Devis en attente de décision/ }).click()
+  await expect(page).toHaveURL(url => url.pathname === '/admin/quotes' && url.searchParams.get('status') === 'sent')
+  const statusFilter = page.getByRole('combobox', { name: 'Filtrer les devis par statut' })
+  const quoteRows = page.locator('table tbody tr').filter({ hasText: 'ANT36-Q-' })
+  await expect(statusFilter).toHaveValue('sent')
+  await expect(quoteRows).toHaveCount(1)
+  await expect(quoteRows.first()).toContainText('ANT36-Q-SENT')
+  await expect(page.getByRole('heading', { name: 'ANT36-Q-DRAFT', exact: true })).toHaveCount(0)
+  await expect(page.getByRole('heading', { name: 'ANT36-Q-SENT', exact: true })).toBeVisible()
+
+  await page.reload()
+  await expect(statusFilter).toHaveValue('sent')
+  await expect(quoteRows).toHaveCount(1)
+  await statusFilter.selectOption('all')
+  await expect(page).toHaveURL(/\/admin\/quotes$/)
+  await expect(quoteRows).toHaveCount(4)
+  await quoteRows.filter({ hasText: 'ANT36-Q-DRAFT' }).click()
+  await expect(page.getByRole('heading', { name: 'ANT36-Q-DRAFT', exact: true })).toBeVisible()
+  await statusFilter.selectOption('sent')
+  await expect(page).toHaveURL(url => url.searchParams.get('status') === 'sent')
+  await expect(page.getByRole('heading', { name: 'ANT36-Q-DRAFT', exact: true })).toHaveCount(0)
+  await expect(quoteRows).toHaveCount(1)
+
+  await page.goto('/admin/quotes?status=accepted')
+  await expect(statusFilter).toHaveValue('accepted')
+  await expect(quoteRows).toHaveCount(1)
+  await expect(quoteRows.first()).toContainText('ANT36-Q-ACCEPTED')
+  await page.goto(`/admin/quotes?status=sent&quoteId=${documents[0]!.id}`)
+  await expect(statusFilter).toHaveValue('sent')
+  await expect(quoteRows).toHaveCount(1)
+  await expect(quoteRows.first()).toContainText('ANT36-Q-SENT')
+  await expect(page.getByRole('heading', { name: 'ANT36-Q-DRAFT', exact: true })).toHaveCount(0)
+  await page.goBack()
+  await expect(statusFilter).toHaveValue('accepted')
+  await expect(quoteRows).toHaveCount(1)
+  await expect(quoteRows.first()).toContainText('ANT36-Q-ACCEPTED')
+})
