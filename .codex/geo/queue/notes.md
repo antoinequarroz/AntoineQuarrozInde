@@ -1,5 +1,7 @@
 # Notes de production
 
+- 2026-10-16 : article-035 publié à 06:35 Europe/Zurich via l’API Hermes restreinte, depuis un worktree propre de `origin/main` e44ae49. Anti-doublon public immédiatement avant l’envoi, couverture originale générée nativement et vérifiée en 1200 × 675, sources primaires et liens contrôlés. Article id 40. Brouillons LinkedIn et X créés avec clés stables, relus dans la base en `draft`, mode `manual`, v1, sans approbation ni échéance. Les UTM restent injectés par le flux de publication existant. Aucune mission déclenchée ; aucun message social publié.
+
 - 2026-09-22 — article-016 : décision fondée sur les scénarios réels, le réseau, les capacités du téléphone et le coût de maintenance ; sources officielles MDN et Apple vérifiées.
 
 - 2026-09-26 — article-019 : publication reprise après épuisement de la file ; couverture native 1200 × 675 vérifiée, sources Google Search Central et W3C, page publique contrôlée, brouillons LinkedIn et X créés avec UTM.

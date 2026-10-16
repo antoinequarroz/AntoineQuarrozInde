@@ -1,0 +1,72 @@
+{
+  "publication": {
+    "status": 200,
+    "data": {
+      "article": {
+        "id": 40,
+        "slug": "mvp-choisir-premiere-version-utile-application",
+        "title": "35. MVP : comment choisir la première version utile de votre application",
+        "published": true,
+        "published_at": "2026-10-16T04:35:11.020325+00:00",
+        "cover_image": "https://oxlrljszatejqxhclmbu.supabase.co/storage/v1/object/public/media/hermes/cd54ea8844a18a968a7849e6f1a82c04386a0ca8fc7b8eb39b358d775bf8cdbf.png"
+      },
+      "idempotent": false
+    }
+  },
+  "url": "https://www.antoinequarroz.ch/blog/mvp-choisir-premiere-version-utile-application",
+  "social": [
+    {
+      "status": 200,
+      "data": {
+        "post": {
+          "id": "4bdc4016-1672-4b84-9654-c3e36516a569",
+          "platform": "linkedin",
+          "status": "draft",
+          "version": 1,
+          "media_kind": null,
+          "media_url": null,
+          "media_title": null,
+          "media_images": [],
+          "media_items": []
+        },
+        "idempotent": false
+      }
+    },
+    {
+      "status": 200,
+      "data": {
+        "post": {
+          "id": "ccaf4c6d-8158-448f-bc24-37caedfe1546",
+          "platform": "x",
+          "status": "draft",
+          "version": 1,
+          "media_kind": null,
+          "media_url": null,
+          "media_title": null,
+          "media_images": [],
+          "media_items": []
+        },
+        "idempotent": false
+      }
+    }
+  ],
+  "publicVerified": true,
+  "coverDimensions": "1200x675",
+  "articleId": 40,
+  "verification": {
+    "verifiedAt": "2026-10-16",
+    "publicSsr": true,
+    "canonical": true,
+    "blogPosting": true,
+    "tableAndFaq": true,
+    "incomingLinks": [
+      "/blog",
+      "/application-mobile-valais"
+    ],
+    "sitemap": true,
+    "coverSha256": "d61390e9ca2277ca5c9bd698dbcd483161884b2e6eedcb851f440268c5f0903f",
+    "sourcesAndInternalLinksHttp200": true,
+    "socialReadback": "draft / manual / v1; approved_version, approval_fingerprint, publish_after and published_at null; verified via Supabase read-only query",
+    "utm": "Injected by tracked_social_content before publishing: linkedin or x / social / article_mvp-choisir-premiere-version-utile-application / post; drafts keep canonical URL"
+  }
+}
