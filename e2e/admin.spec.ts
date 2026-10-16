@@ -479,3 +479,136 @@ test('failed task updates preserve the edit form when the optimistic change leav
   await dialog.getByRole('button', { name: 'Annuler', exact: true }).click()
   await expect(dialog).toBeHidden()
 })
+
+test('all dashboard metric links keep their context and the new-message filter includes every unread message', async ({ page }) => {
+  test.skip(!adminCredentialsConfigured, 'E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD are required')
+  await loginAdmin(page)
+  await selectSandboxOrganization(page)
+
+  const message = (id: number, label: string, status: 'new' | 'in_progress' | 'replied' | 'archived') => ({
+    id, name: `ANT38-${label}`, email: `ant38-${id}@example.invalid`, subject: `ANT38 sujet ${label}`,
+    message: `ANT38 contenu ${label}`, status, tags: [], repliedAt: null, createdAt: '2026-10-16T08:00:00Z',
+  })
+  const documents = [
+    message(903800, 'ARCHIVED', 'archived'),
+    ...Array.from({ length: 8 }, (_, index) => message(903801 + index, `NEW-${index + 1}`, 'new')),
+    message(903809, 'IN-PROGRESS', 'in_progress'), message(903810, 'REPLIED', 'replied'),
+  ]
+  const mutations: string[] = []
+  await page.route('**/api/messages**', route => {
+    if (route.request().method() === 'GET') return route.fulfill({ json: documents })
+    mutations.push(route.request().method())
+    return route.abort('blockedbyclient')
+  })
+
+  await page.goto('/admin')
+  const metrics = page.getByRole('region', { name: 'Indicateurs clés' })
+  for (const [label, href] of [
+    ['Total à encaisser', '/admin/invoices?status=outstanding'],
+    ['À encaisser sous 30 jours', '/admin/invoices?status=outstanding-30-days'],
+    ['Factures en brouillon', '/admin/invoices?status=draft-invoices'],
+    ['Devis en attente de décision', '/admin/quotes?status=sent'],
+    ['À faire aujourd’hui', '/admin/tasks?filter=due-today'],
+    ['Nouveaux messages', '/admin/messages?status=new'],
+  ] as const) {
+    await expect(metrics.getByRole('link', { name: new RegExp(label) })).toHaveAttribute('href', href)
+  }
+  const messageCard = metrics.getByRole('link', { name: /Nouveaux messages/ })
+  await expect(messageCard.getByText('8', { exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Prochains rendez-vous', exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Décisions commerciales', exact: true }).locator('..').locator('..').getByRole('link', { name: 'CRM', exact: true })).toHaveAttribute('href', '/admin/crm')
+  await messageCard.click()
+  await expect(page).toHaveURL(url => url.pathname === '/admin/messages' && url.searchParams.get('status') === 'new')
+  const statusFilter = page.getByRole('combobox', { name: 'Filtrer les messages par statut' })
+  const newMessages = page.getByRole('button', { name: /ANT38-NEW-/ })
+  await expect(statusFilter).toHaveValue('new')
+  await expect(newMessages).toHaveCount(8)
+  await expect(page.getByRole('button', { name: /ANT38-ARCHIVED/ })).toHaveCount(0)
+  await expect(page.getByLabel('Sujet', { exact: true })).toHaveValue('Re: ANT38 sujet NEW-1')
+  await page.reload()
+  await expect(statusFilter).toHaveValue('new')
+  await expect(newMessages).toHaveCount(8)
+
+  await page.goto('/admin/messages?status=new&messageId=903801')
+  await expect(statusFilter).toHaveValue('new')
+  await statusFilter.selectOption('all')
+  await expect(page).toHaveURL(/\/admin\/messages$/)
+  await expect(page.getByRole('button', { name: /ANT38-/ })).toHaveCount(11)
+  await page.goto('/admin/messages?status=archived')
+  await expect(statusFilter).toHaveValue('archived')
+  await expect(page.getByRole('button', { name: /ANT38-ARCHIVED/ })).toHaveCount(1)
+  await page.goto('/admin/messages?status=new&messageId=903800')
+  await expect(statusFilter).toHaveValue('new')
+  await expect(newMessages).toHaveCount(8)
+  await expect(page.getByText('ANT38 contenu ARCHIVED', { exact: true })).toHaveCount(0)
+  await page.goBack()
+  await expect(statusFilter).toHaveValue('archived')
+  await expect(page.getByRole('button', { name: /ANT38-ARCHIVED/ })).toHaveCount(1)
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/admin/messages?status=new')
+  await expect(statusFilter).toHaveValue('new')
+  await expect(newMessages).toHaveCount(8)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true)
+  expect(mutations).toEqual([])
+})
+
+test('failed message metadata saves preserve the reply draft and successful saves update the filtered selection', async ({ page }) => {
+  test.skip(!adminCredentialsConfigured, 'E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD are required')
+  await loginAdmin(page)
+  await selectSandboxOrganization(page)
+
+  const documents = ['FIRST', 'NEXT'].map((label, index) => ({
+    id: 903820 + index, name: `ANT38-EDIT-${label}`, email: `ant38-edit-${index}@example.invalid`,
+    subject: `ANT38 sujet ${label}`, message: `ANT38 contenu ${label}`, status: 'new', tags: [] as string[],
+    repliedAt: null, createdAt: '2026-10-16T08:00:00Z',
+  }))
+  let failSave = true
+  const savedIds: number[] = []
+  const blockedMutations: string[] = []
+  await page.route('**/api/messages**', async route => {
+    if (route.request().method() === 'GET') return route.fulfill({ json: documents })
+    if (route.request().method() === 'PUT' && new URL(route.request().url()).pathname === '/api/messages') {
+      if (failSave) return route.fulfill({ status: 503, json: { message: 'Échec simulé pour ce test' } })
+      const body = route.request().postDataJSON() as { id: number, status: string, tags: string[] }
+      const document = documents.find(item => item.id === body.id)
+      if (!document) return route.fulfill({ status: 404, json: { message: 'Message de démonstration absent' } })
+      document.status = body.status
+      document.tags = [...body.tags]
+      savedIds.push(document.id)
+      return route.fulfill({ json: document })
+    }
+    blockedMutations.push(route.request().method())
+    return route.abort('blockedbyclient')
+  })
+
+  await page.goto('/admin/messages?status=new&messageId=903820')
+  const selectedStatus = page.getByRole('combobox', { name: 'Statut du message' })
+  const replySubject = page.getByLabel('Sujet', { exact: true })
+  const replyBody = page.getByLabel('Réponse', { exact: true })
+  const saveButton = page.getByRole('button', { name: 'Enregistrer', exact: true })
+  await expect(replySubject).toHaveValue('Re: ANT38 sujet FIRST')
+  await replySubject.fill('ANT38 sujet conservé après erreur')
+  await replyBody.fill('ANT38 réponse conservée, sans aucun envoi.')
+  await selectedStatus.selectOption('in_progress')
+  await expect(page.getByRole('button', { name: /ANT38-EDIT-FIRST/ })).toBeVisible()
+  await saveButton.click()
+  await expect(page.getByText('Le message n’a pas pu être mis à jour', { exact: true })).toBeVisible()
+  await expect(saveButton).toBeEnabled()
+  await expect(selectedStatus).toHaveValue('in_progress')
+  await expect(replySubject).toHaveValue('ANT38 sujet conservé après erreur')
+  await expect(replyBody).toHaveValue('ANT38 réponse conservée, sans aucun envoi.')
+  await expect(page.getByRole('button', { name: /ANT38-EDIT-FIRST/ })).toBeVisible()
+
+  failSave = false
+  await saveButton.click()
+  await expect(page.getByText('Message mis à jour', { exact: true })).toBeVisible()
+  await expect(page).toHaveURL(url => url.pathname === '/admin/messages' && url.searchParams.get('status') === 'new' && !url.searchParams.has('messageId'))
+  await expect(page.getByRole('button', { name: /ANT38-EDIT-FIRST/ })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: /ANT38-EDIT-NEXT/ })).toBeVisible()
+  await expect(selectedStatus).toHaveValue('new')
+  await expect(replySubject).toHaveValue('Re: ANT38 sujet NEXT')
+  await expect(replyBody).not.toHaveValue('ANT38 réponse conservée, sans aucun envoi.')
+  expect(savedIds).toEqual([903820])
+  expect(blockedMutations).toEqual([])
+})
