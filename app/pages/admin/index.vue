@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { ContactMessage } from '~/types'
-import { outstandingInvoiceTotals } from '~/utils/outstandingInvoices'
+import { draftInvoiceTotals, outstandingInvoiceTotals } from '~/utils/outstandingInvoices'
 import AdminAdminIcon from '~/components/admin/AdminIcon.vue'
 import AdminAdminEmptyState from '~/components/admin/AdminEmptyState.vue'
 import { buildCommercialTaskSuggestions, type CommercialTaskSuggestion } from '~/utils/commercialTaskPlan'
@@ -313,6 +313,7 @@ const monthRevenue = computed(() => {
   return totals
 })
 
+const draftInvoiceAmount = computed(() => draftInvoiceTotals(invoices.invoices))
 const totalOutstanding = computed(() => outstandingInvoiceTotals(invoices.invoices))
 const expectedRevenue = computed(() => outstandingInvoiceTotals(invoices.invoices, addDaysToIsoDate(todayIso.value, 30)))
 
@@ -343,6 +344,15 @@ const metrics = computed(() => [
     to: '/admin/invoices',
     tone: 'text-rose-600 bg-rose-50 dark:text-rose-300 dark:bg-rose-500/10',
     bar: 'bg-rose-500',
+  },
+  {
+    label: 'Factures en brouillon',
+    value: sourceStates.invoices === 'ready' ? formatCurrencyTotals(draftInvoiceAmount.value) : '—',
+    meta: sourceStates.invoices === 'ready' ? 'Montants prévus, non émis' : 'Factures indisponibles',
+    icon: 'file-plus',
+    to: '/admin/invoices',
+    tone: 'text-amber-700 bg-amber-50 dark:text-amber-300 dark:bg-amber-500/10',
+    bar: 'bg-amber-500',
   },
   {
     label: 'Devis en attente de décision',
@@ -908,8 +918,8 @@ watch(() => auth.currentOrganizationId, (organizationId, previousOrganizationId)
 
     <div v-if="dashboardIsLoading" role="status" aria-live="polite" class="space-y-4">
       <span class="sr-only">Chargement du tableau de bord</span>
-      <div class="grid grid-cols-1 gap-2.5 min-[480px]:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
-        <div v-for="index in 5" :key="index" class="h-28 animate-pulse rounded-xl bg-gray-200/70 dark:bg-white/[0.06]" />
+      <div class="grid grid-cols-1 gap-2.5 min-[480px]:grid-cols-2 xl:grid-cols-3 min-[1800px]:grid-cols-6">
+        <div v-for="index in 6" :key="index" class="h-28 animate-pulse rounded-xl bg-gray-200/70 dark:bg-white/[0.06]" />
       </div>
       <div class="grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(300px,0.65fr)]">
         <div class="h-64 animate-pulse rounded-xl bg-gray-200/70 dark:bg-white/[0.06]" />
@@ -918,7 +928,7 @@ watch(() => auth.currentOrganizationId, (organizationId, previousOrganizationId)
     </div>
 
     <div v-else class="flex flex-col gap-4 lg:gap-5">
-    <section v-show="isSectionVisible('metrics')" class="grid grid-cols-1 gap-2.5 min-[480px]:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5" :style="{ order: sectionOrder('metrics') }" aria-label="Indicateurs clés">
+    <section v-show="isSectionVisible('metrics')" class="grid grid-cols-1 gap-2.5 min-[480px]:grid-cols-2 xl:grid-cols-3 min-[1800px]:grid-cols-6" :style="{ order: sectionOrder('metrics') }" aria-label="Indicateurs clés">
       <NuxtLink
         v-for="metric in metrics"
         :key="metric.label"
@@ -1403,7 +1413,7 @@ watch(() => auth.currentOrganizationId, (organizationId, previousOrganizationId)
             <div>
               <h3 class="text-sm font-semibold text-gray-950 dark:text-white">Comprendre le cockpit</h3>
               <div class="mt-3 space-y-2 text-xs">
-                <details class="rounded-lg border border-gray-200 px-3 py-2 dark:border-white/[0.1]"><summary class="cursor-pointer font-semibold text-gray-800 dark:text-gray-100">Montants à encaisser</summary><p class="mt-2 leading-5 text-gray-600 dark:text-gray-300">Le total à encaisser additionne les soldes des factures envoyées ou en retard, toutes échéances confondues. Le montant sous 30 jours se limite aux échéances passées ou prévues dans les 30 prochains jours. Les brouillons sont exclus et les devises restent séparées.</p></details>
+                <details class="rounded-lg border border-gray-200 px-3 py-2 dark:border-white/[0.1]"><summary class="cursor-pointer font-semibold text-gray-800 dark:text-gray-100">Montants à encaisser</summary><p class="mt-2 leading-5 text-gray-600 dark:text-gray-300">Le total à encaisser additionne les soldes des factures envoyées ou en retard, toutes échéances confondues. Le montant sous 30 jours se limite aux échéances passées ou prévues dans les 30 prochains jours. Les factures en brouillon apparaissent séparément comme montants prévus, non émis : elles ne font pas partie du total à encaisser. Les devises restent séparées.</p></details>
                 <details class="rounded-lg border border-gray-200 px-3 py-2 dark:border-white/[0.1]"><summary class="cursor-pointer font-semibold text-gray-800 dark:text-gray-100">Relances clients</summary><p class="mt-2 leading-5 text-gray-600 dark:text-gray-300">Aucun message n’est envoyé sans sélection et confirmation. Si son contenu ou son destinataire change, le serveur bloque l’envoi.</p></details>
                 <details class="rounded-lg border border-gray-200 px-3 py-2 dark:border-white/[0.1]"><summary class="cursor-pointer font-semibold text-gray-800 dark:text-gray-100">Données partielles</summary><p class="mt-2 leading-5 text-gray-600 dark:text-gray-300">Une valeur masquée signifie qu’une source n’a pas répondu. Ouvre « État détaillé » pour actualiser uniquement cette source.</p></details>
               </div>
