@@ -71,6 +71,48 @@ class Response:
         return None
 
 
+class CampaignUrlTests(unittest.TestCase):
+    def test_homepage_destination_does_not_rewrite_a_project_url(self):
+        home = publisher.CANONICAL_SITE_HOME
+        project = home + "projets/projet-exemple/"
+        content = "Un projet a decouvrir :\n" + project
+        for platform in ("linkedin", "x", "instagram"):
+            self.assertEqual(publisher.tracked_social_content(content, home, platform), content)
+
+    def test_only_complete_matching_urls_are_tracked_with_delimiters_preserved(self):
+        home = publisher.CANONICAL_SITE_HOME
+        content = f"{home}\n\"{home}\"\t'{home}' <{home}>\n{home}projets/projet-exemple/"
+        tracked = publisher.tracked_article_url(home, "linkedin")
+        expected = f"{tracked}\n\"{tracked}\"\t'{tracked}' <{tracked}>\n{home}projets/projet-exemple/"
+        self.assertEqual(publisher.tracked_social_content(content, home, "linkedin"), expected)
+
+    def test_other_paths_queries_fragments_and_existing_utm_are_not_partial_matches(self):
+        home = publisher.CANONICAL_SITE_HOME
+        project = home + "projets/projet-exemple"
+        for destination in (home, project):
+            variants = (destination + "autre", destination + "/details", destination + "?ref=keep", destination + "#section", publisher.tracked_article_url(destination, "x"))
+            for url in variants:
+                with self.subTest(destination=destination, url=url):
+                    self.assertEqual(publisher.tracked_social_content(url, destination, "x"), url)
+
+    def test_matching_url_inside_another_token_or_routed_url_is_untouched(self):
+        home = publisher.CANONICAL_SITE_HOME
+        contents = [prefix + home for prefix in ("prefix", "https://redirect.example/?url=", "https://redirect.example/", "https://redirect.example/#", "next=")]
+        contents.extend("https://redirect.example/?url=" + quote + home + quote for quote in ("'", '"'))
+        for content in contents:
+            with self.subTest(content=content):
+                self.assertEqual(publisher.tracked_social_content(content, home, "linkedin"), content)
+
+    def test_exact_url_with_existing_utm_is_normalized_once_and_remains_stable(self):
+        destination = publisher.CANONICAL_SITE_HOME + "projets/projet-exemple/?ref=keep&utm_source=old&utm_medium=old"
+        tracked = publisher.tracked_social_content(destination, destination, "x")
+        query = publisher.urllib.parse.parse_qs(publisher.urllib.parse.urlsplit(tracked).query)
+        self.assertEqual(query["ref"], ["keep"])
+        self.assertEqual(query["utm_source"], ["x"])
+        self.assertEqual(query["utm_medium"], ["social"])
+        self.assertEqual(publisher.tracked_social_content(tracked, destination, "x"), tracked)
+
+
 class ProviderHttpFailureTests(unittest.TestCase):
     secret = "private-secret-sentinel"
 

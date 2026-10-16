@@ -23,6 +23,10 @@ lecture retourne un 404 transitoire après l'appel fournisseur.
   du chemin et du statut. Un reçu malformé ou tout autre statut est refusé.
 - Préserver les approbations, les formats et ratios acceptés, les limites X,
   les statuts du site et l'interdiction de rejouer un appel de publication.
+- Réécrire uniquement l'URL complète qui correspond exactement à la destination
+  configurée, avec une limite de jeton à gauche et à droite. Une destination
+  d'accueil ne doit pas corrompre un lien de projet, un autre chemin, une query,
+  un fragment ou une URL déjà suivie. Les URL ambiguës restent intactes.
 
 ## Validation
 
@@ -33,12 +37,13 @@ nombre borné de GET, absence de répétition du POST et refus de chaque champ
 de preuve divergent. Les tests existants d'approbation, de média et de coût
 doivent rester verts.
 
-- 50 tests Python passent via Portly, job `tmp_02908a19` : transports simulés,
-  séquences 404, preuves malformées, erreurs HTTP et sentinelles de confidentialité.
-- 30 tests Vitest ciblés passent via Portly, job `tmp_25b5e123` : contrat CLI,
-  approbations et médias mixtes. La dernière modification ajoute seulement la
-  suppression d'une cause d'erreur Treg dans les traces ; elle est couverte par
-  la suite Python finale.
+- 55 tests Python passent via Portly, job `tmp_d532fee2` : transports simulés,
+  séquences 404, preuves malformées, erreurs HTTP, sentinelles de confidentialité
+  et remplacement d'URL. Les régressions couvrent accueil/projet, autre chemin,
+  query/fragment, UTM existants et URL imbriquée dans une redirection, y compris
+  entre quotes simples ou doubles.
+- 30 tests Vitest ciblés passent dans le même job `tmp_d532fee2` : contrat CLI,
+  approbations et médias mixtes.
 - Relecture indépendante du diff effectuée ; le défaut de confidentialité
   relevé dans une cause d'erreur Treg a été corrigé et testé.
 - `git diff --check` passe. Aucune donnée, publication ou permission modifiée.
@@ -46,7 +51,9 @@ doivent rester verts.
 Le runner a été installé seul dans l'espace de travail Hermes, après sauvegarde
 du fichier précédent. Le fichier retéléchargé contient exactement le code testé
 (seule la fin de fichier perd son saut de ligne dans l'éditeur). Comparaison du
-texte normalisé et de l'AST réussie via Portly `tmp_eb5ebedc`.
+texte normalisé et de l'AST réussie via Portly `tmp_a79f64d0` pour la version
+finale incluant la protection des jetons URL. Le passage naturel de surveillance
+reste actif ; aucun nouvel envoi de test n'a été déclenché.
 
 La [PR 271](https://github.com/antoinequarroz/AntoineQuarrozInde/pull/271)
 reste en revue pendant les contrôles CI. Aucun essai ne doit publier, créer de

@@ -176,7 +176,17 @@ def tracked_article_url(article_url: str, platform: str, *, placement: str = "po
 
 
 def tracked_social_content(content: str, article_url: str, platform: str) -> str:
-    return content.replace(article_url, tracked_article_url(article_url, platform))
+    tracked_url = tracked_article_url(article_url, platform)
+    # Match the whole URL token on both sides. A homepage prefix, a routed URL
+    # or a URL with another query/fragment must never be rewritten partially.
+    def replace_url(match: re.Match) -> str:
+        token = match.group()
+        if token == article_url:
+            return tracked_url
+        if len(token) > 2 and token[0] in "\"'" and token[-1] == token[0] and token[1:-1] == article_url:
+            return token[0] + tracked_url + token[-1]
+        return token
+    return re.sub(r"[^\s<>]+", replace_url, content)
 
 
 def inside_local_publication_hour(hour: int | None, timezone: str) -> bool:
