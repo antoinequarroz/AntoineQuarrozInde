@@ -2,12 +2,14 @@
 import copy
 from email.message import Message
 import importlib.util
+import io
 import json
 import os
 from pathlib import Path
 import struct
 import subprocess
 import tempfile
+import traceback
 import unittest
 from unittest.mock import patch
 
@@ -53,11 +55,11 @@ MP4_HEADER = struct.pack(">I", 24) + b"ftypisom" + b"\0" * 12
 
 
 class Response:
-    def __init__(self, data, content_type="image/jpeg"):
+    def __init__(self, data, content_type="image/jpeg", status=200):
         self.data = data
         self.headers = Message()
         self.headers["Content-Type"] = content_type
-        self.status = 200
+        self.status = status
 
     def read(self, maximum=None):
         return self.data if maximum is None else self.data[:maximum]
@@ -67,6 +69,183 @@ class Response:
 
     def __exit__(self, *args):
         return None
+
+
+class ProviderHttpFailureTests(unittest.TestCase):
+    secret = "private-secret-sentinel"
+
+    def error(self, url, status):
+        headers = Message(); headers["X-Private-Diagnostic"] = self.secret
+        return publisher.urllib.error.HTTPError(url, status, self.secret, headers, io.BytesIO(json.dumps({"message": self.secret}).encode()))
+
+    def assert_safe(self, error, stage, status):
+        text = "".join(traceback.format_exception(type(error), error, error.__traceback__))
+        self.assertIn(stage, text)
+        self.assertIn(f"HTTP {status}", text)
+        self.assertNotIn(self.secret, text)
+        self.assertNotIn("Bearer", text)
+        self.assertTrue(error.__suppress_context__)
+
+    def test_provider_post_errors_keep_only_fixed_stage_status_and_x_billing_guidance(self):
+        for url, stage in (
+            (publisher.LINKEDIN_IMAGES_ENDPOINT, "initialisation de l'image"),
+            (publisher.LINKEDIN_DOCUMENTS_ENDPOINT, "initialisation du document"),
+            (publisher.LINKEDIN_POSTS_ENDPOINT, "creation de la publication"),
+            (publisher.X_MEDIA_ENDPOINT, "envoi de l'image"),
+            (publisher.X_MEDIA_METADATA_ENDPOINT, "description de l'image"),
+            (publisher.X_POSTS_ENDPOINT, "creation de la publication"),
+        ):
+            status = 402 if url.startswith("https://api.x.com/") else 400
+            with self.subTest(url=url), patch.object(publisher, "secure_open", side_effect=self.error(url, status)) as network, self.assertRaises(RuntimeError) as caught:
+                publisher.request_json(url, {"text": self.secret}, {"Authorization": "Bearer " + self.secret})
+            self.assert_safe(caught.exception, stage, status)
+            network.assert_called_once()
+            if status == 402:
+                self.assertIn("Facturation API X requise", str(caught.exception))
+                self.assertNotIn("permission", str(caught.exception))
+
+    def test_linkedin_document_status_encodes_the_entire_restli_resource_key(self):
+        with patch.object(publisher, "secure_open", return_value=Response(b'{"status":"AVAILABLE"}', "application/json")) as network:
+            self.assertEqual(publisher.linkedin_document_status(self.secret, "urn:li:document:asset"), "AVAILABLE")
+        request = network.call_args.args[0]
+        self.assertEqual(request.full_url, "https://api.linkedin.com/rest/documents/urn%3Ali%3Adocument%3Aasset")
+        self.assertEqual({key.lower(): value for key, value in request.header_items()}["x-restli-protocol-version"], "2.0.0")
+
+    @patch.dict(os.environ, {"LINKEDIN_ACCESS_TOKEN": secret, "LINKEDIN_PERSON_URN": "urn:li:person:author"})
+    def test_linkedin_status_failure_cannot_create_a_post_and_hides_provider_data(self):
+        upload = "https://www.linkedin.com/dms-uploads/document?signature=" + self.secret
+        initialized = {"value": {"uploadUrl": upload, "document": "urn:li:document:asset"}}
+        with patch.object(publisher, "social_document", return_value=b"%PDF"), patch.object(publisher, "request_json", return_value=(initialized, {})) as post_json, patch.object(publisher, "secure_open", side_effect=[Response(b""), self.error("https://api.linkedin.com/rest/documents/urn%3Ali%3Adocument%3Aasset", 400)]) as network, self.assertRaises(RuntimeError) as caught:
+            publisher.publish_linkedin("text", publisher.CANONICAL_SITE_HOME, "title", "document", publisher.CANONICAL_SOCIAL_PREFIX + "document.pdf", "Document")
+        self.assert_safe(caught.exception, "lecture du document", 400)
+        self.assertEqual(post_json.call_count, 1)
+        self.assertEqual(post_json.call_args.args[0], publisher.LINKEDIN_DOCUMENTS_ENDPOINT)
+        self.assertEqual([call.args[0].get_method() for call in network.call_args_list], ["PUT", "GET"])
+
+    def test_linkedin_upload_failure_hides_signed_url_reason_body_and_authorization(self):
+        for kind in ("image", "document"):
+            upload = "https://www.linkedin.com/dms-uploads/asset?signature=" + self.secret
+            initialized = {"value": {"uploadUrl": upload, kind: f"urn:li:{kind}:asset"}}
+            with self.subTest(kind=kind), patch.object(publisher, "request_json", return_value=(initialized, {})), patch.object(publisher, "secure_open", side_effect=self.error(upload, 403)), self.assertRaises(RuntimeError) as caught:
+                if kind == "image": publisher.upload_linkedin_image(self.secret, "urn:li:person:author", jpeg(), "image/jpeg")
+                else: publisher.upload_linkedin_document(self.secret, "urn:li:person:author", b"%PDF")
+            self.assert_safe(caught.exception, "envoi de l'" + "image" if kind == "image" else "envoi du document", 403)
+
+    def test_x_402_is_recorded_once_as_billing_failure_without_provider_secrets(self):
+        queued = post("x"); actions = []
+        def site(*args, payload=None, **kwargs):
+            if payload is None: return {"posts": [queued]}
+            actions.append(payload)
+            return {"post": {**queued, "version": 3}} if payload["action"] == "claim" else {}
+        credentials = {"X_API_KEY": self.secret, "X_API_SECRET": self.secret, "X_ACCESS_TOKEN": self.secret, "X_ACCESS_TOKEN_SECRET": self.secret, "HERMES_X_MAX_USD_PER_POST": "0.20"}
+        with patch.dict(os.environ, credentials), patch.object(publisher, "connection_state", return_value=("ready", "ready")), patch.object(publisher, "site_request", side_effect=site), patch.object(publisher, "prepare_images", return_value=[image()]), patch.object(publisher, "secure_open", side_effect=self.error(publisher.X_MEDIA_ENDPOINT, 402)) as network:
+            result = publisher.process_approved("https://site", self.secret, dry_run=False)
+        self.assertEqual(result["failed"], 1)
+        self.assertEqual(actions[-1]["action"], "fail")
+        self.assertIn("X - envoi de l'image (HTTP 402)", actions[-1]["error"])
+        self.assertIn("Facturation API X requise", actions[-1]["error"])
+        self.assertNotIn(self.secret, actions[-1]["error"])
+        network.assert_called_once()
+
+
+class TregReceiptTests(unittest.TestCase):
+    call_ref = "a" * 32
+    path = publisher.INSTAGRAM_EXPECTED_ID + "/media_publish"
+
+    def receipt(self):
+        return {"charged_micro": 0, "ledger": [], "call": {
+            "call_ref": self.call_ref, "tool_name": publisher.INSTAGRAM_TOOL, "method": "POST",
+            "path": "https://graph.instagram.com/v25.0/" + self.path, "status_code": 200, "endpoint_id": None,
+        }}
+
+    def test_only_receipt_get_404_is_retried_and_final_publish_is_never_replayed(self):
+        for missing in range(3):
+            with self.subTest(missing=missing):
+                calls = []; replies = [(404, {}, None)] * missing + [(200, {}, self.receipt())]
+                def treg(path, payload=None, **kwargs):
+                    calls.append((path, payload, kwargs))
+                    if payload is not None: return 200, {"X-Treg-Call-Id": self.call_ref}, {"id": "999"}
+                    if not path.startswith("/calls/"): return 200, {"X-Treg-Cost-Micro": "0"}, {"permalink": "https://www.instagram.com/p/abc123/"}
+                    return replies.pop(0)
+                with patch.object(publisher, "instagram_container", return_value="123"), patch.object(publisher, "treg_request", side_effect=treg), patch.object(publisher.time, "sleep") as sleep:
+                    result = publisher.publish_instagram("caption", [image()])
+                self.assertEqual(result["id"], "999")
+                writes = [row for row in calls if row[1] is not None]
+                self.assertEqual(writes, [("/call/" + publisher.INSTAGRAM_TOOL + "/" + self.path, {"creation_id": "123"}, {})])
+                receipts = [row for row in calls if row[0].startswith("/calls/")]
+                self.assertEqual(receipts, [("/calls/" + self.call_ref, None, {"timeout": 10})] * (missing + 1))
+                self.assertEqual([call.args[0] for call in sleep.call_args_list], list(range(1, missing + 1)))
+
+    def test_three_missing_receipts_stop_without_a_second_publish_or_an_extra_sleep(self):
+        def treg(path, payload=None, **kwargs):
+            return (200, {"X-Treg-Call-Id": self.call_ref}, {"id": "999"}) if payload is not None else (404, {}, None)
+        with patch.object(publisher, "instagram_container", return_value="123"), patch.object(publisher, "treg_request", side_effect=treg) as request, patch.object(publisher.time, "sleep") as sleep, self.assertRaisesRegex(RuntimeError, "conteneur 123"):
+            publisher.publish_instagram("caption", [image()])
+        self.assertEqual(sum(call.args[0].endswith("/media_publish") for call in request.call_args_list), 1)
+        self.assertEqual(sum(call.args[0] == "/calls/" + self.call_ref for call in request.call_args_list), 3)
+        self.assertEqual([call.args[0] for call in sleep.call_args_list], [1, 2])
+
+    def test_404_then_other_status_stops_after_that_receipt(self):
+        with patch.object(publisher, "treg_request", side_effect=[(404, {}, None), (500, {}, {})]) as request, patch.object(publisher.time, "sleep") as sleep:
+            self.assertEqual(publisher.treg_receipt(self.call_ref), (500, {}))
+        self.assertEqual(request.call_count, 2)
+        self.assertTrue(all(call.args[0] == "/calls/" + self.call_ref for call in request.call_args_list))
+        sleep.assert_called_once_with(1)
+
+    def test_invalid_receipts_and_non_404_statuses_never_retry(self):
+        invalid = [None, [], {"call": []}, {"call": None}]
+        for field, value in (("charged_micro", False), ("charged_micro", "0"), ("charged_micro", 1), ("ledger", [{}])):
+            receipt = self.receipt(); receipt[field] = value; invalid.append(receipt)
+        for field, value in (("call_ref", "b" * 32), ("tool_name", "another-tool"), ("method", "GET"), ("path", "https://graph.instagram.com/v25.0/another"), ("status_code", 201), ("endpoint_id", "paid-endpoint")):
+            receipt = self.receipt(); receipt["call"][field] = value; invalid.append(receipt)
+        for status, receipt in [(200, value) for value in invalid] + [(value, self.receipt()) for value in (401, 403, 429, 500)]:
+            with self.subTest(status=status, receipt=receipt), patch.object(publisher, "treg_request", side_effect=[(200, {"X-Treg-Call-Id": self.call_ref}, {"id": "999"}), (status, {}, receipt)]) as request, patch.object(publisher.time, "sleep") as sleep, self.assertRaisesRegex(ValueError, "Recu Treg Instagram invalide"):
+                publisher.instagram_call(self.path, payload={"creation_id": "123"})
+            self.assertEqual(request.call_count, 2)
+            sleep.assert_not_called()
+
+    def test_only_exact_zero_header_or_valid_call_reference_can_proceed(self):
+        for headers in ({}, {"X-Treg-Call-Id": "../private"}, {"X-Treg-Cost-Micro": "1"}, {"X-Treg-Cost-Micro": "0.0"}):
+            with self.subTest(headers=headers), patch.object(publisher, "treg_request", return_value=(200, headers, {"id": "999"})) as request, self.assertRaises(ValueError):
+                publisher.instagram_call(self.path, payload={"creation_id": "123"})
+            request.assert_called_once()
+        with patch.object(publisher, "treg_request", return_value=(200, {"X-Treg-Cost-Micro": "0"}, {"id": "999"})) as request:
+            self.assertEqual(publisher.instagram_call(self.path, payload={"creation_id": "123"}), {"id": "999"})
+        request.assert_called_once()
+
+    @patch.dict(os.environ, {"TREG_TOKEN": "private-secret-sentinel", "TREG_ORG": "test-org"})
+    def test_receipt_http_404_non_json_body_reaches_bounded_retry_without_replaying_post(self):
+        headers = Message()
+        pending = publisher.urllib.error.HTTPError("https://treg.to/calls/" + self.call_ref, 404, "private-secret-sentinel", headers, io.BytesIO(b"<html>private-secret-sentinel</html>"))
+        response = Response(json.dumps(self.receipt()).encode(), "application/json")
+        with patch.object(publisher, "secure_open", side_effect=[pending, response]) as network, patch.object(publisher.time, "sleep") as sleep:
+            status, receipt = publisher.treg_receipt(self.call_ref)
+        self.assertEqual((status, receipt), (200, self.receipt()))
+        self.assertEqual([call.args[0].get_method() for call in network.call_args_list], ["GET", "GET"])
+        self.assertTrue(all(call.args[0].full_url == "https://treg.to/calls/" + self.call_ref for call in network.call_args_list))
+        self.assertTrue(all(dict((key.lower(), value) for key, value in call.args[0].header_items())["x-treg-route-max-cost"] == "0" for call in network.call_args_list))
+        self.assertTrue(all(call.kwargs["timeout"] == 10 for call in network.call_args_list))
+        sleep.assert_called_once_with(1)
+
+    @patch.dict(os.environ, {"TREG_TOKEN": "private-secret-sentinel", "TREG_ORG": "test-org"})
+    def test_provider_post_404_is_not_a_retryable_receipt_and_hides_non_json_body(self):
+        url = "https://treg.to/call/" + publisher.INSTAGRAM_TOOL + "/" + self.path
+        error = publisher.urllib.error.HTTPError(url, 404, "private-secret-sentinel", Message(), io.BytesIO(b"<html>private-secret-sentinel</html>"))
+        with patch.object(publisher, "secure_open", side_effect=error) as network, patch.object(publisher.time, "sleep") as sleep, self.assertRaises(ValueError) as caught:
+            publisher.instagram_call(self.path, payload={"creation_id": "123"})
+        self.assertNotIn("private-secret-sentinel", "".join(traceback.format_exception(type(caught.exception), caught.exception, caught.exception.__traceback__)))
+        network.assert_called_once()
+        self.assertEqual(network.call_args.args[0].get_method(), "POST")
+        sleep.assert_not_called()
+
+    @patch.dict(os.environ, {"TREG_TOKEN": "private-secret-sentinel", "TREG_ORG": "test-org"})
+    def test_malformed_treg_response_header_is_not_exposed_in_tracebacks(self):
+        response = Response(b'{}', "application/json")
+        response.headers["Content-Length"] = "private-secret-sentinel"
+        with patch.object(publisher, "secure_open", return_value=response), self.assertRaisesRegex(ValueError, "Treg ne confirme") as caught:
+            publisher.instagram_call(self.path, payload={"creation_id": "123"})
+        self.assertNotIn("private-secret-sentinel", "".join(traceback.format_exception(type(caught.exception), caught.exception, caught.exception.__traceback__)))
+        self.assertTrue(caught.exception.__suppress_context__)
 
 
 class ImageValidationTests(unittest.TestCase):
