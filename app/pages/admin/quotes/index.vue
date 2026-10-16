@@ -3,6 +3,7 @@ import type { Quote } from '~/types'
 import AdminAdminEmptyState from '~/components/admin/AdminEmptyState.vue'
 import AdminViewSkeleton from '~/components/admin/AdminViewSkeleton.vue'
 import { printStructuredDocument } from '~/utils/printStructuredDocument'
+import { downloadAdminPdf } from '~/utils/downloadAdminPdf'
 
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 
@@ -60,6 +61,7 @@ const statusFilter = ref<'all' | Quote['status']>('all')
 const runningAction = ref<string | null>(null)
 const loadError = ref('')
 const submitting = ref(false)
+const downloadingPdf = ref(false)
 const selectedQuote = computed(() => store.quotes.find(q => q.id === selectedId.value) ?? null)
 const editingNotice = computed(() => {
   if (!editing.value) return ''
@@ -430,12 +432,23 @@ function printSelected() {
   })
   if (!opened) toast.error('Autorise les fenêtres surgissantes pour imprimer ce devis.')
 }
-function downloadPdf() {
+async function downloadPdf() {
   if (!selectedQuote.value) {
     toast.error('Sélectionne un devis')
     return
   }
-  window.open(`/api/quotes/pdf?id=${selectedQuote.value.id}`, '_blank')
+  if (downloadingPdf.value) return
+  const quote = selectedQuote.value
+  downloadingPdf.value = true
+  try {
+    await downloadAdminPdf(`/api/quotes/pdf?id=${quote.id}`, `devis-${quote.number}.pdf`, auth.authHeader())
+  }
+  catch (error: any) {
+    toast.error(error?.data?.message || 'Impossible de télécharger le PDF du devis.')
+  }
+  finally {
+    downloadingPdf.value = false
+  }
 }
 
 async function loadQuotes(force = false) {
@@ -481,7 +494,7 @@ onMounted(async () => {
         <div class="admin-page-actions flex flex-wrap items-center gap-2">
           <button class="inline-flex min-h-11 items-center justify-center rounded-lg border border-gray-200 px-3 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-white/[0.12] dark:text-gray-200 dark:hover:bg-white/[0.04]" @click="exportCsv">Exporter CSV</button>
           <button class="inline-flex min-h-11 items-center justify-center rounded-lg border border-gray-200 px-3 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-white/[0.12] dark:text-gray-200 dark:hover:bg-white/[0.04]" @click="printSelected">Imprimer</button>
-          <button class="inline-flex min-h-11 items-center justify-center rounded-lg border border-gray-200 px-3 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-white/[0.12] dark:text-gray-200 dark:hover:bg-white/[0.04]" @click="downloadPdf">PDF</button>
+          <button class="inline-flex min-h-11 items-center justify-center rounded-lg border border-gray-200 px-3 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 disabled:cursor-wait disabled:opacity-60 dark:border-white/[0.12] dark:text-gray-200 dark:hover:bg-white/[0.04]" :disabled="downloadingPdf" @click="downloadPdf">{{ downloadingPdf ? 'Téléchargement…' : 'PDF' }}</button>
           <button class="inline-flex min-h-11 items-center justify-center rounded-lg bg-gradient-brand px-4 text-sm font-semibold text-white shadow-glow-sm transition hover:opacity-90" @click="openNew">Nouveau devis</button>
         </div>
       </div>
