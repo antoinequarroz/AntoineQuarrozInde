@@ -43,9 +43,15 @@ doivent rester verts.
   relevé dans une cause d'erreur Treg a été corrigé et testé.
 - `git diff --check` passe. Aucune donnée, publication ou permission modifiée.
 
-Relecture locale terminée ; CI et vérification de la version installée restent
-à compléter. Aucun test ne
-doit publier, créer de média distant ou modifier un brouillon réel.
+Le runner a été installé seul dans l'espace de travail Hermes, après sauvegarde
+du fichier précédent. Le fichier retéléchargé contient exactement le code testé
+(seule la fin de fichier perd son saut de ligne dans l'éditeur). Comparaison du
+texte normalisé et de l'AST réussie via Portly `tmp_eb5ebedc`.
+
+La [PR 271](https://github.com/antoinequarroz/AntoineQuarrozInde/pull/271)
+reste en revue pendant les contrôles CI. Aucun essai ne doit publier, créer de
+média distant ou modifier un brouillon réel. Une nouvelle tentative utilisateur
+reste nécessaire pour vérifier la publication LinkedIn de bout en bout.
 
 ## Sources
 
