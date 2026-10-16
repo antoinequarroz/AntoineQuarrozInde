@@ -2,6 +2,7 @@
 import type { ContactMessage } from '~/types'
 import { draftInvoiceTotals, invoiceThirtyDayCutoff, outstandingInvoiceTotals } from '~/utils/outstandingInvoices'
 import { isQuoteAwaitingDecision } from '~/utils/quoteListFilter'
+import { isTaskDueToday, taskBusinessDate } from '~/utils/taskListFilter'
 import AdminAdminIcon from '~/components/admin/AdminIcon.vue'
 import AdminAdminEmptyState from '~/components/admin/AdminEmptyState.vue'
 import { buildCommercialTaskSuggestions, type CommercialTaskSuggestion } from '~/utils/commercialTaskPlan'
@@ -220,12 +221,7 @@ function readableError(error: unknown) {
   return value?.data?.message || value?.message || 'La source n’a pas répondu. Réessaie dans quelques instants.'
 }
 
-const todayIso = computed(() => new Intl.DateTimeFormat('en-CA', {
-  timeZone: 'Europe/Zurich',
-  year: 'numeric',
-  month: '2-digit',
-  day: '2-digit',
-}).format(new Date()))
+const todayIso = computed(() => taskBusinessDate())
 const nowIso = computed(() => new Date().toISOString())
 const todayLabel = computed(() => new Date().toLocaleDateString('fr-CH', {
   weekday: 'long',
@@ -244,7 +240,7 @@ const openTasks = computed(() =>
     .sort((a, b) => String(a.dueDate || '9999-12-31').localeCompare(String(b.dueDate || '9999-12-31'))),
 )
 
-const dueTasks = computed(() => openTasks.value.filter(task => task.dueDate && task.dueDate <= todayIso.value))
+const dueTasks = computed(() => openTasks.value.filter(task => isTaskDueToday(task, todayIso.value)))
 
 const overdueInvoices = computed(() =>
   invoices.invoices
@@ -369,7 +365,7 @@ const metrics = computed(() => [
     value: sourceStates.tasks === 'ready' ? dueTasks.value.length : '—',
     meta: sourceStates.tasks === 'ready' ? `${openTasks.value.length} tâche(s) ouverte(s)` : 'Tâches indisponibles',
     icon: 'check-square',
-    to: '/admin/tasks',
+    to: '/admin/tasks?filter=due-today',
     tone: 'text-amber-700 bg-amber-50 dark:text-amber-300 dark:bg-amber-500/10',
     bar: 'bg-amber-500',
   },

@@ -381,3 +381,101 @@ test('dashboard pending quote card shows only sent quotes with a persistent, res
   await expect(quoteRows).toHaveCount(1)
   await expect(quoteRows.first()).toContainText('ANT36-Q-ACCEPTED')
 })
+
+test('dashboard today task card keeps its due-task filter and opens only matching task links', async ({ page }) => {
+  test.skip(!adminCredentialsConfigured, 'E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD are required')
+  await loginAdmin(page)
+  await selectSandboxOrganization(page)
+
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Zurich', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
+  const documents = [
+    { id: 903700, title: 'ANT37-T-FUTURE', status: 'todo', due_date: '2099-12-31' },
+    { id: 903701, title: 'ANT37-T-TODAY', status: 'todo', due_date: today },
+    { id: 903702, title: 'ANT37-T-OVERDUE', status: 'in_progress', due_date: '2000-01-01' },
+    { id: 903703, title: 'ANT37-T-DONE', status: 'done', due_date: today },
+    { id: 903704, title: 'ANT37-T-UNDATED', status: 'todo', due_date: null },
+    { id: 903705, title: 'ANT37-T-IN-PROGRESS', status: 'in_progress', due_date: today },
+  ].map(document => ({ ...document, description: null, priority: 'medium', client_id: null, project_id: null, created_at: '2026-10-01T08:00:00Z' }))
+  const taskMutations: string[] = []
+  await page.route('**/api/tasks**', route => {
+    if (route.request().method() === 'GET') return route.fulfill({ json: documents })
+    taskMutations.push(route.request().method())
+    return route.abort('blockedbyclient')
+  })
+
+  await page.goto('/admin')
+  await page.getByRole('region', { name: 'Indicateurs clés' }).getByRole('link', { name: /À faire aujourd’hui/ }).click()
+  await expect(page).toHaveURL(url => url.pathname === '/admin/tasks' && url.searchParams.get('filter') === 'due-today')
+  const taskFilter = page.getByRole('combobox', { name: 'Filtrer les tâches' })
+  const taskRows = page.locator('table tbody tr').filter({ hasText: 'ANT37-T-' })
+  await expect(taskFilter).toHaveValue('due-today')
+  await expect(taskRows).toHaveCount(3)
+  await expect(taskRows.filter({ hasText: 'ANT37-T-TODAY' })).toHaveCount(1)
+  await expect(taskRows.filter({ hasText: 'ANT37-T-OVERDUE' })).toHaveCount(1)
+  await expect(taskRows.filter({ hasText: 'ANT37-T-IN-PROGRESS' })).toHaveCount(1)
+  await page.reload()
+  await expect(taskFilter).toHaveValue('due-today')
+  await expect(taskRows).toHaveCount(3)
+  await taskFilter.selectOption('all')
+  await expect(page).toHaveURL(/\/admin\/tasks$/)
+  await expect(taskRows).toHaveCount(6)
+
+  await page.goto('/admin/tasks?filter=due-today&taskId=903700')
+  await expect(taskFilter).toHaveValue('due-today')
+  await expect(taskRows).toHaveCount(3)
+  await expect(page.getByRole('dialog', { name: 'Modifier la tâche', exact: true })).toHaveCount(0)
+  await page.goto('/admin/tasks?filter=due-today&taskId=903701')
+  const editDialog = page.getByRole('dialog', { name: 'Modifier la tâche', exact: true })
+  await expect(editDialog).toBeVisible()
+  await expect(editDialog.locator('#task-title')).toHaveValue('ANT37-T-TODAY')
+  await editDialog.getByRole('button', { name: 'Annuler', exact: true }).click()
+  await expect(editDialog).toBeHidden()
+
+  await page.goto('/admin/tasks?filter=due-today&taskId=903700&new=1')
+  const newDialog = page.getByRole('dialog', { name: 'Nouvelle tâche', exact: true })
+  await expect(newDialog).toBeVisible()
+  await expect(newDialog.locator('#task-title')).toHaveValue('')
+  await newDialog.getByRole('button', { name: 'Annuler', exact: true }).click()
+  await expect(newDialog).toBeHidden()
+
+  await page.goto('/admin/tasks')
+  await expect(taskFilter).toHaveValue('all')
+  await expect(taskRows).toHaveCount(6)
+  await page.goto('/admin/tasks?filter=due-today')
+  await expect(taskFilter).toHaveValue('due-today')
+  await expect(taskRows).toHaveCount(3)
+  await page.goBack()
+  await expect(taskFilter).toHaveValue('all')
+  await expect(taskRows).toHaveCount(6)
+  expect(taskMutations).toEqual([])
+})
+
+test('failed task updates preserve the edit form when the optimistic change leaves the current filter', async ({ page }) => {
+  test.skip(!adminCredentialsConfigured, 'E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD are required')
+  await loginAdmin(page)
+  await selectSandboxOrganization(page)
+
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Zurich', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
+  const document = {
+    id: 903710, title: 'ANT37-T-FAILED-UPDATE', description: null, status: 'todo', priority: 'medium',
+    due_date: today, client_id: null, project_id: null, created_at: '2026-10-01T08:00:00Z',
+  }
+  await page.route('**/api/tasks**', route => {
+    if (route.request().method() === 'GET') return route.fulfill({ json: [document] })
+    if (route.request().method() === 'PUT') return route.fulfill({ status: 503, json: { message: 'Échec simulé pour ce test' } })
+    return route.abort('blockedbyclient')
+  })
+
+  await page.goto(`/admin/tasks?filter=due-today&taskId=${document.id}`)
+  const dialog = page.getByRole('dialog', { name: 'Modifier la tâche', exact: true })
+  await expect(dialog).toBeVisible()
+  await dialog.locator('#task-title').fill('ANT37 saisie conservée après erreur')
+  await dialog.locator('#task-status').selectOption('done')
+  await dialog.getByRole('button', { name: 'Enregistrer', exact: true }).click()
+  await expect(page.getByText('La tâche n’a pas pu être enregistrée', { exact: true })).toBeVisible()
+  await expect(dialog).toBeVisible()
+  await expect(dialog.locator('#task-title')).toHaveValue('ANT37 saisie conservée après erreur')
+  await expect(dialog.locator('#task-status')).toHaveValue('done')
+  await dialog.getByRole('button', { name: 'Annuler', exact: true }).click()
+  await expect(dialog).toBeHidden()
+})
