@@ -1,6 +1,6 @@
 ---
 linear: https://linear.app/antoinequarroz/issue/ANT-37
-status: done
+status: in_review
 ---
 
 # Tâches à faire aujourd’hui
@@ -28,3 +28,5 @@ La vérification Portly `tmp_6a098b30` confirme que l’URL publique sert le com
 ## Livraison terminée
 
 [PR #277](https://github.com/antoinequarroz/AntoineQuarrozInde/pull/277) fusionnée et commit `b778ad3d06f3c7e5030fe0a64f12b686339f0bee` déployé. [Run principal 38960835982](https://github.com/antoinequarroz/AntoineQuarrozInde/actions/runs/38960835982) réussi : quality, database, seo-quality, deploy et e2e. Accessibilité réussie dans la PR ; job ignoré sur main selon sa condition habituelle. Suite complète E2E : 63 tests réussis en 5,8 minutes, sans échec ni reprise signalés. Tous les critères d’acceptation sont vérifiés.
+
+La clôture administrative Linear reste à reporter : après le contrôle réussi, Dia a été repris par l’utilisateur, et les actions ont été interrompues à plusieurs reprises (« The user changed /Applications/Dia.app »), puis la nouvelle liaison a expiré. Ticket conservé In Review et statut du plan aligné. Le produit est livré et vérifié ; aucun blocage fonctionnel.
