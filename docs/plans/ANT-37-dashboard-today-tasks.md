@@ -1,6 +1,6 @@
 ---
 linear: https://linear.app/antoinequarroz/issue/ANT-37
-status: in_review
+status: done
 ---
 
 # Tâches à faire aujourd’hui
@@ -13,4 +13,8 @@ Validation : tests des statuts, des échéances et de la date suisse ; E2E en le
 
 ## Vérification locale
 
-918 tests Vitest réussis, typecheck et compilation réussis. Revue indépendante sans blocage après correction de la fermeture du formulaire : seul un changement explicite de filtre la déclenche, hors soumission. Les deux parcours E2E couvrent la navigation et la préservation des saisies après un échec simulé ; toutes les lectures et mutations de tâches y sont interceptées. CI, déploiement et contrôle public à terminer.
+918 tests Vitest réussis, typecheck et compilation réussis. Revue indépendante sans blocage après correction de la fermeture du formulaire : seul un changement explicite de filtre la déclenche, hors soumission. Les deux parcours E2E couvrent la navigation et la préservation des saisies après un échec simulé ; toutes les lectures et mutations de tâches y sont interceptées.
+
+## Clôture
+
+PR #277 déployée au commit `b778ad3d06f3c7e5030fe0a64f12b686339f0bee`. Run principal `38960835982` réussi, dont 63 tests E2E sans reprise. Contrôle public sain et parcours réel Dia vérifié (filtre, rechargement et remise à zéro), sans modification de tâche réelle. Clôture Linear reportée pendant l’indisponibilité de Dia, puis effectuée au passage ANT-38 : ticket Done et preuves finales consignées.

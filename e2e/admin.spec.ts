@@ -531,6 +531,7 @@ test('all dashboard metric links keep their context and the new-message filter i
 
   await page.goto('/admin/messages?status=new&messageId=903801')
   await expect(statusFilter).toHaveValue('new')
+  await expect(page.getByLabel('Sujet', { exact: true })).toHaveValue('Re: ANT38 sujet NEW-1')
   await statusFilter.selectOption('all')
   await expect(page).toHaveURL(/\/admin\/messages$/)
   await expect(page.getByRole('button', { name: /ANT38-/ })).toHaveCount(11)
