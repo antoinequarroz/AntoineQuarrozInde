@@ -298,3 +298,24 @@ test('secondary admin pages remain complete and responsive on mobile', async ({ 
   expect(pageErrors).toEqual([])
   expect(hydrationWarnings).toEqual([])
 })
+
+test('dashboard invoice cards open persistent, resettable filters', async ({ page }) => {
+  test.skip(!adminCredentialsConfigured, 'E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD are required')
+  await loginAdmin(page)
+  await selectSandboxOrganization(page)
+
+  for (const [label, filter] of [['Factures en brouillon', 'draft-invoices'], ['Total à encaisser', 'outstanding']] as const) {
+    await page.goto('/admin')
+    await page.getByRole('region', { name: 'Indicateurs clés' }).getByRole('link', { name: new RegExp(label) }).click()
+    await expect(page).toHaveURL(url => url.pathname === '/admin/invoices' && url.searchParams.get('status') === filter)
+    await expect(page.getByRole('combobox', { name: 'Filtrer les factures' })).toHaveValue(filter)
+    await page.reload()
+    await expect(page.getByRole('combobox', { name: 'Filtrer les factures' })).toHaveValue(filter)
+    await page.getByRole('combobox', { name: 'Filtrer les factures' }).selectOption('all')
+    await expect(page).toHaveURL(/\/admin\/invoices$/)
+  }
+  await page.goto('/admin/invoices?status=draft-invoices')
+  await page.goto('/admin/invoices?status=outstanding')
+  await page.goBack()
+  await expect(page.getByRole('combobox', { name: 'Filtrer les factures' })).toHaveValue('draft-invoices')
+})

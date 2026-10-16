@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Invoice } from '~/types'
+import { matchesInvoiceListFilter, parseInvoiceListFilter, type InvoiceListFilter } from '~/utils/invoiceListFilter'
 import AdminViewSkeleton from '~/components/admin/AdminViewSkeleton.vue'
 import { printStructuredDocument } from '~/utils/printStructuredDocument'
 import { generateScorReference, getQrReferenceError, isQrIban, isValidSwissIban, normalizeIban } from '~~/shared/utils/swissQr'
@@ -11,6 +12,7 @@ const projects = useProjectsStore()
 const auth = useAuthStore()
 const { statusLabel } = useBusinessLabels()
 const route = useRoute()
+const router = useRouter()
 const toast = useToast()
 const showForm = ref(false)
 const closeForm = () => { showForm.value = false }
@@ -123,8 +125,12 @@ const filteredQuotes = computed(() => {
 const selectedId = ref<number | null>(null)
 const viewMode = ref<'table' | 'kanban'>('table')
 const search = ref('')
-const statusFilter = ref<'all' | Invoice['status']>('all')
-const selectedInvoice = computed(() => store.invoices.find(i => i.id === selectedId.value) ?? null)
+const statusFilter = computed<InvoiceListFilter>({
+  get: () => parseInvoiceListFilter(route.query.status),
+  set: status => { void router.replace({ query: { ...route.query, status: status === 'all' ? undefined : status, invoiceId: undefined } }) },
+})
+watch(() => route.query.search, value => { search.value = typeof value === 'string' ? value : '' }, { immediate: true })
+const selectedInvoice = computed(() => filteredInvoices.value.find(i => i.id === selectedId.value) ?? null)
 type InvoiceNextAction = 'send' | 'payment' | 'journal'
 const workflowNotice = ref<{ invoiceId: number, message: string, nextAction: InvoiceNextAction } | null>(null)
 const journeyClientId = computed(() => selectedInvoice.value?.clientId ?? (showForm.value ? form.clientId : null))
@@ -145,12 +151,20 @@ const kanbanInvoices = computed(() =>
 const filteredInvoices = computed(() => {
   const q = search.value.trim().toLowerCase()
   return store.invoices.filter((x) => {
-    const byStatus = statusFilter.value === 'all' || x.status === statusFilter.value || (statusFilter.value === 'sent' && x.status === 'overdue')
-    if (!byStatus) return false
+    if (!matchesInvoiceListFilter(x, statusFilter.value)) return false
     if (!q) return true
     return [x.number, x.notes || '', clientsById.value.get(x.clientId || 0)?.name || '', projectsById.value.get(x.projectId || 0)?.title || ''].join(' ').toLowerCase().includes(q)
   })
 })
+watch([filteredInvoices, () => route.query.invoiceId], ([visibleInvoices, invoiceId]) => {
+  const requestedId = Number(invoiceId || 0)
+  if (requestedId > 0) {
+    selectedId.value = visibleInvoices.some(invoice => invoice.id === requestedId) ? requestedId : null
+  }
+  else if (!visibleInvoices.some(invoice => invoice.id === selectedId.value)) {
+    selectedId.value = visibleInvoices.at(0)?.id ?? null
+  }
+}, { immediate: true })
 const selectedQuote = computed(() => {
   if (!form.quoteId) return null
   return quotes.quotes.find(q => q.id === form.quoteId) ?? null
@@ -233,7 +247,7 @@ async function submit() {
     savingInvoice.value = false
   }
 }
-async function del(id: number) { if (!confirm('Supprimer cette facture ?')) return; try { await store.remove(id); if (selectedId.value === id) selectedId.value = store.invoices[0]?.id ?? null; toast.success('Facture supprimée') } catch { toast.error('La facture n’a pas pu être supprimée') } }
+async function del(id: number) { if (!confirm('Supprimer cette facture ?')) return; try { await store.remove(id); if (selectedId.value === id) selectedId.value = filteredInvoices.value[0]?.id ?? null; toast.success('Facture supprimée') } catch { toast.error('La facture n’a pas pu être supprimée') } }
 function openPaymentForm(invoice: Invoice) {
   if (!canRecordPayment(invoice)) { toast.error('Aucun paiement ne peut être ajouté à ce document.'); return }
   const remaining = Math.max(0, (invoice.totalCents ?? invoice.amountCents) - invoice.paidAmountCents)
@@ -414,14 +428,6 @@ onMounted(async () => {
       if (project?.clientId) form.clientId = project.clientId
     }
   }
-  const qStatus = String(route.query.status || '')
-  if (qStatus === 'draft' || qStatus === 'sent' || qStatus === 'paid' || qStatus === 'overdue' || qStatus === 'cancelled') statusFilter.value = qStatus
-  const qSearch = String(route.query.search || '')
-  if (qSearch) search.value = qSearch
-  const qInvoiceId = Number(route.query.invoiceId || 0)
-  selectedId.value = store.invoices.some(invoice => invoice.id === qInvoiceId)
-    ? qInvoiceId
-    : (qInvoiceId > 0 ? null : (store.invoices.at(0)?.id ?? null))
   if (route.query.journey === 'converted' && selectedInvoice.value) {
     workflowNotice.value = {
       invoiceId: selectedInvoice.value.id,
@@ -497,12 +503,15 @@ onBeforeUnmount(releasePdfPreview)
       <div><p class="font-semibold">Chargement impossible</p><p class="mt-1 text-sm">{{ loadError }}</p></div>
       <button class="min-h-11 shrink-0 rounded-lg bg-red-700 px-4 text-sm font-semibold text-white hover:bg-red-800" @click="loadInvoicesPage(true)">Réessayer</button>
     </div>
-    <div v-if="!loadingData && !loadError" class="rounded-xl border border-gray-100 dark:border-white/[0.06] bg-white dark:bg-[#111118] p-3 grid grid-cols-1 sm:grid-cols-[1fr_170px] gap-2">
-      <input v-model="search" class="input-field" placeholder="Rechercher facture...">
-      <select v-model="statusFilter" class="input-field">
+    <div v-if="!loadingData && !loadError" class="rounded-xl border border-gray-100 dark:border-white/[0.06] bg-white dark:bg-[#111118] p-3 grid grid-cols-1 sm:grid-cols-[1fr_220px] gap-2">
+      <input v-model="search" class="input-field" placeholder="Rechercher facture..." aria-label="Rechercher une facture">
+      <select v-model="statusFilter" class="input-field" aria-label="Filtrer les factures">
         <option value="all">Tous statuts</option>
+        <option value="outstanding">À encaisser</option>
+        <option value="draft-invoices">Factures en brouillon</option>
         <option value="draft">{{ statusLabel('draft') }}</option>
         <option value="sent">{{ statusLabel('sent') }} / {{ statusLabel('overdue') }}</option>
+        <option value="overdue">{{ statusLabel('overdue') }}</option>
         <option value="paid">{{ statusLabel('paid') }}</option>
         <option value="cancelled">{{ statusLabel('cancelled') }}</option>
       </select>
