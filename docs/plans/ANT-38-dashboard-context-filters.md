@@ -1,6 +1,6 @@
 ---
 linear: https://linear.app/antoinequarroz/issue/ANT-38
-status: in_review
+status: done
 ---
 
 # Indicateurs et listes filtrées
@@ -34,3 +34,13 @@ La carte Messages ouvre `/admin/messages?status=new`, sélection « Nouveau », 
 Le run `38965699606` a livré correctement le produit mais échoue dans le nouveau test : après une navigation complète avec `messageId`, le test attend seulement la valeur du select rendue côté serveur avant de changer le filtre. Le sujet du message, alimenté au montage après chargement, est désormais attendu avant l’interaction. L’assertion de suppression du paramètre reste inchangée.
 
 Le test mobile existant attendait aussi quatre dépendances réseau réelles pendant son scénario factures. Les clients, devis, projets et profil de facturation sont désormais simulés dans ce cas, et un signal d’interception vérifie que la requête contrôlée a réellement commencé avant de libérer la réponse. Toutes les assertions et les délais restent identiques. Portly `tmp_a131ae54` : typecheck et découverte des 18 scénarios ciblés réussis. Revue indépendante sans blocage ; nouvelle suite complète encore attendue.
+
+PR de reprise #279, tests et documentation uniquement. Préflight de reprise : 12 autres images anciennes du site (25–27 septembre) retirées avec les mêmes gardes ; espace revenu à 2,8 Go avant déploiement. Aucun volume, base, conteneur actif, cache BuildKit ou retour arrière récent supprimé.
+
+PR #279 fusionnée après tous les contrôles réussis. Version de reprise `cfe6b192f2c375777253bb83737869864f047264`, run principal `38969667609`. Portly `tmp_d310bd92` vérifie en une tentative que la version publique exacte sert une application et une base saines. Produit inchangé depuis le contrôle Dia réussi.
+
+## Livraison finale
+
+Le [run principal final](https://github.com/antoinequarroz/AntoineQuarrozInde/actions/runs/38969667609) est entièrement réussi : quality, database, seo-quality, déploiement et E2E. Les 65 tests E2E passent du premier coup, sans échec, test instable ni reprise, en 5,7 minutes. Les deux scénarios corrigés sont validés. Le contrôle accessibilité est réussi sur la PR ; il est ignoré par configuration sur le run main.
+
+Les six indicateurs ouvrent leur liste avec leur filtre exact : factures à encaisser, sous 30 jours, en brouillon ; devis envoyés ; tâches dues aujourd’hui ; messages nouveaux. Filtre Messages conservé après rechargement et réinitialisation vérifiée dans Dia. Aucun changement de statut à l’ouverture, aucune réponse envoyée et aucune donnée métier modifiée lors des contrôles. Critères et preuves de livraison complets ; ANT-38 peut être clôturé.
