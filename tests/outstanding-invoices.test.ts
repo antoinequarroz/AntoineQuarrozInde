@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { outstandingInvoiceTotals } from '../app/utils/outstandingInvoices'
+import { draftInvoiceTotals, outstandingInvoiceTotals } from '../app/utils/outstandingInvoices'
 
 const invoice = (overrides: Partial<Parameters<typeof outstandingInvoiceTotals>[0][number]> = {}) => ({
   documentType: 'invoice' as const, status: 'sent' as const, currency: 'CHF',
@@ -28,5 +28,25 @@ describe('Outstanding invoice totals', () => {
       invoice({ amountCents: 45000, totalCents: 50000, paidAmountCents: 15000 }),
       invoice({ currency: 'EUR', amountCents: 20000 }), invoice({ currency: '', amountCents: 10000 }),
     ])).toEqual({ CHF: 45000, EUR: 20000 })
+  })
+})
+
+describe('Draft invoice amounts', () => {
+  it('keeps the planned delivery payment separate from the issued deposit', () => {
+    const documents = [invoice(), invoice({ status: 'draft', dueAt: null })]
+    expect(draftInvoiceTotals(documents)).toEqual({ CHF: 50000 })
+    expect(outstandingInvoiceTotals(documents)).toEqual({ CHF: 50000 })
+    documents[1]!.status = 'sent'
+    expect(draftInvoiceTotals(documents)).toEqual({})
+    expect(outstandingInvoiceTotals(documents)).toEqual({ CHF: 100000 })
+  })
+  it('counts only positive draft invoices and separates currencies', () => {
+    expect(draftInvoiceTotals([
+      invoice({ status: 'draft', totalCents: 60000 }),
+      invoice({ status: 'draft', currency: 'EUR', amountCents: 20000 }),
+      invoice({ status: 'draft', documentType: 'credit_note' }),
+      invoice({ status: 'draft', amountCents: -1000 }), invoice({ status: 'draft', amountCents: 0 }),
+      invoice({ status: 'sent' }), invoice({ status: 'overdue' }), invoice({ status: 'paid' }), invoice({ status: 'cancelled' }),
+    ])).toEqual({ CHF: 60000, EUR: 20000 })
   })
 })

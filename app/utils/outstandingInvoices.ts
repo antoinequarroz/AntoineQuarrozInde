@@ -15,3 +15,16 @@ export function outstandingInvoiceTotals(invoices: OutstandingInvoice[], dueThro
   }
   return totals
 }
+
+/** Planned, unissued invoice amounts; these are not receivables. */
+export function draftInvoiceTotals(invoices: OutstandingInvoice[]): Record<string, number> {
+  const totals: Record<string, number> = {}
+  for (const invoice of invoices) {
+    if (invoice.documentType !== 'invoice' || invoice.status !== 'draft') continue
+    const amount = Math.max(0, invoice.totalCents ?? invoice.amountCents)
+    if (!amount) continue
+    const currency = invoice.currency || 'CHF'
+    totals[currency] = (totals[currency] || 0) + amount
+  }
+  return totals
+}
