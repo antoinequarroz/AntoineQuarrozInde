@@ -4,6 +4,7 @@ definePageMeta({ layout: 'admin', middleware: 'admin' })
 
 import type { SocialPost, EditorialSocialPlatform as Platform, EditorialSocialStatus as Status, EditorialSocialMediaItem as SocialMedia } from '../../../../shared/types/socialEditorial'
 import type { LocationQueryRaw } from 'vue-router'
+import { isNavigationFailure, NavigationFailureType } from 'vue-router'
 import { isoToZurichLocal, zurichLocalToIso, zurichDateKey } from '#shared/utils/socialDateTime'
 import { parseSocialCalendarFilters, matchesSocialCalendarFilters, calendarDays, socialPostCalendarIso } from '~/utils/socialCalendar'
 
@@ -19,7 +20,11 @@ const route = useRoute()
 const router = useRouter()
 const filterQuery = ref<LocationQueryRaw>({ ...route.query })
 const filters = computed(() => parseSocialCalendarFilters(filterQuery.value))
-let filterNavigation: Promise<void> | null = null
+const calendarPath = route.path
+let pageActive = true
+let filterNavigation: Promise<boolean> | null = null
+onBeforeUnmount(() => { pageActive = false })
+function isCalendarActive() { return pageActive && router.currentRoute.value.path === calendarPath }
 watch(() => route.query, query => {
   if (!filterNavigation) filterQuery.value = { ...query }
 })
@@ -173,17 +178,22 @@ async function syncFilterQuery() {
   try {
     let target: LocationQueryRaw
     do {
+      if (!isCalendarActive()) return false
       target = filterQuery.value
-      await router.replace({ query: target })
+      const failure = await router.replace({ path: calendarPath, query: target })
+      if (isNavigationFailure(failure, NavigationFailureType.aborted | NavigationFailureType.cancelled)) return false
     } while (target !== filterQuery.value)
+    return isCalendarActive()
   } catch {
     toast.error('Les filtres n’ont pas pu être conservés dans l’adresse.')
+    return false
   } finally {
     filterNavigation = null
-    filterQuery.value = { ...route.query }
+    if (isCalendarActive()) filterQuery.value = { ...route.query }
   }
 }
 function setFilterQuery(query: LocationQueryRaw) {
+  if (!isCalendarActive()) return
   filterQuery.value = query
   if (!filterNavigation) filterNavigation = syncFilterQuery()
 }
@@ -209,8 +219,9 @@ function closeEditor() {
 }
 const { dialogRef: editorDialogRef, handleDialogKeydown: handleEditorKeydown } = useAccessibleDialog(computed(() => Boolean(editingPost.value)), closeEditor, '[data-editor-close]')
 async function openPost(post: SocialPost) {
-  if (filterNavigation) await filterNavigation
-  await router.replace({ query: { ...route.query, postId: post.id } })
+  if (filterNavigation && !await filterNavigation) return
+  if (!isCalendarActive()) return
+  await router.replace({ path: calendarPath, query: { ...route.query, postId: post.id } })
 }
 function selectPostFromUrl() {
   const id = typeof route.query.postId === 'string' ? route.query.postId : ''

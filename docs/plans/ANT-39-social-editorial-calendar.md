@@ -1,6 +1,6 @@
 ---
 linear: https://linear.app/antoinequarroz/issue/ANT-39
-status: in_progress
+status: in_review
 ---
 
 # Calendrier éditorial social
@@ -27,11 +27,11 @@ Tests ciblés dates/DST, filtres invalides, pagination et permissions d’organi
 
 ## Livraison
 
-Branche `codex/social-editorial-calendar`, issue ANT-39 en cours. Le VPS du site ne répond actuellement pas aux contrôles réseau directs depuis le Mac (HTTPS/SSH), indépendamment de la connexion Hermes rétablie. Le code et ses contrôles avancent ; la mise en ligne ne sera déclarée réussie qu’après preuve de déploiement et de fonctionnement. Aucun contournement TLS ou permission modifiée.
+Branche `codex/social-editorial-calendar`, [PR #281](https://github.com/antoinequarroz/AntoineQuarrozInde/pull/281), issue ANT-39 en revue. L’accès au VPS est rétabli le 17 octobre à 13 h 34 Europe/Zurich : santé application/base et accès SSH réussis, checkout de déploiement propre. La mise en ligne ne sera déclarée réussie qu’après passage des contrôles CI et vérification de la version publique.
 
 ## Preuves de contrôle
 
 - Revue indépendante : isolation des organisations, CAS de version, consentement explicite et séparation `planned_at`/`publish_after` vérifiés. Corrections intégrées pour les saisies non enregistrées, les dialogues imbriqués, les compteurs et les dates invalides.
 - Base jetable : 21 fichiers pgTAP, 302 assertions réussies ; contrôles lint/sécurité sans anomalie. Aucune migration distante appliquée pendant ces tests.
-- Premier passage de la suite : 985 tests Vitest réussis. Vérification définitive, typecheck/build et parcours navigateur sur dépendances locales propres en cours.
-- L’indisponibilité publique est également observée par le contrôle externe GitHub du 17 octobre (incident GitHub #280). Antoine confirme le VPS démarré et l’IP inchangée ; contrôle de la console Hostinger demandé pour lever le blocage de livraison.
+- Suite élargie : 991 tests Vitest réussis. Typecheck/build candidat sur dépendances verrouillées propres, audit des 51 packages runtime et budgets de bundle réussis. Parcours navigateur et CI sur la version finale en cours, sans aucun envoi social réel.
+- Vérifier les changements rapides de filtre et l’ouverture d’un brouillon : les mutations URL sont coalescées, interrompues si la navigation est annulée ou quitte la page. L’éditeur s’ouvre après l’URL pour que sa protection contre la perte de saisie n’annule pas son propre lien.

@@ -147,6 +147,12 @@ test('reordering and uploading a video require an explicit save without approvin
   await expect(card).toHaveCount(0)
   await page.getByRole('button', { name: 'Ouvrir PhysioBaur · carrousel mixte sur Instagram', exact: true }).click()
   await expect(card.getByRole('heading', { name: 'Carrousel · 4 images et 3 vidéos', exact: true })).toBeVisible()
+  const preview = card.getByRole('region', { name: 'Aperçu Instagram', exact: true })
+  await preview.getByRole('button', { name: 'Média suivant de l’aperçu', exact: true }).click()
+  await expect.poll(() => preview.getByRole('img').evaluate(image => (image as HTMLImageElement).naturalWidth)).toBeGreaterThan(0)
+  await expect(page.getByText('Médias enregistrés. Le brouillon attend ta validation.', { exact: true })).toHaveCount(0)
+  await preview.scrollIntoViewIfNeeded()
+  await page.screenshot({ path: '/tmp/ant39-instagram-preview-desktop.png' })
   expect(writes).toHaveLength(3)
 })
 
