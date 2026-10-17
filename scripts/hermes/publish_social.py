@@ -176,7 +176,17 @@ def tracked_article_url(article_url: str, platform: str, *, placement: str = "po
 
 
 def tracked_social_content(content: str, article_url: str, platform: str) -> str:
-    return content.replace(article_url, tracked_article_url(article_url, platform))
+    tracked_url = tracked_article_url(article_url, platform)
+    # Match the whole URL token on both sides. A homepage prefix, a routed URL
+    # or a URL with another query/fragment must never be rewritten partially.
+    def replace_url(match: re.Match) -> str:
+        token = match.group()
+        if token == article_url:
+            return tracked_url
+        if len(token) > 2 and token[0] in "\"'" and token[-1] == token[0] and token[1:-1] == article_url:
+            return token[0] + tracked_url + token[-1]
+        return token
+    return re.sub(r"[^\s<>]+", replace_url, content)
 
 
 def inside_local_publication_hour(hour: int | None, timezone: str) -> bool:
@@ -226,6 +236,13 @@ def validate_draft(path: Path, project: Path) -> dict[str, str]:
     return draft
 
 
+def provider_http_error(provider: str, stage: str, status: int) -> RuntimeError:
+    # Only caller-owned labels and the HTTP status are retained. Provider bodies,
+    # authorization headers and signed upload URLs must never reach last_error.
+    detail = "Facturation API X requise. Verifier les credits du projet avant toute nouvelle validation." if provider == "X" and status == 402 else "Requete refusee par la plateforme."
+    return RuntimeError(f"{provider} - {stage} (HTTP {status}). {detail}")
+
+
 def request_json(url: str, payload: dict, headers: dict[str, str]) -> tuple[dict, dict[str, str]]:
     request = urllib.request.Request(
         url,
@@ -239,7 +256,15 @@ def request_json(url: str, payload: dict, headers: dict[str, str]) -> tuple[dict
             parsed = json.loads(response_body) if response_body else {}
             return parsed, dict(response.headers.items())
     except urllib.error.HTTPError as exc:
-        raise RuntimeError(f"Publication refusee par la plateforme ({exc.code}). Verifier le compte et ses permissions.") from exc
+        provider, stage = {
+            LINKEDIN_IMAGES_ENDPOINT: ("LinkedIn", "initialisation de l'image"),
+            LINKEDIN_DOCUMENTS_ENDPOINT: ("LinkedIn", "initialisation du document"),
+            LINKEDIN_POSTS_ENDPOINT: ("LinkedIn", "creation de la publication"),
+            X_MEDIA_ENDPOINT: ("X", "envoi de l'image"),
+            X_MEDIA_METADATA_ENDPOINT: ("X", "description de l'image"),
+            X_POSTS_ENDPOINT: ("X", "creation de la publication"),
+        }.get(url, ("Plateforme", "requete"))
+        raise provider_http_error(provider, stage, exc.code) from None
 
 
 def read_bounded_response(response, maximum: int, label: str) -> bytes:
@@ -489,9 +514,9 @@ def upload_linkedin_image(token: str, author: str, image: bytes, mime_type: str)
     try:
         with secure_open(request, timeout=90) as response:
             if response.status not in {200, 201}:
-                raise RuntimeError(f"Envoi de l'image LinkedIn refuse ({response.status}).")
+                raise provider_http_error("LinkedIn", "envoi de l'image", response.status)
     except urllib.error.HTTPError as exc:
-        raise RuntimeError(f"Envoi de l'image LinkedIn refuse ({exc.code}).") from exc
+        raise provider_http_error("LinkedIn", "envoi de l'image", exc.code) from None
     return image_urn
 
 
@@ -557,15 +582,15 @@ def upload_linkedin_document(token: str, author: str, document: bytes) -> str:
     try:
         with secure_open(request, timeout=120) as response:
             if response.status not in {200, 201}:
-                raise RuntimeError(f"Envoi du document LinkedIn refuse ({response.status}).")
+                raise provider_http_error("LinkedIn", "envoi du document", response.status)
     except urllib.error.HTTPError as exc:
-        raise RuntimeError(f"Envoi du document LinkedIn refuse ({exc.code}).") from exc
+        raise provider_http_error("LinkedIn", "envoi du document", exc.code) from None
     wait_for_linkedin_document(token, document_urn)
     return document_urn
 
 
 def linkedin_document_status(token: str, document_urn: str) -> str:
-    url = f"https://api.linkedin.com/rest/documents/{urllib.parse.quote(document_urn, safe=':')}"
+    url = f"https://api.linkedin.com/rest/documents/{urllib.parse.quote(document_urn, safe='')}"
     request = urllib.request.Request(
         url,
         headers={
@@ -579,7 +604,7 @@ def linkedin_document_status(token: str, document_urn: str) -> str:
         with secure_open(request, timeout=60) as response:
             body = json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as exc:
-        raise RuntimeError(f"Verification du document LinkedIn refusee ({exc.code}).") from exc
+        raise provider_http_error("LinkedIn", "lecture du document", exc.code) from None
     return str(body.get("status") or "")
 
 
@@ -794,7 +819,7 @@ INSTAGRAM_TOOL = "instagram-antoinequarroz"
 INSTAGRAM_SCOPES = {"instagram_business_basic", "instagram_business_manage_insights", "instagram_business_content_publish"}
 
 
-def treg_request(path: str, payload: dict | None = None) -> tuple[int, dict, object]:
+def treg_request(path: str, payload: dict | None = None, *, timeout: float = 90) -> tuple[int, dict, object]:
     # Fixed proxy origin: a provider URL or paging URL is never accepted here.
     if not re.fullmatch(r"/(?:connections|tools|calls/[a-f0-9]{32}|call/instagram-antoinequarroz/(?:me|[0-9]{1,30}(?:/(?:media|media_publish))?)(?:\?[^\r\n]*)?)", path):
         raise ValueError("Route Instagram non autorisee.")
@@ -822,15 +847,30 @@ def treg_request(path: str, payload: dict | None = None) -> tuple[int, dict, obj
         headers["Content-Type"] = "application/json"
     request = urllib.request.Request("https://treg.to" + path, data=None if payload is None else json.dumps(payload).encode(), headers=headers, method="GET" if payload is None else "POST")
     try:
-        response = secure_open(request, timeout=90)
+        response = secure_open(request, timeout=timeout)
     except urllib.error.HTTPError as exc:
         response = exc
     with response:
+        if response.status == 404 and payload is None and re.fullmatch(r"/calls/[a-f0-9]{32}", path):
+            # A receipt may not be indexed yet, including a non-JSON 404 page.
+            return 404, dict(response.headers.items()), None
         try:
             data = json.loads(read_bounded_response(response, 2_000_000, "La reponse Treg"))
-        except (ValueError, UnicodeError) as exc:
-            raise ValueError("Treg ne confirme pas la reponse Instagram.") from exc
+        except (ValueError, UnicodeError):
+            raise ValueError("Treg ne confirme pas la reponse Instagram.") from None
         return response.status, dict(response.headers.items()), data
+
+
+def treg_receipt(call_ref: str) -> tuple[int, object]:
+    # The upstream POST has already happened. Only its existing receipt may be
+    # reread while Treg makes it available; never replay the provider request.
+    for attempt in range(3):
+        status, _, receipt = treg_request("/calls/" + call_ref, timeout=10)
+        if status != 404:
+            return status, receipt
+        if attempt < 2:
+            time.sleep(attempt + 1)
+    raise ValueError(f"Recu Treg Instagram indisponible (HTTP 404, appel {call_ref}). Verifier le resultat sans nouvel appel de publication.")
 
 
 def instagram_call(path: str, query: dict | None = None, payload: dict | None = None) -> dict:
@@ -844,10 +884,11 @@ def instagram_call(path: str, query: dict | None = None, payload: dict | None = 
         call_ref = lower_headers.get("x-treg-call-id", "")
         if not re.fullmatch(r"[a-f0-9]{32}", call_ref):
             raise ValueError("Treg ne confirme pas le cout nul de cet appel Instagram. Traitement arrete.")
-        receipt_status, _, receipt = treg_request("/calls/" + call_ref)
+        receipt_status, receipt = treg_receipt(call_ref)
         call = receipt.get("call", {}) if isinstance(receipt, dict) else {}
         expected_path = "https://graph.instagram.com/v25.0/" + path
-        if (receipt_status != 200 or type(receipt.get("charged_micro")) is not int or receipt.get("charged_micro") != 0 or receipt.get("ledger") != []
+        if (receipt_status != 200 or not isinstance(receipt, dict) or not isinstance(call, dict)
+                or type(receipt.get("charged_micro")) is not int or receipt.get("charged_micro") != 0 or receipt.get("ledger") != []
                 or call.get("call_ref") != call_ref or call.get("tool_name") != INSTAGRAM_TOOL
                 or call.get("method") != ("GET" if payload is None else "POST")
                 or call.get("path") != expected_path or call.get("status_code") != status or call.get("endpoint_id") is not None):
