@@ -95,7 +95,9 @@ async function isolatedCalendar(page: Page, initialPosts: Post[], options: { hol
     }
     return route.fallback()
   })
-  await page.route('**/api/**', async route => {
+  // Limit this fixture to backend admin routes. Vite module paths can also
+  // contain /api/ (for example @vue/devtools-api/lib/esm/api/index.js).
+  await page.route('**/api/admin/**', async route => {
     const request = route.request()
     const url = new URL(request.url())
     const path = url.pathname
