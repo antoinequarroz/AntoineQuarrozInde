@@ -11,9 +11,9 @@ watch(() => media.value.length, () => { index.value = Math.min(index.value, Math
 
 <template>
   <section :aria-label="`Aperçu ${socialPlatformLabel(post.platform)}`" class="min-w-0 space-y-3">
-    <div class="flex items-center justify-between gap-2"><h3 class="text-sm font-semibold">Aperçu {{ socialPlatformLabel(post.platform) }}</h3><span class="text-xs text-gray-500">Rendu indicatif</span></div>
+    <div class="flex flex-wrap items-center justify-between gap-2"><h3 class="inline-flex items-center gap-2 text-sm font-semibold"><AdminSocialPlatformIcon :platform="post.platform" compact />Aperçu {{ socialPlatformLabel(post.platform) }}</h3><span class="text-xs text-gray-500">Rendu indicatif</span></div>
     <article class="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/10 dark:bg-[#101016]">
-      <div class="flex items-center gap-3 p-4"><span class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-violet-600 text-sm font-bold text-white" aria-hidden="true">AQ</span><div><p class="text-sm font-semibold">Antoine Quarroz</p><p class="text-xs text-gray-500">{{ socialPlatformLabel(post.platform) }}</p></div></div>
+      <div class="flex items-center justify-between gap-3 p-4"><div class="flex min-w-0 items-center gap-3"><span class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-violet-600 text-sm font-bold text-white" aria-hidden="true">AQ</span><div><p class="text-sm font-semibold">Antoine Quarroz</p><p class="text-xs text-gray-500 dark:text-gray-400">{{ socialPlatformLabel(post.platform) }}</p></div></div><AdminSocialPlatformIcon :platform="post.platform" /></div>
       <p v-if="post.platform !== 'instagram'" class="whitespace-pre-wrap break-words px-4 pb-4 text-sm leading-6">{{ post.content }}</p>
       <div v-if="item" class="relative bg-gray-100 dark:bg-black/40">
         <img v-if="item.type === 'image'" :key="item.url" :src="item.url" :alt="item.alt" class="max-h-[32rem] w-full object-contain">
