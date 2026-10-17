@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { SocialPost } from '../../../shared/types/socialEditorial'
 import { calendarDays, socialPostCalendarIso } from '~/utils/socialCalendar'
-import { zurichDateKey } from '../../../shared/utils/socialDateTime'
+import { zurichDateKey } from '#shared/utils/socialDateTime'
 const props = defineProps<{ posts: SocialPost[], anchor: string, view: 'week' | 'month' }>()
 defineEmits<{ open: [post: SocialPost] }>()
 const days = computed(() => calendarDays(props.anchor, props.view))

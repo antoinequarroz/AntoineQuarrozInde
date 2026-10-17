@@ -1,5 +1,5 @@
 import type { EditorialSocialMediaItem as SocialMediaItem, EditorialSocialPlatform as SocialPlatform, SocialPost } from '../../shared/types/socialEditorial'
-import { isSocialDateKey, isoToZurichLocal, zurichDateKey } from '../../shared/utils/socialDateTime'
+import { isSocialDateKey, isoToZurichLocal, zurichDateKey } from '#shared/utils/socialDateTime'
 
 export type SocialCalendarView = 'week' | 'month' | 'list'
 export type SocialCalendarStatusFilter = 'all' | 'review' | 'waiting' | 'published' | 'failed' | 'rejected'

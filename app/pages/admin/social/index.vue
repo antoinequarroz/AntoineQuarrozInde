@@ -3,7 +3,8 @@ import { socialApprovalRequest } from '~/utils/socialApproval'
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 
 import type { SocialPost, EditorialSocialPlatform as Platform, EditorialSocialStatus as Status, EditorialSocialMediaItem as SocialMedia } from '../../../../shared/types/socialEditorial'
-import { isoToZurichLocal, zurichLocalToIso, zurichDateKey } from '../../../../shared/utils/socialDateTime'
+import type { LocationQueryRaw } from 'vue-router'
+import { isoToZurichLocal, zurichLocalToIso, zurichDateKey } from '#shared/utils/socialDateTime'
 import { parseSocialCalendarFilters, matchesSocialCalendarFilters, calendarDays, socialPostCalendarIso } from '~/utils/socialCalendar'
 
 type Connection = { platform: Platform, state: 'ready' | 'blocked' | 'unknown', message: string, checked_at: string }
@@ -16,7 +17,12 @@ const posts = ref<SocialPost[]>([])
 const connections = ref<Connection[]>([])
 const route = useRoute()
 const router = useRouter()
-const filters = computed(() => parseSocialCalendarFilters(route.query))
+const filterQuery = ref<LocationQueryRaw>({ ...route.query })
+const filters = computed(() => parseSocialCalendarFilters(filterQuery.value))
+let filterNavigation: Promise<void> | null = null
+watch(() => route.query, query => {
+  if (!filterNavigation) filterQuery.value = { ...query }
+})
 const busyId = ref('')
 const dirtyMedia = reactive<Record<string, boolean>>({})
 const mixedEditing = reactive<Record<string, boolean>>({})
@@ -163,7 +169,30 @@ watch(scheduleInput, () => { confirmationAccepted.value = false })
 const editorCloseWarning = ref(false)
 const hasTextChanges = computed(() => Boolean(editingPost.value && editingPost.value.content !== posts.value.find(post => post.id === editingPost.value!.id)?.content))
 const hasDateChanges = computed(() => Boolean(editingPost.value && plannedInput.value !== isoToZurichLocal(editingPost.value.planned_at)))
-function setFilter(key: string, value: string) { void router.replace({ query: { ...route.query, [key]: value || undefined } }) }
+async function syncFilterQuery() {
+  try {
+    let target: LocationQueryRaw
+    do {
+      target = filterQuery.value
+      await router.replace({ query: target })
+    } while (target !== filterQuery.value)
+  } catch {
+    toast.error('Les filtres n’ont pas pu être conservés dans l’adresse.')
+  } finally {
+    filterNavigation = null
+    filterQuery.value = { ...route.query }
+  }
+}
+function setFilterQuery(query: LocationQueryRaw) {
+  filterQuery.value = query
+  if (!filterNavigation) filterNavigation = syncFilterQuery()
+}
+function setFilter(key: string, value: string) {
+  setFilterQuery({ ...filterQuery.value, [key]: value || undefined })
+}
+function resetFilters() {
+  setFilterQuery({ view: filters.value.view, date: filters.value.date })
+}
 function closeEditorNow() {
   if (editingPost.value) {
     delete dirtyMedia[editingPost.value.id]
@@ -179,10 +208,9 @@ function closeEditor() {
   closeEditorNow()
 }
 const { dialogRef: editorDialogRef, handleDialogKeydown: handleEditorKeydown } = useAccessibleDialog(computed(() => Boolean(editingPost.value)), closeEditor, '[data-editor-close]')
-function openPost(post: SocialPost) {
-  editingPost.value = JSON.parse(JSON.stringify(post)) as SocialPost
-  plannedInput.value = isoToZurichLocal(post.planned_at); editorCloseWarning.value = false
-  void router.replace({ query: { ...route.query, postId: post.id } })
+async function openPost(post: SocialPost) {
+  if (filterNavigation) await filterNavigation
+  await router.replace({ query: { ...route.query, postId: post.id } })
 }
 function selectPostFromUrl() {
   const id = typeof route.query.postId === 'string' ? route.query.postId : ''
@@ -275,7 +303,7 @@ onMounted(load)
         <label class="min-w-[8rem] flex-1 text-xs font-semibold text-gray-500 dark:text-gray-400">Format<select class="input-field mt-1 w-full text-sm" aria-label="Filtrer par format" :value="filters.format" @change="setFilter('format', ($event.target as HTMLSelectElement).value)"><option value="all">Tous les formats</option><option value="text">Texte</option><option value="image">Image</option><option value="carousel">Carrousel</option><option value="video">Vidéo</option><option value="document">PDF LinkedIn</option></select></label>
         <label class="min-w-[12rem] flex-[1.5] text-xs font-semibold text-gray-500 dark:text-gray-400">Recherche<input type="search" class="input-field mt-1 w-full text-sm" aria-label="Rechercher une publication" placeholder="Un projet, un sujet…" :value="filters.search" @input="setFilter('search', ($event.target as HTMLInputElement).value)"></label>
       </div>
-      <div class="flex flex-wrap gap-2 border-t border-gray-100 pt-3 text-xs dark:border-white/10"><button type="button" class="min-h-11 rounded-lg px-3 font-semibold text-violet-700 hover:bg-violet-50 dark:text-violet-300 dark:hover:bg-violet-500/10" @click="setFilter('status', 'review')">À valider · {{ counts.review }}</button><button type="button" class="min-h-11 rounded-lg px-3 font-semibold text-violet-700 hover:bg-violet-50 dark:text-violet-300 dark:hover:bg-violet-500/10" @click="setFilter('status', 'waiting')">Validés / en cours · {{ counts.waiting }}</button><button type="button" class="min-h-11 rounded-lg px-3 font-semibold text-red-700 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-500/10" @click="setFilter('status', 'failed')">À corriger · {{ counts.failed }}</button><button type="button" class="ml-auto min-h-11 rounded-lg px-3 text-gray-500" @click="router.replace({ query: { view: filters.view, date: filters.date } })">Réinitialiser les filtres</button></div>
+      <div class="flex flex-wrap gap-2 border-t border-gray-100 pt-3 text-xs dark:border-white/10"><button type="button" class="min-h-11 rounded-lg px-3 font-semibold text-violet-700 hover:bg-violet-50 dark:text-violet-300 dark:hover:bg-violet-500/10" @click="setFilter('status', 'review')">À valider · {{ counts.review }}</button><button type="button" class="min-h-11 rounded-lg px-3 font-semibold text-violet-700 hover:bg-violet-50 dark:text-violet-300 dark:hover:bg-violet-500/10" @click="setFilter('status', 'waiting')">Validés / en cours · {{ counts.waiting }}</button><button type="button" class="min-h-11 rounded-lg px-3 font-semibold text-red-700 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-500/10" @click="setFilter('status', 'failed')">À corriger · {{ counts.failed }}</button><button type="button" class="ml-auto min-h-11 rounded-lg px-3 text-gray-500" @click="resetFilters">Réinitialiser les filtres</button></div>
     </section>
     <div v-if="loading" role="status" class="admin-card grid min-h-52 place-items-center"><p class="text-sm text-gray-500">Chargement de l’historique complet…</p></div>
     <div v-else-if="loadError" role="alert" class="rounded-xl border border-red-200 bg-red-50 p-5 text-red-900"><p class="font-semibold">{{ loadError }}</p><button type="button" class="mt-3 min-h-11 rounded-lg bg-red-700 px-4 text-sm font-semibold text-white" @click="load">Réessayer</button></div>
