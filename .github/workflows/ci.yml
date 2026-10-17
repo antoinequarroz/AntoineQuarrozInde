@@ -68,8 +68,8 @@ jobs:
           sudo rm -f /etc/apt/sources.list.d/google-chrome.list /etc/apt/sources.list.d/google-chrome.sources
           npx playwright install --with-deps chromium
       - run: npx playwright test e2e/accessibility.spec.ts --project=chromium --grep @credential-free
-      - name: Verify mixed carousel editing and explicit consent
-        run: npx playwright test e2e/social-mixed-media.spec.ts e2e/social-document-carousel.spec.ts e2e/social-editorial-calendar.spec.ts --project=chromium
+      - name: Verify social editing, calendar movement, and explicit consent
+        run: npx playwright test e2e/social-mixed-media.spec.ts e2e/social-document-carousel.spec.ts e2e/social-editorial-calendar.spec.ts e2e/social-calendar-drag.spec.ts --project=chromium
 
   seo-quality:
     needs: quality

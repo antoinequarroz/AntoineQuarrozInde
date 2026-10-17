@@ -2,6 +2,7 @@ import type { EditorialSocialMediaItem as SocialMediaItem, EditorialSocialPlatfo
 import { isSocialDateKey, isoToZurichLocal, zurichDateKey } from '#shared/utils/socialDateTime'
 
 export type SocialCalendarView = 'week' | 'month' | 'list'
+export const SOCIAL_CALENDAR_DRAG_TYPE = 'application/x-antoine-social-post'
 export type SocialCalendarStatusFilter = 'all' | 'review' | 'waiting' | 'published' | 'failed' | 'rejected'
 export type SocialCalendarFormat = 'image' | 'carousel' | 'video' | 'document' | 'text'
 export type SocialCalendarFilters = {

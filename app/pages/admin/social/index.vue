@@ -5,8 +5,9 @@ definePageMeta({ layout: 'admin', middleware: 'admin' })
 import type { SocialPost, EditorialSocialPlatform as Platform, EditorialSocialStatus as Status, EditorialSocialMediaItem as SocialMedia } from '../../../../shared/types/socialEditorial'
 import type { LocationQueryRaw } from 'vue-router'
 import { isNavigationFailure, NavigationFailureType } from 'vue-router'
-import { isoToZurichLocal, zurichLocalToIso, zurichDateKey } from '#shared/utils/socialDateTime'
-import { parseSocialCalendarFilters, matchesSocialCalendarFilters, calendarDays, socialPostCalendarIso } from '~/utils/socialCalendar'
+import { isoToZurichLocal, zurichLocalToIso, zurichDateKey, isSocialDateKey } from '#shared/utils/socialDateTime'
+import { parseSocialCalendarFilters, matchesSocialCalendarFilters, calendarDays, socialPostCalendarIso, SOCIAL_CALENDAR_DRAG_TYPE } from '~/utils/socialCalendar'
+import { canMoveSocialPost, resolveSocialPostMove } from '~/utils/socialCalendarMove'
 
 type Connection = { platform: Platform, state: 'ready' | 'blocked' | 'unknown', message: string, checked_at: string }
 
@@ -22,6 +23,7 @@ const filterQuery = ref<LocationQueryRaw>({ ...route.query })
 const filters = computed(() => parseSocialCalendarFilters(filterQuery.value))
 const calendarPath = route.path
 let pageActive = true
+let calendarDepartureEpoch = 0
 let filterNavigation: Promise<boolean> | null = null
 onBeforeUnmount(() => { pageActive = false })
 function isCalendarActive() { return pageActive && router.currentRoute.value.path === calendarPath }
@@ -101,7 +103,9 @@ function replacePost(update: Partial<SocialPost> & { id: string }, preserveConte
   }
 }
 async function load() {
+  if (busyId.value) { toast.error('Attends la fin de l’enregistrement avant d’actualiser.'); return }
   if (hasTextChanges.value || hasDateChanges.value || (editingPost.value && dirtyMedia[editingPost.value.id])) { toast.error('Enregistre tes modifications avant d’actualiser.'); return }
+  cancelDrag()
   loading.value = true; loadError.value = ''
   try {
     type Response = { posts: SocialPost[], connections: Connection[], pagination?: { page: number, pageSize: number, total: number, hasMore: boolean } }
@@ -219,6 +223,7 @@ function closeEditor() {
 }
 const { dialogRef: editorDialogRef, handleDialogKeydown: handleEditorKeydown } = useAccessibleDialog(computed(() => Boolean(editingPost.value)), closeEditor, '[data-editor-close]')
 async function openPost(post: SocialPost) {
+  if (busyId.value || dragSource.value || Date.now() < dragClickGuardUntil || moveSource.value) return
   if (filterNavigation && !await filterNavigation) return
   if (!isCalendarActive()) return
   await router.replace({ path: calendarPath, query: { ...route.query, postId: post.id } })
@@ -239,7 +244,11 @@ function protectEditorChanges() {
     return false
   }
 }
-onBeforeRouteLeave(protectEditorChanges)
+onBeforeRouteLeave(() => {
+  if (protectEditorChanges() === false) return false
+  calendarDepartureEpoch++
+  cancelDrag()
+})
 onBeforeRouteUpdate((to, from) => {
   if (to.query.postId !== from.query.postId) return protectEditorChanges()
 })
@@ -300,12 +309,129 @@ async function savePlannedDate(post: SocialPost) {
   finally { busyId.value = '' }
 }
 
+type MoveSource = { id: string, version: number }
+const dragSource = ref<MoveSource | null>(null)
+const moveSource = ref<MoveSource | null>(null)
+const moveDate = ref('')
+const moveError = ref('')
+const calendarMoveStatus = ref('')
+const unplannedHovered = ref(false)
+let dragClickGuardUntil = 0
+const movePost = computed(() => posts.value.find(post => post.id === moveSource.value?.id))
+const movesDisabled = computed(() => Boolean(loading.value || busyId.value || editingPost.value || confirmationPost.value || moveSource.value))
+const moveHour = computed(() => isoToZurichLocal(movePost.value?.planned_at || null).slice(11, 16) || '18:00')
+function cancelDrag() {
+  if (dragSource.value) { dragClickGuardUntil = Date.now() + 250; calendarMoveStatus.value = 'Déplacement annulé. La date souhaitée est inchangée.' }
+  dragSource.value = null; unplannedHovered.value = false
+}
+function beginDrag(post: SocialPost, event: DragEvent) {
+  const current = posts.value.find(item => item.id === post.id)
+  if (movesDisabled.value || !current || !canMoveSocialPost(current) || !event.dataTransfer) { event.preventDefault(); return }
+  dragSource.value = { id: current.id, version: current.version }
+  event.dataTransfer.setData(SOCIAL_CALENDAR_DRAG_TYPE, current.id)
+  event.dataTransfer.effectAllowed = 'move'
+  calendarMoveStatus.value = 'Dépose le brouillon sur un jour ou dans À planifier. Échap annule le déplacement.'
+}
+function acceptsUnplannedDrop(event: DragEvent) {
+  return Boolean(dragSource.value && !movesDisabled.value && event.dataTransfer?.types.includes(SOCIAL_CALENDAR_DRAG_TYPE))
+}
+function unplannedDragOver(event: DragEvent) {
+  if (!acceptsUnplannedDrop(event)) return
+  event.preventDefault()
+  if (event.dataTransfer) event.dataTransfer.dropEffect = 'move'
+  unplannedHovered.value = true
+}
+function unplannedDragLeave(event: DragEvent) {
+  if (!(event.currentTarget as HTMLElement).contains(event.relatedTarget as Node | null)) unplannedHovered.value = false
+}
+function dropUnplanned(event: DragEvent) {
+  if (!acceptsUnplannedDrop(event)) return
+  event.preventDefault(); event.stopPropagation()
+  void dropOnDate(null)
+}
+async function dropOnDate(targetDate: string | null) {
+  const source = dragSource.value
+  cancelDrag()
+  if (source) await persistMove(source, targetDate)
+}
+function closeMove() {
+  if (busyId.value) return
+  moveSource.value = null; moveError.value = ''
+}
+const { dialogRef: moveDialogRef, handleDialogKeydown: handleMoveKeydown } = useAccessibleDialog(computed(() => Boolean(moveSource.value)), closeMove, '[data-move-date]')
+function openMove(post: SocialPost) {
+  const current = posts.value.find(item => item.id === post.id)
+  if (movesDisabled.value || !current || !canMoveSocialPost(current)) return
+  cancelDrag()
+  moveSource.value = { id: current.id, version: current.version }
+  moveDate.value = isoToZurichLocal(current.planned_at).slice(0, 10) || filters.value.date
+  moveError.value = ''
+}
+async function persistMove(source: MoveSource, targetDate: string | null) {
+  if (busyId.value || loading.value || editingPost.value || confirmationPost.value || !isCalendarActive()) return
+  const current = posts.value.find(post => post.id === source.id)
+  if (!current || current.version !== source.version || !canMoveSocialPost(current)) {
+    moveError.value = 'Ce brouillon a changé. Actualise le calendrier avant de le déplacer.'
+    toast.error(moveError.value); calendarMoveStatus.value = moveError.value
+    return
+  }
+  const result = resolveSocialPostMove(current, targetDate)
+  if (!result.ok) { moveError.value = result.error; toast.error(result.error); calendarMoveStatus.value = result.error; return }
+  if (result.unchanged) { closeMove(); calendarMoveStatus.value = 'La date souhaitée est inchangée.'; return }
+  busyId.value = source.id; moveError.value = ''
+  const departureEpoch = calendarDepartureEpoch
+  calendarMoveStatus.value = 'Enregistrement de la date souhaitée…'
+  let succeeded = false
+  try {
+    const updated = await $fetch<Partial<SocialPost> & { id: string }>(`/api/admin/social-posts/${source.id}`, {
+      method: 'PUT', headers: auth.authHeader(), body: { action: 'plan', planned_at: result.plannedAt, version: source.version },
+    })
+    replacePost(updated, true)
+    calendarMoveStatus.value = result.plannedAt
+      ? `Date souhaitée enregistrée : ${new Intl.DateTimeFormat('fr-CH', { timeZone: 'Europe/Zurich', dateStyle: 'long', timeStyle: 'short' }).format(new Date(result.plannedAt))}. La publication attend ta validation.`
+      : 'Brouillon remis dans À planifier. La publication attend ta validation.'
+    toast.success(calendarMoveStatus.value)
+    succeeded = true
+  } catch (error: any) {
+    moveError.value = (error?.statusCode === 409 || error?.status === 409)
+      ? 'Ce brouillon a changé. Actualise le calendrier avant de le déplacer.'
+      : error?.data?.message || 'Enregistrement non confirmé. Actualise le calendrier avant de réessayer.'
+    calendarMoveStatus.value = moveError.value
+    toast.error(moveError.value)
+  } finally { busyId.value = '' }
+  // A late save must never cancel a navigation already started elsewhere.
+  if (succeeded && departureEpoch === calendarDepartureEpoch && isCalendarActive()) {
+    const fromDialog = Boolean(moveSource.value)
+    closeMove()
+    const targetVisible = filters.value.view === 'list' || !targetDate || (filters.value.view === 'month'
+      ? targetDate.slice(0, 7) === filters.value.date.slice(0, 7)
+      : calendarDays(filters.value.date, 'week').includes(targetDate))
+    if (!targetVisible && targetDate) {
+      setFilter('date', targetDate)
+      if (filterNavigation) await filterNavigation
+    }
+    if (fromDialog && departureEpoch === calendarDepartureEpoch && isCalendarActive()) {
+      await nextTick()
+      const card = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-social-post-id]')).find(element => element.dataset.socialPostId === source.id && element.getClientRects().length)
+      ;(card || document.getElementById('social-calendar-move-help'))?.focus()
+    }
+  }
+}
+function confirmMove(targetDate: string | null) {
+  if (moveSource.value) void persistMove({ ...moveSource.value }, targetDate)
+}
+function cancelDragOnEscape(event: KeyboardEvent) { if (event.key === 'Escape') cancelDrag() }
+watch(() => route.fullPath, () => { cancelDrag(); if (!busyId.value) closeMove() })
+watch([editingPost, confirmationPost], ([editor, confirmation]) => { if (editor || confirmation) { cancelDrag(); closeMove() } })
+onMounted(() => { window.addEventListener('keydown', cancelDragOnEscape); window.addEventListener('blur', cancelDrag) })
+onBeforeUnmount(() => { window.removeEventListener('keydown', cancelDragOnEscape); window.removeEventListener('blur', cancelDrag) })
+
 onMounted(load)
 </script>
 
 <template>
   <div class="space-y-5">
-    <header class="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><div class="flex items-center gap-3"><span class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-violet-100 text-violet-700 ring-1 ring-inset ring-violet-200/60 dark:bg-violet-500/15 dark:text-violet-300 dark:ring-violet-400/20" aria-hidden="true"><AdminIcon icon="calendar" class="h-5 w-5" /></span><h1 class="font-display text-2xl font-semibold text-gray-950 dark:text-white sm:text-3xl">Réseaux sociaux</h1></div><p class="mt-2 max-w-2xl text-sm leading-6 text-gray-500 dark:text-gray-400">Prépare ta semaine, adapte chaque post et valide sa publication. Toutes les dates sont en heure suisse.</p></div><div class="flex shrink-0 gap-2"><NuxtLink to="/admin/analytics" class="inline-flex min-h-11 items-center gap-2 rounded-lg border border-gray-200 px-4 text-sm font-semibold dark:border-white/10"><AdminIcon icon="trending-up" class="h-4 w-4" aria-hidden="true" />Analyses</NuxtLink><button type="button" class="inline-flex min-h-11 items-center gap-2 rounded-lg border border-gray-200 px-4 text-sm font-semibold disabled:opacity-50 dark:border-white/10" :disabled="loading" @click="load"><AdminIcon icon="refresh-cw" class="h-4 w-4" aria-hidden="true" />{{ loading ? 'Chargement…' : 'Actualiser' }}</button></div></header>
+    <header class="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><div class="flex items-center gap-3"><span class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-violet-100 text-violet-700 ring-1 ring-inset ring-violet-200/60 dark:bg-violet-500/15 dark:text-violet-300 dark:ring-violet-400/20" aria-hidden="true"><AdminIcon icon="calendar" class="h-5 w-5" /></span><h1 class="font-display text-2xl font-semibold text-gray-950 dark:text-white sm:text-3xl">Réseaux sociaux</h1></div><p class="mt-2 max-w-2xl text-sm leading-6 text-gray-500 dark:text-gray-400">Prépare ta semaine, adapte chaque post et valide sa publication. Toutes les dates sont en heure suisse.</p></div><div class="flex shrink-0 gap-2"><NuxtLink to="/admin/analytics" class="inline-flex min-h-11 items-center gap-2 rounded-lg border border-gray-200 px-4 text-sm font-semibold dark:border-white/10"><AdminIcon icon="trending-up" class="h-4 w-4" aria-hidden="true" />Analyses</NuxtLink><button type="button" class="inline-flex min-h-11 items-center gap-2 rounded-lg border border-gray-200 px-4 text-sm font-semibold disabled:opacity-50 dark:border-white/10" :disabled="loading || Boolean(busyId)" @click="load"><AdminIcon icon="refresh-cw" class="h-4 w-4" aria-hidden="true" />{{ loading ? 'Chargement…' : 'Actualiser' }}</button></div></header>
     <details class="rounded-xl border border-gray-200 bg-white dark:border-white/10 dark:bg-[#111118]"><summary class="min-h-11 cursor-pointer px-4 py-3 text-sm font-semibold">Connexions des réseaux <span class="ml-2 font-normal text-gray-500">{{ connections.filter(item => connection(item.platform).state === 'ready').length }} / 3 prêtes</span></summary><div class="grid gap-3 border-t border-gray-100 p-4 dark:border-white/10 sm:grid-cols-3"><div v-for="platform in (['linkedin', 'x', 'instagram'] as Platform[])" :key="platform" class="rounded-xl bg-gray-50 p-3 dark:bg-white/[0.03]"><div class="flex flex-wrap items-center justify-between gap-2"><AdminSocialPlatformBadge :platform="platform" /><span class="rounded-md px-2 py-1 text-xs font-medium" :class="connection(platform).state === 'ready' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' : 'bg-gray-100 text-gray-600 dark:bg-white/[0.06] dark:text-gray-300'">{{ connection(platform).state === 'ready' ? 'Prêt' : 'À vérifier' }}</span></div><p class="mt-2 text-xs leading-5 text-gray-500 dark:text-gray-400">{{ connection(platform).message }}</p></div></div></details>
     <section class="space-y-4 rounded-xl border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-[#111118]" aria-label="Filtres du calendrier">
       <div class="grid grid-cols-1 items-end gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -322,10 +448,24 @@ onMounted(load)
       <div class="flex flex-wrap items-center justify-between gap-3"><div class="flex flex-wrap items-center gap-2"><template v-if="filters.view !== 'list'"><button type="button" class="min-h-11 min-w-11 rounded-lg border border-gray-200 dark:border-white/10" aria-label="Période précédente" @click="shiftPeriod(-1)">←</button><button type="button" class="min-h-11 rounded-lg border border-gray-200 px-3 text-sm font-semibold dark:border-white/10" @click="setFilter('date', zurichDateKey(new Date().toISOString()))">Aujourd’hui</button><button type="button" class="min-h-11 min-w-11 rounded-lg border border-gray-200 dark:border-white/10" aria-label="Période suivante" @click="shiftPeriod(1)">→</button></template><h2 class="ml-1 font-display text-lg font-semibold capitalize">{{ periodTitle }}</h2></div><div class="flex flex-wrap items-center gap-2"><input v-if="filters.view !== 'list'" type="date" aria-label="Date du calendrier" :value="filters.date" class="input-field min-w-0 text-sm" @change="setFilter('date', ($event.target as HTMLInputElement).value)"><select aria-label="Vue du calendrier" :value="filters.view" class="input-field text-sm" @change="setFilter('view', ($event.target as HTMLSelectElement).value)"><option value="week">Semaine</option><option value="month">Mois</option><option value="list">Liste</option></select></div></div>
       <p role="status" class="text-xs text-gray-500 dark:text-gray-400">{{ filteredPosts.length }} publication{{ filteredPosts.length > 1 ? 's' : '' }} selon les filtres<span v-if="filters.view !== 'list'"> · {{ periodCount }} sur cette période · {{ unplannedPosts.length }} sans date</span></p>
       <div v-if="!filteredPosts.length" class="admin-card admin-empty-state"><p class="admin-empty-title">Aucune publication pour ces filtres</p><p class="admin-empty-body">Modifie les filtres ou attends les prochains brouillons préparés par Hermes.</p></div>
-      <div v-else-if="filters.view === 'list'" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3"><AdminSocialPostTile v-for="post in filteredPosts" :key="post.id" :post="post" @open="openPost" /></div>
-      <div v-else class="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_15rem]"><div class="min-w-0"><AdminSocialEditorialCalendar :posts="filteredPosts" :anchor="filters.date" :view="filters.view" @open="openPost" /><p v-if="!periodCount" class="mt-4 text-sm text-gray-500">Aucune publication datée sur cette période. Les brouillons sans date sont dans « À planifier ».</p></div><aside class="min-w-0 rounded-xl border border-dashed border-violet-300 bg-violet-50/40 p-3 dark:border-violet-400/25 dark:bg-violet-500/[0.03]" aria-label="À planifier"><h2 class="font-display text-base font-semibold">À planifier <span class="text-sm font-normal text-gray-500">{{ unplannedPosts.length }}</span></h2><p class="mb-4 mt-1 text-xs leading-5 text-gray-500">Une date souhaitée organise le calendrier. Chaque post attend ton accord avant envoi.</p><div class="space-y-3"><AdminSocialPostTile v-for="post in unplannedPosts" :key="post.id" :post="post" compact @open="openPost" /><p v-if="!unplannedPosts.length" class="py-4 text-xs text-gray-500">Tous les contenus filtrés ont une date.</p></div></aside></div>
+      <template v-else>
+      <p id="social-calendar-move-help" role="status" aria-live="polite" tabindex="-1" class="rounded-lg bg-violet-50 px-4 py-3 text-xs leading-5 text-violet-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-violet-500 dark:bg-violet-500/[0.07] dark:text-violet-200">{{ calendarMoveStatus || 'Glisse un brouillon sur un jour, ou utilise Déplacer sur mobile et au clavier. La date souhaitée n’autorise aucun envoi.' }}</p>
+      <div v-if="filters.view === 'list'" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3"><AdminSocialPostTile v-for="post in filteredPosts" :key="post.id" :post="post" :movable="canMoveSocialPost(post)" :move-disabled="movesDisabled" :dragging="dragSource?.id === post.id" @open="openPost" @move="openMove" @drag-start="beginDrag" @drag-end="cancelDrag" /></div>
+      <div v-else class="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_15rem]"><div class="min-w-0"><AdminSocialEditorialCalendar :posts="filteredPosts" :anchor="filters.date" :view="filters.view" :dragging-id="dragSource?.id" :move-disabled="movesDisabled" @open="openPost" @move="openMove" @drag-start="beginDrag" @drag-end="cancelDrag" @drop="dropOnDate" /><p v-if="!periodCount" class="mt-4 text-sm text-gray-500">Aucune publication datée sur cette période. Les brouillons sans date sont dans « À planifier ».</p></div><aside class="relative min-w-0 rounded-xl border border-dashed border-violet-300 bg-violet-50/40 p-3 dark:border-violet-400/25 dark:bg-violet-500/[0.03]" :class="unplannedHovered ? 'ring-2 ring-inset ring-violet-500 dark:ring-violet-400' : ''" aria-label="À planifier" data-calendar-unplanned @dragover="unplannedDragOver" @dragleave="unplannedDragLeave" @drop="dropUnplanned"><h2 class="font-display text-base font-semibold">À planifier <span class="text-sm font-normal text-gray-500">{{ unplannedPosts.length }}</span></h2><p class="mb-4 mt-1 text-xs leading-5 text-gray-500">{{ unplannedHovered ? 'Dépose ici pour retirer la date souhaitée.' : 'Une date souhaitée organise le calendrier. Chaque post attend ton accord avant envoi.' }}</p><div class="space-y-3"><AdminSocialPostTile v-for="post in unplannedPosts" :key="post.id" :post="post" compact :movable="canMoveSocialPost(post)" :move-disabled="movesDisabled" :dragging="dragSource?.id === post.id" @open="openPost" @move="openMove" @drag-start="beginDrag" @drag-end="cancelDrag" /><p v-if="!unplannedPosts.length" class="py-4 text-xs text-gray-500">Tous les contenus filtrés ont une date.</p></div></aside></div>
+      </template>
     </template>
     <Teleport to="body">
+      <div v-if="moveSource" class="fixed inset-0 z-[95] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+        <form ref="moveDialogRef" role="dialog" aria-modal="true" aria-label="Déplacer le brouillon" aria-describedby="social-move-description" tabindex="-1" class="w-full max-w-md space-y-5 rounded-2xl bg-white p-5 shadow-2xl dark:bg-[#111118] sm:p-6" @keydown="handleMoveKeydown" @submit.prevent="confirmMove(moveDate)">
+          <div class="flex items-center justify-between gap-3"><h2 class="font-display text-lg font-semibold">Déplacer le brouillon</h2><button type="button" aria-label="Annuler" class="min-h-11 min-w-11 rounded-lg border border-gray-200 text-xl disabled:opacity-50 dark:border-white/10" :disabled="Boolean(busyId)" @click="closeMove">×</button></div>
+          <AdminSocialPlatformBadge v-if="movePost" :platform="movePost.platform" compact />
+          <p class="break-words text-sm font-semibold">{{ movePost?.article_title }}</p>
+          <div><label for="social-move-date" class="mb-2 block text-sm font-semibold">Nouvelle date souhaitée</label><input id="social-move-date" v-model="moveDate" data-move-date type="date" required class="input-field w-full min-w-0" :disabled="Boolean(busyId)"></div>
+          <p id="social-move-description" class="text-sm leading-6 text-gray-600 dark:text-gray-300">Heure suisse conservée : <strong>{{ moveHour }}</strong>. Ce déplacement change uniquement la date souhaitée. La publication attend toujours ta validation.</p>
+          <p v-if="moveError" role="alert" class="rounded-lg bg-red-50 p-3 text-sm text-red-800 dark:bg-red-500/10 dark:text-red-200">{{ moveError }}</p>
+          <div class="flex flex-wrap gap-2"><button type="submit" class="min-h-11 flex-1 rounded-lg bg-violet-600 px-4 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-50" :disabled="Boolean(busyId) || !isSocialDateKey(moveDate)">{{ busyId ? 'Enregistrement…' : 'Déplacer le brouillon' }}</button><button type="button" class="min-h-11 rounded-lg border border-gray-200 px-3 text-sm font-semibold disabled:opacity-50 dark:border-white/10" :disabled="Boolean(busyId) || !movePost?.planned_at" @click="confirmMove(null)">Retirer du calendrier</button></div>
+        </form>
+      </div>
       <div v-if="editingPost" class="fixed inset-0 z-[90] flex items-center justify-center bg-black/60 p-2 backdrop-blur-sm sm:p-5">
         <section ref="editorDialogRef" role="dialog" aria-modal="true" :aria-label="`Publication ${platformLabel(editingPost.platform)}`" tabindex="-1" class="flex max-h-[96dvh] w-full max-w-6xl min-w-0 flex-col overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-[#111118]" @keydown="handleEditorKeydown">
           <div class="flex shrink-0 items-center justify-between gap-3 border-b border-gray-200 px-4 py-3 dark:border-white/10 sm:px-6"><p class="inline-flex items-center gap-3 font-display text-lg font-semibold"><AdminSocialPlatformIcon :platform="editingPost.platform" />Publication {{ platformLabel(editingPost.platform) }}</p><button data-editor-close type="button" aria-label="Fermer la publication" class="min-h-11 min-w-11 rounded-lg border border-gray-200 text-xl dark:border-white/10" :disabled="Boolean(busyId)" @click="closeEditor">×</button></div>
