@@ -1,6 +1,6 @@
 ---
 linear: https://linear.app/antoinequarroz/issue/ANT-40
-status: in_review
+status: done
 ---
 
 # Logos du calendrier éditorial
@@ -21,5 +21,6 @@ Revue ciblée, typecheck/build et budgets, parcours navigateur existants sur fix
 - Typecheck, build de production et budgets réussis. Aucun ajout de dépendance ou requête distante pour les logos.
 - Dix parcours E2E simulés réussis du premier coup (calendrier, programmation, PDF et carrousels mixtes). Le scénario d’envoi d’images avec identifiants réels est volontairement laissé à la CI authentifiée, pas exécuté localement.
 - Contrôle visuel temporaire réussi à 768, 1 024, 1 280 et 1 440 px en clair et sombre : noms des réseaux sans débordement ; captures calendrier et aperçu mobile examinées. Aucun nouveau test miroir conservé dans le dépôt.
-- La revue visuelle a aussi relevé des filtres natifs trop étroits sur tablette : leur grille passe à une colonne sur téléphone, deux sur tablette et quatre sur grand écran, pour conserver leurs libellés lisibles. Recontrôle du build et du rendu de cette grille en cours.
-- CI, mise en ligne et contrôle de la version publique restent à terminer avant clôture.
+- La revue visuelle a aussi relevé des filtres natifs trop étroits sur tablette : leur grille passe à une colonne sur téléphone, deux sur tablette et quatre sur grand écran, pour conserver leurs libellés lisibles. Recontrôle du build et des huit rendus clair/sombre réussi sur la tête finale `ed56c8b`.
+- [PR #282](https://github.com/antoinequarroz/AntoineQuarrozInde/pull/282) fusionnée et déployée le 17 octobre 2026 au commit `dc90b4fb60aa26fc5759df7bc6e1aa88255f3308`. CI de PR et [run principal 39034792426](https://github.com/antoinequarroz/AntoineQuarrozInde/actions/runs/39034792426) entièrement réussis dès le premier passage ; 69 tests E2E après déploiement en 7,3 minutes, sans échec ni reprise. Lab production conforme.
+- Version publique exacte et santé application/base vérifiées ; accès anonyme à l’API sociale refusé (401). Dans un nouvel onglet Dia authentifié, vrais logos visibles et vrai brouillon LinkedIn avec aperçu ouverts puis refermés sans modification. Calendrier laissé ouvert. Aucun envoi social ni changement d’autorisation déclenché pour ces contrôles.
