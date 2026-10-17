@@ -81,7 +81,8 @@ async function openMockedDraft(page: Page) {
   await page.getByRole('button', { name: /se connecter/i }).click()
   await expect(page).toHaveURL(url => url.pathname.replace(/\/$/, '') === '/admin/social')
   expect(signIns).toEqual(['password'])
-  const card = page.getByRole('article').filter({ has: page.getByRole('heading', { name: post.article_title, exact: true }) })
+  await page.getByRole('button', { name: `Ouvrir ${post.article_title} sur Instagram`, exact: true }).click()
+  const card = page.getByRole('dialog', { name: 'Publication Instagram', exact: true })
   await expect(card.getByRole('heading', { name: 'Carrousel · 4 images et 2 vidéos', exact: true })).toBeVisible()
   return { card, writes }
 }
@@ -90,10 +91,11 @@ test('mixed Instagram draft previews all six ordered media on mobile and waits f
   test.setTimeout(120_000)
   await page.setViewportSize({ width: 390, height: 844 })
   const { card, writes } = await openMockedDraft(page)
-  await expect(card.getByRole('img')).toHaveCount(4)
-  await expect(card.locator('video')).toHaveCount(2)
-  expect(await card.locator('figure').evaluateAll(figures => figures.map(figure => figure.querySelector('video, img')?.getAttribute('src')))).toEqual(media.map(item => item.url))
-  for (const video of await card.locator('video').all()) {
+  const gallery = card.getByRole('region', { name: 'Médias Instagram joints', exact: true })
+  await expect(gallery.getByRole('img')).toHaveCount(4)
+  await expect(gallery.locator('video')).toHaveCount(2)
+  expect(await gallery.locator('figure').evaluateAll(figures => figures.map(figure => figure.querySelector('video, img')?.getAttribute('src')))).toEqual(media.map(item => item.url))
+  for (const video of await gallery.locator('video').all()) {
     await expect(video).toHaveJSProperty('paused', true)
     await expect(video).toHaveJSProperty('muted', true)
     await expect(video).toHaveAttribute('controls', '')
@@ -105,7 +107,7 @@ test('mixed Instagram draft previews all six ordered media on mobile and waits f
   expect(writes).toEqual([])
 
   await card.getByRole('button', { name: 'Publier maintenant', exact: true }).click()
-  const dialog = page.getByRole('dialog')
+  const dialog = page.getByRole('dialog', { name: 'Publier maintenant', exact: true })
   await expect(dialog).toContainText('4 images et 2 vidéos')
   await expect(dialog.getByRole('img')).toHaveCount(4)
   await expect(dialog.locator('video')).toHaveCount(2)
@@ -122,7 +124,7 @@ test('reordering and uploading a video require an explicit save without approvin
   await card.getByRole('button', { name: 'Avancer le média 2', exact: true }).click()
   await card.getByLabel('Description du média 1', { exact: true }).fill('Le site du cabinet sur ordinateur, en mode sombre')
   await expect(card.getByRole('button', { name: 'Publier maintenant', exact: true })).toBeDisabled()
-  await expect(card.getByRole('button', { name: 'Valider pour 18 h', exact: true })).toBeDisabled()
+  await expect(card.getByRole('button', { name: 'Programmer', exact: true })).toBeDisabled()
   expect(writes).toEqual([])
   await card.getByRole('button', { name: 'Enregistrer les médias', exact: true }).click()
   await expect(card.getByRole('button', { name: 'Enregistrer les médias', exact: true })).toHaveCount(0)
@@ -141,6 +143,17 @@ test('reordering and uploading a video require an explicit save without approvin
   expect(writes[2]).toMatchObject({ method: 'PUT', path: expect.stringMatching(/\/media$/), body: { version: 2, media: expect.arrayContaining([{ type: 'video', url: `${mediaRoot}07.mp4`, alt: 'Démo mobile' }]) } })
   expect(writes.some(write => /\/(?:approve|review-media|review-instagram)$/.test(write.path))).toBe(false)
   await expect(card.getByText('À valider', { exact: true })).toBeVisible()
+  await card.getByRole('button', { name: 'Fermer la publication', exact: true }).click()
+  await expect(card).toHaveCount(0)
+  await page.getByRole('button', { name: 'Ouvrir PhysioBaur · carrousel mixte sur Instagram', exact: true }).click()
+  await expect(card.getByRole('heading', { name: 'Carrousel · 4 images et 3 vidéos', exact: true })).toBeVisible()
+  const preview = card.getByRole('region', { name: 'Aperçu Instagram', exact: true })
+  await preview.getByRole('button', { name: 'Média suivant de l’aperçu', exact: true }).click()
+  await expect.poll(() => preview.getByRole('img').evaluate(image => (image as HTMLImageElement).naturalWidth)).toBeGreaterThan(0)
+  await expect(page.getByText('Médias enregistrés. Le brouillon attend ta validation.', { exact: true })).toHaveCount(0)
+  await preview.scrollIntoViewIfNeeded()
+  await page.screenshot({ path: '/tmp/ant39-instagram-preview-desktop.png' })
+  expect(writes).toHaveLength(3)
 })
 
 test('required descriptions and keyboard focus survive removing and clearing the carousel', async ({ page }) => {

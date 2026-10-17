@@ -6,8 +6,11 @@ const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.ur
 describe('LinkedIn document carousel review', () => {
   it('shows the attached PDF before approval', () => {
     const page = read('app/pages/admin/social/index.vue')
+    const socialPreview = read('app/components/admin/SocialPostPreview.vue')
     const preview = read('app/components/admin/SocialDocumentPreview.vue')
-    expect(page).toContain('AdminSocialDocumentPreview')
+    expect(page).toContain('AdminSocialPostPreview')
+    expect(socialPreview).toContain('AdminSocialDocumentPreview')
+    expect(socialPreview).toContain("post.media_kind === 'document' && post.media_url")
     expect(preview).toContain('Carrousel joint')
     expect(preview).toContain('Aperçu du carrousel')
     expect(preview).toContain('Ouvrir le PDF')
