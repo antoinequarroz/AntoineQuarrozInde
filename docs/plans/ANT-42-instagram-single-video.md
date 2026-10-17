@@ -1,6 +1,6 @@
 ---
 linear: https://linear.app/antoinequarroz/issue/ANT-42
-status: in-progress
+status: in-review
 ---
 
 # Joindre les vidéos EnvVault aux brouillons Instagram
@@ -20,4 +20,9 @@ Le publisher distingue une vidéo seule (`REELS`) des carrousels. La capacité `
 
 ## Livraison
 
-En cours. Aucun média réel enregistré ni publication autorisée à ce stade.
+- 33 tests TypeScript ciblés et typage réussis ; 18 tests médias/sécurité repassés après correction du filtre de compatibilité avant la limite de file.
+- 22 fichiers SQL / 317 contrôles réussis, dont 15 contrôles Reel ; lint et advisors locaux propres.
+- 63 tests Python simulés réussis, en conservant les correctifs déjà déployés du publisher de PR #271. Aucun appel fournisseur.
+- Les trois parcours carrousel existants et les deux nouveaux parcours Reel ordinateur/mobile sont réussis. Les deux nouveaux cas vérifient téléversement, sauvegarde, rechargement complet, métadonnées/lecture effective, date conservée et absence de toute requête d'approbation/envoi.
+- Moniteur Hermes : quatre tests de lecture seule réussis ; capacité Reel préparée après le runner compatible.
+- [PR #284](https://github.com/antoinequarroz/AntoineQuarrozInde/pull/284) ouverte ; contrôles CI et installation du runner compatibles puis recette réelle encore en attente. Aucun média réel enregistré ni publication autorisée à ce stade.
