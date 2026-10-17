@@ -18,15 +18,17 @@ const media = [
 ]
 type Write = { method: string, path: string, body: any }
 
-async function openMockedDraft(page: Page) {
+async function openMockedDraft(page: Page, { initialMedia = media, initialTitle = 'PhysioBaur · carrousel mixte', plannedAt = null }: {
+  initialMedia?: typeof media, initialTitle?: string, plannedAt?: string | null,
+} = {}) {
   const writes: Write[] = []
   let post = {
     id: '00000000-0000-0000-0000-000000000930', studioContentId: null, platform: 'instagram',
-    article_title: 'PhysioBaur · carrousel mixte', article_url: 'https://www.antoinequarroz.ch/',
+    article_title: initialTitle, article_url: 'https://www.antoinequarroz.ch/',
     content: 'Un site pensé pour les patients de PhysioBaur. Parlons de votre projet.',
     status: 'draft', version: 1, publication_mode: 'manual', approved_version: null,
-    media_kind: null, media_url: null, media_title: null, publish_after: null,
-    media_images: [], media_items: media.map(item => ({ ...item })),
+    media_kind: null, media_url: null, media_title: null, publish_after: null, planned_at: plannedAt,
+    media_images: [], media_items: initialMedia.map(item => ({ ...item })),
   }
   await page.route(`${mediaRoot}**`, route => route.fulfill({
     contentType: route.request().url().endsWith('.mp4') ? 'video/mp4' : 'image/jpeg',
@@ -81,9 +83,11 @@ async function openMockedDraft(page: Page) {
   await page.getByRole('button', { name: /se connecter/i }).click()
   await expect(page).toHaveURL(url => url.pathname.replace(/\/$/, '') === '/admin/social')
   expect(signIns).toEqual(['password'])
+  if (plannedAt) await page.goto(`/admin/social?view=week&date=${plannedAt.slice(0, 10)}`)
   await page.getByRole('button', { name: `Ouvrir ${post.article_title} sur Instagram`, exact: true }).click()
   const card = page.getByRole('dialog', { name: 'Publication Instagram', exact: true })
-  await expect(card.getByRole('heading', { name: 'Carrousel · 4 images et 2 vidéos', exact: true })).toBeVisible()
+  const heading = initialMedia.length === 0 ? 'Médias Instagram' : initialMedia.length === 1 ? 'Vidéo Instagram · Reel' : 'Carrousel · 4 images et 2 vidéos'
+  await expect(card.getByRole('heading', { name: heading, exact: true })).toBeVisible()
   return { card, writes }
 }
 
@@ -180,3 +184,51 @@ test('required descriptions and keyboard focus survive removing and clearing the
   await expect(card.getByRole('button', { name: 'Valider le texte', exact: true })).toBeVisible()
   await expect(card.getByText('À valider', { exact: true })).toBeVisible()
 })
+
+for (const viewport of [{ name: 'desktop', width: 1280, height: 900 }, { name: 'mobile', width: 390, height: 844 }]) {
+  test(`a single Instagram video uploads, saves and previews on ${viewport.name} without approving or changing its desired date`, async ({ page }) => {
+    test.setTimeout(120_000)
+    await page.setViewportSize({ width: viewport.width, height: viewport.height })
+    const title = 'EnvVault · les configurations de mes projets'
+    const { card, writes } = await openMockedDraft(page, { initialMedia: [], initialTitle: title, plannedAt: '2026-10-20T16:30:00.000Z' })
+    const caption = await card.getByLabel('Texte Instagram', { exact: true }).inputValue()
+    const desiredDate = card.getByLabel('Date de publication souhaitée', { exact: true })
+    await expect(desiredDate).toHaveValue('2026-10-20T18:30')
+    await card.getByLabel('Ajouter des images ou vidéos').setInputFiles({ name: 'EnvVault-instagram.mp4', mimeType: 'video/mp4', buffer: videoFixture })
+    await expect(card.getByRole('heading', { name: 'Vidéo Instagram · Reel', exact: true })).toBeVisible()
+    await expect(card.getByRole('button', { name: 'Enregistrer les médias', exact: true })).toBeEnabled()
+    expect(writes).toHaveLength(1)
+    expect(writes[0]).toMatchObject({ method: 'POST', path: '/api/admin/social-video-upload' })
+    await card.getByLabel('Description du média 1', { exact: true }).fill('EnvVault : retrouver les configurations de ses projets, aperçu vidéo avec voix off')
+    await card.getByRole('button', { name: 'Enregistrer les médias', exact: true }).click()
+    await expect(card.getByRole('button', { name: 'Enregistrer les médias', exact: true })).toHaveCount(0)
+    expect(writes).toHaveLength(2)
+    expect(writes[1]).toMatchObject({ method: 'PUT', path: expect.stringMatching(/\/media$/), body: { version: 1, media: [{ type: 'video', url: `${mediaRoot}07.mp4`, alt: 'EnvVault : retrouver les configurations de ses projets, aperçu vidéo avec voix off' }] } })
+    expect(Object.keys(writes[1]!.body).sort()).toEqual(['media', 'version'])
+    await expect(card.getByText('À valider', { exact: true })).toBeVisible()
+    await expect(card.getByLabel('Texte Instagram', { exact: true })).toHaveValue(caption)
+    await expect(desiredDate).toHaveValue('2026-10-20T18:30')
+    await card.getByRole('button', { name: 'Fermer la publication', exact: true }).click()
+    await expect(card).toHaveCount(0)
+    await expect(page).toHaveURL(url => !url.searchParams.has('postId'))
+    await page.reload()
+    await page.getByRole('button', { name: `Ouvrir ${title} sur Instagram`, exact: true }).click()
+    await expect(card.getByRole('heading', { name: 'Vidéo Instagram · Reel', exact: true })).toBeVisible()
+    const preview = card.getByRole('region', { name: 'Aperçu Instagram', exact: true })
+    await expect(preview.locator('video')).toHaveAttribute('src', `${mediaRoot}07.mp4`)
+    await expect(preview.locator('video')).toHaveAttribute('controls', '')
+    await expect(preview.locator('video')).not.toHaveAttribute('autoplay')
+    await expect(preview.getByRole('button', { name: 'Média suivant de l’aperçu', exact: true })).toHaveCount(0)
+    const galleryVideo = card.getByRole('region', { name: 'Médias Instagram joints', exact: true }).locator('video')
+    await expect(galleryVideo).toHaveJSProperty('paused', true)
+    await expect(galleryVideo).toHaveJSProperty('muted', true)
+    await galleryVideo.evaluate(async (video: HTMLVideoElement) => { await video.play() })
+    await expect.poll(() => galleryVideo.evaluate((video: HTMLVideoElement) => video.currentTime)).toBeGreaterThan(0)
+    await galleryVideo.evaluate((video: HTMLVideoElement) => video.pause())
+    await expect(desiredDate).toHaveValue('2026-10-20T18:30')
+    await expect(card.getByText('À valider', { exact: true })).toBeVisible()
+    expect(writes.some(write => /\/(?:approve|review-media|review-instagram)$/.test(write.path))).toBe(false)
+    expect(writes).toHaveLength(2)
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+  })
+}
