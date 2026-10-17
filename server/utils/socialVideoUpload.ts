@@ -9,7 +9,7 @@ export const MAX_SOCIAL_VIDEO_BYTES = 20 * 1024 * 1024
 export const MAX_SOCIAL_VIDEO_REQUEST_BYTES = Math.ceil(MAX_SOCIAL_VIDEO_BYTES / 3) * 4 + 1024
 const run = promisify(execFile)
 
-function invalid(message = 'MP4 invalide : H.264, yuv420p, 3 à 60 s, 23 à 60 images/s, format 4:5 à 1,91:1 requis.'): never {
+function invalid(message = 'MP4 invalide : H.264, yuv420p, 3 à 60 s, 23 à 60 images/s, format 9:16 à 1,91:1 requis.'): never {
   throw createError({ statusCode: 400, message })
 }
 
@@ -29,7 +29,7 @@ export function validateSocialVideoProbe(value: unknown) {
     || audios.some(audio => audio.codec_name !== 'aac' || ![1, 2].includes(Number(audio.channels)) || !Number.isFinite(Number(audio.sample_rate)) || Number(audio.sample_rate) < 8000 || Number(audio.sample_rate) > 48000)
     || (tags?.rotate != null && Number(tags.rotate) % 360 !== 0) || sideData.some(data => data.rotation != null && Number(data.rotation) % 360 !== 0)
     || !Number.isSafeInteger(width) || !Number.isSafeInteger(height) || width < 320 || height < 320 || width > 1920 || height > 1920
-    || width / height < 0.8 || width / height > 1.91 || !Number.isFinite(duration) || duration < 3 || duration > 60
+    || width / height < 9 / 16 || width / height > 1.91 || !Number.isFinite(duration) || duration < 3 || duration > 60
     || !Number.isFinite(fps) || fps < 23 || fps > 60) invalid()
   return { width, height, duration, fps }
 }

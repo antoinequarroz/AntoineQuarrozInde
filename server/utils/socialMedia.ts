@@ -2,14 +2,23 @@ import { createError, getHeader, type H3Event } from 'h3'
 
 export type SocialMediaItem = { type: 'image' | 'video', url: string, alt: string }
 export const INSTAGRAM_MIXED_CAPABILITY = 'instagram-mixed-v1'
+export const INSTAGRAM_REELS_CAPABILITY = 'instagram-reels-v1'
 
 export function supportsInstagramMixed(event: H3Event) {
   return (getHeader(event, 'x-hermes-social-capabilities') || '').split(',').map(value => value.trim()).includes(INSTAGRAM_MIXED_CAPABILITY)
 }
 
+export function supportsInstagramReels(event: H3Event) {
+  return (getHeader(event, 'x-hermes-social-capabilities') || '').split(',').map(value => value.trim()).includes(INSTAGRAM_REELS_CAPABILITY)
+}
+
+export function isInstagramReelMedia(value: unknown): boolean {
+  return Array.isArray(value) && value.length === 1 && value[0]?.type === 'video'
+}
+
 export function validateSocialMediaItems(value: unknown, platform: string, storageUrl = ''): SocialMediaItem[] {
-  if (!Array.isArray(value) || (value.length > 0 && (platform !== 'instagram' || value.length < 2 || value.length > 10))) {
-    throw createError({ statusCode: 400, message: 'Un carrousel Instagram contient entre 2 et 10 médias.' })
+  if (!Array.isArray(value) || (value.length > 0 && (platform !== 'instagram' || value.length > 10 || (value.length === 1 && !isInstagramReelMedia(value))))) {
+    throw createError({ statusCode: 400, message: 'Ajoute une vidéo seule pour un Reel, ou entre 2 et 10 médias pour un carrousel Instagram.' })
   }
   const seen = new Set<string>()
   return value.map((item) => {

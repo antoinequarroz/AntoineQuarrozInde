@@ -106,7 +106,7 @@ export function validateSocialDraftInput(body: Record<string, unknown>) {
   }
   const mediaImages = validateSocialImages(body.mediaImages ?? [], platform, body.mediaImages ? String(useRuntimeConfig().public.supabaseUrl || '') : '')
   const mediaItems = validateSocialMediaItems(body.mediaItems ?? [], platform, body.mediaItems ? String(useRuntimeConfig().public.supabaseUrl || '') : '')
-  if (Number(Boolean(mediaKind)) + Number(Boolean(mediaImages.length)) + Number(Boolean(mediaItems.length)) > 1) throw createError({ statusCode: 400, message: 'Choisis un PDF, des images ou un carrousel mixte.' })
+  if (Number(Boolean(mediaKind)) + Number(Boolean(mediaImages.length)) + Number(Boolean(mediaItems.length)) > 1) throw createError({ statusCode: 400, message: 'Choisis un PDF, des images ou des médias Instagram.' })
   return {
     mediaImages,
     mediaItems,
@@ -152,7 +152,7 @@ export function validateAutomaticSocialPost(post: { platform: unknown, media_ima
     throw createError({ statusCode: 400, message: 'Pour publier depuis le site, ajoute des images JPEG ou PNG.' })
   }
   if (platform === 'instagram' && !images.length && !media.length) {
-    throw createError({ statusCode: 400, message: 'Instagram nécessite au moins une image pour publier depuis le site.' })
+    throw createError({ statusCode: 400, message: 'Instagram nécessite au moins une image ou une vidéo pour publier depuis le site.' })
   }
   if (platform === 'instagram' && images.some(image => !/\.jpe?g$/i.test(new URL(image.url).pathname))) {
     throw createError({ statusCode: 400, message: 'Pour Instagram, ajoute des images JPEG avant de valider la publication.' })

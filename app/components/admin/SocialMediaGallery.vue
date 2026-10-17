@@ -22,7 +22,9 @@ const summary = computed(() => [
   imageCount.value ? `${imageCount.value} image${imageCount.value > 1 ? 's' : ''}` : '',
   videoCount.value ? `${videoCount.value} vidéo${videoCount.value > 1 ? 's' : ''}` : '',
 ].filter(Boolean).join(' et '))
-const validCount = computed(() => draft.value.length === 0 || (draft.value.length >= 2 && draft.value.length <= 10))
+const validCount = computed(() => draft.value.length === 0
+  || (draft.value.length === 1 && draft.value[0]?.type === 'video')
+  || (draft.value.length >= 2 && draft.value.length <= 10))
 
 watch(() => [props.media, props.legacyImages], () => {
   draft.value = props.media.length
@@ -82,7 +84,7 @@ async function upload(event: Event) {
       draft.value.push({ type, url: result.url, alt: file.name.replace(/\.[^.]+$/, '') })
       change()
     }
-    announcement.value = `${files.length} média${files.length > 1 ? 's' : ''} ajouté${files.length > 1 ? 's' : ''}. Enregistre le carrousel pour conserver ces changements.`
+    announcement.value = `${files.length} média${files.length > 1 ? 's' : ''} ajouté${files.length > 1 ? 's' : ''}. Enregistre les médias pour conserver ces changements.`
   }
   catch (error: any) {
     uploadError.value = error?.data?.message || error.message || 'Téléversement impossible.'
@@ -95,12 +97,12 @@ async function upload(event: Event) {
 <template>
   <section class="mt-4 min-w-0 rounded-xl border border-violet-200 bg-violet-50/50 p-4 dark:border-violet-400/20 dark:bg-violet-500/5" aria-label="Médias Instagram joints">
     <div class="flex flex-wrap items-center justify-between gap-2">
-      <h3 class="text-sm font-semibold">{{ draft.length > 1 ? `Carrousel · ${summary}` : draft.length ? 'Visuel joint' : 'Carrousel Instagram' }}</h3>
+      <h3 class="text-sm font-semibold">{{ draft.length > 1 ? `Carrousel · ${summary}` : draft[0]?.type === 'video' ? 'Vidéo Instagram · Reel' : draft.length ? 'Visuel joint' : 'Médias Instagram' }}</h3>
       <span v-if="draft.length" class="text-xs text-violet-600 dark:text-violet-300">À relire avant envoi</span>
     </div>
     <div v-if="draft.length" ref="galleryRef" class="mt-3 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-3" tabindex="0" aria-label="Feuilleter les images et vidéos">
       <figure v-for="(item, index) in draft" :key="item.url" :data-media-position="index" class="w-[min(68vw,20rem)] shrink-0 snap-center rounded-lg bg-white p-2 dark:bg-black/20">
-        <video v-if="item.type === 'video'" :src="item.url" :aria-label="`Vidéo ${index + 1} : ${item.alt}`" controls muted playsinline preload="metadata" class="aspect-[4/5] w-full rounded-md bg-black object-contain">
+        <video v-if="item.type === 'video'" :src="item.url" :aria-label="`Vidéo ${index + 1} : ${item.alt}`" controls muted playsinline preload="metadata" class="max-h-[36rem] w-full rounded-md bg-black object-contain" :class="draft.length === 1 ? 'aspect-[9/16]' : 'aspect-[4/5]'">
           Ton navigateur ne peut pas lire cette vidéo. Ouvre l’original avec le lien ci-dessous.
         </video>
         <a v-else :href="item.url" target="_blank" rel="noopener noreferrer" :aria-label="`Ouvrir l’image ${index + 1} en grand`"><img :src="item.url" :alt="item.alt" loading="lazy" class="aspect-[4/5] w-full rounded-md object-contain"></a>
@@ -123,13 +125,13 @@ async function upload(event: Event) {
     <p class="sr-only" role="status" aria-live="polite">{{ announcement }}</p>
     <template v-if="editable">
       <label class="mt-3 block text-xs font-medium">Ajouter des images ou vidéos<input ref="uploadInputRef" type="file" multiple accept="image/jpeg,video/mp4" class="mt-2 block w-full text-xs" :disabled="busy || uploading" @change="upload"></label>
-      <p class="mt-2 text-xs leading-5 text-gray-500 dark:text-gray-400">2 à 10 médias, dans l’ordre de publication. JPEG : 5 Mo maximum. MP4 H.264 : 20 Mo, de 3 à 60 secondes.</p>
+      <p class="mt-2 text-xs leading-5 text-gray-500 dark:text-gray-400">Une vidéo seule pour un Reel, ou 2 à 10 médias dans l’ordre pour un carrousel. JPEG : 5 Mo maximum. MP4 H.264 : 20 Mo, de 3 à 60 secondes. Le format vertical 9:16 est accepté pour un Reel ; les médias d’un carrousel gardent le même format, de 4:5 à 1,91:1.</p>
       <p v-if="uploading" role="status" class="mt-2 text-xs">Téléversement et vérification en cours…</p>
       <p v-if="uploadError" role="alert" class="mt-2 text-xs text-red-700 dark:text-red-300">{{ uploadError }}</p>
-      <p v-if="changed && !validCount" role="status" class="mt-2 text-xs text-amber-700 dark:text-amber-300">Ajoute au moins deux médias pour enregistrer un carrousel.</p>
+      <p v-if="changed && !validCount" role="status" class="mt-2 text-xs text-amber-700 dark:text-amber-300">Ajoute un second média pour enregistrer ce carrousel. Pour une image seule, utilise le format Image.</p>
       <p v-if="changed && draft.some(item => !item.alt.trim())" role="status" class="mt-2 text-xs text-amber-700 dark:text-amber-300">Chaque média doit avoir une description avant l’enregistrement.</p>
       <button v-if="changed" type="button" class="mt-3 min-h-11 rounded-lg bg-violet-600 px-4 text-sm font-semibold text-white disabled:opacity-50" :disabled="busy || uploading || !validCount || draft.some(item => !item.alt.trim())" @click="emit('save', draft)">Enregistrer les médias</button>
     </template>
-    <p v-if="draft.length" class="mt-3 text-xs leading-5 text-gray-500 dark:text-gray-400">Relis les images, regarde les vidéos et vérifie leur ordre. Enregistrer ne valide ni ne publie le carrousel.</p>
+    <p v-if="draft.length" class="mt-3 text-xs leading-5 text-gray-500 dark:text-gray-400">Relis les images, regarde les vidéos et vérifie leur ordre. Enregistrer ne valide ni ne publie ces médias.</p>
   </section>
 </template>

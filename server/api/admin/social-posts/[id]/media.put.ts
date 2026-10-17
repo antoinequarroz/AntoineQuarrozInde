@@ -10,7 +10,7 @@ export default defineEventHandler(async (event) => {
     .eq('organization_id', org.id).eq('id', id).maybeSingle()
   if (!current) throw createError({ statusCode: 404, message: 'Brouillon introuvable.' })
   if (current.platform !== 'instagram' || !['draft', 'failed'].includes(current.status) || current.media_kind) {
-    throw createError({ statusCode: 409, message: 'Seul un brouillon Instagram sans PDF peut recevoir ce carrousel.' })
+    throw createError({ statusCode: 409, message: 'Seul un brouillon Instagram sans PDF peut recevoir ces médias.' })
   }
   const media = validateSocialMediaItems(body.media, current.platform, String(useRuntimeConfig().public.supabaseUrl || ''))
   const { data, error } = await db.from('social_posts').update({

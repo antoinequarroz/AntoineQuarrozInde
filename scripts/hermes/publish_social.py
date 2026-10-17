@@ -49,6 +49,7 @@ MAX_SOCIAL_DOCUMENT_BYTES = 25 * 1024 * 1024
 MAX_INSTAGRAM_MIXED_IMAGE_BYTES = 5 * 1024 * 1024
 MAX_INSTAGRAM_VIDEO_BYTES = 20 * 1024 * 1024
 INSTAGRAM_MIXED_CAPABILITY = "instagram-mixed-v1"
+INSTAGRAM_REELS_CAPABILITY = "instagram-reels-v1"
 LINKEDIN_SEQUENCE_PREFIX = re.compile(
     r"^\s*(?:post\s+)?(?:#|n[°o]\s*)?\d+\s*[.):-]\s+", re.IGNORECASE
 )
@@ -176,7 +177,17 @@ def tracked_article_url(article_url: str, platform: str, *, placement: str = "po
 
 
 def tracked_social_content(content: str, article_url: str, platform: str) -> str:
-    return content.replace(article_url, tracked_article_url(article_url, platform))
+    tracked_url = tracked_article_url(article_url, platform)
+    # Match the whole URL token on both sides. A homepage prefix, a routed URL
+    # or a URL with another query/fragment must never be rewritten partially.
+    def replace_url(match: re.Match) -> str:
+        token = match.group()
+        if token == article_url:
+            return tracked_url
+        if len(token) > 2 and token[0] in "\"'" and token[-1] == token[0] and token[1:-1] == article_url:
+            return token[0] + tracked_url + token[-1]
+        return token
+    return re.sub(r"[^\s<>]+", replace_url, content)
 
 
 def inside_local_publication_hour(hour: int | None, timezone: str) -> bool:
@@ -226,6 +237,13 @@ def validate_draft(path: Path, project: Path) -> dict[str, str]:
     return draft
 
 
+def provider_http_error(provider: str, stage: str, status: int) -> RuntimeError:
+    # Only caller-owned labels and the HTTP status are retained. Provider bodies,
+    # authorization headers and signed upload URLs must never reach last_error.
+    detail = "Facturation API X requise. Verifier les credits du projet avant toute nouvelle validation." if provider == "X" and status == 402 else "Requete refusee par la plateforme."
+    return RuntimeError(f"{provider} - {stage} (HTTP {status}). {detail}")
+
+
 def request_json(url: str, payload: dict, headers: dict[str, str]) -> tuple[dict, dict[str, str]]:
     request = urllib.request.Request(
         url,
@@ -239,7 +257,15 @@ def request_json(url: str, payload: dict, headers: dict[str, str]) -> tuple[dict
             parsed = json.loads(response_body) if response_body else {}
             return parsed, dict(response.headers.items())
     except urllib.error.HTTPError as exc:
-        raise RuntimeError(f"Publication refusee par la plateforme ({exc.code}). Verifier le compte et ses permissions.") from exc
+        provider, stage = {
+            LINKEDIN_IMAGES_ENDPOINT: ("LinkedIn", "initialisation de l'image"),
+            LINKEDIN_DOCUMENTS_ENDPOINT: ("LinkedIn", "initialisation du document"),
+            LINKEDIN_POSTS_ENDPOINT: ("LinkedIn", "creation de la publication"),
+            X_MEDIA_ENDPOINT: ("X", "envoi de l'image"),
+            X_MEDIA_METADATA_ENDPOINT: ("X", "description de l'image"),
+            X_POSTS_ENDPOINT: ("X", "creation de la publication"),
+        }.get(url, ("Plateforme", "requete"))
+        raise provider_http_error(provider, stage, exc.code) from None
 
 
 def read_bounded_response(response, maximum: int, label: str) -> bytes:
@@ -342,7 +368,7 @@ def prepare_images(post: dict) -> list[dict]:
     return prepared
 
 
-def instagram_video_metadata(data: bytes) -> dict:
+def instagram_video_metadata(data: bytes, *, minimum_ratio: float = 0.8) -> dict:
     """Probe bounded local bytes; ffprobe never receives credentials or a remote URL."""
     if len(data) < 24 or data[4:8] != b"ftyp":
         raise ValueError("Video Instagram refusee : le fichier n'est pas un MP4 valide.")
@@ -373,10 +399,11 @@ def instagram_video_metadata(data: bytes) -> dict:
                 or video.get("disposition", {}).get("attached_pic")
                 or not isinstance(width, int) or not isinstance(height, int)
                 or not 320 <= width <= 1920 or not 1 <= height <= 1920
-                or not 0.8 <= width / height <= 1.91
+                or not minimum_ratio <= width / height <= 1.91
                 or not math.isfinite(duration) or not 3 <= duration <= 60
                 or not math.isfinite(fps) or not 23 <= fps <= 60):
-            raise ValueError("Video Instagram incompatible : MP4 H.264/yuv420p, 3–60 s, 23–60 images/s, largeur 320–1920 px et ratio 4:5 a 1,91:1 requis.")
+            ratio_label = "9:16" if minimum_ratio == 9 / 16 else "4:5"
+            raise ValueError(f"Video Instagram incompatible : MP4 H.264/yuv420p, 3–60 s, 23–60 images/s, largeur 320–1920 px et ratio {ratio_label} a 1,91:1 requis.")
         if any(float(row.get("rotation", 0)) != 0 for row in video.get("side_data_list", [])) or float(video.get("tags", {}).get("rotate", 0)) != 0:
             raise ValueError("Video Instagram incompatible : exporter le MP4 sans rotation de metadonnees.")
         if audios and (audios[0].get("codec_name") != "aac"
@@ -391,11 +418,13 @@ def instagram_video_metadata(data: bytes) -> dict:
 
 
 def prepare_media_items(post: dict) -> list[dict]:
-    """Validate the entire ordered Instagram carousel before any claim or provider write."""
+    """Validate an Instagram Reel or ordered carousel before any claim or provider write."""
     items = post.get("media_items")
-    if (post.get("platform") != "instagram" or not isinstance(items, list) or not 2 <= len(items) <= 10
+    single_video = isinstance(items, list) and len(items) == 1 and isinstance(items[0], dict) and items[0].get("type") == "video"
+    if (post.get("platform") != "instagram" or not isinstance(items, list)
+            or not (single_video or 2 <= len(items) <= 10)
             or post.get("media_images") or any(post.get(key) for key in ("media_kind", "media_url", "media_title"))):
-        raise ValueError("Le carrousel mixte exige 2–10 medias Instagram, sans autre piece jointe.")
+        raise ValueError("Instagram exige une video seule ou un carrousel de 2–10 medias, sans autre piece jointe.")
     prepared = []
     for item in items:
         if (not isinstance(item, dict) or set(item) != {"type", "url", "alt"}
@@ -415,7 +444,7 @@ def prepare_media_items(post: dict) -> list[dict]:
         except urllib.error.HTTPError as exc:
             raise ValueError(f"Media Instagram approuve indisponible ({exc.code}).") from exc
         if video:
-            prepared.append({**item, "mime": mime, **instagram_video_metadata(data)})
+            prepared.append({**item, "mime": mime, **instagram_video_metadata(data, minimum_ratio=9 / 16 if single_video else 0.8)})
         else:
             width, height = image_dimensions(data, mime)
             if not (320 <= width <= 1440 and 1 <= height and width * height <= 36_000_000 and 0.8 <= width / height <= 1.91):
@@ -489,9 +518,9 @@ def upload_linkedin_image(token: str, author: str, image: bytes, mime_type: str)
     try:
         with secure_open(request, timeout=90) as response:
             if response.status not in {200, 201}:
-                raise RuntimeError(f"Envoi de l'image LinkedIn refuse ({response.status}).")
+                raise provider_http_error("LinkedIn", "envoi de l'image", response.status)
     except urllib.error.HTTPError as exc:
-        raise RuntimeError(f"Envoi de l'image LinkedIn refuse ({exc.code}).") from exc
+        raise provider_http_error("LinkedIn", "envoi de l'image", exc.code) from None
     return image_urn
 
 
@@ -557,15 +586,15 @@ def upload_linkedin_document(token: str, author: str, document: bytes) -> str:
     try:
         with secure_open(request, timeout=120) as response:
             if response.status not in {200, 201}:
-                raise RuntimeError(f"Envoi du document LinkedIn refuse ({response.status}).")
+                raise provider_http_error("LinkedIn", "envoi du document", response.status)
     except urllib.error.HTTPError as exc:
-        raise RuntimeError(f"Envoi du document LinkedIn refuse ({exc.code}).") from exc
+        raise provider_http_error("LinkedIn", "envoi du document", exc.code) from None
     wait_for_linkedin_document(token, document_urn)
     return document_urn
 
 
 def linkedin_document_status(token: str, document_urn: str) -> str:
-    url = f"https://api.linkedin.com/rest/documents/{urllib.parse.quote(document_urn, safe=':')}"
+    url = f"https://api.linkedin.com/rest/documents/{urllib.parse.quote(document_urn, safe='')}"
     request = urllib.request.Request(
         url,
         headers={
@@ -579,7 +608,7 @@ def linkedin_document_status(token: str, document_urn: str) -> str:
         with secure_open(request, timeout=60) as response:
             body = json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as exc:
-        raise RuntimeError(f"Verification du document LinkedIn refusee ({exc.code}).") from exc
+        raise provider_http_error("LinkedIn", "lecture du document", exc.code) from None
     return str(body.get("status") or "")
 
 
@@ -604,7 +633,7 @@ def site_request(site_url: str, token: str, *, payload: dict | None = None, path
         url,
         data=None if payload is None else json.dumps(payload, ensure_ascii=False).encode("utf-8"),
         headers={"Authorization": f"Bearer {token}", "User-Agent": "hermes-antoinequarroz/1.0",
-                 "X-Hermes-Social-Capabilities": INSTAGRAM_MIXED_CAPABILITY,
+                 "X-Hermes-Social-Capabilities": f"{INSTAGRAM_MIXED_CAPABILITY}, {INSTAGRAM_REELS_CAPABILITY}",
                  **({"Content-Type": "application/json"} if payload is not None else {})},
         method="POST" if payload is not None else "GET",
     )
@@ -794,7 +823,7 @@ INSTAGRAM_TOOL = "instagram-antoinequarroz"
 INSTAGRAM_SCOPES = {"instagram_business_basic", "instagram_business_manage_insights", "instagram_business_content_publish"}
 
 
-def treg_request(path: str, payload: dict | None = None) -> tuple[int, dict, object]:
+def treg_request(path: str, payload: dict | None = None, *, timeout: float = 90) -> tuple[int, dict, object]:
     # Fixed proxy origin: a provider URL or paging URL is never accepted here.
     if not re.fullmatch(r"/(?:connections|tools|calls/[a-f0-9]{32}|call/instagram-antoinequarroz/(?:me|[0-9]{1,30}(?:/(?:media|media_publish))?)(?:\?[^\r\n]*)?)", path):
         raise ValueError("Route Instagram non autorisee.")
@@ -822,15 +851,30 @@ def treg_request(path: str, payload: dict | None = None) -> tuple[int, dict, obj
         headers["Content-Type"] = "application/json"
     request = urllib.request.Request("https://treg.to" + path, data=None if payload is None else json.dumps(payload).encode(), headers=headers, method="GET" if payload is None else "POST")
     try:
-        response = secure_open(request, timeout=90)
+        response = secure_open(request, timeout=timeout)
     except urllib.error.HTTPError as exc:
         response = exc
     with response:
+        if response.status == 404 and payload is None and re.fullmatch(r"/calls/[a-f0-9]{32}", path):
+            # A receipt may not be indexed yet, including a non-JSON 404 page.
+            return 404, dict(response.headers.items()), None
         try:
             data = json.loads(read_bounded_response(response, 2_000_000, "La reponse Treg"))
-        except (ValueError, UnicodeError) as exc:
-            raise ValueError("Treg ne confirme pas la reponse Instagram.") from exc
+        except (ValueError, UnicodeError):
+            raise ValueError("Treg ne confirme pas la reponse Instagram.") from None
         return response.status, dict(response.headers.items()), data
+
+
+def treg_receipt(call_ref: str) -> tuple[int, object]:
+    # The upstream POST has already happened. Only its existing receipt may be
+    # reread while Treg makes it available; never replay the provider request.
+    for attempt in range(3):
+        status, _, receipt = treg_request("/calls/" + call_ref, timeout=10)
+        if status != 404:
+            return status, receipt
+        if attempt < 2:
+            time.sleep(attempt + 1)
+    raise ValueError(f"Recu Treg Instagram indisponible (HTTP 404, appel {call_ref}). Verifier le resultat sans nouvel appel de publication.")
 
 
 def instagram_call(path: str, query: dict | None = None, payload: dict | None = None) -> dict:
@@ -844,10 +888,11 @@ def instagram_call(path: str, query: dict | None = None, payload: dict | None = 
         call_ref = lower_headers.get("x-treg-call-id", "")
         if not re.fullmatch(r"[a-f0-9]{32}", call_ref):
             raise ValueError("Treg ne confirme pas le cout nul de cet appel Instagram. Traitement arrete.")
-        receipt_status, _, receipt = treg_request("/calls/" + call_ref)
+        receipt_status, receipt = treg_receipt(call_ref)
         call = receipt.get("call", {}) if isinstance(receipt, dict) else {}
         expected_path = "https://graph.instagram.com/v25.0/" + path
-        if (receipt_status != 200 or type(receipt.get("charged_micro")) is not int or receipt.get("charged_micro") != 0 or receipt.get("ledger") != []
+        if (receipt_status != 200 or not isinstance(receipt, dict) or not isinstance(call, dict)
+                or type(receipt.get("charged_micro")) is not int or receipt.get("charged_micro") != 0 or receipt.get("ledger") != []
                 or call.get("call_ref") != call_ref or call.get("tool_name") != INSTAGRAM_TOOL
                 or call.get("method") != ("GET" if payload is None else "POST")
                 or call.get("path") != expected_path or call.get("status_code") != status or call.get("endpoint_id") is not None):
@@ -907,12 +952,18 @@ def instagram_container(payload: dict, *, video: bool = False) -> str:
 
 def publish_instagram(content: str, media_images: list[dict]) -> dict:
     if not media_images:
-        raise ValueError("Instagram exige les images explicitement validees.")
+        raise ValueError("Instagram exige les medias explicitement valides.")
     if len(media_images) == 1:
         image = media_images[0]
-        if image.get("type", "image") != "image":
-            raise ValueError("Une video Instagram doit appartenir au carrousel explicitement valide.")
-        container_id = instagram_container({"image_url": image["url"], "caption": content, "alt_text": image["alt"]})
+        if image.get("type") == "video":
+            container_id = instagram_container({
+                "media_type": "REELS", "video_url": image["url"],
+                "caption": content, "share_to_feed": True,
+            }, video=True)
+        elif image.get("type", "image") == "image":
+            container_id = instagram_container({"image_url": image["url"], "caption": content, "alt_text": image["alt"]})
+        else:
+            raise ValueError("Type de media Instagram invalide. Aucune publication demandee.")
     else:
         children = []
         has_video = any(item.get("type") == "video" for item in media_images)
@@ -947,7 +998,7 @@ def connection_state(platform: str) -> tuple[str, str]:
     if platform == "instagram":
         try:
             instagram_preflight()
-            return "ready", "Instagram @antoinequarroz.dev autorise la publication des images et carrousels mixtes valides."
+            return "ready", "Instagram @antoinequarroz.dev autorise la publication des images, Reels et carrousels mixtes valides."
         except (ValueError, RuntimeError) as exc:
             return "blocked", str(exc)
         except Exception:
