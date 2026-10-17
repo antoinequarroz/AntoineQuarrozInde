@@ -71,7 +71,8 @@ async function openMockedDocument(page: Page, options: { manifestMissing?: boole
   await page.getByRole('button', { name: /se connecter/i }).click()
   await expect(page).toHaveURL(url => url.pathname.replace(/\/$/, '') === '/admin/social')
   expect(signIns).toBe(1)
-  const card = page.getByRole('article').filter({ has: page.getByRole('heading', { name: post.article_title, exact: true }) })
+  await page.getByRole('button', { name: `Ouvrir ${post.article_title} sur LinkedIn`, exact: true }).click()
+  const card = page.getByRole('dialog', { name: 'Publication LinkedIn', exact: true })
   await expect(card).toBeVisible()
   return { card, preview: card.getByRole('region', { name: 'Carrousel LinkedIn joint', exact: true }), writes, previewRequests }
 }

@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
+import { socialApprovalRequest } from '../app/utils/socialApproval'
 
 const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
 
@@ -43,12 +44,16 @@ describe('social publication queue', () => {
     expect(source).toContain('"action": "fail"')
   })
 
-  it('separates the 18:00 approval from an explicit publish-now action', () => {
+  it('separates chosen-date approval from an explicit publish-now action', () => {
     const adminPage = read('app/pages/admin/social/index.vue')
-    expect(adminPage).toContain('Valider pour 18 h')
+    expect(adminPage).toContain('Date et heure de publication')
+    expect(adminPage).toContain('Valider la programmation')
     expect(adminPage).toContain('Publier maintenant')
     expect(adminPage).toContain('si la connexion est prête')
     expect(adminPage).not.toContain('Approuver et publier')
+    expect(socialApprovalRequest('scheduled', true)).toEqual({ action: 'approve', confirmation: 'PROGRAMMER_DATE_PERSONNALISEE' })
+    expect(socialApprovalRequest('scheduled')).toEqual({ action: 'approve', confirmation: 'PROGRAMMER_POUR_18H' })
+    expect(socialApprovalRequest('now')).toEqual({ action: 'approve', confirmation: 'PUBLIER_MAINTENANT' })
   })
 
   it('keeps scheduled approvals server-side until their due time', () => {
@@ -62,14 +67,13 @@ describe('social publication queue', () => {
     expect(approval).toContain("mode === 'now' ? new Date() : nextSocialPublicationAt()")
   })
 
-  it('removes rejected proposals from the social dashboard while keeping their audit record', () => {
-    const adminPage = read('app/pages/admin/social/index.vue')
+  it('keeps rejected proposals in the paginated history without granting them publishing consent', () => {
     const listRoute = read('server/api/admin/social-posts.get.ts')
     const updateRoute = read('server/api/admin/social-posts/[id].put.ts')
 
-    expect(adminPage).not.toContain("['draft', 'failed', 'rejected']")
-    expect(adminPage).toContain('Publication refusée et retirée du tableau')
-    expect(listRoute).toContain(".neq('status', 'rejected')")
+    expect(listRoute).not.toContain(".neq('status', 'rejected')")
+    expect(listRoute).toContain('pagination:')
     expect(updateRoute).toContain("updates.status = 'rejected'")
+    expect(updateRoute).toContain("updates.publish_after = null")
   })
 })

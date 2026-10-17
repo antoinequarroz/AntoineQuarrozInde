@@ -1,10 +1,15 @@
+import { validateSocialPublishAfter } from '../../../../utils/socialEditorial'
+import { SOCIAL_CUSTOM_SCHEDULE_CONFIRMATION } from '../../../../utils/socialPublication'
+
 export default defineEventHandler(async (event) => {
   const { user, org } = await requireAdmin(event)
   const body = await readJsonBodyLimited(event, MAX_SOCIAL_REQUEST_BYTES)
   const id = getRouterParam(event, 'id')
   const version = validateExpectedVersion(body.version)
   const mode = validateSocialApprovalMode(body.mode)
-  const expectedConfirmation = mode === 'now' ? SOCIAL_PUBLISH_NOW_CONFIRMATION : SOCIAL_SCHEDULE_CONFIRMATION
+  const customSchedule = mode === 'scheduled' && body.publish_after !== undefined
+  const expectedConfirmation = mode === 'now' ? SOCIAL_PUBLISH_NOW_CONFIRMATION
+    : customSchedule ? SOCIAL_CUSTOM_SCHEDULE_CONFIRMATION : SOCIAL_SCHEDULE_CONFIRMATION
   if (!id || body.confirmation !== expectedConfirmation) {
     throw createError({ statusCode: 400, message: 'Confirmation explicite requise.' })
   }
@@ -20,7 +25,9 @@ export default defineEventHandler(async (event) => {
   }
   // Editorial approval is independent of provider availability. The Hermes
   // publisher checks credentials again before any external write.
-  const publishAfter = mode === 'now' ? new Date() : nextSocialPublicationAt()
+  const publishAfter = customSchedule
+    ? new Date(validateSocialPublishAfter(body.publish_after))
+    : mode === 'now' ? new Date() : nextSocialPublicationAt()
   const { data: rows, error } = await supabase.rpc('approve_social_post', {
     p_organization_id: org.id, p_post_id: id, p_expected_version: version,
     p_content: content, p_publish_after: publishAfter.toISOString(),

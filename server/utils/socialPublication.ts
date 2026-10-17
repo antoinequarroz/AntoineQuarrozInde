@@ -5,6 +5,7 @@ export const SOCIAL_INSTAGRAM_REVIEW_CONFIRMATION = 'VALIDER_TEXTE_INSTAGRAM'
 export const SOCIAL_STATUSES = ['draft', 'approved', 'publishing', 'published', 'rejected', 'failed'] as const
 export const MAX_SOCIAL_REQUEST_BYTES = 16 * 1024
 export const SOCIAL_SCHEDULE_CONFIRMATION = 'PROGRAMMER_POUR_18H'
+export const SOCIAL_CUSTOM_SCHEDULE_CONFIRMATION = 'PROGRAMMER_DATE_PERSONNALISEE'
 export const SOCIAL_PUBLISH_NOW_CONFIRMATION = 'PUBLIER_MAINTENANT'
 export const SOCIAL_PUBLICATION_TIMEZONE = 'Europe/Zurich'
 const SITE_HOME = 'https://www.antoinequarroz.ch/'

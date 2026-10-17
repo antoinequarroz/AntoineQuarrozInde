@@ -1,10 +1,12 @@
+import { validateSocialPlannedAt } from '../../../utils/socialEditorial'
+
 export default defineEventHandler(async (event) => {
   const { user, org } = await requireAdmin(event)
   const body = await readJsonBodyLimited(event, MAX_SOCIAL_REQUEST_BYTES)
   const id = getRouterParam(event, 'id')
   const version = validateExpectedVersion(body.version)
   const action = body.action
-  if (!id || !['save', 'reject', 'restore'].includes(String(action))) {
+  if (!id || !['save', 'reject', 'restore', 'plan'].includes(String(action))) {
     throw createError({ statusCode: 400, message: 'Action invalide.' })
   }
   const supabase = getSupabaseAdmin()
@@ -15,8 +17,12 @@ export default defineEventHandler(async (event) => {
   if (['publishing', 'published'].includes(current.status)) {
     throw createError({ statusCode: 409, message: 'Cette publication ne peut plus être modifiée.' })
   }
+  if (action === 'plan' && !['draft', 'failed'].includes(current.status)) {
+    throw createError({ statusCode: 409, message: 'Restaure le brouillon avant de modifier sa date éditoriale.' })
+  }
 
   const updates: Record<string, unknown> = { version: version + 1, updated_at: new Date().toISOString() }
+  if (action === 'plan') updates.planned_at = validateSocialPlannedAt(body.planned_at)
   if (action === 'save') {
     updates.content = validateSocialContent(current.platform, body.content)
     updates.status = 'draft'
@@ -27,9 +33,11 @@ export default defineEventHandler(async (event) => {
   }
   if (action === 'reject') { updates.status = 'rejected'; updates.publish_after = null }
   if (action === 'restore') { updates.status = 'draft'; updates.publish_after = null; updates.publication_mode = 'manual'; updates.approved_version = null; updates.approval_fingerprint = null }
-  const { data, error } = await supabase.from('social_posts').update(updates)
+  let mutation = supabase.from('social_posts').update(updates)
     .eq('organization_id', org.id).eq('id', id).eq('version', version)
-    .select('id,content,status,publish_after,publication_mode,approved_version,version,updated_at').maybeSingle()
+  if (action === 'plan') mutation = mutation.in('status', ['draft', 'failed'])
+  const { data, error } = await mutation
+    .select('id,content,status,planned_at,publish_after,publication_mode,approved_version,version,updated_at').maybeSingle()
   if (error) throw createError({ statusCode: 500, message: error.message })
   if (!data) throw createError({ statusCode: 409, message: 'Le brouillon a changé. Recharge la page.' })
   await logAudit({ organizationId: org.id, actorUserId: user.id, action: `social.post.${action}`, entityType: 'social_post', entityId: id })
