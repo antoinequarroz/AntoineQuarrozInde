@@ -1,0 +1,20 @@
+{
+  "verified_at": "2026-10-18T15:06:39.077458+00:00",
+  "mission_id": "e34258e2fcab",
+  "owner_profile": "friday",
+  "enabled": true,
+  "delivery": "local",
+  "schedule": "weekdays at 7am",
+  "next_run_europe_zurich": "2026-10-19T07:00:00+02:00",
+  "live_prompt_saved_and_reread": true,
+  "user_approved_dates": "2026-10-18 to 2026-10-23",
+  "resources": "seo/resources/editorial/README.md",
+  "covers_manifest": "seo/covers/editorial-2026-10-18-manifest.json",
+  "clean_worktree_rule_added": true,
+  "article_auto_publication_authorized": true,
+  "social_approval_required": true,
+  "mission_triggered": false,
+  "treg_paid_calls": 0,
+  "runtime_publish_credential_presence": "not independently verified; no mission triggered for testing",
+  "evidence": "seo/receipts/friday-2026-10-18.png"
+}
