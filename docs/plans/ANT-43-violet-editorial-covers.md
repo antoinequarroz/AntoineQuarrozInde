@@ -1,6 +1,6 @@
 ---
 linear: https://linear.app/antoinequarroz/issue/ANT-43/adopter-les-couvertures-violettes-space-grotesk-pour-le-lot-editorial
-status: in-progress
+status: in-review
 ---
 
 # Adopter les couvertures violettes Space Grotesk du lot éditorial
@@ -15,9 +15,11 @@ Le contrat Hermes accepte exactement deux identifiants : `aq-editorial-photoreal
 - [x] Le script de publication conserve le style violet explicite et la compatibilité des anciens payloads.
 - [x] Tests ciblés TypeScript/Python et typage réussis, sans appel de publication pendant les tests.
 - [x] Les six couvertures 036–041 sont contrôlées en PNG 1200 × 675, avec police exacte, lisibilité, orthographe, provenance et manifeste SHA256.
-- [ ] La file, les briefs, les ressources et la configuration FRIDAY utilisent le style approuvé ; la préparation ne prétend pas qu’une future exécution a déjà réussi.
-- [ ] Après déploiement du contrat, seule la couverture de l’article CMS 41 / numéro 036 est remplacée ; titre, texte, slug et date de publication sont conservés et relus publiquement.
-- [ ] Les deux brouillons sociaux PhysioBaur conservent leurs textes, leurs visuels et leur état manuel à valider, sans programmation ni publication.
+- [x] La file, les briefs, les ressources et la configuration FRIDAY utilisent le style approuvé ; la préparation ne prétend pas qu’une future exécution a déjà réussi.
+- [x] Après déploiement du contrat, seule la couverture de l’article CMS 41 / numéro 036 est remplacée ; titre, texte, slug et date de publication sont conservés et relus publiquement.
+- [x] Les deux brouillons sociaux PhysioBaur conservent leurs textes, leurs visuels et leur état manuel à valider, sans programmation ni publication.
+
+- [ ] Le cadre des couvertures conserve le ratio16/9 et laisse voir le titre, le robot et les éléments de marque sur la page, la liste et l’accueil, sur mobile et ordinateur.
 
 ## Vérification et limites
 
@@ -34,3 +36,19 @@ La mutation réelle et les contrôles de production sont coordonnés après la m
 
 - Couvertures 037–041 reconstruites à empreintes identiques et relues visuellement : Portly `tmp_f0d64879`. Manifeste global réconcilié et couverture036 reconstruite à l’identique après localisation de ses sources : Portly `tmp_1a67cd48`. Les six PNG1200×675 font141–333ko ; police OFL incluse.
 - Le test Python du contrat est ajouté à la CI, en plus des tests de transport existants.
+
+## Configuration et état avant livraison
+
+Le 18 octobre à 18:09 Europe/Zurich, Hermes Web a confirmé « Tâche mise à jour » pour `e34258e2fcab`. La fiche sauvegardée utilise le nouveau style ; les deux anciens paragraphes de couverture incompatibles ont été remplacés. Mission active, livraison locale, calendrier `weekdays at 7am`, prochaine échéance le19octobre à07:00 ; aucun lancement manuel. Le profil actif `default` a été rétabli. Le heartbeat existant `recette-et-suivi-des-stories-hermes` a été mis à jour via le tool officiel, toujours actif à06:30/07:30 et sur le même thread.
+
+Relecture privée des deux brouillons le18octobre à18:12 : LinkedIn et X restent `draft` / `manual` / version2, textes et clés inchangés, couverture violette jointe, aucune approbation ni date de publication. Deux GET seulement, aucune écriture ; Portly `tmp_fe8622ac`.
+
+PR286 sur4e65c16 : qualité, base de données et accessibilité réussies ; contrôle SEO final encore en cours à ce stade. Le remplacement de la couverture publique attend le déploiement et reste décoché.
+
+## Preuve publique et correction du cadrage
+
+PR286 fusionnée : `09ed9fee30465b8d666a8c0bea39d0b4588753b8`. Production saine, PUT unique du nouveau style réussi à16:28:07UTC et vérification publique réussie à16:28:09UTC, Portly `tmp_cf89a6c4`. Le reçu `seo/receipts/2026-10-18-article-036-violet-cover.json` prouve l’image, son SHA, le blog et OpenGraph, ainsi que la conservation de tous les champs métier. Aucune écriture sociale. La première attente Portly `tmp_e1f2dadb` s’était terminée avant le déploiement, sur le contrôle de version uniquement ; son `&&` n’avait donc exécuté aucun PUT.
+
+La vérification visuelle a ensuite révélé que l’ancien cadre de768×320 recadrait une couverture1200×675 et coupait les éléments de marque. La correction reste dans cette story : préserver le ratio16/9 et la couverture complète dans le header et les cartes ; garder les interactions de l’éventail de l’accueil. Les PNG approuvés restent inchangés.
+
+Correction du cadrage : `app/pages/blog/[slug].vue`, `app/pages/blog/index.vue` et `app/components/ui/CardStack.vue`. Typage et21 tests existants réussis, Portly `tmp_7534483a`. Géométrie réelle du composant compilé + Tailwind vérifiée à320/375/768/1280px : ratio1,778, image entière, texte sous image et carte active contenue dans l’éventail ; Portly `tmp_1ee0d7db`. Réserve de hauteur augmentée après détection du cas320px. Les contrôles de production de ce cadrage restent à confirmer après la prochaine mise en ligne.

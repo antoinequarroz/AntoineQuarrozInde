@@ -20,7 +20,7 @@
   "font_license": "assets/OFL-SpaceGrotesk.txt",
   "method": "Original SVG composition using existing brand assets; no AI-generated fake screenshot",
   "sha256": "3e6876efd649567e82f67d0f03848ba9ba3b39c8a5096e945010a7d632a3dd15",
-  "public_article_cover_replaced": false,
+  "public_article_cover_replaced": true,
   "social_drafts_attached": true,
   "social_drafts": {
     "linkedin": "c81b6bdc-1fb7-46e3-bce5-b32c833826a4",
@@ -34,5 +34,11 @@
     "desktop-dark.png": "Existing real PhysioBaur dark-mode project screenshot, approved 2026-10-18",
     "mobile-dark.png": "Existing real PhysioBaur mobile dark-mode project screenshot, approved 2026-10-18",
     "robot-transparent.png": "Existing Antoine Quarroz brand mascot; reused unchanged"
-  }
+  },
+  "public_article_cover_replaced_at": "2026-10-18T16:28:07.970Z",
+  "public_cover_receipt": "seo/receipts/2026-10-18-article-036-violet-cover.json",
+  "source_files": [
+    "cover.svg",
+    "build.py"
+  ]
 }

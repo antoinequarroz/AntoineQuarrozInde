@@ -121,7 +121,7 @@ onBeforeUnmount(() => {
     @focusin="focusWithin = true"
     @focusout="focusWithin = false"
   >
-    <div class="relative w-full h-[430px] md:h-[470px]">
+    <div class="relative w-full h-[calc(50.625vw+312px)] md:h-[656px]">
       <div class="pointer-events-none absolute inset-x-0 top-4 mx-auto h-44 w-[78%] rounded-full bg-violet-500/10 blur-3xl" />
       <div class="pointer-events-none absolute inset-x-0 bottom-0 mx-auto h-36 w-[72%] rounded-full bg-black/35 blur-3xl" />
 
@@ -129,7 +129,7 @@ onBeforeUnmount(() => {
         <article
           v-for="entry in visibleItems"
           :key="entry.item.id"
-          class="absolute bottom-0 w-[min(90vw,720px)] md:w-[640px] h-[340px] md:h-[360px] rounded-2xl overflow-hidden border transition-[transform,opacity,border-color,box-shadow] duration-500 text-left"
+          class="absolute bottom-0 w-[min(90vw,720px)] md:w-[640px] rounded-2xl overflow-hidden border bg-slate-950 transition-[transform,opacity,border-color,box-shadow] duration-500 text-left"
           :class="entry.off === 0
             ? 'border-violet-300/40 shadow-[0_24px_70px_rgba(91,33,182,0.35)]'
             : 'border-white/15 shadow-[0_16px_45px_rgba(0,0,0,0.45)]'"
@@ -138,17 +138,17 @@ onBeforeUnmount(() => {
             transform: `translateX(${entry.off * stepX}px) translateY(${entry.abs * 14 - (entry.off === 0 ? 18 : 0)}px) rotateZ(${entry.off * stepDeg}deg) scale(${entry.off === 0 ? 1.02 : 0.92}) translateZ(${-entry.abs * 80}px)`,
           }"
         >
-          <div class="absolute inset-0 bg-gradient-to-br from-violet-950/85 via-indigo-950/70 to-slate-950/80" />
-          <img
-            v-if="entry.item.imageSrc"
-            :src="entry.item.imageSrc"
-            :alt="entry.item.title"
-            class="absolute inset-0 w-full h-full object-cover opacity-70"
-            loading="lazy"
-          >
-          <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+          <div class="aspect-video w-full bg-gradient-to-br from-violet-950/85 via-indigo-950/70 to-slate-950/80">
+            <img
+              v-if="entry.item.imageSrc"
+              :src="entry.item.imageSrc"
+              :alt="entry.item.title"
+              class="w-full h-full object-contain"
+              loading="lazy"
+            >
+          </div>
 
-          <div class="relative z-10 h-full p-5 md:p-6 flex flex-col justify-end">
+          <div class="relative z-10 min-h-[244px] p-5 md:p-6 flex flex-col justify-end">
             <div class="flex items-center gap-2 mb-2">
               <span v-if="entry.item.tag" class="px-2 py-1 rounded-full text-xs tracking-wide uppercase bg-violet-400/20 text-violet-100 border border-violet-300/30">
                 {{ entry.item.tag }}
