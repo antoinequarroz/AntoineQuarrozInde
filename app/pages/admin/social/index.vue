@@ -69,12 +69,22 @@ const closeConfirmation = () => { confirmationPost.value = null; confirmationAcc
 const { dialogRef, handleDialogKeydown } = useAccessibleDialog(computed(() => Boolean(confirmationPost.value)), closeConfirmation, '[data-confirm-close]')
 
 
+function isManualConnection(current?: Pick<Connection, 'platform' | 'state' | 'message'>) {
+  return current?.platform === 'x' && current.state === 'blocked'
+    && current.message === 'X reste en publication manuelle, comme choisi. Aucun appel API ni envoi automatique.'
+}
 function connection(platform: Platform) {
   const current = connections.value.find(item => item.platform === platform)
+  // Manual publication is a deliberate mode, not an expiring OAuth check.
+  if (current && isManualConnection(current)) return current
   if (!current || Date.parse(current.checked_at) < Date.now() - 15 * 60 * 1000) {
     return { platform, state: 'unknown' as const, message: 'Hermes n’a pas vérifié cette connexion récemment.' }
   }
   return current
+}
+function connectionLabel(platform: Platform) {
+  const current = connection(platform)
+  return isManualConnection(current) ? 'Publication manuelle' : current.state === 'ready' ? 'Prêt' : 'À vérifier'
 }
 function platformLabel(platform: Platform) { return ({ linkedin: 'LinkedIn', x: 'X', instagram: 'Instagram' })[platform] }
 function limit(platform: Platform) { return platform === 'x' ? 280 : platform === 'instagram' ? 2200 : 3000 }
@@ -547,7 +557,7 @@ onMounted(load)
 <template>
   <div class="space-y-5">
     <header class="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><div class="flex items-center gap-3"><span class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-violet-100 text-violet-700 ring-1 ring-inset ring-violet-200/60 dark:bg-violet-500/15 dark:text-violet-300 dark:ring-violet-400/20" aria-hidden="true"><AdminIcon icon="calendar" class="h-5 w-5" /></span><h1 class="font-display text-2xl font-semibold text-gray-950 dark:text-white sm:text-3xl">Réseaux sociaux</h1></div><p class="mt-2 max-w-2xl text-sm leading-6 text-gray-500 dark:text-gray-400">Prépare ta semaine, adapte chaque post et valide sa publication. Toutes les dates sont en heure suisse.</p></div><div class="flex shrink-0 gap-2"><NuxtLink to="/admin/analytics" class="inline-flex min-h-11 items-center gap-2 rounded-lg border border-gray-200 px-4 text-sm font-semibold dark:border-white/10"><AdminIcon icon="trending-up" class="h-4 w-4" aria-hidden="true" />Analyses</NuxtLink><button type="button" class="inline-flex min-h-11 items-center gap-2 rounded-lg border border-gray-200 px-4 text-sm font-semibold disabled:opacity-50 dark:border-white/10" :disabled="loading || Boolean(busyId)" @click="load"><AdminIcon icon="refresh-cw" class="h-4 w-4" aria-hidden="true" />{{ loading ? 'Chargement…' : 'Actualiser' }}</button></div></header>
-    <details class="rounded-xl border border-gray-200 bg-white dark:border-white/10 dark:bg-[#111118]"><summary class="min-h-11 cursor-pointer px-4 py-3 text-sm font-semibold">Connexions des réseaux <span class="ml-2 font-normal text-gray-500">{{ connections.filter(item => connection(item.platform).state === 'ready').length }} / 3 prêtes</span></summary><div class="grid gap-3 border-t border-gray-100 p-4 dark:border-white/10 sm:grid-cols-3"><div v-for="platform in (['linkedin', 'x', 'instagram'] as Platform[])" :key="platform" class="rounded-xl bg-gray-50 p-3 dark:bg-white/[0.03]"><div class="flex flex-wrap items-center justify-between gap-2"><AdminSocialPlatformBadge :platform="platform" /><span class="rounded-md px-2 py-1 text-xs font-medium" :class="connection(platform).state === 'ready' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' : 'bg-gray-100 text-gray-600 dark:bg-white/[0.06] dark:text-gray-300'">{{ connection(platform).state === 'ready' ? 'Prêt' : 'À vérifier' }}</span></div><p class="mt-2 text-xs leading-5 text-gray-500 dark:text-gray-400">{{ connection(platform).message }}</p></div></div></details>
+    <details class="rounded-xl border border-gray-200 bg-white dark:border-white/10 dark:bg-[#111118]"><summary class="min-h-11 cursor-pointer px-4 py-3 text-sm font-semibold">Connexions des réseaux <span class="ml-2 font-normal text-gray-500">{{ connections.filter(item => connection(item.platform).state === 'ready').length }} / 3 prêtes</span></summary><div class="grid gap-3 border-t border-gray-100 p-4 dark:border-white/10 sm:grid-cols-3"><div v-for="platform in (['linkedin', 'x', 'instagram'] as Platform[])" :key="platform" class="rounded-xl bg-gray-50 p-3 dark:bg-white/[0.03]"><div class="flex flex-wrap items-center justify-between gap-2"><AdminSocialPlatformBadge :platform="platform" /><span class="rounded-md px-2 py-1 text-xs font-medium" :class="connection(platform).state === 'ready' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' : 'bg-gray-100 text-gray-600 dark:bg-white/[0.06] dark:text-gray-300'">{{ connectionLabel(platform) }}</span></div><p class="mt-2 text-xs leading-5 text-gray-500 dark:text-gray-400">{{ connection(platform).message }}</p></div></div></details>
     <section class="space-y-4 rounded-xl border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-[#111118]" aria-label="Filtres du calendrier">
       <div class="grid grid-cols-1 items-end gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <label class="min-w-[8rem] flex-1 text-xs font-semibold text-gray-500 dark:text-gray-400">Réseau<span class="relative mt-1 block"><span class="pointer-events-none absolute inset-y-0 left-3 flex items-center" aria-hidden="true"><AdminIcon v-if="filters.platform === 'all'" icon="share-2" class="h-4 w-4 text-violet-600 dark:text-violet-300" /><AdminSocialPlatformIcon v-else :platform="filters.platform" compact /></span><select class="input-field w-full pl-11 text-sm" aria-label="Filtrer par réseau" :value="filters.platform" @change="setFilter('platform', ($event.target as HTMLSelectElement).value)"><option value="all">Tous les réseaux</option><option value="linkedin">LinkedIn</option><option value="instagram">Instagram</option><option value="x">X</option></select></span></label>
