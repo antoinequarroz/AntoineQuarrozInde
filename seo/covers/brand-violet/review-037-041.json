@@ -1,0 +1,32 @@
+{
+  "reviewed_on": "2026-10-18",
+  "method": "Visual inspection of all five final PNGs with view_image at 1200×675, against the approved PhysioBaur violet reference. Text spelling, accents, hierarchy, legibility, raster presence, thematic illustration and disclosure labels checked. Re-inspected 037 and 038 after resolving incidental footer overlap.",
+  "reviewer": "Codex visual review; this record does not assert article publication or social approval",
+  "covers": {
+    "037": {
+      "sha256": "466fc9012d4b9c532237b636428c29081d6e759b8f3528c86179dc2817ccd5da",
+      "result": "passed",
+      "notes": "Vidéo / L’aperçu accents correct; actual public landscape and portrait posters visible; player label and mobile preview clear; no performance figures. The original robot appears in front of the player without covering important labels."
+    },
+    "038": {
+      "sha256": "8c1ada12e9e36ddd2c6e5098a5e32e5755788dd0594756ae8e654dca88b2c29d",
+      "result": "passed",
+      "notes": "Headline and checklist readable. Three empty control boxes avoid claiming completed verification. Démonstration visible; footer clear of robot."
+    },
+    "039": {
+      "sha256": "07c731d9cc4a72d6895bd00b6ba57a30a3015025e58e29ee9d3036d4924c18a4",
+      "result": "passed",
+      "notes": "Après / cassés / repérer accents correct. Before 404 and after 301 → 200 are visually distinct. exemple.test URL fictive and Démonstration labels visible."
+    },
+    "040": {
+      "sha256": "ae5613939d4da848823685186098284720b05c8537376be2170c6aec216797b4",
+      "result": "passed",
+      "notes": "Space client and document validation illustration readable, original robot placed below navigation; Démonstration and Exemple entièrement fictif labels visible; no client identity or amount."
+    },
+    "041": {
+      "sha256": "42ffc41797642920d249aa4dcb7f0f44f49fb0d88d1928e04a311926111383f4",
+      "result": "passed",
+      "notes": "à l’action accents and apostrophe correct. Count of 3 maps to exactly three readable actions. Démonstration and Données fictives labels visible; no business or private figures."
+    }
+  }
+}

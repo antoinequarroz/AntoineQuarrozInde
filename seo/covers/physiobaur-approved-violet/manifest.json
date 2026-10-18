@@ -1,0 +1,38 @@
+{
+  "status": "style_approved_by_Antoine_2026-10-18",
+  "article": "036",
+  "size": [
+    1200,
+    675
+  ],
+  "font": "Space Grotesk, exact variable font from existing project assets; glyphs rendered as paths",
+  "palette": [
+    "#080810",
+    "#7c3aed",
+    "#a855f7",
+    "#c084fc"
+  ],
+  "real_assets": [
+    "desktop-dark.png",
+    "mobile-dark.png",
+    "robot-transparent.png"
+  ],
+  "font_license": "assets/OFL-SpaceGrotesk.txt",
+  "method": "Original SVG composition using existing brand assets; no AI-generated fake screenshot",
+  "sha256": "3e6876efd649567e82f67d0f03848ba9ba3b39c8a5096e945010a7d632a3dd15",
+  "public_article_cover_replaced": false,
+  "social_drafts_attached": true,
+  "social_drafts": {
+    "linkedin": "c81b6bdc-1fb7-46e3-bce5-b32c833826a4",
+    "x": "7eab5565-d0ba-4efd-ba70-5b9180540b27"
+  },
+  "social_status": "draft/manual/v2; no approval or publication date",
+  "public_article_cover_waiting_user_style_validation": false,
+  "coverStyle": "aq-editorial-violet-space-grotesk-v1",
+  "approval": "Antoine approved replacement of the article cover and preparation of the next five. Social publication requires separate approval.",
+  "provenance": {
+    "desktop-dark.png": "Existing real PhysioBaur dark-mode project screenshot, approved 2026-10-18",
+    "mobile-dark.png": "Existing real PhysioBaur mobile dark-mode project screenshot, approved 2026-10-18",
+    "robot-transparent.png": "Existing Antoine Quarroz brand mascot; reused unchanged"
+  }
+}

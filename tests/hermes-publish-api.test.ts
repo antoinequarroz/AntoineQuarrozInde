@@ -1,9 +1,11 @@
 import { readFileSync } from 'node:fs'
-import { describe, expect, it } from 'vitest'
+import { createError } from 'h3'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { isHermesPublishRequestAuthorized } from '../server/utils/hermesPublishAuth'
 import {
   HERMES_PUBLICATION_SITE,
   HERMES_EDITORIAL_COVER_STYLE,
+  HERMES_VIOLET_EDITORIAL_COVER_STYLE,
   validateHermesArticlePayload,
   validateHermesCoverUpdatePayload,
   validateHermesIdempotencyKey,
@@ -23,17 +25,29 @@ const validBody = {
   coverStyle: HERMES_EDITORIAL_COVER_STYLE,
 }
 
+const validCoverUpdate = {
+  site: HERMES_PUBLICATION_SITE,
+  articleId: 14,
+  coverImageDataUrl: validBody.coverImageDataUrl,
+  coverStyle: HERMES_EDITORIAL_COVER_STYLE,
+}
+const approvedCoverStyles = [HERMES_EDITORIAL_COVER_STYLE, HERMES_VIOLET_EDITORIAL_COVER_STYLE]
+
 describe('Hermes article publication access', () => {
+  beforeEach(() => vi.stubGlobal('createError', createError))
+  afterEach(() => vi.unstubAllGlobals())
+
   it('requires an exact dedicated bearer token', () => {
     expect(isHermesPublishRequestAuthorized('Bearer publish-secret', 'publish-secret')).toBe(true)
     expect(isHermesPublishRequestAuthorized('Bearer read-secret', 'publish-secret')).toBe(false)
     expect(isHermesPublishRequestAuthorized('publish-secret', 'publish-secret')).toBe(false)
   })
 
-  it('accepts a strict article payload for the approved site', () => {
-    const result = validateHermesArticlePayload(validBody)
+  it.each(approvedCoverStyles)('preserves the approved article cover style %s', (coverStyle) => {
+    const result = validateHermesArticlePayload({ ...validBody, coverStyle })
     expect(result.slug).toBe(validBody.slug)
     expect(result.sourceUrls).toHaveLength(2)
+    expect(result.coverStyle).toBe(coverStyle)
     expect(validateHermesIdempotencyKey('seo:2026-09-10:article-001')).toContain('2026-09-10')
   })
 
@@ -42,19 +56,21 @@ describe('Hermes article publication access', () => {
     expect(() => validateHermesArticlePayload({ ...validBody, published: false })).toThrow()
     expect(() => validateHermesArticlePayload({ ...validBody, delete: true })).toThrow()
     expect(() => validateHermesArticlePayload({ ...validBody, sourceUrls: ['http://example.com', 'https://example.org'] })).toThrow()
-    expect(() => validateHermesArticlePayload({ ...validBody, coverStyle: 'pixel-art' })).toThrow()
   })
 
-  it('accepts only a bounded image-only cover update for the approved style', () => {
-    const update = validateHermesCoverUpdatePayload({
-      site: HERMES_PUBLICATION_SITE,
-      articleId: 14,
-      coverImageDataUrl: validBody.coverImageDataUrl,
-      coverStyle: HERMES_EDITORIAL_COVER_STYLE,
-    })
+  it.each(approvedCoverStyles)('preserves the approved image-only update style %s', (coverStyle) => {
+    const update = validateHermesCoverUpdatePayload({ ...validCoverUpdate, coverStyle })
     expect(update.articleId).toBe(14)
-    expect(() => validateHermesCoverUpdatePayload({ ...update, title: 'unexpected' })).toThrow()
-    expect(() => validateHermesCoverUpdatePayload({ ...update, coverStyle: 'pixel-art' })).toThrow()
+    expect(update.coverStyle).toBe(coverStyle)
+  })
+
+  it.each(['pixel-art', 'aq-editorial-violet-space-grotesk-v2', `${HERMES_VIOLET_EDITORIAL_COVER_STYLE} `, '', null, undefined])('rejects an unapproved or missing exact cover style %s', (coverStyle) => {
+    expect(() => validateHermesArticlePayload({ ...validBody, coverStyle })).toThrow('The approved editorial cover style must be explicit')
+    expect(() => validateHermesCoverUpdatePayload({ ...validCoverUpdate, coverStyle })).toThrow('The approved editorial cover style must be explicit')
+  })
+
+  it.each(['title', 'content', 'published_at', 'expectedCoverImage', 'expectedVersion'])('keeps cover updates limited to the four allowed fields, rejecting %s', (field) => {
+    expect(() => validateHermesCoverUpdatePayload({ ...validCoverUpdate, [field]: 'unexpected' })).toThrow('Unknown cover update fields are not accepted')
   })
 
   it('keeps the cover update endpoint image-only and audited', () => {

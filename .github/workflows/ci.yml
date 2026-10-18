@@ -40,6 +40,8 @@ jobs:
       - run: npm test
       - name: Verify social transports without publishing
         run: python3 -m unittest discover -s scripts/hermes -p 'test_social_media_publisher.py'
+      - name: Verify the editorial cover payload without publishing
+        run: python3 -m unittest scripts/hermes/test_publish_article.py
       - run: npm run typecheck
       - run: npm run build
       - name: Audit exact packages shipped in the standalone server

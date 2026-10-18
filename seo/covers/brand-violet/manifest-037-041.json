@@ -1,0 +1,178 @@
+{
+  "schema_version": 1,
+  "scope": "Five covers 037–041 only; no article or social publication action",
+  "status": "approved_brand_cover_batch_prepared",
+  "social_drafts_status": "A_VALIDER",
+  "palette": {
+    "background": "#080810",
+    "gradient": [
+      "#7c3aed",
+      "#a855f7",
+      "#c084fc"
+    ]
+  },
+  "font": {
+    "family": "Space Grotesk",
+    "title_weight": 700,
+    "small_text_weight": 500,
+    "rendering": "FontTools outlines from exact bundled variable font",
+    "license": "assets/OFL-SpaceGrotesk.txt"
+  },
+  "method": "Original SVG composition adapted from approved PhysioBaur violet-v1 build; real raster assets composited with Sharp, no raster AI generation or paid API.",
+  "reference": "seo/covers/propositions/physiobaur-violet-v1/cover-1200x675.png in editorial-20261018 worktree, approved by Antoine",
+  "quality_review_record": "seo/covers/brand-violet/review-037-041.json",
+  "assets": [
+    {
+      "path": "assets/SpaceGrotesk-VariableFont_wght.ttf",
+      "sha256": "acad6de1fc93436f5c0f1f4137751ef04f1aea3063e7036535970ffcfbd79f72",
+      "provenance": "Existing approved PhysioBaur assets/fonts/SpaceGrotesk-VariableFont_wght.ttf",
+      "kind": "Exact existing brand font"
+    },
+    {
+      "path": "assets/OFL-SpaceGrotesk.txt",
+      "sha256": "18a4de52385f6b988782639d5d0cc1326e5a8c2de9a7f01d7b20d9aedcc60943",
+      "provenance": "Existing font license distributed with Space Grotesk; line endings normalized to LF, legal text unchanged",
+      "kind": "SIL Open Font License 1.1"
+    },
+    {
+      "path": "assets/robot-transparent.png",
+      "sha256": "d7f1023fb32a12446225e7b4da1cf3e7ae7ef0add9c3cd7885469ff80f9f2361",
+      "provenance": "Existing approved PhysioBaur dark proposal / assets/robot-transparent.png",
+      "kind": "Original transparent brand robot; copied without alterations"
+    },
+    {
+      "path": "assets/affiche-paysage.jpg",
+      "sha256": "15e2b779f9096ad4bb0cb948cf9028455ca5d0474bb73ae88302275fe9f7e189",
+      "provenance": "https://www.antoinequarroz.ch/videos/presentation/affiche-paysage.jpg",
+      "kind": "Real public video poster; referenced by app/components/sections/AboutVideo.vue",
+      "verified_public_on": "2026-10-18",
+      "public_hash_matches_local": true
+    },
+    {
+      "path": "assets/affiche-portrait.jpg",
+      "sha256": "8ad974e1e0adc0f8fbb409bb6294f6a6a6646185790f73b570afc0303eff5669",
+      "provenance": "https://www.antoinequarroz.ch/videos/presentation/affiche-portrait.jpg",
+      "kind": "Real public video poster; referenced by app/components/sections/AboutVideo.vue",
+      "verified_public_on": "2026-10-18",
+      "public_hash_matches_local": true
+    }
+  ],
+  "covers": [
+    {
+      "number": "037",
+      "scheduled_article_date": "2026-10-19",
+      "approved_article_title": "Vidéo sur votre site : limiter le poids et préserver le confort sur mobile",
+      "cover_phrase": "Vidéo sur votre site / Le confort sur mobile.",
+      "path": "seo/covers/article-037.png",
+      "dimensions": [
+        1200,
+        675
+      ],
+      "bytes": 280172,
+      "sha256": "466fc9012d4b9c532237b636428c29081d6e759b8f3528c86179dc2817ccd5da",
+      "sources": [
+        "seo/covers/brand-violet/sources/article-037.base.svg",
+        "seo/covers/brand-violet/sources/article-037.layers.json",
+        "seo/covers/brand-violet/sources/article-037.overlay.svg"
+      ],
+      "visual_provenance": "Actual public AboutVideo landscape and portrait posters, with illustrative player chrome. No performance measurements.",
+      "visual_review": {
+        "status": "passed",
+        "record": "seo/covers/brand-violet/review-037-041.json",
+        "record_matches_sha256": true
+      }
+    },
+    {
+      "number": "038",
+      "scheduled_article_date": "2026-10-20",
+      "approved_article_title": "Votre site est en ligne : la checklist mensuelle pour le garder fiable",
+      "cover_phrase": "Votre site en ligne / La routine qui compte.",
+      "path": "seo/covers/article-038.png",
+      "dimensions": [
+        1200,
+        675
+      ],
+      "bytes": 144332,
+      "sha256": "8c1ada12e9e36ddd2c6e5098a5e32e5755788dd0594756ae8e654dca88b2c29d",
+      "sources": [
+        "seo/covers/brand-violet/sources/article-038.base.svg",
+        "seo/covers/brand-violet/sources/article-038.layers.json"
+      ],
+      "visual_provenance": "Fictitious monthly checklist with unchecked controls; explicitly labeled Démonstration. No actual client verification claimed.",
+      "visual_review": {
+        "status": "passed",
+        "record": "seo/covers/brand-violet/review-037-041.json",
+        "record_matches_sha256": true
+      }
+    },
+    {
+      "number": "039",
+      "scheduled_article_date": "2026-10-21",
+      "approved_article_title": "Après une refonte : repérer les liens cassés et les mauvaises redirections",
+      "cover_phrase": "Après la refonte / Liens cassés : les repérer.",
+      "path": "seo/covers/article-039.png",
+      "dimensions": [
+        1200,
+        675
+      ],
+      "bytes": 142463,
+      "sha256": "07c731d9cc4a72d6895bd00b6ba57a30a3015025e58e29ee9d3036d4924c18a4",
+      "sources": [
+        "seo/covers/brand-violet/sources/article-039.base.svg",
+        "seo/covers/brand-violet/sources/article-039.layers.json"
+      ],
+      "visual_provenance": "Illustrative SVG before/after flow with fictitious exemple.test URL, 404, 301 and 200; labeled Démonstration and URL fictives.",
+      "visual_review": {
+        "status": "passed",
+        "record": "seo/covers/brand-violet/review-037-041.json",
+        "record_matches_sha256": true
+      }
+    },
+    {
+      "number": "040",
+      "scheduled_article_date": "2026-10-22",
+      "approved_article_title": "Devis, documents et validations : quand un espace client devient utile",
+      "cover_phrase": "Un espace client / Pour suivre votre projet.",
+      "path": "seo/covers/article-040.png",
+      "dimensions": [
+        1200,
+        675
+      ],
+      "bytes": 150879,
+      "sha256": "ae5613939d4da848823685186098284720b05c8537376be2170c6aec216797b4",
+      "sources": [
+        "seo/covers/brand-violet/sources/article-040.base.svg",
+        "seo/covers/brand-violet/sources/article-040.layers.json"
+      ],
+      "visual_provenance": "Entirely fictitious client portal SVG, labeled Démonstration and Exemple entièrement fictif; no client name, address or amount.",
+      "visual_review": {
+        "status": "passed",
+        "record": "seo/covers/brand-violet/review-037-041.json",
+        "record_matches_sha256": true
+      }
+    },
+    {
+      "number": "041",
+      "scheduled_article_date": "2026-10-23",
+      "approved_article_title": "Un tableau de bord utile : du chiffre à la prochaine action",
+      "cover_phrase": "Tableau de bord / Du chiffre à l’action.",
+      "path": "seo/covers/article-041.png",
+      "dimensions": [
+        1200,
+        675
+      ],
+      "bytes": 141159,
+      "sha256": "42ffc41797642920d249aa4dcb7f0f44f49fb0d88d1928e04a311926111383f4",
+      "sources": [
+        "seo/covers/brand-violet/sources/article-041.base.svg",
+        "seo/covers/brand-violet/sources/article-041.layers.json"
+      ],
+      "visual_provenance": "Illustrative SVG showing a count of 3 and exactly 3 fictitious action tasks, labeled Démonstration and Données fictives.",
+      "visual_review": {
+        "status": "passed",
+        "record": "seo/covers/brand-violet/review-037-041.json",
+        "record_matches_sha256": true
+      }
+    }
+  ]
+}

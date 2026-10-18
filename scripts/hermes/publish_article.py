@@ -16,6 +16,9 @@ from pathlib import Path
 
 SITE = "https://www.antoinequarroz.ch"
 ENDPOINT = f"{SITE}/api/hermes/articles"
+LEGACY_COVER_STYLE = "aq-editorial-photorealistic-v1"
+VIOLET_COVER_STYLE = "aq-editorial-violet-space-grotesk-v1"
+APPROVED_COVER_STYLES = frozenset({LEGACY_COVER_STYLE, VIOLET_COVER_STYLE})
 
 def load_payload(path: Path) -> dict:
     payload = json.loads(path.read_text(encoding="utf-8"))
@@ -26,9 +29,11 @@ def load_payload(path: Path) -> dict:
     if not payload.get("coverImageDataUrl"):
         raise ValueError(
             "Couverture editoriale manquante: publication bloquee. "
-            "Fournir une image 16:9 photorealiste bleu-noir et doree conforme aux references du blog."
+            "Fournir une image 16:9 conforme au style editorial valide pour cet article."
         )
-    payload["coverStyle"] = "aq-editorial-photorealistic-v1"
+    cover_style = payload.setdefault("coverStyle", LEGACY_COVER_STYLE)
+    if not isinstance(cover_style, str) or cover_style not in APPROVED_COVER_STYLES:
+        raise ValueError("Le style de couverture doit correspondre a un style editorial approuve.")
     return payload
 
 
