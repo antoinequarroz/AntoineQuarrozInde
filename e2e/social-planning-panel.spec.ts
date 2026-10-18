@@ -309,7 +309,7 @@ test('375px keyboard planning keeps direct actions reachable, scroll contained a
     })
     console.info('ANT44 synthetic focus geometry', JSON.stringify(geometry))
     await test.info().attach('planning-focus-scroll-geometry', { body: Buffer.from(JSON.stringify(geometry, null, 2)), contentType: 'application/json' })
-    throw error
+    throw new Error(`${error instanceof Error ? error.message : String(error)}\nANT44 synthetic focus geometry: ${JSON.stringify(geometry)}`)
   }
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
   expect(state.unexpected).toEqual([])
