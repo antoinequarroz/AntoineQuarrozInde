@@ -13,7 +13,7 @@ defineProps<{
 defineEmits<{
   open: [post: SocialPost]
   move: [post: SocialPost]
-  remove: [post: SocialPost]
+  remove: [post: SocialPost, event: MouseEvent]
   restore: [post: SocialPost]
   'show-rejected': []
   'show-active': []
@@ -51,7 +51,7 @@ defineEmits<{
           v-for="post in posts" :key="post.id" :post="post" compact planning
           :movable="canMoveSocialPost(post)" :removable="canMoveSocialPost(post)"
           :restorable="post.status === 'rejected'" :move-disabled="moveDisabled" :dragging="draggingId === post.id"
-          @open="$emit('open', $event)" @move="$emit('move', $event)" @remove="$emit('remove', $event)" @restore="$emit('restore', $event)"
+          @open="$emit('open', $event)" @move="$emit('move', $event)" @remove="(post, event) => $emit('remove', post, event)" @restore="$emit('restore', $event)"
           @drag-start="(post, event) => $emit('drag-start', post, event)" @drag-end="$emit('drag-end')"
         />
       </div>

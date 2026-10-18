@@ -328,6 +328,7 @@ const moveDate = ref('')
 const moveError = ref('')
 const removeSource = ref<SocialPost | null>(null)
 const removeError = ref('')
+let removeTrigger: HTMLElement | null = null
 const calendarMoveStatus = ref('')
 const unplannedHovered = ref(false)
 let dragClickGuardUntil = 0
@@ -437,15 +438,35 @@ function confirmMove(targetDate: string | null) {
 function dismissRemove() {
   removeSource.value = null
   removeError.value = ''
+  removeTrigger = null
 }
 function closeRemove() {
-  if (!busyId.value) dismissRemove()
+  if (busyId.value) return
+  const trigger = removeTrigger
+  const routePath = router.currentRoute.value.fullPath
+  const departureEpoch = calendarDepartureEpoch
+  dismissRemove()
+  void restoreRemoveTrigger(trigger, routePath, departureEpoch)
+}
+async function restoreRemoveTrigger(trigger: HTMLElement | null, routePath: string, departureEpoch: number) {
+  // The dialog helper also releases inert and restores its captured focus.
+  // Wait for that cleanup and the disabled card buttons to render first.
+  await nextTick()
+  await nextTick()
+  if (!isCalendarActive() || router.currentRoute.value.fullPath !== routePath || calendarDepartureEpoch !== departureEpoch
+    || editingPost.value || confirmationPost.value || moveSource.value || removeSource.value
+    || !trigger?.isConnected || trigger.matches(':disabled')) return
+  trigger.focus({ preventScroll: true })
+  trigger.scrollIntoView({ block: 'nearest', inline: 'nearest' })
 }
 const { dialogRef: removeDialogRef, handleDialogKeydown: handleRemoveKeydown } = useAccessibleDialog(computed(() => Boolean(removeSource.value)), closeRemove, '[data-remove-cancel]')
-function openRemove(post: SocialPost) {
+function openRemove(post: SocialPost, event?: MouseEvent) {
   if (movesDisabled.value || dragSource.value || Date.now() < dragClickGuardUntil || !isCalendarActive()) return
   const current = posts.value.find(item => item.id === post.id)
   if (!current || !canMoveSocialPost(current)) return
+  // Capture synchronously: background buttons become disabled as soon as the
+  // modal opens, which can otherwise make the browser drop their focus.
+  removeTrigger = event?.currentTarget instanceof HTMLElement ? event.currentTarget : document.activeElement instanceof HTMLElement ? document.activeElement : null
   removeSource.value = { ...current }
   removeError.value = ''
 }

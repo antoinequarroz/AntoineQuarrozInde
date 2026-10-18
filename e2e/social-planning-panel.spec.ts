@@ -269,12 +269,17 @@ test('375px keyboard planning keeps direct actions reachable, scroll contained a
   await page.keyboard.press('Enter')
   await expect(moveDialog).toHaveCount(0)
   expect(state.writes).toEqual([{ method: 'PUT', path: `/api/admin/social-posts/${post.id}`, body: { action: 'plan', version: 1, planned_at: '2026-10-22T16:00:00.000Z' } }])
-  await expect(page.locator('[data-calendar-day="2026-10-22"]:visible').getByRole('button', { name: `Ouvrir ${post.article_title} sur X`, exact: true })).toBeVisible()
+  const movedCard = page.locator('[data-calendar-day="2026-10-22"]:visible').getByRole('button', { name: `Ouvrir ${post.article_title} sur X`, exact: true })
+  await expect(movedCard).toBeVisible()
+  // Wait for the move dialog's asynchronous focus handoff before beginning
+  // another keyboard action in the nested planning list.
+  await expect(movedCard).toBeFocused()
   expectUnapproved(post)
 
   // A second draft can be removed with the keyboard, independently of its card.
   const second = state.posts[42]!
-  await action(page, second, 'Supprimer').focus()
+  const removeSecond = action(page, second, 'Supprimer')
+  await removeSecond.focus()
   await page.keyboard.press('Enter')
   const removal = page.getByRole('dialog', { name: 'Supprimer ce brouillon ?', exact: true })
   await expect(removal).toBeInViewport()
@@ -282,7 +287,8 @@ test('375px keyboard planning keeps direct actions reachable, scroll contained a
   await expect(removal).toHaveCount(0)
   expect(state.writes).toHaveLength(1)
   expectUnapproved(second)
-  await expect(action(page, second, 'Supprimer')).toBeInViewport()
+  await expect(removeSecond).toBeFocused()
+  await expect(removeSecond).toBeInViewport()
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
   expect(state.unexpected).toEqual([])
   await panel(page).scrollIntoViewIfNeeded()
