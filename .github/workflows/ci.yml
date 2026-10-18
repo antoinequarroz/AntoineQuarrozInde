@@ -71,7 +71,7 @@ jobs:
           npx playwright install --with-deps chromium
       - run: npx playwright test e2e/accessibility.spec.ts --project=chromium --grep @credential-free
       - name: Verify social editing, calendar movement, and explicit consent
-        run: npx playwright test e2e/social-mixed-media.spec.ts e2e/social-document-carousel.spec.ts e2e/social-editorial-calendar.spec.ts e2e/social-calendar-drag.spec.ts --project=chromium
+        run: npx playwright test e2e/social-mixed-media.spec.ts e2e/social-document-carousel.spec.ts e2e/social-editorial-calendar.spec.ts e2e/social-calendar-drag.spec.ts e2e/social-planning-panel.spec.ts --project=chromium
 
   seo-quality:
     needs: quality

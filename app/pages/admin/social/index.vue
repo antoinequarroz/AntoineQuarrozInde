@@ -132,15 +132,23 @@ async function load() {
 }
 
 async function update(post: SocialPost, action: 'save' | 'reject' | 'restore') {
+  if (busyId.value) return { ok: false as const, error: 'Attends la fin de l’enregistrement avant de réessayer.' }
   busyId.value = post.id
   try {
     const result = await $fetch<Partial<SocialPost> & { id: string }>(`/api/admin/social-posts/${post.id}`, {
-      method: 'PUT', headers: auth.authHeader(), body: { action, content: post.content, version: post.version },
+      method: 'PUT', headers: auth.authHeader(), body: { action, version: post.version, ...(action === 'save' ? { content: post.content } : {}) },
     })
     replacePost(result)
-    toast.success(action === 'save' ? 'Brouillon enregistré' : action === 'reject' ? 'Publication refusée et retirée du tableau' : 'Brouillon restauré')
+    toast.success(action === 'save' ? 'Brouillon enregistré' : action === 'reject' ? 'Brouillon retiré du planning. Tu peux le restaurer dans Refusés.' : 'Brouillon restauré. Sa publication attend ta validation.')
+    return { ok: true as const }
   }
-  catch (error: any) { toast.error(error?.data?.message || 'La modification a échoué') }
+  catch (error: any) {
+    const message = (error?.statusCode === 409 || error?.status === 409)
+      ? 'Ce brouillon a changé. Actualise le calendrier avant de réessayer.'
+      : error?.data?.message || 'Enregistrement non confirmé. Actualise le calendrier avant de réessayer.'
+    toast.error(message)
+    return { ok: false as const, error: message }
+  }
   finally { busyId.value = '' }
 }
 async function approve() {
@@ -223,7 +231,7 @@ function closeEditor() {
 }
 const { dialogRef: editorDialogRef, handleDialogKeydown: handleEditorKeydown } = useAccessibleDialog(computed(() => Boolean(editingPost.value)), closeEditor, '[data-editor-close]')
 async function openPost(post: SocialPost) {
-  if (busyId.value || dragSource.value || Date.now() < dragClickGuardUntil || moveSource.value) return
+  if (busyId.value || dragSource.value || Date.now() < dragClickGuardUntil || moveSource.value || removeSource.value) return
   if (filterNavigation && !await filterNavigation) return
   if (!isCalendarActive()) return
   await router.replace({ path: calendarPath, query: { ...route.query, postId: post.id } })
@@ -248,6 +256,7 @@ onBeforeRouteLeave(() => {
   if (protectEditorChanges() === false) return false
   calendarDepartureEpoch++
   cancelDrag()
+  dismissRemove()
 })
 onBeforeRouteUpdate((to, from) => {
   if (to.query.postId !== from.query.postId) return protectEditorChanges()
@@ -259,7 +268,10 @@ const counts = computed(() => ({
   waiting: scopePosts.value.filter(post => ['approved', 'publishing'].includes(post.status)).length,
   failed: scopePosts.value.filter(post => post.status === 'failed').length,
 }))
-const unplannedPosts = computed(() => filteredPosts.value.filter(post => !socialPostCalendarIso(post)))
+const rejectedCount = computed(() => scopePosts.value.filter(post => post.status === 'rejected').length)
+const unplannedPosts = computed(() => filteredPosts.value.filter(post => filters.value.status === 'rejected'
+  ? post.status === 'rejected'
+  : post.status !== 'rejected' && !socialPostCalendarIso(post)))
 const days = computed(() => filters.value.view === 'list' ? [] : calendarDays(filters.value.date, filters.value.view))
 const periodCount = computed(() => filteredPosts.value.filter(post => {
   const iso = socialPostCalendarIso(post)
@@ -314,11 +326,14 @@ const dragSource = ref<MoveSource | null>(null)
 const moveSource = ref<MoveSource | null>(null)
 const moveDate = ref('')
 const moveError = ref('')
+const removeSource = ref<SocialPost | null>(null)
+const removeError = ref('')
+let removeTrigger: HTMLElement | null = null
 const calendarMoveStatus = ref('')
 const unplannedHovered = ref(false)
 let dragClickGuardUntil = 0
 const movePost = computed(() => posts.value.find(post => post.id === moveSource.value?.id))
-const movesDisabled = computed(() => Boolean(loading.value || busyId.value || editingPost.value || confirmationPost.value || moveSource.value))
+const movesDisabled = computed(() => Boolean(loading.value || busyId.value || editingPost.value || confirmationPost.value || moveSource.value || removeSource.value))
 const moveHour = computed(() => isoToZurichLocal(movePost.value?.planned_at || null).slice(11, 16) || '18:00')
 function cancelDrag() {
   if (dragSource.value) { dragClickGuardUntil = Date.now() + 250; calendarMoveStatus.value = 'Déplacement annulé. La date souhaitée est inchangée.' }
@@ -368,7 +383,7 @@ function openMove(post: SocialPost) {
   moveError.value = ''
 }
 async function persistMove(source: MoveSource, targetDate: string | null) {
-  if (busyId.value || loading.value || editingPost.value || confirmationPost.value || !isCalendarActive()) return
+  if (busyId.value || loading.value || editingPost.value || confirmationPost.value || removeSource.value || !isCalendarActive()) return
   const current = posts.value.find(post => post.id === source.id)
   if (!current || current.version !== source.version || !canMoveSocialPost(current)) {
     moveError.value = 'Ce brouillon a changé. Actualise le calendrier avant de le déplacer.'
@@ -420,9 +435,104 @@ async function persistMove(source: MoveSource, targetDate: string | null) {
 function confirmMove(targetDate: string | null) {
   if (moveSource.value) void persistMove({ ...moveSource.value }, targetDate)
 }
+function dismissRemove() {
+  removeSource.value = null
+  removeError.value = ''
+  removeTrigger = null
+}
+function closeRemove() {
+  if (busyId.value) return
+  const trigger = removeTrigger
+  const routePath = router.currentRoute.value.fullPath
+  const departureEpoch = calendarDepartureEpoch
+  dismissRemove()
+  void restoreRemoveTrigger(trigger, routePath, departureEpoch)
+}
+async function restoreRemoveTrigger(trigger: HTMLElement | null, routePath: string, departureEpoch: number) {
+  // The dialog helper also releases inert and restores its captured focus.
+  // Wait for that cleanup and the disabled card buttons to render first.
+  await nextTick()
+  await nextTick()
+  if (!isCalendarActive() || router.currentRoute.value.fullPath !== routePath || calendarDepartureEpoch !== departureEpoch
+    || editingPost.value || confirmationPost.value || moveSource.value || removeSource.value
+    || !trigger?.isConnected || trigger.matches(':disabled')) return
+  trigger.focus({ preventScroll: true })
+  // Focus restoration must finish immediately, independently of the site's
+  // smooth-scrolling preference or a paused animation clock.
+  trigger.scrollIntoView({ behavior: 'instant', block: 'nearest', inline: 'nearest' })
+  // In Chromium, clipping ancestors can make scrollIntoView scroll only the
+  // nested list. Finish the viewport adjustment explicitly when necessary.
+  const rect = trigger.getBoundingClientRect()
+  const viewportHeight = document.documentElement.clientHeight
+  const topEdge = Math.max(16, (document.querySelector('.admin-topbar')?.getBoundingClientRect().bottom ?? 0) + 16)
+  const offset = rect.bottom > viewportHeight - 16
+    ? rect.bottom - viewportHeight + 16
+    : rect.top < topEdge ? rect.top - topEdge : 0
+  // A previously started native smooth scroll can resume after focus returns,
+  // even when the button is already visible. Always cancel that animation.
+  window.scrollTo({ left: window.scrollX, top: window.scrollY + offset, behavior: 'instant' })
+}
+const { dialogRef: removeDialogRef, handleDialogKeydown: handleRemoveKeydown } = useAccessibleDialog(computed(() => Boolean(removeSource.value)), closeRemove, '[data-remove-cancel]')
+function openRemove(post: SocialPost, event?: MouseEvent) {
+  if (movesDisabled.value || dragSource.value || Date.now() < dragClickGuardUntil || !isCalendarActive()) return
+  const current = posts.value.find(item => item.id === post.id)
+  if (!current || !canMoveSocialPost(current)) return
+  // Capture synchronously: background buttons become disabled as soon as the
+  // modal opens, which can otherwise make the browser drop their focus.
+  removeTrigger = event?.currentTarget instanceof HTMLElement ? event.currentTarget : document.activeElement instanceof HTMLElement ? document.activeElement : null
+  removeSource.value = { ...current }
+  removeError.value = ''
+}
+async function focusPlanningAfterRemoval(departureEpoch: number) {
+  await nextTick()
+  if (departureEpoch !== calendarDepartureEpoch || !isCalendarActive()) return
+  const nextCard = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-calendar-unplanned] [data-social-post-id]'))
+    .find(element => !element.disabled && element.getClientRects().length)
+  ;(nextCard || document.getElementById('social-calendar-summary'))?.focus()
+}
+async function confirmRemove() {
+  const source = removeSource.value
+  if (!source || busyId.value || loading.value || editingPost.value || confirmationPost.value || moveSource.value || dragSource.value || !isCalendarActive()) return
+  const current = posts.value.find(post => post.id === source.id)
+  if (!current || current.version !== source.version || !canMoveSocialPost(current)) {
+    removeError.value = 'Ce brouillon a changé. Actualise le calendrier avant de le supprimer.'
+    toast.error(removeError.value)
+    return
+  }
+  const departureEpoch = calendarDepartureEpoch
+  removeError.value = ''
+  const result = await update(source, 'reject')
+  if (!result.ok) {
+    if (removeSource.value?.id === source.id) {
+      removeError.value = result.error
+      // Disabling the submit button during the request can move browser focus
+      // to the body. Keep Escape and keyboard navigation inside the dialog.
+      await nextTick()
+      removeDialogRef.value?.querySelector<HTMLButtonElement>('[data-remove-cancel]')?.focus()
+    }
+    return
+  }
+  if (departureEpoch !== calendarDepartureEpoch || !isCalendarActive() || removeSource.value?.id !== source.id) return
+  dismissRemove()
+  calendarMoveStatus.value = 'Brouillon retiré du planning et conservé dans Refusés. Tu peux le restaurer à tout moment.'
+  await focusPlanningAfterRemoval(departureEpoch)
+}
+async function restoreFromPanel(post: SocialPost) {
+  if (movesDisabled.value || dragSource.value || Date.now() < dragClickGuardUntil || !isCalendarActive()) return
+  const current = posts.value.find(item => item.id === post.id)
+  if (!current || current.status !== 'rejected' || current.version !== post.version) {
+    toast.error('Ce brouillon a changé. Actualise le calendrier avant de le restaurer.')
+    return
+  }
+  const departureEpoch = calendarDepartureEpoch
+  const result = await update({ ...current }, 'restore')
+  if (!result.ok || departureEpoch !== calendarDepartureEpoch || !isCalendarActive()) return
+  calendarMoveStatus.value = 'Brouillon restauré. Son texte, ses médias et sa date sont conservés ; sa publication attend ta validation.'
+  await focusPlanningAfterRemoval(departureEpoch)
+}
 function cancelDragOnEscape(event: KeyboardEvent) { if (event.key === 'Escape') cancelDrag() }
-watch(() => route.fullPath, () => { cancelDrag(); if (!busyId.value) closeMove() })
-watch([editingPost, confirmationPost], ([editor, confirmation]) => { if (editor || confirmation) { cancelDrag(); closeMove() } })
+watch(() => route.fullPath, () => { cancelDrag(); dismissRemove(); if (!busyId.value) closeMove() })
+watch([editingPost, confirmationPost], ([editor, confirmation]) => { if (editor || confirmation) { cancelDrag(); closeMove(); dismissRemove() } })
 onMounted(() => { window.addEventListener('keydown', cancelDragOnEscape); window.addEventListener('blur', cancelDrag) })
 onBeforeUnmount(() => { window.removeEventListener('keydown', cancelDragOnEscape); window.removeEventListener('blur', cancelDrag) })
 
@@ -446,15 +556,54 @@ onMounted(load)
     <div v-else-if="loadError" role="alert" class="rounded-xl border border-red-200 bg-red-50 p-5 text-red-900"><p class="font-semibold">{{ loadError }}</p><button type="button" class="mt-3 min-h-11 rounded-lg bg-red-700 px-4 text-sm font-semibold text-white" @click="load">Réessayer</button></div>
     <template v-else>
       <div class="flex flex-wrap items-center justify-between gap-3"><div class="flex flex-wrap items-center gap-2"><template v-if="filters.view !== 'list'"><button type="button" class="min-h-11 min-w-11 rounded-lg border border-gray-200 dark:border-white/10" aria-label="Période précédente" @click="shiftPeriod(-1)">←</button><button type="button" class="min-h-11 rounded-lg border border-gray-200 px-3 text-sm font-semibold dark:border-white/10" @click="setFilter('date', zurichDateKey(new Date().toISOString()))">Aujourd’hui</button><button type="button" class="min-h-11 min-w-11 rounded-lg border border-gray-200 dark:border-white/10" aria-label="Période suivante" @click="shiftPeriod(1)">→</button></template><h2 class="ml-1 font-display text-lg font-semibold capitalize">{{ periodTitle }}</h2></div><div class="flex flex-wrap items-center gap-2"><input v-if="filters.view !== 'list'" type="date" aria-label="Date du calendrier" :value="filters.date" class="input-field min-w-0 text-sm" @change="setFilter('date', ($event.target as HTMLInputElement).value)"><select aria-label="Vue du calendrier" :value="filters.view" class="input-field text-sm" @change="setFilter('view', ($event.target as HTMLSelectElement).value)"><option value="week">Semaine</option><option value="month">Mois</option><option value="list">Liste</option></select></div></div>
-      <p role="status" class="text-xs text-gray-500 dark:text-gray-400">{{ filteredPosts.length }} publication{{ filteredPosts.length > 1 ? 's' : '' }} selon les filtres<span v-if="filters.view !== 'list'"> · {{ periodCount }} sur cette période · {{ unplannedPosts.length }} sans date</span></p>
+      <p id="social-calendar-summary" role="status" tabindex="-1" class="text-xs text-gray-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-500 dark:text-gray-400">{{ filteredPosts.length }} publication{{ filteredPosts.length > 1 ? 's' : '' }} selon les filtres<span v-if="filters.view !== 'list'"> · {{ periodCount }} sur cette période · {{ unplannedPosts.length }} {{ filters.status === 'rejected' ? 'refusés conservés' : 'sans date à planifier' }}</span></p>
       <div v-if="!filteredPosts.length" class="admin-card admin-empty-state"><p class="admin-empty-title">Aucune publication pour ces filtres</p><p class="admin-empty-body">Modifie les filtres ou attends les prochains brouillons préparés par Hermes.</p></div>
       <template v-else>
       <p id="social-calendar-move-help" role="status" aria-live="polite" tabindex="-1" class="rounded-lg bg-violet-50 px-4 py-3 text-xs leading-5 text-violet-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-violet-500 dark:bg-violet-500/[0.07] dark:text-violet-200">{{ calendarMoveStatus || 'Glisse un brouillon sur un jour, ou utilise Déplacer sur mobile et au clavier. La date souhaitée n’autorise aucun envoi.' }}</p>
       <div v-if="filters.view === 'list'" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3"><AdminSocialPostTile v-for="post in filteredPosts" :key="post.id" :post="post" :movable="canMoveSocialPost(post)" :move-disabled="movesDisabled" :dragging="dragSource?.id === post.id" @open="openPost" @move="openMove" @drag-start="beginDrag" @drag-end="cancelDrag" /></div>
-      <div v-else class="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_15rem]"><div class="min-w-0"><AdminSocialEditorialCalendar :posts="filteredPosts" :anchor="filters.date" :view="filters.view" :dragging-id="dragSource?.id" :move-disabled="movesDisabled" @open="openPost" @move="openMove" @drag-start="beginDrag" @drag-end="cancelDrag" @drop="dropOnDate" /><p v-if="!periodCount" class="mt-4 text-sm text-gray-500">Aucune publication datée sur cette période. Les brouillons sans date sont dans « À planifier ».</p></div><aside class="relative min-w-0 rounded-xl border border-dashed border-violet-300 bg-violet-50/40 p-3 dark:border-violet-400/25 dark:bg-violet-500/[0.03]" :class="unplannedHovered ? 'ring-2 ring-inset ring-violet-500 dark:ring-violet-400' : ''" aria-label="À planifier" data-calendar-unplanned @dragover="unplannedDragOver" @dragleave="unplannedDragLeave" @drop="dropUnplanned"><h2 class="font-display text-base font-semibold">À planifier <span class="text-sm font-normal text-gray-500">{{ unplannedPosts.length }}</span></h2><p class="mb-4 mt-1 text-xs leading-5 text-gray-500">{{ unplannedHovered ? 'Dépose ici pour retirer la date souhaitée.' : 'Une date souhaitée organise le calendrier. Chaque post attend ton accord avant envoi.' }}</p><div class="space-y-3"><AdminSocialPostTile v-for="post in unplannedPosts" :key="post.id" :post="post" compact :movable="canMoveSocialPost(post)" :move-disabled="movesDisabled" :dragging="dragSource?.id === post.id" @open="openPost" @move="openMove" @drag-start="beginDrag" @drag-end="cancelDrag" /><p v-if="!unplannedPosts.length" class="py-4 text-xs text-gray-500">Tous les contenus filtrés ont une date.</p></div></aside></div>
+      <div v-else class="grid min-w-0 items-start gap-5 2xl:grid-cols-[minmax(0,1fr)_20rem]">
+        <div class="min-w-0">
+          <AdminSocialEditorialCalendar :posts="filteredPosts" :anchor="filters.date" :view="filters.view" :dragging-id="dragSource?.id" :move-disabled="movesDisabled" @open="openPost" @move="openMove" @drag-start="beginDrag" @drag-end="cancelDrag" @drop="dropOnDate" />
+          <p v-if="!periodCount" class="mt-4 text-sm text-gray-500">Aucune publication datée sur cette période. Les brouillons sans date sont dans « À planifier ».</p>
+        </div>
+        <AdminSocialPlanningPanel
+          :posts="unplannedPosts"
+          :rejected-count="rejectedCount"
+          :show-rejected="filters.status === 'rejected'"
+          :move-disabled="movesDisabled"
+          :dragging-id="dragSource?.id"
+          :hovered="unplannedHovered"
+          @open="openPost"
+          @move="openMove"
+          @remove="openRemove"
+          @restore="restoreFromPanel"
+          @show-rejected="setFilter('status', 'rejected')"
+          @show-active="setFilter('status', 'all')"
+          @drag-start="beginDrag"
+          @drag-end="cancelDrag"
+          @dragover="unplannedDragOver"
+          @dragleave="unplannedDragLeave"
+          @drop="dropUnplanned"
+        />
+      </div>
       </template>
     </template>
     <Teleport to="body">
+      <div v-if="removeSource" class="fixed inset-0 z-[95] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+        <section ref="removeDialogRef" role="dialog" aria-modal="true" aria-label="Supprimer ce brouillon ?" aria-describedby="social-remove-description" tabindex="-1" class="w-full max-w-md space-y-5 rounded-2xl bg-white p-5 shadow-2xl dark:bg-[#111118] sm:p-6" @keydown="handleRemoveKeydown">
+          <h2 class="font-display text-xl font-semibold text-gray-950 dark:text-white">Supprimer ce brouillon ?</h2>
+          <div class="space-y-2 rounded-xl border border-gray-200 bg-gray-50 p-3 dark:border-white/10 dark:bg-white/[0.03]">
+            <AdminSocialPlatformBadge :platform="removeSource.platform" compact />
+            <p class="break-words text-sm font-semibold">{{ removeSource.article_title }}</p>
+          </div>
+          <p id="social-remove-description" class="text-sm leading-6 text-gray-600 dark:text-gray-300">Il sera retiré du planning et conservé dans <strong>Refusés</strong>. Son texte et ses médias restent disponibles : tu pourras le restaurer à tout moment.</p>
+          <p v-if="removeError" role="alert" class="rounded-lg bg-red-50 p-3 text-sm text-red-800 dark:bg-red-500/10 dark:text-red-200">{{ removeError }}</p>
+          <div class="flex flex-wrap gap-3">
+            <button data-remove-cancel type="button" class="min-h-11 flex-1 rounded-lg border border-gray-200 px-4 text-sm font-semibold disabled:opacity-50 dark:border-white/10" :disabled="Boolean(busyId)" @click="closeRemove">Annuler</button>
+            <button type="button" class="min-h-11 flex-1 rounded-lg bg-red-600 px-4 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50" :disabled="Boolean(busyId)" @click="confirmRemove">{{ busyId ? 'Suppression…' : 'Supprimer le brouillon' }}</button>
+          </div>
+        </section>
+      </div>
       <div v-if="moveSource" class="fixed inset-0 z-[95] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
         <form ref="moveDialogRef" role="dialog" aria-modal="true" aria-label="Déplacer le brouillon" aria-describedby="social-move-description" tabindex="-1" class="w-full max-w-md space-y-5 rounded-2xl bg-white p-5 shadow-2xl dark:bg-[#111118] sm:p-6" @keydown="handleMoveKeydown" @submit.prevent="confirmMove(moveDate)">
           <div class="flex items-center justify-between gap-3"><h2 class="font-display text-lg font-semibold">Déplacer le brouillon</h2><button type="button" aria-label="Annuler" class="min-h-11 min-w-11 rounded-lg border border-gray-200 text-xl disabled:opacity-50 dark:border-white/10" :disabled="Boolean(busyId)" @click="closeMove">×</button></div>
