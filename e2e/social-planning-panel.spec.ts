@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
+import { waitForAdminLoginReady } from './helpers/admin-login-ready'
 
 // These browser-only fixtures contain no real accounts, tokens, posts or media.
 // Every unknown write is blocked; publishing and approval routes are never mocked.
@@ -194,7 +195,7 @@ async function isolatedPlanning(page: Page, initialPosts: Post[], options: { con
   })
 
   await page.goto('/admin/login?redirect=/admin/social')
-  await expect(page.getByLabel(/email/i)).toBeEnabled()
+  await waitForAdminLoginReady(page)
   await page.getByLabel(/email/i).fill(user.email)
   await page.getByLabel(/mot de passe/i).fill('synthetic-browser-only-password')
   await page.getByRole('button', { name: /se connecter/i }).click()
