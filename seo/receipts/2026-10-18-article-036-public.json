@@ -1,0 +1,39 @@
+{
+  "status": "published_publicly_verified",
+  "articleId": 41,
+  "url": "https://www.antoinequarroz.ch/blog/physiobaur-site-patients-premier-clic-contact",
+  "verifiedAt": "2026-10-18T15:05:15.037865+00:00",
+  "verifiedAtEuropeZurich": "2026-10-18T17:05:15.037865+02:00",
+  "verification": {
+    "httpStatus": 200,
+    "h1": "36. PhysioBaur : un site pensé pour ses patients, du premier clic au contact",
+    "excerpt": "Les choix derrière le site PhysioBaur : soins, navigation, informations pratiques et contact sur mobile, avec le retour de Christophe Baur.",
+    "distinctiveText": "Pour PhysioBaur, j’ai conçu un site qui aide les patients à découvrir les soins, trouver les informations pratiques et contacter le cabinet.",
+    "exactTestimonial": "J’ai particulièrement apprécié son écoute, sa disponibilité et son souci du détail.",
+    "publicSsr": true,
+    "canonical": "https://www.antoinequarroz.ch/blog/physiobaur-site-patients-premier-clic-contact",
+    "blogPosting": {
+      "headline": "36. PhysioBaur : un site pensé pour ses patients, du premier clic au contact",
+      "datePublished": "2026-10-18T15:02:40.486943+00:00"
+    },
+    "publicApiMatchesMarkdownAndJson": true,
+    "contentNormalization": "server removed final Markdown newline only",
+    "sitemap": true,
+    "incomingLinks": [
+      "/blog",
+      "/creation-site-internet-valais"
+    ],
+    "cover": {
+      "url": "https://oxlrljszatejqxhclmbu.supabase.co/storage/v1/object/public/media/hermes/46c677b902a30538130c502f09306debad2c49973ef76f9227eac4760a727bbc.png",
+      "httpStatus": 200,
+      "format": "PNG",
+      "dimensions": [
+        1200,
+        675
+      ],
+      "sha256": "17b937e74b28fd376d6f8a92092029bd13225d994abe201b8d231a5fce66c986",
+      "matchesReviewedLocalCoverAndManifest": true
+    }
+  },
+  "scope": "Public GET requests only; no new POST, mission launch or social publication. Social draft readback is recorded separately by the publishing coordinator."
+}
