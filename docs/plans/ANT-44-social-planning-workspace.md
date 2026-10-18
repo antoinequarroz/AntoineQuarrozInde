@@ -30,7 +30,8 @@ Réutiliser le refus réversible existant, avec un dialogue qui explique que le 
 - [x] Les parcours de déplacement et les filtres existants fonctionnent.
 - [x] Aucun accord, envoi social ou suppression de données réelles pendant la vérification.
 - [x] Typecheck, tests ciblés, revue et vérification visuelle responsive terminés.
-- [ ] Livraison vérifiée dans l’admin.
+- [x] Livraison vérifiée dans l’admin.
+- [ ] Suite E2E complète après déploiement réussie.
 
 ## Preuves locales
 
@@ -45,3 +46,13 @@ Le contrôle Linux a ensuite isolé le défilement : le focus était correct, ma
 La géométrie CI a permis d’isoler le second niveau de défilement : bouton focalisé à y1329 pour un viewport812px, liste déjà à son défilement maximal, document à1182px sur1858 possibles. Le défilement imbriqué était donc correct, mais `scrollIntoView` n’amenait pas le document au bouton. Un ajustement instantané du viewport est maintenant appliqué seulement si le rectangle du déclencheur reste hors écran après le défilement interne, en tenant compte de la barre de navigation fixe. Typage et quatre scénarios locaux passent sur ce correctif, sans relâcher les assertions de focus ou de visibilité.
 
 La trace native Linux a ensuite montré que le bouton était visible immédiatement après la restauration, puis que le document se déplaçait sans nouvel appel JavaScript : une animation native antérieure continuait. La restauration appelle donc toujours `window.scrollTo` en mode instantané, même avec un ajustement nul, afin d’annuler cette animation. Les quatre scénarios et trois répétitions supplémentaires du parcours mobile passent sans reprise, ainsi que le typage. Les exigences de focus et de visibilité restent inchangées.
+
+## Livraison et recette réelle
+
+PR288 fusionnée en `da7c5a64a448a3b6cc0a1a0fb87e31d638bedd9c`. Les contrôles qualité, base, SEO et accessibilité du head `4af62b3` sont réussis (run39156363193) ; les21 E2E sociaux et axe passent au premier passage. Le run main39156818539 a terminé son déploiement : version publique exacte et santé application/base confirmées, contrôles publics réussis. Sa suite E2E complète reste en cours.
+
+Recette dans l’admin réel après connexion d’Antoine, en mode sombre à1700px et375px. Les44 éléments initiaux comprennent3 brouillons actifs et41 refusés ; le panneau et son compteur les distinguent désormais. Le dernier refusé est atteint au clavier dans la liste interne (`scrollTop6979` sur6979), sans modifier la hauteur du document1415px ni son défilement365,5px. Confirmation de retrait ouverte puis annulée sur ordinateur et mobile ; retour du focus au bouton visible, aucune mutation de contenu. Sur mobile, pas de débordement horizontal. Vue de test réinitialisée et calendrier laissé ouvert.
+
+Captures réelles : `/Users/antoinequarroz/.codex/visualizations/2026/09/16/01a0ab24-dbb8-7223-8c89-8d74529e0ecf/planification-reseaux/` (`calendrier-en-ligne.png`, `refuses-defilement-en-ligne.png`, `mobile-en-ligne.png`). Aucun brouillon réel déplacé, retiré, restauré, validé ou publié. Serveur local de vérification3355 arrêté viaPortly, processus hors périmètre préservés.
+
+Le run main39156818539 finit vert, mais avec79 réussites directes et1 test instable (retour mobile après déplacement puis annulation, deux reprises). Ce résultat ne clôture donc pas la stabilité demandée. La trace montre aussi la focalisation automatique de la carte déplacée hors écran avant le retrait. Le correctif complémentaire retire la double restauration automatique du dialogue Supprimer, empêche celle du dialogue Déplacer de lancer une animation et révèle instantanément la nouvelle carte. Les autres dialogues conservent leur comportement. Le test exige maintenant également que la carte déplacée soit dans le viewport, et le contrôle PR répète trois fois le parcours mobile sans autoriser de reprise.

@@ -335,6 +335,7 @@ test('375px keyboard planning keeps direct actions reachable, scroll contained a
   // Wait for the move dialog's asynchronous focus handoff before beginning
   // another keyboard action in the nested planning list.
   await expect(movedCard).toBeFocused()
+  await expect(movedCard).toBeInViewport()
   expectUnapproved(post)
 
   // A second draft can be removed with the keyboard, independently of its card.
