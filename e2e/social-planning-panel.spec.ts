@@ -380,7 +380,15 @@ test('375px keyboard planning keeps direct actions reachable, scroll contained a
     })
     console.info('ANT44 synthetic focus geometry', JSON.stringify(geometry))
     await test.info().attach('planning-focus-scroll-geometry', { body: Buffer.from(JSON.stringify(geometry, null, 2)), contentType: 'application/json' })
-    throw new Error(`${error instanceof Error ? error.message : String(error)}\nANT44 synthetic focus geometry: ${JSON.stringify(geometry)}`)
+    // GitHub's annotation reporter truncates long errors. Put the decisive
+    // native calls first and keep their format bounded and synthetic.
+    const calls = geometry.calls.slice(-10).map((entry: any) => [
+      entry.method, entry.element?.aria?.slice(0, 32), entry.args,
+      Math.round(entry.before?.scrollY), Math.round(entry.after?.scrollY),
+      Math.round(entry.before?.bboxY), Math.round(entry.after?.bboxY),
+      entry.before?.disabled, entry.before?.inertAncestor,
+    ])
+    throw new Error(`ANT44 native sequence ${JSON.stringify(calls)}\nFinal position ${JSON.stringify({ trigger: geometry.trigger, viewport: geometry.viewport, document: geometry.document })}\nSource must be focused and visible after Escape.`)
   }
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
   expect(state.unexpected).toEqual([])
