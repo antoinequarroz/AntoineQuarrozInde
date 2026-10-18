@@ -277,6 +277,9 @@ test('375px keyboard planning keeps direct actions reachable, scroll contained a
   expectUnapproved(post)
 
   // A second draft can be removed with the keyboard, independently of its card.
+  // Pause the animation clock to verify that focus restoration scrolls instantly,
+  // rather than depending on the site's CSS smooth-scroll animation finishing.
+  await page.clock.pauseAt(await page.evaluate(() => Date.now() + 1000))
   const second = state.posts[42]!
   const removeSecond = action(page, second, 'Supprimer')
   await removeSecond.focus()
@@ -287,8 +290,27 @@ test('375px keyboard planning keeps direct actions reachable, scroll contained a
   await expect(removal).toHaveCount(0)
   expect(state.writes).toHaveLength(1)
   expectUnapproved(second)
-  await expect(removeSecond).toBeFocused()
-  await expect(removeSecond).toBeInViewport()
+  try {
+    await expect(removeSecond).toBeFocused()
+    await expect(removeSecond).toBeInViewport()
+  }
+  catch (error) {
+    const geometry = await removeSecond.evaluate(element => {
+      const rect = element.getBoundingClientRect()
+      const list = element.closest<HTMLElement>('[data-planning-list]')
+      const listRect = list?.getBoundingClientRect()
+      const scrolling = document.scrollingElement
+      return {
+        trigger: { x: rect.x, y: rect.y, width: rect.width, height: rect.height, focused: document.activeElement === element },
+        list: list ? { y: listRect!.y, height: listRect!.height, scrollTop: list.scrollTop, scrollHeight: list.scrollHeight, clientHeight: list.clientHeight, scrollBehavior: getComputedStyle(list).scrollBehavior } : null,
+        document: { scrollTop: scrolling?.scrollTop, scrollHeight: scrolling?.scrollHeight, clientHeight: scrolling?.clientHeight, scrollBehavior: getComputedStyle(document.documentElement).scrollBehavior },
+        viewport: { width: innerWidth, height: innerHeight, scrollX, scrollY },
+      }
+    })
+    console.info('ANT44 synthetic focus geometry', JSON.stringify(geometry))
+    await test.info().attach('planning-focus-scroll-geometry', { body: Buffer.from(JSON.stringify(geometry, null, 2)), contentType: 'application/json' })
+    throw error
+  }
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
   expect(state.unexpected).toEqual([])
   await panel(page).scrollIntoViewIfNeeded()

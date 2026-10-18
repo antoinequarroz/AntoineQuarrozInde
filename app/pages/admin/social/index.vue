@@ -457,7 +457,9 @@ async function restoreRemoveTrigger(trigger: HTMLElement | null, routePath: stri
     || editingPost.value || confirmationPost.value || moveSource.value || removeSource.value
     || !trigger?.isConnected || trigger.matches(':disabled')) return
   trigger.focus({ preventScroll: true })
-  trigger.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+  // Focus restoration must finish immediately, independently of the site's
+  // smooth-scrolling preference or a paused animation clock.
+  trigger.scrollIntoView({ behavior: 'instant', block: 'nearest', inline: 'nearest' })
 }
 const { dialogRef: removeDialogRef, handleDialogKeydown: handleRemoveKeydown } = useAccessibleDialog(computed(() => Boolean(removeSource.value)), closeRemove, '[data-remove-cancel]')
 function openRemove(post: SocialPost, event?: MouseEvent) {
