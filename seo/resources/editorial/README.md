@@ -22,9 +22,29 @@ La mission FRIDAY utilise le clone réservé `/data/workspace/AntoineQuarrozInde
 
 Le lot et ses ressources doivent être présents sur `origin/main`, pas seulement dans une branche ou une PR. Un prochain passage planifié n'est pas la preuve qu'il a déjà lu cette version.
 
-## Couverture préparée
+## Couvertures : charte violette validée
 
-Les six images `seo/covers/article-036.png` à `article-041.png` ont été préparées le 18 octobre. Le [manifeste de génération et de contrôle](../../covers/editorial-2026-10-18-manifest.json) associe chaque numéro à son fichier, son empreinte SHA-256 et sa provenance native. Les six fichiers réels ont été relus techniquement : dimensions PNG 1200 × 675, taille inférieure à 5 Mo et empreinte identique au manifeste. Le manifeste consigne la relecture visuelle réalisée pendant leur préparation. Avant chaque production, vérifier à nouveau existence, intégrité et adéquation au sujet ; le chemin local de l'image source dans le manifeste documente la provenance, sans être une dépendance à installer sur le runner. Le style est `aq-editorial-photorealistic-v1` : scène photoréaliste liée au sujet, bleu nuit et cuivre/or, titre blanc et doré aligné à gauche, sans-serif géométrique extra-grasse. Une image déjà créée spécifiquement pour ce sujet peut être réutilisée pour sa publication, sans dépendre d'un générateur disponible sur le runner. Son seul nom de fichier ne prouve aucune vérification.
+Le 18 octobre 2026, Antoine a validé la proposition PhysioBaur violette pour la couverture publique 036 et les cinq suivantes 037–041. Cette décision remplace, pour ces six images, les anciennes consignes de photoréalisme bleu nuit/cuivre. Elle ne modifie ni les sujets ni les dates ni les contrôles factuels et les autorisations de publication.
+
+Les chemins restent `seo/covers/article-036.png` à `article-041.png`. Le [manifeste des couvertures](../../covers/editorial-2026-10-18-manifest.json) doit être réconcilié avec les nouveaux fichiers et leur source de composition avant toute utilisation : les empreintes et inspections des anciennes images ne sont pas des preuves pour leurs remplacements.
+
+### Composition et typographie
+
+- Export final PNG 1200 × 675, inférieur à 5 Mo, avec une lisibilité vérifiée à la taille d'une carte du blog et sur mobile.
+- Fond `#080810`. Dégradé exact `#7c3aed` → `#a855f7` → `#c084fc`, en conservant l'orientation et les positions des couleurs de la composition PhysioBaur validée.
+- Utiliser la police Space Grotesk authentique, avec les graisses et la composition de la proposition validée. Pour le SVG final, convertir les textes en tracés issus de ses glyphes réels ; ni police de substitution ni lettrage généré qui imite ses formes. Relire les accents et le texte après vectorisation.
+- Réutiliser le robot existant et ses éléments de marque validés. Ne pas lui substituer une mascotte recréée.
+- Utiliser de vraies captures du site ou du projet quand elles éclairent le sujet, en conservant leur provenance et sans présenter une interface inventée comme une capture. Retirer toute donnée privée. Un diagramme construit en code ou une interface fictive porte visiblement « Démonstration ».
+
+La composition native SVG/HTML avec les assets existants est autorisée. Aucun appel de génération IA ni résultat photoréaliste n'est requis pour réutiliser cette marque. Un générateur absent du runner n'est donc pas un prérequis manquant si la couverture dédiée et ses preuves sont disponibles.
+
+### Sources, droits et preuve
+
+Pour chaque image, le manifeste associe au numéro d'article le fichier final, ses dimensions, sa taille et son SHA-256, le fichier source SVG/HTML ou la commande de composition, les sources des captures, la provenance du robot et de la police, les notices de copyright ou licences applicables et la date du contrôle visuel. Reprendre les notices réelles ; ne pas inventer une licence ou prétendre des droits non vérifiés. Les sources et autorisations doivent être contrôlables, sans rendre publics des secrets ou coordonnées privées.
+
+Avant chaque production, contrôler le fichier réel contre ce manifeste puis sa lisibilité, son orthographe et sa pertinence. Ne pas annoncer le remplacement comme vérifié tant que les preuves ne correspondent pas aux nouveaux octets. Un fichier dédié déjà préparé et contrôlé peut être utilisé à sa date sans nouvelle génération. Ne pas reprendre un ancien visuel cuivre ni une couverture d'un autre article.
+
+Le nouveau contrat de style est `aq-editorial-violet-space-grotesk-v1`. Attendre la confirmation de son déploiement avant tout envoi qui l'utilise. L'adaptateur décrit les règles de compatibilité ; un rejet pour style non pris en charge est un blocage technique à signaler, jamais une raison d'envoyer une fausse étiquette de style.
 
 ## Publication et preuve
 
@@ -44,4 +64,4 @@ Méthodes du plugin personnel `agents-marketing-codex`, version locale `2026.9.8
 
 Preuve de configuration consultée : snapshot local Cockpit du 18 octobre à 16:30:47 Europe/Zurich, mission `e34258e2fcab`, `enabled=true`, `deliver=local`, dossier dédié, prochain passage le 19 octobre à 07:00. Les obligations `git fetch origin --prune`, `git merge --ff-only origin/main` et sélection par date ont été lues dans le champ `content` du rapport collecté `Hermes · friday · e34258e2fcab · 2026-10-16_07-05-14.md`, rubrique `Prompt`, avant `## Response`. Ce rapport historique ne suffisait pas à confirmer la configuration serveur. Le 18 octobre, le prompt courant a ensuite été relu dans Hermes Web, profil `friday`, fiche Tasks, puis complété avec les guides versionnés, les couvertures préparées et la synchronisation ciblée des deux brouillons. La sauvegarde a affiché « Tâche mise à jour ». Aucune mission n'a été lancée. La relecture finale de la fiche sauvegardée et le prochain passage naturel apportent des preuves distinctes ; ne pas confondre cette modification de consigne avec une vérification de l'authentification de production dans le runner.
 
-Le rapport du 16 octobre signalait l'absence de moteur GEO et de générateur d'images utilisables ; il avait réussi parce que l'article était déjà public. Les méthodes versionnées et couvertures dédiées traitent ces dépendances documentaires et visuelles. Leur présence effective sur le runner et les accès réseau/API seront confirmés au prochain passage naturel, sans déclencher une mission pour tester.
+Le rapport du 16 octobre signalait l'absence de moteur GEO et de générateur d'images utilisables ; il avait réussi parce que l'article était déjà public. Les méthodes versionnées et couvertures dédiées traitent ces dépendances documentaires et visuelles ; la nouvelle charte autorise explicitement la composition SVG/HTML sans génération IA. Leur présence effective sur le runner, le déploiement du nouveau contrat de style et les accès réseau/API doivent être distingués de la préparation locale. Le prochain passage naturel confirmera le fonctionnement du runner, sans déclencher une mission pour tester.

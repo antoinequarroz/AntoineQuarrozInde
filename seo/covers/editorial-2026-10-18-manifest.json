@@ -6,12 +6,15 @@
       1200,
       675
     ],
-    "sha256": "17b937e74b28fd376d6f8a92092029bd13225d994abe201b8d231a5fce66c986",
-    "generator": "Codex native image_gen",
-    "source": "/Users/antoinequarroz/.codex/generated_images/01a0ab24-dbb8-7223-8c89-8d74529e0ecf/exec-ef4f1dae-df76-467a-afe1-f351d6010d84.png",
-    "normalization": "Mechanical canvas normalization only; source preserved",
-    "visual_review": "French headline legible, spelling/accents checked, extra-bold sans-serif, midnight/copper",
-    "illustrative_not_actual_product_screenshot": true
+    "bytes": 332508,
+    "sha256": "3e6876efd649567e82f67d0f03848ba9ba3b39c8a5096e945010a7d632a3dd15",
+    "coverStyle": "aq-editorial-violet-space-grotesk-v1",
+    "method": "Original SVG composition, exact Space Grotesk font outlines and Sharp raster composition",
+    "source_manifest": "seo/covers/physiobaur-approved-violet/manifest.json",
+    "visual_review": "passed: French spelling, accents, exact font, violet gradient, readability, actual screenshots or visibly labeled demonstration",
+    "visual_provenance": "Real approved PhysioBaur desktop/mobile dark-mode screenshots and existing brand robot",
+    "scheduled_article_date": "2026-10-18",
+    "social_status": "manual approval required; no publication or scheduling authorized"
   },
   {
     "number": "037",
@@ -20,12 +23,15 @@
       1200,
       675
     ],
-    "sha256": "3dec77000b61295a821a49d712c5975fe2532e83baebcdf39f0302b4e892e576",
-    "generator": "Codex native image_gen",
-    "source": "/Users/antoinequarroz/.codex/generated_images/01a0ab24-dbb8-7223-8c89-8d74529e0ecf/exec-f807e1db-5f18-4848-baa9-e0c33c31e0ef.png",
-    "normalization": "Mechanical canvas normalization only; source preserved",
-    "visual_review": "French headline legible, spelling/accents checked, extra-bold sans-serif, midnight/copper",
-    "illustrative_not_actual_product_screenshot": true
+    "bytes": 280172,
+    "sha256": "466fc9012d4b9c532237b636428c29081d6e759b8f3528c86179dc2817ccd5da",
+    "coverStyle": "aq-editorial-violet-space-grotesk-v1",
+    "method": "Original SVG composition, exact Space Grotesk font outlines and Sharp raster composition",
+    "source_manifest": "seo/covers/brand-violet/manifest-037-041.json",
+    "visual_review": "passed: French spelling, accents, exact font, violet gradient, readability, actual screenshots or visibly labeled demonstration",
+    "visual_provenance": "Actual public AboutVideo landscape and portrait posters, with illustrative player chrome. No performance measurements.",
+    "scheduled_article_date": "2026-10-19",
+    "social_status": "manual approval required; no publication or scheduling authorized"
   },
   {
     "number": "038",
@@ -34,12 +40,15 @@
       1200,
       675
     ],
-    "sha256": "09e2666536f4b28f0553f0a6a7c706fbd103dca02236a8e91053c079f0df5d2a",
-    "generator": "Codex native image_gen",
-    "source": "/Users/antoinequarroz/.codex/generated_images/01a0ab24-dbb8-7223-8c89-8d74529e0ecf/exec-0d5993e1-036a-46dc-9d3c-cd95593cfabe.png",
-    "normalization": "Mechanical canvas normalization only; source preserved",
-    "visual_review": "French headline legible, spelling/accents checked, extra-bold sans-serif, midnight/copper",
-    "illustrative_not_actual_product_screenshot": true
+    "bytes": 144332,
+    "sha256": "8c1ada12e9e36ddd2c6e5098a5e32e5755788dd0594756ae8e654dca88b2c29d",
+    "coverStyle": "aq-editorial-violet-space-grotesk-v1",
+    "method": "Original SVG composition, exact Space Grotesk font outlines and Sharp raster composition",
+    "source_manifest": "seo/covers/brand-violet/manifest-037-041.json",
+    "visual_review": "passed: French spelling, accents, exact font, violet gradient, readability, actual screenshots or visibly labeled demonstration",
+    "visual_provenance": "Fictitious monthly checklist with unchecked controls; explicitly labeled Démonstration. No actual client verification claimed.",
+    "scheduled_article_date": "2026-10-20",
+    "social_status": "manual approval required; no publication or scheduling authorized"
   },
   {
     "number": "039",
@@ -48,12 +57,15 @@
       1200,
       675
     ],
-    "sha256": "44a907cf82eca8af7b7c61a3e4206529e6d4e6509e76d2fa5427f48721623151",
-    "generator": "Codex native image_gen",
-    "source": "/Users/antoinequarroz/.codex/generated_images/01a0ab24-dbb8-7223-8c89-8d74529e0ecf/exec-77415f89-090a-4323-b882-d0bf5e28299a.png",
-    "normalization": "Mechanical canvas normalization only; source preserved",
-    "visual_review": "French headline legible, spelling/accents checked, extra-bold sans-serif, midnight/copper",
-    "illustrative_not_actual_product_screenshot": true
+    "bytes": 142463,
+    "sha256": "07c731d9cc4a72d6895bd00b6ba57a30a3015025e58e29ee9d3036d4924c18a4",
+    "coverStyle": "aq-editorial-violet-space-grotesk-v1",
+    "method": "Original SVG composition, exact Space Grotesk font outlines and Sharp raster composition",
+    "source_manifest": "seo/covers/brand-violet/manifest-037-041.json",
+    "visual_review": "passed: French spelling, accents, exact font, violet gradient, readability, actual screenshots or visibly labeled demonstration",
+    "visual_provenance": "Illustrative SVG before/after flow with fictitious exemple.test URL, 404, 301 and 200; labeled Démonstration and URL fictives.",
+    "scheduled_article_date": "2026-10-21",
+    "social_status": "manual approval required; no publication or scheduling authorized"
   },
   {
     "number": "040",
@@ -62,12 +74,15 @@
       1200,
       675
     ],
-    "sha256": "1116d77eaf2d094ac553649f0bf825aea586e45ea4b6dea0a4921560ebfb4117",
-    "generator": "Codex native image_gen",
-    "source": "/Users/antoinequarroz/.codex/generated_images/01a0ab24-dbb8-7223-8c89-8d74529e0ecf/exec-b40a9478-cdb4-4325-9739-6e1516596f99.png",
-    "normalization": "Mechanical canvas normalization only; source preserved",
-    "visual_review": "French headline legible, spelling/accents checked, extra-bold sans-serif, midnight/copper",
-    "illustrative_not_actual_product_screenshot": true
+    "bytes": 150879,
+    "sha256": "ae5613939d4da848823685186098284720b05c8537376be2170c6aec216797b4",
+    "coverStyle": "aq-editorial-violet-space-grotesk-v1",
+    "method": "Original SVG composition, exact Space Grotesk font outlines and Sharp raster composition",
+    "source_manifest": "seo/covers/brand-violet/manifest-037-041.json",
+    "visual_review": "passed: French spelling, accents, exact font, violet gradient, readability, actual screenshots or visibly labeled demonstration",
+    "visual_provenance": "Entirely fictitious client portal SVG, labeled Démonstration and Exemple entièrement fictif; no client name, address or amount.",
+    "scheduled_article_date": "2026-10-22",
+    "social_status": "manual approval required; no publication or scheduling authorized"
   },
   {
     "number": "041",
@@ -76,11 +91,14 @@
       1200,
       675
     ],
-    "sha256": "61c28d2ec1ab795cfc1f714539ee3471aa6b9708b861fca0595b9b2279ab5ae4",
-    "generator": "Codex native image_gen",
-    "source": "/Users/antoinequarroz/.codex/generated_images/01a0ab24-dbb8-7223-8c89-8d74529e0ecf/exec-c0726399-80fb-4cc9-bb35-71ab02364985.png",
-    "normalization": "Mechanical canvas normalization only; source preserved",
-    "visual_review": "French headline legible, spelling/accents checked, extra-bold sans-serif, midnight/copper",
-    "illustrative_not_actual_product_screenshot": true
+    "bytes": 141159,
+    "sha256": "42ffc41797642920d249aa4dcb7f0f44f49fb0d88d1928e04a311926111383f4",
+    "coverStyle": "aq-editorial-violet-space-grotesk-v1",
+    "method": "Original SVG composition, exact Space Grotesk font outlines and Sharp raster composition",
+    "source_manifest": "seo/covers/brand-violet/manifest-037-041.json",
+    "visual_review": "passed: French spelling, accents, exact font, violet gradient, readability, actual screenshots or visibly labeled demonstration",
+    "visual_provenance": "Illustrative SVG showing a count of 3 and exactly 3 fictitious action tasks, labeled Démonstration and Données fictives.",
+    "scheduled_article_date": "2026-10-23",
+    "social_status": "manual approval required; no publication or scheduling authorized"
   }
 ]

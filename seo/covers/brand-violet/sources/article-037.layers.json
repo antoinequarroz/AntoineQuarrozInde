@@ -1,0 +1,30 @@
+{
+  "number": "037",
+  "assets": "../assets",
+  "base": "article-037.base.svg",
+  "overlay": "article-037.overlay.svg",
+  "output": "../../article-037.png",
+  "images": [
+    {
+      "asset": "affiche-paysage.jpg",
+      "x": 578,
+      "y": 182,
+      "width": 560,
+      "height": 315
+    },
+    {
+      "asset": "affiche-portrait.jpg",
+      "x": 1034,
+      "y": 372,
+      "width": 112,
+      "height": 140,
+      "radius": 14
+    }
+  ],
+  "robot": {
+    "x": 699,
+    "y": 448,
+    "width": 225,
+    "height": 204
+  }
+}
