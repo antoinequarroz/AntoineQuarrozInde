@@ -460,6 +460,15 @@ async function restoreRemoveTrigger(trigger: HTMLElement | null, routePath: stri
   // Focus restoration must finish immediately, independently of the site's
   // smooth-scrolling preference or a paused animation clock.
   trigger.scrollIntoView({ behavior: 'instant', block: 'nearest', inline: 'nearest' })
+  // In Chromium, clipping ancestors can make scrollIntoView scroll only the
+  // nested list. Finish the viewport adjustment explicitly when necessary.
+  const rect = trigger.getBoundingClientRect()
+  const viewportHeight = document.documentElement.clientHeight
+  const topEdge = Math.max(16, (document.querySelector('.admin-topbar')?.getBoundingClientRect().bottom ?? 0) + 16)
+  const offset = rect.bottom > viewportHeight - 16
+    ? rect.bottom - viewportHeight + 16
+    : rect.top < topEdge ? rect.top - topEdge : 0
+  if (offset) window.scrollBy({ top: offset, behavior: 'instant' })
 }
 const { dialogRef: removeDialogRef, handleDialogKeydown: handleRemoveKeydown } = useAccessibleDialog(computed(() => Boolean(removeSource.value)), closeRemove, '[data-remove-cancel]')
 function openRemove(post: SocialPost, event?: MouseEvent) {
