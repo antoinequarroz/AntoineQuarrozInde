@@ -63,6 +63,67 @@ function sampleBacklog() {
 }
 
 async function isolatedPlanning(page: Page, initialPosts: Post[], options: { conflictOnReject?: boolean } = {}) {
+  // Browser-only diagnostics for this synthetic fixture. Native methods receive
+  // their original receiver and arguments; these wrappers never move focus or
+  // change scrolling themselves. A bounded tail is emitted only on failure.
+  await page.addInitScript(() => {
+    type ScrollTrace = {
+      sequence: number
+      method: string
+      args: unknown[]
+      timestamp: number
+      element: { tag: string, id: string | null, aria: string | null }
+      before: Record<string, unknown>
+      after?: Record<string, unknown>
+    }
+    const trace: ScrollTrace[] = []
+    const traceWindow = window as typeof window & { ant44ScrollTrace?: ScrollTrace[] }
+    traceWindow.ant44ScrollTrace = trace
+    let sequence = 0
+    function state(target: Element | Window) {
+      const element = target instanceof Element ? target : null
+      const rect = element?.getBoundingClientRect()
+      const list = element?.closest<HTMLElement>('[data-planning-list]')
+      return {
+        scrollY,
+        bboxY: rect?.y ?? null,
+        bboxHeight: rect?.height ?? null,
+        listScrollTop: list?.scrollTop ?? null,
+        rootScrollTop: document.documentElement.scrollTop,
+        bodyScrollTop: document.body?.scrollTop ?? null,
+        rootScrollBehavior: getComputedStyle(document.documentElement).scrollBehavior,
+        bodyOverflow: document.body ? getComputedStyle(document.body).overflow : null,
+        disabled: element?.matches(':disabled') ?? false,
+        inertAncestor: Boolean(element?.closest('[inert]')),
+        route: location.pathname + location.search,
+        dialogs: Array.from(document.querySelectorAll('[role="dialog"]')).map(dialog => dialog.getAttribute('aria-label')),
+      }
+    }
+    function safeArgs(args: unknown[]) {
+      const allowed = ['preventScroll', 'focusVisible', 'behavior', 'block', 'inline', 'container', 'left', 'top']
+      return args.map(arg => arg && typeof arg === 'object'
+        ? Object.fromEntries(Object.entries(arg).filter(([key]) => allowed.includes(key)))
+        : arg)
+    }
+    function instrument<T extends Function>(method: string, native: T): T {
+      return function (this: Element | Window, ...args: unknown[]) {
+        const element = this instanceof Element ? this : null
+        const entry: ScrollTrace = {
+          sequence: ++sequence, method, args: safeArgs(args), timestamp: Date.now(),
+          element: { tag: element?.tagName || 'WINDOW', id: element?.id || null, aria: element?.getAttribute('aria-label') || null },
+          before: state(this),
+        }
+        trace.push(entry)
+        if (trace.length > 24) trace.shift()
+        try { return Reflect.apply(native, this, args) }
+        finally { entry.after = state(this) }
+      } as unknown as T
+    }
+    HTMLElement.prototype.focus = instrument('focus', HTMLElement.prototype.focus)
+    Element.prototype.scrollIntoView = instrument('scrollIntoView', Element.prototype.scrollIntoView)
+    window.scrollBy = instrument('window.scrollBy', window.scrollBy)
+    window.scrollTo = instrument('window.scrollTo', window.scrollTo)
+  })
   await page.clock.install({ time: new Date(now) })
   const posts = initialPosts.map(post => ({ ...post }))
   const writes: Write[] = []
@@ -305,6 +366,16 @@ test('375px keyboard planning keeps direct actions reachable, scroll contained a
         list: list ? { y: listRect!.y, height: listRect!.height, scrollTop: list.scrollTop, scrollHeight: list.scrollHeight, clientHeight: list.clientHeight, scrollBehavior: getComputedStyle(list).scrollBehavior } : null,
         document: { scrollTop: scrolling?.scrollTop, scrollHeight: scrolling?.scrollHeight, clientHeight: scrolling?.clientHeight, scrollBehavior: getComputedStyle(document.documentElement).scrollBehavior },
         viewport: { width: innerWidth, height: innerHeight, scrollX, scrollY },
+        state: {
+          route: location.pathname + location.search,
+          dialogs: Array.from(document.querySelectorAll('[role="dialog"]')).map(dialog => dialog.getAttribute('aria-label')),
+          triggerDisabled: element.matches(':disabled'),
+          triggerInert: Boolean(element.closest('[inert]')),
+          triggerAriaHiddenAncestor: element.closest('[aria-hidden="true"]')?.tagName || null,
+          root: { scrollTop: document.documentElement.scrollTop, scrollHeight: document.documentElement.scrollHeight, clientHeight: document.documentElement.clientHeight, inert: document.documentElement.inert, overflow: getComputedStyle(document.documentElement).overflow },
+          body: { scrollTop: document.body.scrollTop, scrollHeight: document.body.scrollHeight, clientHeight: document.body.clientHeight, inert: document.body.inert, overflow: getComputedStyle(document.body).overflow },
+        },
+        calls: (window as typeof window & { ant44ScrollTrace?: unknown[] }).ant44ScrollTrace || [],
       }
     })
     console.info('ANT44 synthetic focus geometry', JSON.stringify(geometry))
