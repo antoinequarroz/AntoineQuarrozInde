@@ -468,7 +468,9 @@ async function restoreRemoveTrigger(trigger: HTMLElement | null, routePath: stri
   const offset = rect.bottom > viewportHeight - 16
     ? rect.bottom - viewportHeight + 16
     : rect.top < topEdge ? rect.top - topEdge : 0
-  if (offset) window.scrollBy({ top: offset, behavior: 'instant' })
+  // A previously started native smooth scroll can resume after focus returns,
+  // even when the button is already visible. Always cancel that animation.
+  window.scrollTo({ left: window.scrollX, top: window.scrollY + offset, behavior: 'instant' })
 }
 const { dialogRef: removeDialogRef, handleDialogKeydown: handleRemoveKeydown } = useAccessibleDialog(computed(() => Boolean(removeSource.value)), closeRemove, '[data-remove-cancel]')
 function openRemove(post: SocialPost, event?: MouseEvent) {
