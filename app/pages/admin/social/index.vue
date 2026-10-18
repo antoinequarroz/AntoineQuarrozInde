@@ -373,7 +373,7 @@ function closeMove() {
   if (busyId.value) return
   moveSource.value = null; moveError.value = ''
 }
-const { dialogRef: moveDialogRef, handleDialogKeydown: handleMoveKeydown } = useAccessibleDialog(computed(() => Boolean(moveSource.value)), closeMove, '[data-move-date]')
+const { dialogRef: moveDialogRef, handleDialogKeydown: handleMoveKeydown } = useAccessibleDialog(computed(() => Boolean(moveSource.value)), closeMove, '[data-move-date]', { preventScrollOnRestore: true })
 function openMove(post: SocialPost) {
   const current = posts.value.find(item => item.id === post.id)
   if (movesDisabled.value || !current || !canMoveSocialPost(current)) return
@@ -427,8 +427,9 @@ async function persistMove(source: MoveSource, targetDate: string | null) {
     }
     if (fromDialog && departureEpoch === calendarDepartureEpoch && isCalendarActive()) {
       await nextTick()
+      if (departureEpoch !== calendarDepartureEpoch || !isCalendarActive() || editingPost.value || confirmationPost.value || moveSource.value || removeSource.value) return
       const card = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-social-post-id]')).find(element => element.dataset.socialPostId === source.id && element.getClientRects().length)
-      ;(card || document.getElementById('social-calendar-move-help'))?.focus()
+      focusCalendarElement(card || document.getElementById('social-calendar-move-help'))
     }
   }
 }
@@ -449,20 +450,24 @@ function closeRemove() {
   void restoreRemoveTrigger(trigger, routePath, departureEpoch)
 }
 async function restoreRemoveTrigger(trigger: HTMLElement | null, routePath: string, departureEpoch: number) {
-  // The dialog helper also releases inert and restores its captured focus.
+  // The dialog helper releases inert; this handoff owns focus restoration.
   // Wait for that cleanup and the disabled card buttons to render first.
   await nextTick()
   await nextTick()
   if (!isCalendarActive() || router.currentRoute.value.fullPath !== routePath || calendarDepartureEpoch !== departureEpoch
     || editingPost.value || confirmationPost.value || moveSource.value || removeSource.value
     || !trigger?.isConnected || trigger.matches(':disabled')) return
-  trigger.focus({ preventScroll: true })
+  focusCalendarElement(trigger)
+}
+function focusCalendarElement(element: HTMLElement | null) {
+  if (!element?.isConnected || element.closest('[inert]') || element.matches(':disabled')) return
+  element.focus({ preventScroll: true })
   // Focus restoration must finish immediately, independently of the site's
   // smooth-scrolling preference or a paused animation clock.
-  trigger.scrollIntoView({ behavior: 'instant', block: 'nearest', inline: 'nearest' })
+  element.scrollIntoView({ behavior: 'instant', block: 'nearest', inline: 'nearest' })
   // In Chromium, clipping ancestors can make scrollIntoView scroll only the
   // nested list. Finish the viewport adjustment explicitly when necessary.
-  const rect = trigger.getBoundingClientRect()
+  const rect = element.getBoundingClientRect()
   const viewportHeight = document.documentElement.clientHeight
   const topEdge = Math.max(16, (document.querySelector('.admin-topbar')?.getBoundingClientRect().bottom ?? 0) + 16)
   const offset = rect.bottom > viewportHeight - 16
@@ -472,7 +477,7 @@ async function restoreRemoveTrigger(trigger: HTMLElement | null, routePath: stri
   // even when the button is already visible. Always cancel that animation.
   window.scrollTo({ left: window.scrollX, top: window.scrollY + offset, behavior: 'instant' })
 }
-const { dialogRef: removeDialogRef, handleDialogKeydown: handleRemoveKeydown } = useAccessibleDialog(computed(() => Boolean(removeSource.value)), closeRemove, '[data-remove-cancel]')
+const { dialogRef: removeDialogRef, handleDialogKeydown: handleRemoveKeydown } = useAccessibleDialog(computed(() => Boolean(removeSource.value)), closeRemove, '[data-remove-cancel]', { restoreFocus: false })
 function openRemove(post: SocialPost, event?: MouseEvent) {
   if (movesDisabled.value || dragSource.value || Date.now() < dragClickGuardUntil || !isCalendarActive()) return
   const current = posts.value.find(item => item.id === post.id)
@@ -485,10 +490,10 @@ function openRemove(post: SocialPost, event?: MouseEvent) {
 }
 async function focusPlanningAfterRemoval(departureEpoch: number) {
   await nextTick()
-  if (departureEpoch !== calendarDepartureEpoch || !isCalendarActive()) return
+  if (departureEpoch !== calendarDepartureEpoch || !isCalendarActive() || editingPost.value || confirmationPost.value || moveSource.value || removeSource.value) return
   const nextCard = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-calendar-unplanned] [data-social-post-id]'))
     .find(element => !element.disabled && element.getClientRects().length)
-  ;(nextCard || document.getElementById('social-calendar-summary'))?.focus()
+  focusCalendarElement(nextCard || document.getElementById('social-calendar-summary'))
 }
 async function confirmRemove() {
   const source = removeSource.value
@@ -508,7 +513,7 @@ async function confirmRemove() {
       // Disabling the submit button during the request can move browser focus
       // to the body. Keep Escape and keyboard navigation inside the dialog.
       await nextTick()
-      removeDialogRef.value?.querySelector<HTMLButtonElement>('[data-remove-cancel]')?.focus()
+      removeDialogRef.value?.querySelector<HTMLButtonElement>('[data-remove-cancel]')?.focus({ preventScroll: true })
     }
     return
   }

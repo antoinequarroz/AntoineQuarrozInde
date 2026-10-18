@@ -72,6 +72,8 @@ jobs:
       - run: npx playwright test e2e/accessibility.spec.ts --project=chromium --grep @credential-free
       - name: Verify social editing, calendar movement, and explicit consent
         run: npx playwright test e2e/social-mixed-media.spec.ts e2e/social-document-carousel.spec.ts e2e/social-editorial-calendar.spec.ts e2e/social-calendar-drag.spec.ts e2e/social-planning-panel.spec.ts --project=chromium
+      - name: Verify repeated mobile focus handoffs without retries
+        run: npx playwright test e2e/social-planning-panel.spec.ts --project=chromium --grep '375px keyboard planning' --repeat-each=3 --retries=0
 
   seo-quality:
     needs: quality
@@ -291,6 +293,7 @@ jobs:
         run: |
           test -n "$E2E_ADMIN_EMAIL" && test -n "$E2E_ADMIN_PASSWORD" && test -n "$E2E_ADMIN_TOTP_SECRET"
           npm run test:e2e
+          npx playwright test e2e/social-planning-panel.spec.ts --project=chromium --grep '375px keyboard planning' --repeat-each=3 --retries=0
       - if: failure()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:

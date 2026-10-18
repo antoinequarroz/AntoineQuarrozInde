@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
+import { waitForAdminLoginReady } from './helpers/admin-login-ready'
 
 test.use({ trace: 'off', screenshot: 'off', video: 'off' })
 
@@ -153,7 +154,7 @@ async function isolatedCalendar(page: Page, initialPosts: Post[], options: { hol
   })
 
   await page.goto('/admin/login?redirect=/admin/social')
-  await expect(page.getByLabel(/email/i)).toBeEnabled()
+  await waitForAdminLoginReady(page)
   await page.getByLabel(/email/i).fill(user.email)
   await page.getByLabel(/mot de passe/i).fill('synthetic-browser-only-password')
   await page.getByRole('button', { name: /se connecter/i }).click()

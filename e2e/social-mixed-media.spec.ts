@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { expect, test, type Page } from '@playwright/test'
+import { waitForAdminLoginReady } from './helpers/admin-login-ready'
 
 test.use({ trace: 'off', screenshot: 'off', video: 'off' })
 
@@ -77,7 +78,7 @@ async function openMockedDraft(page: Page, { initialMedia = media, initialTitle 
     return route.fulfill({ status: 500, json: { message: `Unexpected mock auth request: ${request.method()} ${url.pathname}` } })
   })
   await page.goto('/admin/login?redirect=/admin/social')
-  await expect(page.getByLabel(/email/i)).toBeEnabled()
+  await waitForAdminLoginReady(page)
   await page.getByLabel(/email/i).fill(user.email)
   await page.getByLabel(/mot de passe/i).fill('synthetic-browser-only-password')
   await page.getByRole('button', { name: /se connecter/i }).click()
