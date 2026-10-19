@@ -123,6 +123,11 @@
     "software": "Logiciel",
     "view": "Voir le projet",
     "code": "Code source",
+    "project_kind": {
+      "client": "Projet client",
+      "personal": "Projet personnel"
+    },
+    "in_development": "En développement",
     "technologies": "Technologies",
     "verifiable_links": "Liens vérifiables",
     "live_available": "Projet accessible en ligne",
