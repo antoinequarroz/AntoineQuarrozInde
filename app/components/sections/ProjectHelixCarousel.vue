@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Project } from '~/types'
-import { getHelixAngleStep, getHelixTrackHeightVh, resolveHelixLayoutTotal } from '~/utils/projectHelixLayout'
+import { getHelixAngleStep, getHelixFrontSeparationDistance, getHelixTrackHeightVh, resolveHelixLayoutTotal } from '~/utils/projectHelixLayout'
 import { resolveProjectPreview } from '~/utils/projectPreview'
 
 type PortfolioCategory = 'all' | Project['category']
@@ -55,6 +55,7 @@ let metrics = {
   height: 1,
   viewportHeight: 1,
   viewportWidth: 1,
+  cardWidth: 260,
 }
 
 const sourceTotal = computed(() => Math.max(1, props.projects.length))
@@ -159,6 +160,7 @@ function measure() {
     height: Math.max(1, rootRef.value.offsetHeight),
     viewportHeight: Math.max(1, window.innerHeight),
     viewportWidth: Math.max(1, window.innerWidth),
+    cardWidth: cards[0]?.offsetWidth || metrics.cardWidth,
   }
   renderHelix()
 }
@@ -201,6 +203,12 @@ function renderHelix() {
   const spin = total > 1 ? step * angleStep : 0
   const horizontalRadius = metrics.viewportWidth >= 1440 ? 270 : metrics.viewportWidth >= 1280 ? 240 : 205
   const verticalRadius = metrics.viewportHeight >= 900 ? 390 : 330
+  const frontSeparationDistance = getHelixFrontSeparationDistance(
+    layoutTotal.value,
+    metrics.cardWidth,
+    horizontalRadius,
+    metrics.viewportWidth >= 1280 ? 195 : 190,
+  )
 
   cards.forEach((card, index) => {
     const baseAngle = index * angleStep
@@ -208,8 +216,6 @@ function renderHelix() {
     const normalized = ((angle + 540) % 360) - 180
     const absoluteAngle = Math.abs(normalized)
     const radians = normalized * (Math.PI / 180)
-    const densityBoost = Math.max(0, layoutTotal.value - 10) * 10
-    const frontSeparationDistance = (metrics.viewportWidth >= 1280 ? 195 : 190) + densityBoost
     const frontSeparation = absoluteAngle < 80
       ? Math.sin((absoluteAngle / 80) * Math.PI) * frontSeparationDistance
       : 0

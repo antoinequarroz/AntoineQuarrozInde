@@ -22,7 +22,22 @@ Un projet dont la démonstration et le code restent privés doit pouvoir être p
 - Contrôle du parcours public avec une fixture sans lien : carte, page projet et absence de boutons externes.
 - Vérification finale par Antoine dans l’administration après les gates normales de pull request et de production.
 
-## Preuves
+## Correction de la géométrie après ajout des quatre projets
+
+La vérification de production a révélé un chevauchement de 6 à 14 px des deux cartes avant à 900 px avec 21 projets. La carte sans lien et 80 tests E2E ont réussi ; le test réel de séparation existant reste inchangé.
+
+- Calculer l’écartement frontal depuis le pas angulaire et la largeur réelle non transformée des cartes, avec une marge pour la déformation et la perspective.
+- Mesurer la largeur uniquement lors des mesures de mise en page ; garder les animations en transform/opacity et la navigation, l’ordre, les angles, les images différées et reduced motion existants.
+- Vérifier les positions fractionnaires et le filtre de trois projets avec les références 17, 21 et 30, aux largeurs 768, 900, 1280 et 1440 px.
+- Conserver une capture avec 21 projets fictifs à 900 px ; aucune donnée client utilisée pour cette régression.
+- Première vérification locale : 25 tests unitaires ciblés et typage réussis (`tmp_f482eb23`). Le serveur de développement a empêché l’arrivée sur la homepage avant toute mesure de géométrie ; vérification prévue sur le build de production local, sans modification des assertions de navigation.
+- Base de la correction : `origin/main` `b16864efcc3d09c540369a70c18cad3b00588fb1`, dans un nouveau worktree propre ; la première livraison et ses preuves locales sont conservées.
+- Portly `tmp_e9fa4117` : build de production local réussi, sans installation de dépendances.
+- Portly `tmp_80fae748` : sept tests E2E portfolio réussis au premier passage sur ce build (36,5 s, retries 0). Les trois nouvelles fixtures vérifient strictement les boîtes projetées pour 17, 21 et 30 projets, aux largeurs 768/900/1280/1440 px, aux positions fractionnaires et dans le filtre de trois projets à 900/1440 px. Les quatre tests existants vérifient encore mobile, images différées, navigation, reduced motion et page sans lien.
+- Capture de la fixture de 21 projets à 900 px, inspectée visuellement : `/Users/antoinequarroz/Documents/Codex/2026-10-19/portfolio-ajouts/portfolio-helix-21-fixtures-900px.png`.
+- Revue croisée : aucune anomalie bloquante. Le test réel `e2e/public.spec.ts` et ses assertions de non-chevauchement sont conservés sans modification ; leur réussite après déploiement reste une gate de livraison.
+
+## Preuves initiales du support des projets sans lien
 
 - Base de départ : `origin/main` à jour, `2048505503173168dd0149866cceb851027aae6c` ; checkout isolé.
 - Portly `tmp_75a6b1a0` : préparation Nuxt puis 46 tests ciblés réussis dans six fichiers (états, compatibilité, confidentialité, catégories, traductions, MFA). La première invocation sur le worktree neuf ne trouvait pas les types `.nuxt` ; la préparation standard a résolu ce prérequis sans changement de code.
