@@ -2,6 +2,7 @@
 import type { Project } from '~/types'
 import { getHelixAngleStep, getHelixFrontSeparationDistance, getHelixTrackHeightVh, resolveHelixLayoutTotal } from '~/utils/projectHelixLayout'
 import { resolveProjectPreview } from '~/utils/projectPreview'
+import { getProjectSummary } from '~/utils/projectSummary'
 import ProjectPortfolioBadges from './ProjectPortfolioBadges.vue'
 
 type PortfolioCategory = 'all' | Project['category']
@@ -563,14 +564,18 @@ onBeforeUnmount(() => {
               data-helix-card
               class="absolute left-1/2 top-[54%] isolate h-[20.5rem] w-[16.2rem] rounded-[1.25rem] shadow-[0_28px_64px_-24px_rgba(76,29,149,0.26)] dark:shadow-[0_28px_64px_-24px_rgba(2,2,8,0.78)] [backface-visibility:hidden] xl:h-[22rem] xl:w-[17.5rem] xl:rounded-[1.4rem]"
             >
-              <div data-helix-surface class="relative h-full w-full overflow-hidden rounded-[inherit] border border-violet-500/15 bg-white/95 dark:border-white/15 dark:bg-[#11111b]">
-                <div data-helix-image class="relative flex h-[calc(100%-5.5rem)] items-center overflow-hidden bg-[#10101b]">
-                  <img v-if="project.image && shouldRenderDesktopImage(index)" v-bind="resolveProjectPreview(project.image)" :alt="project.title" class="h-full w-full object-contain" loading="lazy" decoding="async">
+              <div data-helix-surface class="relative flex h-full w-full flex-col overflow-hidden rounded-[inherit] border border-violet-500/15 bg-white/95 dark:border-white/15 dark:bg-[#11111b]">
+                <div data-helix-image class="relative aspect-[16/10] w-full shrink-0 overflow-hidden bg-[#10101b] outline outline-1 -outline-offset-1 outline-black/10 dark:outline-white/10">
+                  <img v-if="project.image && shouldRenderDesktopImage(index)" v-bind="resolveProjectPreview(project.image)" :alt="project.title" class="h-full w-full object-cover" loading="lazy" decoding="async">
                   <div v-else class="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(139,92,246,0.42),transparent_36%),radial-gradient(circle_at_72%_72%,rgba(34,211,238,0.28),transparent_34%)]" />
                 </div>
-                <div data-helix-content class="flex h-[5.5rem] flex-col justify-center px-4 py-3">
+                <div data-helix-content class="flex min-h-0 flex-1 flex-col px-4 py-3.5">
                   <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-violet-700 dark:text-violet-300">{{ categoryLabel(project.category) }}</p>
                   <h3 class="mt-1 line-clamp-2 font-display text-base font-bold leading-tight text-gray-950 dark:text-white xl:text-lg">{{ project.title }}</h3>
+                  <p :lang="getProjectSummary(project, locale).lang" class="mt-2 line-clamp-2 text-xs leading-[1.5] text-gray-600 dark:text-gray-300">{{ getProjectSummary(project, locale).text }}</p>
+                  <ul v-if="project.tags.length" :aria-label="t('portfolio.technologies')" class="mt-auto flex gap-1.5 pt-2">
+                    <li v-for="tag in project.tags.slice(0, 3)" :key="tag" class="min-w-0 truncate rounded-md bg-violet-500/[0.07] px-2 py-1 text-[10px] leading-none text-violet-800 dark:bg-white/[0.06] dark:text-violet-200">{{ tag }}</li>
+                  </ul>
                 </div>
               </div>
             </article>

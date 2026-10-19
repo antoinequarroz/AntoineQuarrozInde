@@ -113,6 +113,11 @@
     "areas": "Regionen"
   },
   "portfolio": {
+    "categories": "Projektkategorien",
+    "view_mode": "Projektansicht",
+    "grid_view": "Raster",
+    "helix_view": "3D-Animation",
+    "carousel_view": "Karussell",
     "badge": "Portfolio",
     "title": "Aktuelle\nProjekte.",
     "subtitle": "Eine Auswahl meiner neuesten Arbeiten.",

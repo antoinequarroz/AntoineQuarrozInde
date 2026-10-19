@@ -5,6 +5,29 @@ const store = useProjectsStore()
 type PortfolioFilter = 'all' | 'web' | 'mobile' | 'cms' | 'software'
 
 const activeFilter = ref<PortfolioFilter>('all')
+const activeView = ref<'helix' | 'grid'>('helix')
+const viewAnchorRef = ref<HTMLElement | null>(null)
+
+function anchorProjects() {
+  // The two views have very different heights. Anchor the shared toolbar
+  // before removing the long helix so the browser cannot clamp to the footer.
+  const anchor = viewAnchorRef.value
+  if (anchor && import.meta.client) {
+    window.scrollTo({ top: Math.max(0, window.scrollY + anchor.getBoundingClientRect().top - 96), behavior: 'instant' })
+  }
+}
+
+function selectView(view: 'helix' | 'grid') {
+  if (view === activeView.value) return
+  anchorProjects()
+  activeView.value = view
+}
+
+function selectFilter(filter: PortfolioFilter) {
+  if (filter === activeFilter.value) return
+  anchorProjects()
+  activeFilter.value = filter
+}
 
 const projectCounts = computed<Record<PortfolioFilter, number>>(() => ({
   all: store.portfolio.length,
@@ -53,22 +76,20 @@ const filtered = computed(() => {
         <p class="section-subtitle mx-auto text-center max-[430px]:max-w-[32ch]">{{ t('portfolio.subtitle') }}</p>
       </div>
 
-      <!-- Filters -->
-      <div
-        v-motion
-        :initial="{ opacity: 0, y: 10 }"
-        :visible="{ opacity: 1, y: 0, transition: { delay: 200, duration: 400 } }"
-        v-if="filters.length > 1"
-        class="relative z-30 mb-3 max-[430px]:mb-4 flex flex-wrap justify-center gap-1.5 md:gap-2 md:mb-2"
-      >
+      </div>
+
+      <div ref="viewAnchorRef" />
+      <div data-portfolio-toolbar class="sticky top-24 z-40 mb-4 flex flex-col items-center gap-3 rounded-3xl bg-white/95 p-2 shadow-sm ring-1 ring-black/[0.06] backdrop-blur-xl dark:bg-[#0f0f1a]/95 dark:ring-white/10 lg:flex-row lg:justify-between">
+      <div v-if="filters.length > 1" role="group" :aria-label="t('portfolio.categories')" class="flex w-full max-w-full gap-1 overflow-x-auto md:flex-wrap md:justify-center lg:w-auto lg:justify-start">
         <button
           v-for="filter in filters"
           :key="filter.key"
-          class="group inline-flex min-h-11 items-center gap-1.5 rounded-2xl px-3.5 max-[390px]:px-3 py-1.5 text-xs md:px-5 md:py-2 md:text-sm font-semibold transition-[background-color,color,box-shadow] duration-200"
+          :aria-pressed="activeFilter === filter.key"
+          class="group inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-2xl px-3 max-[390px]:px-2.5 py-1.5 text-xs md:px-4 md:py-2 md:text-sm font-semibold transition-[background-color,color,transform] duration-150 active:scale-[0.96] motion-reduce:transition-none motion-reduce:active:scale-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-500"
           :class="activeFilter === filter.key
             ? 'bg-gradient-brand text-white shadow-glow-sm'
             : 'bg-white/70 text-violet-800 ring-1 ring-violet-500/10 backdrop-blur dark:bg-white/[0.04] dark:text-violet-200 dark:ring-white/10 hover:bg-violet-50 dark:hover:bg-violet-500/10 hover:text-violet-600 dark:hover:text-violet-100'"
-          @click="activeFilter = filter.key"
+          @click="selectFilter(filter.key)"
         >
           <span>{{ filter.label }}</span>
           <span
@@ -79,6 +100,23 @@ const filtered = computed(() => {
           >
             {{ filter.count }}
           </span>
+        </button>
+      </div>
+      <div role="group" :aria-label="t('portfolio.view_mode')" class="inline-flex shrink-0 gap-1 rounded-2xl bg-violet-500/[0.06] p-1 dark:bg-white/[0.04]">
+        <button
+          v-for="view in (['helix', 'grid'] as const)"
+          :key="view"
+          :data-portfolio-view="view"
+          :aria-pressed="activeView === view"
+          aria-controls="portfolio-projects"
+          class="inline-flex min-h-11 items-center gap-2 rounded-xl px-4 text-sm font-semibold transition-[background-color,color,transform] duration-150 active:scale-[0.96] motion-reduce:transition-none motion-reduce:active:scale-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-500"
+          :class="activeView === view ? 'bg-white text-violet-800 shadow-sm ring-1 ring-violet-500/15 dark:bg-violet-500/20 dark:text-white dark:ring-violet-400/30' : 'text-gray-600 hover:text-violet-800 dark:text-gray-400 dark:hover:text-white'"
+          @click="selectView(view)"
+        >
+          <svg v-if="view === 'grid'" aria-hidden="true" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+          <svg v-else aria-hidden="true" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="m12 3 9 5-9 5-9-5 9-5Z M3 8v8l9 5 9-5V8 M12 13v8"/></svg>
+          <span v-if="view === 'grid'">{{ t('portfolio.grid_view') }}</span>
+          <span v-else><span class="portfolio-helix-label">{{ t('portfolio.helix_view') }}</span><span class="portfolio-carousel-label">{{ t('portfolio.carousel_view') }}</span></span>
         </button>
       </div>
       </div>
@@ -100,8 +138,10 @@ const filtered = computed(() => {
             </div>
           </div>
         </template>
-        <div v-else class="mt-2 md:mt-4">
+        <div v-else id="portfolio-projects" class="mt-2 md:mt-4">
+          <SectionsProjectPortfolioGrid v-if="activeView === 'grid'" :projects="filtered" />
           <SectionsProjectHelixCarousel
+            v-else
             :projects="filtered"
             :active-category="activeFilter"
             :layout-reference-total="store.portfolio.length"
@@ -118,3 +158,11 @@ const filtered = computed(() => {
     </div>
   </section>
 </template>
+
+<style scoped>
+.portfolio-helix-label { display: none; }
+@media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
+  .portfolio-helix-label { display: inline; }
+  .portfolio-carousel-label { display: none; }
+}
+</style>

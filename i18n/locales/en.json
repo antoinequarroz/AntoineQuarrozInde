@@ -113,6 +113,11 @@
     "areas": "Areas"
   },
   "portfolio": {
+    "categories": "Project categories",
+    "view_mode": "Project view",
+    "grid_view": "Grid",
+    "helix_view": "3D animation",
+    "carousel_view": "Carousel",
     "badge": "Portfolio",
     "title": "Recent\nwork.",
     "subtitle": "A selection of my latest projects.",
