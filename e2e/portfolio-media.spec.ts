@@ -29,13 +29,14 @@ function isPortfolioImage(url: string) {
     || /^https:\/\/portfolio-fixtures\.invalid\/project-\d+\.png$/.test(url)
 }
 
-async function openFixtureHomepage(page: Page) {
+async function openFixtureHomepage(page: Page, fixtureProjects = projects) {
   const imageRequests: string[] = []
   page.on('request', request => {
     if (isPortfolioImage(request.url())) imageRequests.push(request.url())
   })
+  await page.route('**/ingest/**', route => route.fulfill({ json: {} }))
   await page.route('**/api/marketing-event', route => route.fulfill({ json: { ok: true } }))
-  await page.route('**/api/projects', route => route.fulfill({ json: projects }))
+  await page.route('**/api/projects', route => route.fulfill({ json: fixtureProjects }))
   // All homepage dependencies participate in its async navigation. Keep the
   // portfolio fixture independent of a live article database or Google API.
   await page.route('**/api/public/articles?*', route => route.fulfill({ json: [] }))
@@ -50,8 +51,8 @@ async function openFixtureHomepage(page: Page) {
   // the real home link so its client-side GET can use deterministic fixtures
   // without changing a database or depending on production project rows.
   const fixtureResponse = await navigateToFixtureHomepage(page, '/api/projects')
-  expect(await fixtureResponse.json()).toEqual(projects)
-  await expect(page.locator('[data-mobile-project-card]')).toHaveCount(projects.length)
+  expect(await fixtureResponse.json()).toEqual(fixtureProjects)
+  await expect(page.locator('[data-mobile-project-card]')).toHaveCount(fixtureProjects.length)
   await expect(page.locator('[data-mobile-project-carousel]')).toHaveAttribute('data-carousel-ready', 'true')
   await expect.poll(() => page.locator('#portfolio').evaluate(element => element.getBoundingClientRect().top))
     .toBeGreaterThan(2 * (page.viewportSize()?.height || 800))
@@ -185,3 +186,64 @@ test('a portfolio project with private demo and source keeps its public page wit
   await expect(page.locator('main a[target="_blank"]')).toHaveCount(0)
   await expect(page.getByText(projects[0]!.description, { exact: true })).toBeVisible()
 })
+
+for (const count of [17, 21, 30]) {
+  test(`front portfolio cards stay separated with ${count} fixture projects and a filtered selection`, async ({ page }) => {
+    const fixtureProjects = Array.from({ length: count }, (_, index) => ({
+      ...projects[index % projects.length]!,
+      id: 9500 + index,
+      title: `Spacing fixture ${index + 1}`,
+      slug: `spacing-fixture-${index + 1}`,
+      category: index < 3 ? 'mobile' : 'web',
+      image: `https://portfolio-fixtures.invalid/project-${index + 1}.png`,
+    }))
+    await page.setViewportSize({ width: 900, height: 820 })
+    await openFixtureHomepage(page, fixtureProjects)
+
+    async function expectSeparated(visibleCount: number, viewport: { width: number, height: number }) {
+      const cards = page.locator('[data-helix-card]')
+      await expect(cards).toHaveCount(visibleCount)
+      await expect(page.locator('[data-project-navigation]')).toBeVisible()
+      const track = cards.first().locator('xpath=ancestor::div[contains(@style, "height")][1]')
+      const metrics = await track.evaluate((element) => ({
+        top: element.getBoundingClientRect().top + window.scrollY,
+        height: (element as HTMLElement).offsetHeight,
+      }))
+      const stickyTop = viewport.width >= 1280 ? 96 : 80
+      const end = -Math.max(viewport.height, metrics.height - viewport.height * 1.02)
+      const transition = 1 / (visibleCount - 1)
+      for (const progress of [0, 0.25 * transition, 0.5 * transition, 0.75 * transition, transition, 0.5, 0.75, 1]) {
+        await page.evaluate(({ top, progress, stickyTop, end }) => {
+          window.scrollTo({ top: top - stickyTop + progress * (stickyTop - end), behavior: 'instant' })
+        }, { top: metrics.top, progress, stickyTop, end })
+        await page.waitForTimeout(100)
+        const overlap = await cards.evaluateAll((elements) => {
+          const [first, second] = elements.map(element => ({
+            opacity: Number.parseFloat(getComputedStyle(element).opacity),
+            rect: element.getBoundingClientRect(),
+          })).sort((a, b) => b.opacity - a.opacity).slice(0, 2)
+          if (!first || !second) throw new Error('Two front cards are required')
+          return {
+            x: Math.min(first.rect.right, second.rect.right) - Math.max(first.rect.left, second.rect.left),
+            y: Math.min(first.rect.bottom, second.rect.bottom) - Math.max(first.rect.top, second.rect.top),
+          }
+        })
+        expect(overlap.x <= 0 || overlap.y <= 0,
+          `${count} projects (${visibleCount} selected), ${viewport.width}px, progress ${progress}: ${overlap.x}px × ${overlap.y}px overlap`).toBeTruthy()
+        if (count === 21 && visibleCount === count && viewport.width === 900 && progress === 0) {
+          await page.screenshot({ path: test.info().outputPath('portfolio-21-projects-900px.png') })
+        }
+      }
+    }
+
+    for (const viewport of [{ width: 768, height: 820 }, { width: 900, height: 820 }, { width: 1280, height: 900 }, { width: 1440, height: 900 }]) {
+      await page.setViewportSize(viewport)
+      await expectSeparated(count, viewport)
+    }
+    await page.locator('#portfolio').getByRole('button', { name: /mobile/i }).first().click()
+    for (const viewport of [{ width: 900, height: 820 }, { width: 1440, height: 900 }]) {
+      await page.setViewportSize(viewport)
+      await expectSeparated(3, viewport)
+    }
+  })
+}
