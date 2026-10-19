@@ -187,6 +187,63 @@ test('a portfolio project with private demo and source keeps its public page wit
   await expect(page.getByText(projects[0]!.description, { exact: true })).toBeVisible()
 })
 
+const presentationProjects = [
+  { ...projects[0]!, title: 'Client presentation fixture', slug: 'physiobaur' },
+  { ...projects[1]!, title: 'Personal presentation fixture', slug: 'postmelo', live_url: null, code_url: null },
+  { ...projects[2]!, title: 'Unclassified presentation fixture', slug: 'unclassified-example' },
+  // Keep the unclassified example away from the scroll boundary: this helper
+  // also verifies exact centering, which an end card cannot always reach.
+  { ...projects[3]!, title: 'Trailing presentation fixture', slug: 'trailing-example' },
+]
+
+test('desktop portfolio keeps one explanatory panel and updates explicit project badges', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await openFixtureHomepage(page, presentationProjects)
+  await approachPortfolio(page)
+
+  const panel = page.locator('[data-project-main-panel]')
+  await expect(panel).toBeVisible()
+  await expect(panel.getByText('Projet client', { exact: true })).toBeVisible()
+  await expect(panel.getByText(presentationProjects[0]!.description, { exact: true })).toBeVisible()
+  await expect(page.locator('[data-helix-content]').first()).not.toContainText(presentationProjects[0]!.description)
+  await expect(page.locator('[data-helix-content]').first()).not.toContainText('TypeScript')
+
+  const navigation = page.locator('[data-project-navigation]')
+  await navigation.getByRole('button', { name: /Personal presentation fixture/ }).click()
+  await expect(panel.getByRole('heading')).toHaveText('Personal presentation fixture')
+  await expect(panel.getByText('Projet personnel', { exact: true })).toBeVisible()
+  await expect(panel.getByText('En développement', { exact: true })).toBeVisible()
+  await expect(panel.locator('a[target="_blank"]')).toHaveCount(0)
+  await expect(panel.getByRole('link', { name: 'Découvrir le projet', exact: true }))
+    .toHaveAttribute('href', '/projets/postmelo')
+  await expect(panel.getByRole('link', { name: 'Découvrir le projet', exact: true }))
+    .toHaveCSS('min-height', '44px')
+
+  await navigation.getByRole('button', { name: /Unclassified presentation fixture/ }).click()
+  await expect(panel.getByRole('heading')).toHaveText('Unclassified presentation fixture')
+  await expect(panel.locator('[data-project-badges]')).toHaveCount(0)
+})
+
+for (const reducedMotion of [false, true]) {
+  test(`project badges remain visible in the ${reducedMotion ? 'reduced-motion' : 'mobile'} portfolio`, async ({ page }) => {
+    await page.setViewportSize(reducedMotion ? { width: 1280, height: 800 } : { width: 390, height: 844 })
+    if (reducedMotion) await page.emulateMedia({ reducedMotion: 'reduce' })
+    await openFixtureHomepage(page, presentationProjects)
+    await approachPortfolio(page)
+
+    const cards = page.locator('[data-mobile-project-card]')
+    await expect(cards.first().getByText('Projet client', { exact: true })).toBeVisible()
+    await scrollMobileProject(page, 1)
+    await expect(cards.nth(1).getByText('Projet personnel', { exact: true })).toBeVisible()
+    await expect(cards.nth(1).getByText('En développement', { exact: true })).toBeVisible()
+    await expect(cards.nth(1).locator('a[target="_blank"]')).toHaveCount(0)
+    await expect(cards.nth(1).getByRole('link', { name: 'Découvrir le projet', exact: true }))
+      .toHaveAttribute('href', '/projets/postmelo')
+    await scrollMobileProject(page, 2)
+    await expect(cards.nth(2).locator('[data-project-badges]')).toHaveCount(0)
+  })
+}
+
 for (const count of [17, 21, 30]) {
   test(`front portfolio cards stay separated with ${count} fixture projects and a filtered selection`, async ({ page }) => {
     const fixtureProjects = Array.from({ length: count }, (_, index) => ({

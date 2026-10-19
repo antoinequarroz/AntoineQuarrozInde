@@ -2,6 +2,7 @@
 import type { Project } from '~/types'
 import { getHelixAngleStep, getHelixFrontSeparationDistance, getHelixTrackHeightVh, resolveHelixLayoutTotal } from '~/utils/projectHelixLayout'
 import { resolveProjectPreview } from '~/utils/projectPreview'
+import ProjectPortfolioBadges from './ProjectPortfolioBadges.vue'
 
 type PortfolioCategory = 'all' | Project['category']
 
@@ -77,14 +78,6 @@ const activeCategoryIntro = computed(() => {
     text: t(`portfolio.category_intro.${category}.text`),
   }
 })
-const activeProofs = computed(() => {
-  if (!activeProject.value) return []
-  return [
-    hasSeparateLiveUrl(activeProject.value) ? t('portfolio.live_available') : '',
-    activeProject.value.codeUrl ? t('portfolio.source_available') : '',
-  ].filter(Boolean)
-})
-
 function hasSeparateLiveUrl(project: Project) {
   if (!project.liveUrl) return false
   try {
@@ -485,13 +478,14 @@ onBeforeUnmount(() => {
               </div>
             </div>
             <div class="p-3.5 max-[390px]:p-3">
+              <ProjectPortfolioBadges :project="project" class="mb-3" />
               <p :lang="descriptionLanguage(project)" class="line-clamp-3 text-sm leading-relaxed text-gray-600 dark:text-gray-300">{{ descriptionFor(project) }}</p>
               <div class="mt-3 flex flex-wrap gap-2">
-                <NuxtLink :to="`/projets/${project.slug}`" class="inline-flex min-h-11 items-center rounded-full bg-violet-600 px-4 text-xs font-bold text-white transition-colors hover:bg-violet-500" @click="trackProject('project_case_study_click', project)">
+                <NuxtLink :to="`/projets/${project.slug}`" class="btn-primary min-h-11 rounded-full px-4 py-2 text-xs duration-150" @click="trackProject('project_case_study_click', project)">
                   {{ t('portfolio.view_details') }}
                 </NuxtLink>
-                <a v-if="hasSeparateLiveUrl(project)" :href="project.liveUrl!" target="_blank" rel="noopener noreferrer" class="inline-flex min-h-11 items-center rounded-full bg-violet-600 px-4 text-xs font-bold text-white transition-colors hover:bg-violet-500" @click="trackProject('project_live_click', project)">{{ t('portfolio.view') }}</a>
-                <a v-if="project.codeUrl" :href="project.codeUrl" target="_blank" rel="noopener noreferrer" class="inline-flex min-h-11 items-center rounded-full border border-violet-500/25 px-4 text-xs font-bold text-violet-700 transition-colors hover:bg-violet-500/10 dark:text-violet-200" @click="trackProject('project_code_click', project)">{{ t('portfolio.code') }}</a>
+                <a v-if="hasSeparateLiveUrl(project)" :href="project.liveUrl!" target="_blank" rel="noopener noreferrer" class="btn-secondary min-h-11 rounded-full border px-4 py-2 text-xs duration-150" @click="trackProject('project_live_click', project)">{{ t('portfolio.view') }}</a>
+                <a v-if="project.codeUrl" :href="project.codeUrl" target="_blank" rel="noopener noreferrer" class="btn-secondary min-h-11 rounded-full border px-4 py-2 text-xs duration-150" @click="trackProject('project_code_click', project)">{{ t('portfolio.code') }}</a>
               </div>
             </div>
           </article>
@@ -513,32 +507,26 @@ onBeforeUnmount(() => {
           <div class="absolute left-1/2 top-[54%] h-[52vh] w-px -translate-x-1/2 -translate-y-1/2 bg-gradient-to-b from-transparent via-violet-400/25 to-transparent" />
 
           <aside class="absolute left-[max(1rem,calc((100vw-1040px)/2))] top-[54%] z-[1200] w-[17.5rem] -translate-y-1/2 xl:w-[19rem]">
-            <div v-if="activeProject" class="relative overflow-hidden rounded-[1.45rem] border border-violet-500/15 bg-white/[0.88] p-4 shadow-2xl shadow-violet-500/10 backdrop-blur-lg dark:border-white/10 dark:bg-black/45">
+            <div v-if="activeProject" data-project-main-panel class="relative max-h-[calc(100vh-11rem)] overflow-y-auto overscroll-contain rounded-[1.45rem] border border-violet-500/15 bg-white/[0.88] p-4 shadow-2xl shadow-violet-500/10 backdrop-blur-lg dark:border-white/10 dark:bg-black/45 xl:p-5">
               <div class="flex items-center justify-between gap-4">
-                <span class="rounded-full bg-violet-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-violet-700 dark:text-violet-200">{{ categoryLabel(activeProject.category) }}</span>
-                <span class="font-display text-sm text-gray-400">{{ String(activeSourceIndex + 1).padStart(2, '0') }}/{{ String(projects.length).padStart(2, '0') }}</span>
+                <span class="text-xs font-semibold uppercase tracking-[0.14em] text-violet-700 dark:text-violet-300">{{ categoryLabel(activeProject.category) }}</span>
+                <span class="font-display text-xs tabular-nums text-gray-500 dark:text-gray-400">{{ String(activeSourceIndex + 1).padStart(2, '0') }}/{{ String(projects.length).padStart(2, '0') }}</span>
               </div>
-              <p v-if="locale === 'fr' && activeProject.caseStudyPublished" class="mt-5 text-xs font-bold uppercase tracking-[0.2em] text-cyan-600 dark:text-cyan-300">{{ t('portfolio.case_study') }}</p>
               <h3 class="mt-3 font-display text-2xl font-bold leading-tight text-gray-950 dark:text-white xl:text-3xl">{{ activeProject.title }}</h3>
-              <p :lang="descriptionLanguage(activeProject)" class="mt-2 line-clamp-4 text-sm leading-relaxed text-gray-600 dark:text-gray-300">{{ descriptionFor(activeProject) }}</p>
-              <div v-if="activeProject.tags.length || activeProofs.length" class="mt-4 space-y-3 rounded-2xl bg-violet-50/80 p-3 dark:bg-violet-500/10">
-                <div v-if="activeProject.tags.length">
-                  <p class="text-xs font-bold uppercase tracking-[0.14em] text-violet-700 dark:text-violet-200">{{ t('portfolio.technologies') }}</p>
-                  <div class="mt-2 flex flex-wrap gap-1.5">
-                    <span v-for="tag in activeProject.tags.slice(0, 4)" :key="tag" class="rounded-full bg-white/80 px-2.5 py-1 text-xs text-violet-700 dark:bg-white/[0.06] dark:text-violet-100">{{ tag }}</span>
-                  </div>
+              <ProjectPortfolioBadges :project="activeProject" class="mt-3" />
+              <p :lang="descriptionLanguage(activeProject)" class="mt-4 line-clamp-5 text-sm leading-relaxed text-gray-600 dark:text-gray-300">{{ descriptionFor(activeProject) }}</p>
+              <ul v-if="activeProject.tags.length" :aria-label="t('portfolio.technologies')" class="mt-4 flex flex-wrap gap-x-3 gap-y-1 text-xs leading-relaxed text-gray-500 dark:text-gray-400">
+                <li v-for="tag in activeProject.tags.slice(0, 4)" :key="tag">{{ tag }}</li>
+              </ul>
+              <div class="mt-5 border-t border-violet-500/10 pt-4 dark:border-white/10">
+                <NuxtLink :to="`/projets/${activeProject.slug}`" class="btn-primary min-h-11 rounded-full px-4 py-2 text-xs duration-150" @click="trackProject('project_case_study_click', activeProject)">
+                  {{ t('portfolio.view_details') }}
+                  <span aria-hidden="true">→</span>
+                </NuxtLink>
+                <div v-if="hasSeparateLiveUrl(activeProject) || activeProject.codeUrl" class="mt-2 flex flex-wrap gap-x-4">
+                  <a v-if="hasSeparateLiveUrl(activeProject)" :href="activeProject.liveUrl!" target="_blank" rel="noopener noreferrer" class="inline-flex min-h-11 min-w-11 items-center gap-1.5 rounded-md text-xs font-semibold text-violet-700 underline-offset-4 transition-colors duration-150 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-violet-500 dark:text-violet-200" @click="trackProject('project_live_click', activeProject)">{{ t('portfolio.view') }}<span aria-hidden="true">↗</span></a>
+                  <a v-if="activeProject.codeUrl" :href="activeProject.codeUrl" target="_blank" rel="noopener noreferrer" class="inline-flex min-h-11 min-w-11 items-center gap-1.5 rounded-md text-xs font-semibold text-violet-700 underline-offset-4 transition-colors duration-150 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-violet-500 dark:text-violet-200" @click="trackProject('project_code_click', activeProject)">{{ t('portfolio.code') }}<span aria-hidden="true">↗</span></a>
                 </div>
-                <div v-if="activeProofs.length">
-                  <p class="text-xs font-bold uppercase tracking-[0.14em] text-cyan-700 dark:text-cyan-200">{{ t('portfolio.verifiable_links') }}</p>
-                  <ul class="mt-2 space-y-1 text-xs leading-relaxed text-gray-600 dark:text-gray-300">
-                    <li v-for="proof in activeProofs" :key="proof" class="flex items-center gap-2"><span class="h-1.5 w-1.5 rounded-full bg-cyan-500" />{{ proof }}</li>
-                  </ul>
-                </div>
-              </div>
-              <div class="mt-5 flex flex-wrap gap-2">
-                <NuxtLink :to="`/projets/${activeProject.slug}`" class="btn-primary rounded-full px-4 py-2 text-xs" @click="trackProject('project_case_study_click', activeProject)">{{ t('portfolio.view_details') }}</NuxtLink>
-                <a v-if="hasSeparateLiveUrl(activeProject)" :href="activeProject.liveUrl!" target="_blank" rel="noopener noreferrer" class="btn-primary rounded-full px-4 py-2 text-xs" @click="trackProject('project_live_click', activeProject)">{{ t('portfolio.view') }}</a>
-                <a v-if="activeProject.codeUrl" :href="activeProject.codeUrl" target="_blank" rel="noopener noreferrer" class="btn-secondary rounded-full px-4 py-2 text-xs" @click="trackProject('project_code_click', activeProject)">{{ t('portfolio.code') }}</a>
               </div>
             </div>
           </aside>
@@ -576,18 +564,13 @@ onBeforeUnmount(() => {
               class="absolute left-1/2 top-[54%] isolate h-[20.5rem] w-[16.2rem] rounded-[1.25rem] shadow-[0_28px_64px_-24px_rgba(76,29,149,0.26)] dark:shadow-[0_28px_64px_-24px_rgba(2,2,8,0.78)] [backface-visibility:hidden] xl:h-[22rem] xl:w-[17.5rem] xl:rounded-[1.4rem]"
             >
               <div data-helix-surface class="relative h-full w-full overflow-hidden rounded-[inherit] border border-violet-500/15 bg-white/95 dark:border-white/15 dark:bg-[#11111b]">
-                <div data-helix-image class="relative h-36 overflow-hidden bg-[#10101b] xl:h-44">
-                  <img v-if="project.image && shouldRenderDesktopImage(index)" v-bind="resolveProjectPreview(project.image)" :alt="project.title" class="h-full w-full object-cover" loading="lazy" decoding="async">
+                <div data-helix-image class="relative flex h-[calc(100%-5.5rem)] items-center overflow-hidden bg-[#10101b]">
+                  <img v-if="project.image && shouldRenderDesktopImage(index)" v-bind="resolveProjectPreview(project.image)" :alt="project.title" class="h-full w-full object-contain" loading="lazy" decoding="async">
                   <div v-else class="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(139,92,246,0.42),transparent_36%),radial-gradient(circle_at_72%_72%,rgba(34,211,238,0.28),transparent_34%)]" />
-                  <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
-                  <span class="absolute left-4 top-4 rounded-full bg-black/45 px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-white">{{ categoryLabel(project.category) }}</span>
                 </div>
-                <div data-helix-content class="p-3 xl:p-3.5">
-                  <h3 class="font-display text-base font-bold leading-tight text-gray-950 dark:text-white xl:text-lg">{{ project.title }}</h3>
-                  <p :lang="descriptionLanguage(project)" class="mt-2 line-clamp-2 text-sm leading-relaxed text-gray-600 dark:text-white/70">{{ descriptionFor(project) }}</p>
-                  <div class="mt-4 flex flex-wrap gap-1.5">
-                    <span v-for="tag in project.tags.slice(0, 3)" :key="tag" class="rounded-full bg-violet-500/[0.08] px-2.5 py-1 text-xs text-violet-700 dark:bg-white/[0.08] dark:text-white/70">{{ tag }}</span>
-                  </div>
+                <div data-helix-content class="flex h-[5.5rem] flex-col justify-center px-4 py-3">
+                  <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-violet-700 dark:text-violet-300">{{ categoryLabel(project.category) }}</p>
+                  <h3 class="mt-1 line-clamp-2 font-display text-base font-bold leading-tight text-gray-950 dark:text-white xl:text-lg">{{ project.title }}</h3>
                 </div>
               </div>
             </article>

@@ -123,6 +123,11 @@
     "software": "Software",
     "view": "Projekt ansehen",
     "code": "Quellcode",
+    "project_kind": {
+      "client": "Kundenprojekt",
+      "personal": "Persönliches Projekt"
+    },
+    "in_development": "In Entwicklung",
     "technologies": "Technologien",
     "verifiable_links": "Prüfbare Links",
     "live_available": "Live-Projekt verfügbar",
