@@ -391,7 +391,7 @@ begin
     raise exception 'project_case_study_draft_approval_forbidden' using errcode = '22023';
   end if;
 
-  if (new.portfolio_visible or new.case_study_published)
+  if new.case_study_published
     and nullif(btrim(new.live_url), '') is null
     and nullif(btrim(new.code_url), '') is null then
     raise exception 'project_public_link_required' using errcode = '22023';

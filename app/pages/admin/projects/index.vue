@@ -139,8 +139,8 @@ async function handleSubmit() {
     return
   }
 
-  if ((form.portfolioVisible || form.caseStudyPublished) && !form.liveUrl.trim() && !form.codeUrl.trim()) {
-    toast.error('Pour publier ce projet, ajoutez au moins un lien : site ou GitHub')
+  if (form.caseStudyPublished && !form.liveUrl.trim() && !form.codeUrl.trim()) {
+    toast.error('Pour publier l’étude de cas, ajoutez au moins un lien public : site ou GitHub')
     return
   }
 
@@ -354,7 +354,7 @@ function caseStudyTone(project: Project) {
             <div>
               <label for="project-code-url" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">URL GitHub <span class="font-normal text-gray-400">(facultatif)</span></label>
               <input id="project-code-url" v-model="form.codeUrl" type="url" class="input-field" placeholder="https://github.com/..." autocomplete="url">
-              <p class="mt-1.5 text-xs leading-relaxed text-gray-400">Pour publier le projet, renseignez au moins le site ou GitHub.</p>
+              <p class="mt-1.5 text-xs leading-relaxed text-gray-400">Le site et GitHub sont facultatifs pour le portfolio. Un lien public reste nécessaire pour publier une étude de cas.</p>
             </div>
 
             <AdminProjectCaseStudyFields v-model="form" :can-manage-publication="canManagePublication" />
