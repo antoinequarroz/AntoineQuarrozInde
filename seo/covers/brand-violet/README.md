@@ -14,7 +14,7 @@ Les cinq dates et titres de référence proviennent de `seo/resources/editorial/
 - `manifest-037-041.json` : provenance, dimensions, poids et SHA256 des cinq couvertures seulement.
 - `review-037-041.json` : revue visuelle des cinq PNG identifiés par SHA256. Le build ne reprend le statut « passed » que si les fichiers reconstruits correspondent exactement aux empreintes relues.
 
-Les visuels 038–041 sont des illustrations SVG entièrement fictives portant « Démonstration ». Les contrôles de lecture de 037 sont illustratifs ; l’affiche vidéo est réelle. Aucune performance, validation, donnée privée ou vérification de site client n’est affirmée.
+Les visuels 038–041 sont des illustrations SVG entièrement fictives portant « Démonstration ». Les contrôles de lecture de 037 sont illustratifs et portent visiblement « Démonstration » depuis la revue du 19 octobre ; les affiches vidéo sont réelles. Aucune performance, validation, donnée privée ou vérification de site client n’est affirmée.
 
 ## Reproduction
 

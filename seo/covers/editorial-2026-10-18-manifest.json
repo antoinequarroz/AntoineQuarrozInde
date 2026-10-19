@@ -23,13 +23,13 @@
       1200,
       675
     ],
-    "bytes": 280172,
-    "sha256": "466fc9012d4b9c532237b636428c29081d6e759b8f3528c86179dc2817ccd5da",
+    "bytes": 282612,
+    "sha256": "582295afb6a6899fb8909103ab160a092906ae8570b2e6d64284c72e8f77296a",
     "coverStyle": "aq-editorial-violet-space-grotesk-v1",
     "method": "Original SVG composition, exact Space Grotesk font outlines and Sharp raster composition",
     "source_manifest": "seo/covers/brand-violet/manifest-037-041.json",
     "visual_review": "passed: French spelling, accents, exact font, violet gradient, readability, actual screenshots or visibly labeled demonstration",
-    "visual_provenance": "Actual public AboutVideo landscape and portrait posters, with illustrative player chrome. No performance measurements.",
+    "visual_provenance": "Actual public AboutVideo landscape and portrait posters, with illustrative player chrome explicitly labeled Démonstration. No performance measurements.",
     "scheduled_article_date": "2026-10-19",
     "social_status": "manual approval required; no publication or scheduling authorized"
   },
