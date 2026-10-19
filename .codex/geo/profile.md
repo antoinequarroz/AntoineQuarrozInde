@@ -10,7 +10,7 @@
 - **Modèle et prix** : Prestations sur devis
 - **Pays et année de création** : Suisse, 2026
 - **Entité juridique** : Antoine Quarroz, entreprise individuelle
-- **Contact public** : https://www.antoinequarroz.ch/contact
+- **Contact public** : https://www.antoinequarroz.ch/#contact-form
 
 ## 2. Proposition de valeur
 
