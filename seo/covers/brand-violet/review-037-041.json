@@ -4,9 +4,10 @@
   "reviewer": "Codex visual review; this record does not assert article publication or social approval",
   "covers": {
     "037": {
-      "sha256": "466fc9012d4b9c532237b636428c29081d6e759b8f3528c86179dc2817ccd5da",
+      "sha256": "582295afb6a6899fb8909103ab160a092906ae8570b2e6d64284c72e8f77296a",
       "result": "passed",
-      "notes": "Vidéo / L’aperçu accents correct; actual public landscape and portrait posters visible; player label and mobile preview clear; no performance figures. The original robot appears in front of the player without covering important labels."
+      "notes": "Vidéo / L’aperçu accents correct; actual public landscape and portrait posters visible; player label and mobile preview clear; no performance figures. Original brand robot unchanged. Illustrative playback chrome now visibly labeled Démonstration in exact Space Grotesk glyph outlines, over the authentic poster. Re-inspected at 1200×675; headlines and composition readable on blog-card/mobile reductions.",
+      "reviewed_on": "2026-10-19"
     },
     "038": {
       "sha256": "8c1ada12e9e36ddd2c6e5098a5e32e5755788dd0594756ae8e654dca88b2c29d",

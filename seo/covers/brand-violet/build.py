@@ -134,6 +134,10 @@ def video():
     over += text('Lecture',1052,567,12,'#aca7bf',500)
     over += text('au choix',1048,585,12,'#aca7bf',500)
     over += '<path d="M1071 608h38" stroke="#89829b" stroke-width="3" stroke-linecap="round"/>'
+    # Authentic posters are framed by illustrative controls, not a screenshot
+    # of the live player. Keep this disclosure above the raster image layers.
+    over += rect(938,194,180,34,fill='#1b132b',stroke='#a855f7',radius=17,opacity='.6')
+    over += text('Démonstration',950,217,18,'#c084fc',500,156)
     return s, images, over, {'x':699,'y':448,'width':225,'height':204}
 
 def maintenance():
@@ -213,7 +217,7 @@ def dashboard():
     return s, [], '', {'x':699,'y':463,'width':225,'height':204}
 
 ARTICLES = [
-    {'number':'037','date':'2026-10-19','title':'Vidéo sur votre site : limiter le poids et préserver le confort sur mobile','badge':'Vidéo sur le web','badge_width':158,'title_lines':['Vidéo sur','votre site'],'subtitle_lines':['Le confort','sur mobile.'],'detail_lines':['L’aperçu avant la lecture.'],'visual':video,'illustration':'Actual public AboutVideo landscape and portrait posters, with illustrative player chrome. No performance measurements.'},
+    {'number':'037','date':'2026-10-19','title':'Vidéo sur votre site : limiter le poids et préserver le confort sur mobile','badge':'Vidéo sur le web','badge_width':158,'title_lines':['Vidéo sur','votre site'],'subtitle_lines':['Le confort','sur mobile.'],'detail_lines':['L’aperçu avant la lecture.'],'visual':video,'illustration':'Actual public AboutVideo landscape and portrait posters, with illustrative player chrome explicitly labeled Démonstration. No performance measurements.'},
     {'number':'038','date':'2026-10-20','title':'Votre site est en ligne : la checklist mensuelle pour le garder fiable','badge':'Maintenance','badge_width':139,'title_lines':['Votre site','en ligne'],'subtitle_lines':['La routine','qui compte.'],'detail_lines':['Formulaire, liens, sauvegarde.'],'visual':maintenance,'illustration':'Fictitious monthly checklist with unchecked controls; explicitly labeled Démonstration. No actual client verification claimed.'},
     {'number':'039','date':'2026-10-21','title':'Après une refonte : repérer les liens cassés et les mauvaises redirections','badge':'Après la refonte','badge_width':159,'title_lines':['Après la','refonte'],'subtitle_lines':['Liens cassés :','les repérer.'],'detail_lines':['De l’ancienne URL','à la bonne destination.'],'visual':redirects,'illustration':'Illustrative SVG before/after flow with fictitious exemple.test URL, 404, 301 and 200; labeled Démonstration and URL fictives.'},
     {'number':'040','date':'2026-10-22','title':'Devis, documents et validations : quand un espace client devient utile','badge':'Application web','badge_width':163,'title_lines':['Un espace','client'],'subtitle_lines':['Pour suivre','votre projet.'],'detail_lines':['Documents, versions, validations.'],'visual':portal,'illustration':'Entirely fictitious client portal SVG, labeled Démonstration and Exemple entièrement fictif; no client name, address or amount.'},

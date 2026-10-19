@@ -68,14 +68,14 @@
         1200,
         675
       ],
-      "bytes": 280172,
-      "sha256": "466fc9012d4b9c532237b636428c29081d6e759b8f3528c86179dc2817ccd5da",
+      "bytes": 282612,
+      "sha256": "582295afb6a6899fb8909103ab160a092906ae8570b2e6d64284c72e8f77296a",
       "sources": [
         "seo/covers/brand-violet/sources/article-037.base.svg",
         "seo/covers/brand-violet/sources/article-037.layers.json",
         "seo/covers/brand-violet/sources/article-037.overlay.svg"
       ],
-      "visual_provenance": "Actual public AboutVideo landscape and portrait posters, with illustrative player chrome. No performance measurements.",
+      "visual_provenance": "Actual public AboutVideo landscape and portrait posters, with illustrative player chrome explicitly labeled Démonstration. No performance measurements.",
       "visual_review": {
         "status": "passed",
         "record": "seo/covers/brand-violet/review-037-041.json",

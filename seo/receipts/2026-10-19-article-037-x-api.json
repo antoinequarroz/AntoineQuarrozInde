@@ -1,0 +1,10 @@
+{
+  "operation": "social-draft",
+  "status": "draft",
+  "postId": "9703ec89-33d1-4ebf-a0b0-ac48de331ef1",
+  "platform": "x",
+  "version": 1,
+  "idempotent": false,
+  "existingEditorialStatePreserved": false,
+  "publicationAuthorized": false
+}

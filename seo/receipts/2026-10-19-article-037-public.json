@@ -1,0 +1,73 @@
+{
+  "status": "published_publicly_verified",
+  "articleId": 42,
+  "url": "https://www.antoinequarroz.ch/blog/video-site-limiter-poids-confort-mobile",
+  "verifiedAt": "2026-10-19T05:50:54.956451+00:00",
+  "verifiedAtEuropeZurich": "2026-10-19T07:50:54.956451+02:00",
+  "sourceMainCommit": "09327589ec30b2ffa72e2ba970985160e170b1b8",
+  "verification": {
+    "httpStatus": 200,
+    "h1": "37. Vidéo sur votre site : limiter le poids et préserver le confort sur mobile",
+    "excerpt": "Aperçu, fichiers adaptés, chargement différé et commandes : les choix derrière ma vidéo de présentation et une méthode pour vérifier le confort sur téléphone.",
+    "distinctiveText": "Dans le composant de ma présentation, la source du film est attribuée au moment où la lecture est demandée.",
+    "publicSsr": true,
+    "canonical": "https://www.antoinequarroz.ch/blog/video-site-limiter-poids-confort-mobile",
+    "blogPosting": {
+      "headline": "37. Vidéo sur votre site : limiter le poids et préserver le confort sur mobile",
+      "datePublished": "2026-10-19T05:47:01.955825+00:00"
+    },
+    "publicApiMatchesMarkdownAndJson": true,
+    "sitemap": true,
+    "incomingLinks": [
+      "/blog",
+      "/creation-site-internet-valais"
+    ],
+    "outgoingLinks": [
+      {
+        "url": "https://web.dev/articles/lazy-loading-video",
+        "status": 200
+      },
+      {
+        "url": "https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/video",
+        "status": 200
+      },
+      {
+        "url": "https://web.dev/learn/performance/video-performance",
+        "status": 200
+      },
+      {
+        "url": "https://www.w3.org/WAI/media/av/",
+        "status": 200
+      },
+      {
+        "url": "https://developer.chrome.com/docs/devtools/network/",
+        "status": 200
+      },
+      {
+        "url": "https://www.antoinequarroz.ch/#contact-form",
+        "status": 200
+      },
+      {
+        "url": "https://www.antoinequarroz.ch/blog/formulaire-contact-details-vraie-demande",
+        "status": 200
+      },
+      {
+        "url": "https://www.antoinequarroz.ch/creation-site-internet-valais",
+        "status": 200
+      }
+    ],
+    "cover": {
+      "url": "https://oxlrljszatejqxhclmbu.supabase.co/storage/v1/object/public/media/hermes/549c13c1c4a29edec4e3de899217f481a3d7e683bd7000952780ecda236ef4cf.png",
+      "httpStatus": 200,
+      "format": "PNG",
+      "dimensions": [
+        1200,
+        675
+      ],
+      "bytes": 282612,
+      "sha256": "582295afb6a6899fb8909103ab160a092906ae8570b2e6d64284c72e8f77296a",
+      "matchesReviewedLocalCoverAndManifest": true,
+      "illustrativeChromeDisclosed": "Démonstration"
+    }
+  }
+}

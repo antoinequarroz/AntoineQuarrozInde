@@ -1,0 +1,79 @@
+{
+  "status": "PASS",
+  "verifiedAt": "2026-10-19T05:51:53.261Z",
+  "organizationResolved": true,
+  "retrieved": 2,
+  "requests": {
+    "methods": [
+      "GET",
+      "GET"
+    ],
+    "writes": 0
+  },
+  "posts": [
+    {
+      "id": "c7a0b88b-ff77-4fd7-92ad-4a717d1dfb3d",
+      "platform": "linkedin",
+      "status": "draft",
+      "version": 1,
+      "publicationMode": "manual",
+      "guards": {
+        "correctPlatform": true,
+        "draft": true,
+        "manual": true,
+        "versionOne": true,
+        "approvedVersionNull": true,
+        "approvalFingerprintNull": true,
+        "publishAfterNull": true,
+        "publishedAtNull": true,
+        "plannedAtNull": true,
+        "contentMatchesApprovedLocalDraft": true,
+        "stableSourceKeyMatches": true,
+        "articleUrlMatches": true
+      },
+      "utmComputed": {
+        "platformSource": true,
+        "mediumSocial": true,
+        "stableArticleCampaign": true,
+        "placementPost": true,
+        "canonicalLinkPresent": true,
+        "withinCharacterLimit": true,
+        "rawCharacters": 900,
+        "trackedCharacters": 1016,
+        "trackedUtf16Units": 1018
+      }
+    },
+    {
+      "id": "9703ec89-33d1-4ebf-a0b0-ac48de331ef1",
+      "platform": "x",
+      "status": "draft",
+      "version": 1,
+      "publicationMode": "manual",
+      "guards": {
+        "correctPlatform": true,
+        "draft": true,
+        "manual": true,
+        "versionOne": true,
+        "approvedVersionNull": true,
+        "approvalFingerprintNull": true,
+        "publishAfterNull": true,
+        "publishedAtNull": true,
+        "plannedAtNull": true,
+        "contentMatchesApprovedLocalDraft": true,
+        "stableSourceKeyMatches": true,
+        "articleUrlMatches": true
+      },
+      "utmComputed": {
+        "platformSource": true,
+        "mediumSocial": true,
+        "stableArticleCampaign": true,
+        "placementPost": true,
+        "canonicalLinkPresent": true,
+        "withinCharacterLimit": true,
+        "rawCharacters": 147,
+        "trackedCharacters": 256,
+        "trackedUtf16Units": 258
+      }
+    }
+  ]
+}
