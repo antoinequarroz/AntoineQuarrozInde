@@ -41,4 +41,19 @@ Un passage du scénario mobile a rencontré le blocage de transition Nuxt avant 
 
 Correction avant livraison : ancrage sur un repère hors `sticky` lors du changement de vue ou catégorie ; libellé Défilement pour mobile/mouvement réduit ; filtres sur une ligne horizontale en petit écran.
 
-CI PR, déploiement, E2E publics et contrôle visuel public encore ouverts. Aucun contenu CMS, publication sociale ou accès privé modifié.
+PR 296 fusionnée au commit `2dbd691498850c010d3f3e827b6bec944de7a678`. CI PR `39250438031` réussie (qualité, base, accessibilité, 14 parcours et 18 vérifications de la ligne de base). Le même commit est installé en production ; `/api/version` le confirme et `/api/health` confirme application et base saines.
+
+Contrôle public effectué : 21 cartes en grille, zéro carte 3D montée dans cette vue ; filtre Mobile limité à trois projets ; retour 3D sur la même catégorie puis retour grille et rétablissement de Tous. Rendu de ZEDLINE enrichi vérifié et captures publiques conservées dans le dossier privé de livraison.
+
+Run main `39251423577` terminé avec succès : qualité, base, SEO, déploiement et E2E. Les 91 tests navigateur passent (10,1 min), puis les trois répétitions du parcours de planification mobile passent (23,8 s). Accessibilité validée dans la CI PR ; job main ignoré conformément au workflow. Vérification finale de la version et de la santé publique réussie le 19 octobre 2026 à 14:54 Europe/Zurich. Aucun contenu CMS, publication sociale ou accès privé modifié.
+
+
+## Ajustement demandé à 15:11
+
+Antoine préfère les choix centrés, comme dans la version précédente. Recentrer les catégories sur la première ligne et Animation 3D / Grille sur une deuxième ligne compacte. Retirer la grande surface pleine largeur et les alignements gauche/droite. Garder la charte, les cibles de 44 px, le repère hors sticky, les filtres et les deux vues. Sur mobile, le groupe de catégories garde son défilement horizontal lorsque nécessaire.
+
+Changement de classes de présentation uniquement ; aucun nouveau comportement ni test permanent ajouté pour cette correction visuelle. Vérifier le centrage des deux groupes sur 1440 et 900 px, le rendu 390 px, puis les parcours de bascule existants et les gates habituelles.
+
+Validation locale de cet ajustement : typage et build réussis ; centrage des deux groupes mesuré à moins de 1 px du centre sur 1440, 900 et 390 px ; aucun débordement horizontal de page ; contrôle visuel réel réussi. Les quatre parcours existants de filtre, bascule clavier, bascule en profondeur et mouvement réduit passent sans reprise automatique (12,4 s). Un incident de transition avant entrée sur l’accueil a été observé immédiatement après le scénario temporaire de capture, comme lors du contrôle précédent ; les tests existants n’ont pas été modifiés et passent lorsqu’exécutés seuls. Revue indépendante : aucun blocage. Aucun nouveau test permanent pour les trois lignes de classes modifiées.
+
+Les gates PR, déploiement et E2E de cette correction restent ouvertes.

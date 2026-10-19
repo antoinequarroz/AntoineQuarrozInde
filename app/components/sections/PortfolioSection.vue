@@ -79,8 +79,8 @@ const filtered = computed(() => {
       </div>
 
       <div ref="viewAnchorRef" />
-      <div data-portfolio-toolbar class="sticky top-24 z-40 mb-4 flex flex-col items-center gap-3 rounded-3xl bg-white/95 p-2 shadow-sm ring-1 ring-black/[0.06] backdrop-blur-xl dark:bg-[#0f0f1a]/95 dark:ring-white/10 lg:flex-row lg:justify-between">
-      <div v-if="filters.length > 1" role="group" :aria-label="t('portfolio.categories')" class="flex w-full max-w-full gap-1 overflow-x-auto md:flex-wrap md:justify-center lg:w-auto lg:justify-start">
+      <div data-portfolio-toolbar class="sticky top-24 z-40 mx-auto mb-4 flex w-fit max-w-full flex-col items-center gap-2.5">
+      <div v-if="filters.length > 1" role="group" :aria-label="t('portfolio.categories')" class="flex min-w-0 max-w-full gap-1 overflow-x-auto rounded-[1.25rem] bg-white/95 p-1 shadow-sm backdrop-blur-xl dark:bg-[#0f0f1a]/95 md:flex-wrap md:justify-center">
         <button
           v-for="filter in filters"
           :key="filter.key"
@@ -102,7 +102,7 @@ const filtered = computed(() => {
           </span>
         </button>
       </div>
-      <div role="group" :aria-label="t('portfolio.view_mode')" class="inline-flex shrink-0 gap-1 rounded-2xl bg-violet-500/[0.06] p-1 dark:bg-white/[0.04]">
+      <div role="group" :aria-label="t('portfolio.view_mode')" class="inline-flex shrink-0 gap-1 rounded-2xl bg-white/95 p-1 shadow-sm backdrop-blur-xl dark:bg-[#0f0f1a]/95">
         <button
           v-for="view in (['helix', 'grid'] as const)"
           :key="view"
