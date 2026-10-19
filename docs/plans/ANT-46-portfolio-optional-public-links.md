@@ -27,6 +27,7 @@ Un projet dont la démonstration et le code restent privés doit pouvoir être p
 - Base de départ : `origin/main` à jour, `2048505503173168dd0149866cceb851027aae6c` ; checkout isolé.
 - Portly `tmp_75a6b1a0` : préparation Nuxt puis 46 tests ciblés réussis dans six fichiers (états, compatibilité, confidentialité, catégories, traductions, MFA). La première invocation sur le worktree neuf ne trouvait pas les types `.nuxt` ; la préparation standard a résolu ce prérequis sans changement de code.
 - Portly `tmp_86f60c13` : 15 tests d’états réussis après ajout des cas GitHub JavaScript et URL malformée.
+- Portly `tmp_eb46cb9f` : 1 049 tests unitaires réussis dans 156 fichiers, après alignement du parcours métier sur la carte publique sans lien et maintien de son refus pour une étude de cas publiée.
 - Portly `tmp_a379dc96` : contrôle TypeScript réussi.
 - Portly `tmp_f03a0317` : reconstruction éphémère du schéma et des migrations, lint et security advisors sans erreur, puis 329 assertions pgTAP réussies dans 23 fichiers. La base temporaire a été arrêtée par le nettoyage du script ; aucune base métier n’a été utilisée.
 - Revue indépendante : aucune anomalie bloquante ; garde de fonction identique au schéma, hors restriction de lien limitée à l’étude de cas.
