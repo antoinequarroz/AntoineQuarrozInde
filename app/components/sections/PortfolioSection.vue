@@ -5,8 +5,14 @@ const store = useProjectsStore()
 type PortfolioFilter = 'all' | 'web' | 'mobile' | 'cms' | 'software'
 
 const activeFilter = ref<PortfolioFilter>('all')
-const activeView = ref<'helix' | 'grid'>('helix')
+const activeView = ref<'helix' | 'grid'>('grid')
 const viewAnchorRef = ref<HTMLElement | null>(null)
+
+onMounted(() => {
+  // Resolve the initial view once, after hydration. Resizing must not replace
+  // a visitor's choice or invoke the toolbar's scroll anchoring.
+  if (window.matchMedia('(min-width: 768px)').matches) activeView.value = 'helix'
+})
 
 function anchorProjects() {
   // The two views have very different heights. Anchor the shared toolbar
