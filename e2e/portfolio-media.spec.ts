@@ -16,8 +16,8 @@ const projects = Array.from({ length: 8 }, (_, index) => ({
   tags: ['Vue', 'TypeScript'],
   description: `A public project used to verify portfolio browsing ${index + 1}.`,
   image: originalArtwork[index] || `https://portfolio-fixtures.invalid/project-${index + 1}.png`,
-  live_url: `https://portfolio-fixtures.invalid/demo-${index + 1}`,
-  code_url: `https://portfolio-fixtures.invalid/code-${index + 1}`,
+  live_url: index === 0 ? null : `https://portfolio-fixtures.invalid/demo-${index + 1}`,
+  code_url: index === 0 ? null : `https://portfolio-fixtures.invalid/code-${index + 1}`,
   featured: true,
   portfolio_visible: true,
   created_at: `2026-10-${String(20 - index).padStart(2, '0')}`,
@@ -169,4 +169,19 @@ test('reduced motion uses the horizontal portfolio without loading its hidden he
   await expect(carousel.locator('img')).toHaveCount(3)
   await expect.poll(() => carousel.locator('[aria-current="true"] img').evaluate(image => (image as HTMLImageElement).naturalWidth))
     .toBeGreaterThan(0)
+})
+
+test('a portfolio project with private demo and source keeps its public page without external buttons', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await openFixtureHomepage(page)
+  await approachPortfolio(page)
+
+  const card = page.locator('[data-mobile-project-card]').first()
+  await expect(card.locator('a[target="_blank"]')).toHaveCount(0)
+  await card.locator('a[href="/projets/portfolio-fixture-1"]').click()
+
+  await expect(page).toHaveURL(/\/projets\/portfolio-fixture-1$/)
+  await expect(page.getByRole('heading', { level: 1, name: 'Portfolio fixture 1' })).toBeVisible()
+  await expect(page.locator('main a[target="_blank"]')).toHaveCount(0)
+  await expect(page.getByText(projects[0]!.description, { exact: true })).toBeVisible()
 })
