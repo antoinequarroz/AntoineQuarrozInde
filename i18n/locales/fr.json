@@ -113,6 +113,11 @@
     "areas": "Zones"
   },
   "portfolio": {
+    "categories": "Catégories de projets",
+    "view_mode": "Affichage des projets",
+    "grid_view": "Grille",
+    "helix_view": "Animation 3D",
+    "carousel_view": "Défilement",
     "badge": "Portfolio",
     "title": "Projets\nrécents.",
     "subtitle": "Une sélection de mes dernières réalisations.",

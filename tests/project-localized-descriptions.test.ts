@@ -37,6 +37,9 @@ describe('localized project descriptions', () => {
       expect(catalog.portfolio.verifiable_links).toBeTruthy()
       expect(catalog.portfolio.live_available).toBeTruthy()
       expect(catalog.portfolio.source_available).toBeTruthy()
+      for (const label of ['categories', 'view_mode', 'grid_view', 'helix_view', 'carousel_view']) {
+        expect(catalog.portfolio[label], label).toBeTruthy()
+      }
     }
   })
 })
