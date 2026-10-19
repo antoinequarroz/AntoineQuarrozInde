@@ -52,8 +52,17 @@ async function openFixtureHomepage(page: Page, fixtureProjects = projects) {
   // without changing a database or depending on production project rows.
   const fixtureResponse = await navigateToFixtureHomepage(page, '/api/projects')
   expect(await fixtureResponse.json()).toEqual(fixtureProjects)
-  await expect(page.locator('[data-mobile-project-card]')).toHaveCount(fixtureProjects.length)
-  await expect(page.locator('[data-mobile-project-carousel]')).toHaveAttribute('data-carousel-ready', 'true')
+  const startsInGrid = (page.viewportSize()?.width ?? 1280) < 768
+  await expect(page.locator(`[data-portfolio-view="${startsInGrid ? 'grid' : 'helix'}"]`))
+    .toHaveAttribute('aria-pressed', 'true')
+  if (startsInGrid) {
+    await expect(page.locator('[data-project-grid-card]')).toHaveCount(fixtureProjects.length)
+    await expect(page.locator('[data-mobile-project-carousel], [data-helix-card]')).toHaveCount(0)
+  }
+  else {
+    await expect(page.locator('[data-mobile-project-card]')).toHaveCount(fixtureProjects.length)
+    await expect(page.locator('[data-mobile-project-carousel]')).toHaveAttribute('data-carousel-ready', 'true')
+  }
   await expect.poll(() => page.locator('#portfolio').evaluate(element => element.getBoundingClientRect().top))
     .toBeGreaterThan(2 * (page.viewportSize()?.height || 800))
   // Give native lazy loading and the approach observer time to reveal any
@@ -95,6 +104,7 @@ async function scrollMobileProject(page: Page, index: number) {
 test('mobile portfolio fetches previews on approach and as its cards are browsed', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   const requests = await openFixtureHomepage(page)
+  await page.locator('[data-portfolio-view="helix"]').click()
   await approachPortfolio(page)
 
   const carousel = page.locator('[data-mobile-project-carousel]')
@@ -177,7 +187,7 @@ test('a portfolio project with private demo and source keeps its public page wit
   await openFixtureHomepage(page)
   await approachPortfolio(page)
 
-  const card = page.locator('[data-mobile-project-card]').first()
+  const card = page.locator('[data-project-grid-card]').first()
   await expect(card.locator('a[target="_blank"]')).toHaveCount(0)
   await card.locator('a[href="/projets/portfolio-fixture-1"]').click()
 
@@ -232,6 +242,7 @@ for (const reducedMotion of [false, true]) {
     await page.setViewportSize(reducedMotion ? { width: 1280, height: 800 } : { width: 390, height: 844 })
     if (reducedMotion) await page.emulateMedia({ reducedMotion: 'reduce' })
     await openFixtureHomepage(page, presentationProjects)
+    if (!reducedMotion) await page.locator('[data-portfolio-view="helix"]').click()
     await approachPortfolio(page)
 
     const cards = page.locator('[data-mobile-project-card]')
@@ -316,6 +327,7 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 
     const toolbar = page.locator('[data-portfolio-toolbar]')
     const gridButton = toolbar.getByRole('button', { name: 'Grille', exact: true })
     const helixButton = toolbar.locator('[data-portfolio-view="helix"]')
+    await expect(viewport.width < 768 ? gridButton : helixButton).toHaveAttribute('aria-pressed', 'true')
     await gridButton.focus()
     await page.keyboard.press('Enter')
     await expect(gridButton).toBeFocused()
@@ -352,6 +364,16 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 
     await expect(cards).toHaveCount(1)
     await toolbar.getByRole('button', { name: /^Tous/ }).click()
     await expect(cards).toHaveCount(presentationProjects.length)
+
+    // A responsive default must not override a visitor's subsequent choice.
+    await page.setViewportSize(viewport.width < 768 ? { width: 1440, height: 900 } : { width: 390, height: 844 })
+    await expect(gridButton).toHaveAttribute('aria-pressed', 'true')
+    await expect(cards).toHaveCount(presentationProjects.length)
+    await helixButton.click()
+    await page.setViewportSize(viewport)
+    await expect(helixButton).toHaveAttribute('aria-pressed', 'true')
+    await expect(page.locator('[data-project-grid]')).toHaveCount(0)
+    await expect(page.locator(viewport.width < 768 ? '[data-mobile-project-carousel]' : '[data-project-navigation]')).toBeVisible()
   })
 }
 
