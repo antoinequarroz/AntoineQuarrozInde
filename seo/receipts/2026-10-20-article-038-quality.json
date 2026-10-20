@@ -1,0 +1,29 @@
+{
+  "date": "2026-10-20",
+  "sources": [
+    {
+      "url": "https://www.w3.org/WAI/tutorials/forms/notifications/",
+      "http": 200,
+      "supports": "Retours de succès et erreurs clairs ; source consultée le jour de publication."
+    },
+    {
+      "url": "https://www.cisa.gov/stopransomware/ransomware-guide",
+      "http": 200,
+      "supports": "Mises à jour, sauvegardes hors ligne et chiffrées, essais réguliers de disponibilité/intégrité. Le guide ne prescrit pas une fréquence mensuelle universelle.",
+      "fetchedSha256": "90b6447cacaff08d4ed3f8f0a479439181442ae5a7221cf8031ac50894006bce"
+    }
+  ],
+  "duplicateCheck": {
+    "publicAPIMaxTitleNumberBefore": 37,
+    "todaySlugAbsentBefore": true,
+    "blogChecked": true
+  },
+  "cover": "seo/covers/article-038.png",
+  "coverVisualReview": "Passed: orthographe, Démonstration visible, lisibilité, format 1200x675, hash manifeste confirmé, Space Grotesk/OFL et robot existants documentés par manifeste versionné.",
+  "publicationTransport": "Secure container-local Node fetch equivalent to publish_article.py algorithm; Python not installed in web container. Same route, payload validation and stable SHA256 slug/newline/content idempotency key. Token never leaves private container environment.",
+  "formSubmissions": 0,
+  "aiCalls": 0,
+  "tregCalls": 0,
+  "missionsTriggered": 0,
+  "analytics": "Latest 14-day report marketing-review-2026-10-16.md reviewed; low conversion volume, no new causal conclusion or page optimization published."
+}

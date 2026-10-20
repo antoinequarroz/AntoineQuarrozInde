@@ -1,0 +1,29 @@
+{
+  "verifiedAt": "2026-10-20T04:37:16.424Z",
+  "posts": [
+    {
+      "platform": "linkedin",
+      "id": "417e3f6d-ee1c-4175-bbe9-4ec474a74ecb",
+      "idempotent": false,
+      "status": "draft",
+      "publicationMode": "manual",
+      "notApproved": true,
+      "notScheduled": true,
+      "coverAttached": true,
+      "contentMatches": true,
+      "characters": 854
+    },
+    {
+      "platform": "x",
+      "id": "21200b3b-71d0-46f5-a605-d495b3fa9b39",
+      "idempotent": false,
+      "status": "draft",
+      "publicationMode": "manual",
+      "notApproved": true,
+      "notScheduled": true,
+      "coverAttached": true,
+      "contentMatches": true,
+      "characters": 160
+    }
+  ]
+}
