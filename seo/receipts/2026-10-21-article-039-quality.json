@@ -1,0 +1,123 @@
+{
+  "sourcesReadDate": "2026-10-21",
+  "links": [
+    {
+      "url": "https://developers.google.com/search/docs/crawling-indexing/site-move-with-url-changes",
+      "http": 200,
+      "sha256": "4918b3df413180b98623625c74db978c5c7d7d23e7a100227d0e52c8e169da07"
+    },
+    {
+      "url": "https://developers.google.com/search/docs/crawling-indexing/301-redirects",
+      "http": 200,
+      "sha256": "f92a74bce360f8d0b1d0ecea2077d0339f1eadd5ee3b24fa5b9015263e716ea1"
+    },
+    {
+      "url": "https://developers.google.com/crawling/docs/troubleshooting/http-status-codes",
+      "http": 200,
+      "sha256": "c83c549eee579ffb8205c07cb84665c9495ed2526e833d92ac7a63651ce6a84c"
+    },
+    {
+      "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/404",
+      "http": 200,
+      "sha256": "13e1a40db2a6c397f97852298159b4d2e3129df8fda9fe26a6b4e8a8c7d122e9"
+    },
+    {
+      "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Redirections",
+      "http": 200,
+      "sha256": "7e97845449c8c9a422955d0befc9ae802de368e0554c652f82e5e69ba06e78ce"
+    },
+    {
+      "url": "https://developers.google.com/search/docs/crawling-indexing/consolidate-duplicate-urls",
+      "http": 200,
+      "sha256": "b31e46cfae432555d92bec99c38873480f387550a23cf23bccd6caf03e3486ca"
+    },
+    {
+      "url": "https://www.antoinequarroz.ch/refonte-site-web-valais",
+      "http": 200,
+      "sha256": "9cab2bff2f509e6abe65783a5a6ab65ee81a82fe88cba82d4b2058a939512b53"
+    },
+    {
+      "url": "https://www.antoinequarroz.ch/blog/refonte-site-quelles-pages-contenus-conserver",
+      "http": 200,
+      "sha256": "9f47c8911aa1b9ec46247f05f148f9b1379b27e018e03ecc7ed45395f45aaf72"
+    },
+    {
+      "url": "https://www.antoinequarroz.ch/blog/site-en-ligne-checklist-mensuelle-fiable",
+      "http": 200,
+      "sha256": "4ed7b81ad53c5bb679b419972442507d6396a89d78042c08f2373f4f99142650"
+    }
+  ],
+  "cover": {
+    "file": "seo/covers/article-039.png",
+    "dimensions": [
+      1200,
+      675
+    ],
+    "bytes": 142463,
+    "sha256": "07c731d9cc4a72d6895bd00b6ba57a30a3015025e58e29ee9d3036d4924c18a4",
+    "style": "aq-editorial-violet-space-grotesk-v1",
+    "visualReview": "Passed: spelling, readable title, Démonstration and URL fictives visibly labeled. Existing robot. No client screenshot or measurement claimed.",
+    "assets": [
+      {
+        "path": "seo/covers/brand-violet/assets/SpaceGrotesk-VariableFont_wght.ttf",
+        "sha256Matches": true
+      },
+      {
+        "path": "seo/covers/brand-violet/assets/OFL-SpaceGrotesk.txt",
+        "sha256Matches": true
+      },
+      {
+        "path": "seo/covers/brand-violet/assets/robot-transparent.png",
+        "sha256Matches": true
+      }
+    ],
+    "fontLicense": "seo/covers/brand-violet/assets/OFL-SpaceGrotesk.txt",
+    "contractProductionProof": "seo/receipts/2026-10-18-article-036-violet-cover.json"
+  },
+  "articleReview": {
+    "fiveSections": true,
+    "fictionalExamplesLabeled": true,
+    "noClaimedTrafficLossOrRecoveryTime": true,
+    "distinctFromArticle019": "Post-launch diagnosis rather than pre-refonte content inventory",
+    "noH1InBody": true,
+    "sourceMatrix": {
+      "MDN404": "Missing resource versus permanent removal",
+      "MDNRedirections": "Redirect chain and loop explanation",
+      "GoogleRedirects": "Permanent versus temporary server redirect",
+      "GoogleSiteMove": "Relevant destination and direct redirect, internal links and sitemap",
+      "GoogleHTTP": "Soft404 and success status does not guarantee indexing",
+      "GoogleCanonical": "Canonical annotation distinct from redirect"
+    }
+  },
+  "antiDuplicateBefore": {
+    "APIHighestNumber": 38,
+    "blogChecked": true,
+    "slugAbsentFromSitemap": true
+  },
+  "transport": "Node equivalent of publish_article.py, same restricted API and SHA256 idempotency; token remains in private web container environment",
+  "formSubmissions": 0,
+  "missionsTriggered": 0,
+  "modelCalls": 0,
+  "tregCalls": 0,
+  "verificationNormalization": "Public API trims final newline. Exact article body equality confirmed after whitespace trim; no text difference or content correction.",
+  "socialUtmExpected": {
+    "linkedin": {
+      "source": "linkedin",
+      "medium": "social",
+      "campaign": "article_apres-refonte-liens-casses-redirections",
+      "rawCharacters": 926,
+      "withUTMCharacters": 1042,
+      "withinPlatformLimit": true,
+      "injectedByExistingPublicationFlow": true
+    },
+    "x": {
+      "source": "x",
+      "medium": "social",
+      "campaign": "article_apres-refonte-liens-casses-redirections",
+      "rawCharacters": 164,
+      "withUTMCharacters": 273,
+      "withinPlatformLimit": true,
+      "injectedByExistingPublicationFlow": true
+    }
+  }
+}
