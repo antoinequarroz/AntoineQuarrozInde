@@ -26,15 +26,15 @@
     "quality:runtime-security": "node scripts/check-runtime-security.mjs"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.106.1",
-    "lumail": "^2.1.0",
+    "@supabase/supabase-js": "^2.118.0",
+    "lumail": "^2.2.0",
     "pdf-lib": "^1.17.1",
-    "pinia": "^3.0.1",
-    "simple-icons": "^16.31.0",
-    "stripe": "^22.4.0",
-    "three": "^0.177.0",
-    "vue": "^3.5.34",
-    "vue-router": "^5.0.7"
+    "pinia": "^4.1.0",
+    "simple-icons": "^16.35.0",
+    "stripe": "^23.0.0",
+    "three": "^0.186.1",
+    "vue": "^3.5.44",
+    "vue-router": "^5.4.0"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",
