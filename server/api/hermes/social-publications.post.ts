@@ -1,4 +1,4 @@
-import { isInstagramReelMedia, supportsInstagramMixed, supportsInstagramReels } from '../../utils/socialMedia'
+import { isInstagramReelMedia, isLinkedInVideoPost, supportsInstagramMixed, supportsInstagramReels } from '../../utils/socialMedia'
 
 export default defineEventHandler(async (event) => {
   requireHermesPublishAccess(event)
@@ -22,13 +22,13 @@ export default defineEventHandler(async (event) => {
   const version = validateExpectedVersion(body.version)
   if (!id) throw createError({ statusCode: 400, message: 'Identifiant requis.' })
   if (action === 'claim') {
-    if (!supportsInstagramMixed(event) || !supportsInstagramReels(event)) {
-      const { data: candidate, error: candidateError } = await supabase.from('social_posts').select('media_items')
-        .eq('organization_id', organization.id).eq('id', id).maybeSingle()
-      if (candidateError) throw createError({ statusCode: 500, message: 'Publication indisponible.' })
-      if (candidate?.media_items?.length && !supportsInstagramMixed(event)) throw createError({ statusCode: 409, message: 'Ces médias nécessitent un publisher compatible instagram-mixed-v1.' })
-      if (isInstagramReelMedia(candidate?.media_items) && !supportsInstagramReels(event)) throw createError({ statusCode: 409, message: 'Cette vidéo nécessite un publisher compatible instagram-reels-v1.' })
-    }
+    const { data: candidate, error: candidateError } = await supabase.from('social_posts').select('platform,media_items')
+      .eq('organization_id', organization.id).eq('id', id).maybeSingle()
+    if (candidateError) throw createError({ statusCode: 500, message: 'Publication indisponible.' })
+    if (!candidate) throw createError({ statusCode: 409, message: 'Publication indisponible ou modifiée.' })
+    if (isLinkedInVideoPost(candidate)) throw createError({ statusCode: 409, message: 'Les vidéos LinkedIn restent en publication manuelle après validation.' })
+    if (candidate.media_items?.length && !supportsInstagramMixed(event)) throw createError({ statusCode: 409, message: 'Ces médias nécessitent un publisher compatible instagram-mixed-v1.' })
+    if (isInstagramReelMedia(candidate.media_items) && !supportsInstagramReels(event)) throw createError({ statusCode: 409, message: 'Cette vidéo nécessite un publisher compatible instagram-reels-v1.' })
     const { data, error } = await supabase.rpc('claim_social_post', {
       p_organization_id: organization.id, p_post_id: id, p_expected_version: version,
     })

@@ -71,7 +71,7 @@ jobs:
           npx playwright install --with-deps chromium
       - run: npx playwright test e2e/accessibility.spec.ts --project=chromium --grep @credential-free
       - name: Verify social editing, calendar movement, and explicit consent
-        run: npx playwright test e2e/social-mixed-media.spec.ts e2e/social-document-carousel.spec.ts e2e/social-editorial-calendar.spec.ts e2e/social-calendar-drag.spec.ts e2e/social-planning-panel.spec.ts --project=chromium
+        run: npx playwright test e2e/social-linkedin-video.spec.ts e2e/social-mixed-media.spec.ts e2e/social-document-carousel.spec.ts e2e/social-editorial-calendar.spec.ts e2e/social-calendar-drag.spec.ts e2e/social-planning-panel.spec.ts --project=chromium
       - name: Verify repeated mobile focus handoffs without retries
         run: npx playwright test e2e/social-planning-panel.spec.ts --project=chromium --grep '375px keyboard planning' --repeat-each=3 --retries=0
 
@@ -116,6 +116,17 @@ jobs:
           path: .artifacts/seo-quality/lab.json
           if-no-files-found: warn
           retention-days: 30
+
+      - name: Preserve failed candidate browser diagnostics
+        if: failure()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: candidate-browser-failure-${{ github.sha }}
+          path: |
+            test-results/
+            ${{ runner.temp }}/seo-preview.log
+          if-no-files-found: warn
+          retention-days: 7
 
   database:
     runs-on: ubuntu-latest

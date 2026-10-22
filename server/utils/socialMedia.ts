@@ -16,9 +16,20 @@ export function isInstagramReelMedia(value: unknown): boolean {
   return Array.isArray(value) && value.length === 1 && value[0]?.type === 'video'
 }
 
+// LinkedIn videos are stored for review and manual publication. Instagram
+// publisher capabilities must never be treated as LinkedIn video support.
+export function isLinkedInVideoPost(post: { platform?: unknown, media_items?: unknown }): boolean {
+  return post.platform === 'linkedin' && Array.isArray(post.media_items) && post.media_items.length > 0
+}
+
 export function validateSocialMediaItems(value: unknown, platform: string, storageUrl = ''): SocialMediaItem[] {
-  if (!Array.isArray(value) || (value.length > 0 && (platform !== 'instagram' || value.length > 10 || (value.length === 1 && !isInstagramReelMedia(value))))) {
-    throw createError({ statusCode: 400, message: 'Ajoute une vidéo seule pour un Reel, ou entre 2 et 10 médias pour un carrousel Instagram.' })
+  const validLinkedIn = platform === 'linkedin' && Array.isArray(value) && isInstagramReelMedia(value)
+  const validInstagram = platform === 'instagram' && Array.isArray(value) && value.length <= 10
+    && (value.length !== 1 || isInstagramReelMedia(value))
+  if (!Array.isArray(value) || (value.length > 0 && !validLinkedIn && !validInstagram)) {
+    throw createError({ statusCode: 400, message: platform === 'linkedin'
+      ? 'Ajoute une seule vidéo MP4 à ce brouillon LinkedIn, sans image ni PDF.'
+      : 'Ajoute une vidéo seule pour un Reel, ou entre 2 et 10 médias pour un carrousel Instagram.' })
   }
   const seen = new Set<string>()
   return value.map((item) => {

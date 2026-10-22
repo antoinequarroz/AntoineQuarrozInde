@@ -1,4 +1,4 @@
-import { isInstagramReelMedia, supportsInstagramMixed, supportsInstagramReels } from '../../utils/socialMedia'
+import { isInstagramReelMedia, isLinkedInVideoPost, supportsInstagramMixed, supportsInstagramReels } from '../../utils/socialMedia'
 
 export default defineEventHandler(async (event) => {
   requireHermesPublishAccess(event)
@@ -13,11 +13,16 @@ export default defineEventHandler(async (event) => {
   else if (!supportsInstagramReels(event)) {
     // Filter before limiting the queue so pending Reels cannot starve a
     // carousel-only runner. Valid shapes are empty, one video, or 2–10 items.
-    query = query.or('media_items.eq.[],media_items->1.not.is.null')
+    query = query.or('media_items.eq.[],and(platform.eq.instagram,media_items->1.not.is.null)')
+  } else {
+    // LinkedIn videos have a manual review flow, independently of an
+    // Instagram runner's declared capabilities. Filter before the limit.
+    query = query.or('media_items.eq.[],platform.eq.instagram')
   }
   const { data, error } = await query.order('created_at', { ascending: true }).limit(10)
   if (error) throw createError({ statusCode: 500, message: error.message })
   // Mixed-carousel capability does not imply support for a standalone Reel.
   // Older runners must never claim it as a one-item carousel.
-  return { posts: (data || []).filter(post => supportsInstagramReels(event) || !isInstagramReelMedia(post.media_items)) }
+  return { posts: (data || []).filter(post => !isLinkedInVideoPost(post)
+    && (supportsInstagramReels(event) || !isInstagramReelMedia(post.media_items))) }
 })

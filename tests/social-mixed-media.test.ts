@@ -26,7 +26,7 @@ describe('ordered Instagram media', () => {
       expect(() => validateSocialMediaItems([item], 'instagram', storage)).toThrow()
     }
     expect(() => validateSocialMediaItems([video], 'x', storage)).toThrow()
-    expect(() => validateSocialMediaItems([video], 'linkedin', storage)).toThrow()
+    expect(validateSocialMediaItems([video], 'linkedin', storage)).toEqual([video])
     expect(() => validateAutomaticSocialPost({ platform: 'instagram', media_items: [video], media_images: [{ url: image.url, alt: image.alt }] })).toThrow(/incompatibles/)
   })
   it('rejects other platforms, partial carousels, duplicates, type spoofing and foreign URLs', () => {
@@ -141,7 +141,7 @@ describe('saved media and explicit publication boundary', () => {
     results = [{ data: [{ id: 'reel', media_items: [video] }, { id: 'carousel', media_items: media }, { id: 'image', media_items: [] }] }]
     const response = await handler({ node: { req: { headers: { 'x-hermes-social-capabilities': 'instagram-mixed-v1' } } } } as any)
     expect(response.posts.map((post: any) => post.id)).toEqual(['carousel', 'image'])
-    expect(calls.find(c => c.name === 'or')?.args).toEqual(['media_items.eq.[],media_items->1.not.is.null'])
+    expect(calls.find(c => c.name === 'or')?.args).toEqual(['media_items.eq.[],and(platform.eq.instagram,media_items->1.not.is.null)'])
     expect(calls.findIndex(c => c.name === 'or')).toBeLessThan(calls.findIndex(c => c.name === 'limit'))
   })
   it('returns a Reel to a runner explicitly supporting both media and Reels', async () => {
@@ -149,7 +149,7 @@ describe('saved media and explicit publication boundary', () => {
     results = [{ data: [{ id: 'reel', media_items: [video] }] }]
     const response = await handler({ node: { req: { headers: { 'x-hermes-social-capabilities': 'instagram-mixed-v1, instagram-reels-v1' } } } } as any)
     expect(response.posts).toEqual([{ id: 'reel', media_items: [video] }])
-    expect(calls.some(c => c.name === 'or')).toBe(false)
+    expect(calls.find(c => c.name === 'or')?.args).toEqual(['media_items.eq.[],platform.eq.instagram'])
   })
   it('rejects an old publisher claiming a known mixed post before the claim RPC', async () => {
     const { default: handler } = await import('../server/api/hermes/social-publications.post')
@@ -165,7 +165,7 @@ describe('saved media and explicit publication boundary', () => {
   })
   it('lets a Reel-capable runner use the existing atomic claim and preserves carousel compatibility', async () => {
     const { default: handler } = await import('../server/api/hermes/social-publications.post')
-    results = [{ data: [{ id: 'reel', media_items: [video] }] }]
+    results = [{ data: { platform: 'instagram', media_items: [video] } }, { data: [{ id: 'reel', media_items: [video] }] }]
     const result = await handler({ node: { req: { headers: { 'x-hermes-social-capabilities': 'instagram-mixed-v1,instagram-reels-v1' } } }, body: { action: 'claim', id: 'reel', version: 3 } } as any)
     expect(result).toEqual({ post: { id: 'reel', media_items: [video] } })
     expect(calls.find(c => c.name === 'rpc')?.args).toEqual(['claim_social_post', { p_organization_id: 'org', p_post_id: 'reel', p_expected_version: 3 }])

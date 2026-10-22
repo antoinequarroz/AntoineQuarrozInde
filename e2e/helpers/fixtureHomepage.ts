@@ -11,6 +11,17 @@ export async function navigateToFixtureHomepage(page: Page, apiPath: string) {
     })?.__vue_app__
     return app?.$nuxt?.isHydrating === false
   })
+  // Settle the initial document load and rendered frames before starting a
+  // second page transition with keyboard navigation.
+  await page.waitForLoadState('load')
+  await expect(page.locator('.page-enter-active, .page-leave-active')).toHaveCount(0)
+  await page.waitForFunction(async () => {
+    for (let frame = 0; frame < 3; frame++) {
+      await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
+      if (document.querySelector('.page-enter-active, .page-leave-active')) return false
+    }
+    return true
+  })
   const homeLink = page.getByRole('link', { name: /^AQ —/ })
   await expect(homeLink).toBeVisible()
   await homeLink.focus()
@@ -20,7 +31,9 @@ export async function navigateToFixtureHomepage(page: Page, apiPath: string) {
     homeLink.press('Enter'),
   ])
   await expect(page).toHaveURL(/\/$/)
-  await expect(page.locator('#hero').getByRole('heading', { level: 1 })).toBeVisible()
+  // The first fixture GET can finish before the homepage's other async data.
+  // Wait for the destination to render; performance is measured separately.
+  await expect(page.locator('#hero').getByRole('heading', { level: 1 })).toBeVisible({ timeout: 15_000 })
   // Nuxt's private promise describes the old page's leave, not the destination's
   // settled entry. Waiting on that handle hung in CI; observe the actual page
   // and scroll position instead, including when transitions are reduced.
