@@ -5,7 +5,7 @@ insert into public.organizations(id,name,slug) values
 
 select ok(public.valid_social_media_items('[{"type":"video","url":"https://project.supabase.co/storage/v1/object/public/social-videos/uploads/00000000-0000-0000-0000-000000000e01/00000000-0000-0000-0000-000000000e02.mp4","alt":"Vidéo verticale EnvVault"}]','instagram'),'one immutable uploaded video is a valid Instagram Reel');
 select ok(not public.valid_social_media_items('[{"type":"image","url":"https://www.antoinequarroz.ch/social/a.jpg","alt":"A"}]','instagram'),'a single image keeps its legacy image attachment path');
-select ok(not public.valid_social_media_items('[{"type":"video","url":"https://project.supabase.co/storage/v1/object/public/social-videos/uploads/00000000-0000-0000-0000-000000000e01/00000000-0000-0000-0000-000000000e02.mp4","alt":"A"}]','linkedin'),'standalone videos remain Instagram-only');
+select ok(public.valid_social_media_items('[{"type":"video","url":"https://project.supabase.co/storage/v1/object/public/social-videos/uploads/00000000-0000-0000-0000-000000000e01/00000000-0000-0000-0000-000000000e02.mp4","alt":"A"}]','linkedin'),'a standalone LinkedIn video is also supported for manual review');
 select ok(not public.valid_social_media_items('[{"type":"video","url":"https://evil.example/a.mp4","alt":"A"}]','instagram'),'a Reel cannot bypass immutable storage paths');
 select ok(not public.valid_social_media_items('[{"type":"video","url":"https://project.supabase.co/storage/v1/object/public/social-videos/uploads/00000000-0000-0000-0000-000000000e01/00000000-0000-0000-0000-000000000e02.mp4","alt":"A","published":true}]','instagram'),'unexpected media fields remain forbidden');
 

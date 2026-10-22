@@ -1,5 +1,5 @@
 import { validateSocialImages } from './socialImages'
-import { validateSocialMediaItems } from './socialMedia'
+import { isLinkedInVideoPost, validateSocialMediaItems } from './socialMedia'
 export const SOCIAL_PLATFORMS = ['linkedin', 'x', 'instagram'] as const
 export const SOCIAL_INSTAGRAM_REVIEW_CONFIRMATION = 'VALIDER_TEXTE_INSTAGRAM'
 export const SOCIAL_STATUSES = ['draft', 'approved', 'publishing', 'published', 'rejected', 'failed'] as const
@@ -106,7 +106,7 @@ export function validateSocialDraftInput(body: Record<string, unknown>) {
   }
   const mediaImages = validateSocialImages(body.mediaImages ?? [], platform, body.mediaImages ? String(useRuntimeConfig().public.supabaseUrl || '') : '')
   const mediaItems = validateSocialMediaItems(body.mediaItems ?? [], platform, body.mediaItems ? String(useRuntimeConfig().public.supabaseUrl || '') : '')
-  if (Number(Boolean(mediaKind)) + Number(Boolean(mediaImages.length)) + Number(Boolean(mediaItems.length)) > 1) throw createError({ statusCode: 400, message: 'Choisis un PDF, des images ou des médias Instagram.' })
+  if (Number(Boolean(mediaKind)) + Number(Boolean(mediaImages.length)) + Number(Boolean(mediaItems.length)) > 1) throw createError({ statusCode: 400, message: 'Choisis un PDF, des images ou des médias vidéo, sans les mélanger.' })
   return {
     mediaImages,
     mediaItems,
@@ -145,6 +145,9 @@ export async function resolveHermesOrganization() {
 // Only the site presents the image preview and collects approval for these media.
 export function validateAutomaticSocialPost(post: { platform: unknown, media_images?: unknown, media_items?: unknown, media_kind?: unknown }) {
   const platform = validateSocialPlatform(post.platform)
+  if (isLinkedInVideoPost(post)) {
+    throw createError({ statusCode: 409, message: 'Les vidéos LinkedIn restent en publication manuelle après ta validation. Aucun envoi ni programmation automatique.' })
+  }
   const images = validateSocialImages(post.media_images ?? [], platform, String(useRuntimeConfig().public.supabaseUrl || ''))
   const media = validateSocialMediaItems(post.media_items ?? [], platform, String(useRuntimeConfig().public.supabaseUrl || ''))
   if (media.length && (images.length || post.media_kind)) throw createError({ statusCode: 400, message: 'Les pièces jointes sont incompatibles.' })

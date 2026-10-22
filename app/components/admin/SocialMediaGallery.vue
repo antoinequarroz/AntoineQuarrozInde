@@ -3,9 +3,10 @@ type Media = { type: 'image' | 'video', url: string, alt: string }
 const props = withDefaults(defineProps<{
   media?: Media[]
   legacyImages?: { url: string, alt: string }[]
+  platform?: 'instagram' | 'linkedin'
   editable: boolean
   busy?: boolean
-}>(), { media: () => [], legacyImages: () => [] })
+}>(), { media: () => [], legacyImages: () => [], platform: 'instagram' })
 const emit = defineEmits<{ save: [media: Media[]], dirty: [value: boolean] }>()
 const auth = useAuthStore()
 const toast = useToast()
@@ -16,6 +17,9 @@ const uploadError = ref('')
 const announcement = ref('')
 const galleryRef = ref<HTMLElement | null>(null)
 const uploadInputRef = ref<HTMLInputElement | null>(null)
+const isLinkedIn = computed(() => props.platform === 'linkedin')
+const network = computed(() => isLinkedIn.value ? 'LinkedIn' : 'Instagram')
+const uploadLabel = computed(() => isLinkedIn.value ? draft.value.length ? 'Remplacer la vidéo' : 'Ajouter une vidéo LinkedIn' : 'Ajouter des images ou vidéos')
 const imageCount = computed(() => draft.value.filter(item => item.type === 'image').length)
 const videoCount = computed(() => draft.value.filter(item => item.type === 'video').length)
 const summary = computed(() => [
@@ -24,12 +28,12 @@ const summary = computed(() => [
 ].filter(Boolean).join(' et '))
 const validCount = computed(() => draft.value.length === 0
   || (draft.value.length === 1 && draft.value[0]?.type === 'video')
-  || (draft.value.length >= 2 && draft.value.length <= 10))
+  || (!isLinkedIn.value && draft.value.length >= 2 && draft.value.length <= 10))
 
 watch(() => [props.media, props.legacyImages], () => {
   draft.value = props.media.length
     ? props.media.map(item => ({ ...item }))
-    : props.legacyImages.map(image => ({ type: 'image' as const, ...image }))
+    : isLinkedIn.value ? [] : props.legacyImages.map(image => ({ type: 'image' as const, ...image }))
   changed.value = false
   uploadError.value = ''
   emit('dirty', false)
@@ -67,7 +71,8 @@ async function upload(event: Event) {
   if (!files.length) return
   uploadError.value = ''
   try {
-    if (draft.value.length + files.length > 10) throw new Error('Un carrousel Instagram contient au maximum 10 médias.')
+    if (isLinkedIn.value && (files.length !== 1 || files[0]?.type !== 'video/mp4')) throw new Error('Choisis une seule vidéo MP4 pour LinkedIn.')
+    if (!isLinkedIn.value && draft.value.length + files.length > 10) throw new Error('Un carrousel Instagram contient au maximum 10 médias.')
     for (const file of files) {
       if (!['image/jpeg', 'video/mp4'].includes(file.type)) throw new Error('Choisis des images JPEG ou des vidéos MP4.')
       const maximum = (file.type === 'video/mp4' ? 20 : 5) * 1024 * 1024
@@ -81,7 +86,9 @@ async function upload(event: Event) {
       const result = await $fetch<{ url: string }>(endpoint, {
         method: 'POST', headers: auth.authHeader(), body: { dataUrl: await dataUrl(file) },
       })
-      draft.value.push({ type, url: result.url, alt: file.name.replace(/\.[^.]+$/, '') })
+      const item: Media = { type, url: result.url, alt: file.name.replace(/\.[^.]+$/, '') }
+      if (isLinkedIn.value) draft.value = [item]
+      else draft.value.push(item)
       change()
     }
     announcement.value = `${files.length} média${files.length > 1 ? 's' : ''} ajouté${files.length > 1 ? 's' : ''}. Enregistre les médias pour conserver ces changements.`
@@ -95,14 +102,14 @@ async function upload(event: Event) {
 </script>
 
 <template>
-  <section class="mt-4 min-w-0 rounded-xl border border-violet-200 bg-violet-50/50 p-4 dark:border-violet-400/20 dark:bg-violet-500/5" aria-label="Médias Instagram joints">
+  <section class="mt-4 min-w-0 rounded-xl border border-violet-200 bg-violet-50/50 p-4 dark:border-violet-400/20 dark:bg-violet-500/5" :aria-label="`Médias ${network} joints`">
     <div class="flex flex-wrap items-center justify-between gap-2">
-      <h3 class="text-sm font-semibold">{{ draft.length > 1 ? `Carrousel · ${summary}` : draft[0]?.type === 'video' ? 'Vidéo Instagram · Reel' : draft.length ? 'Visuel joint' : 'Médias Instagram' }}</h3>
+      <h3 class="text-sm font-semibold">{{ isLinkedIn ? 'Vidéo LinkedIn' : draft.length > 1 ? `Carrousel · ${summary}` : draft[0]?.type === 'video' ? 'Vidéo Instagram · Reel' : draft.length ? 'Visuel joint' : 'Médias Instagram' }}</h3>
       <span v-if="draft.length" class="text-xs text-violet-600 dark:text-violet-300">À relire avant envoi</span>
     </div>
     <div v-if="draft.length" ref="galleryRef" class="mt-3 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-3" tabindex="0" aria-label="Feuilleter les images et vidéos">
-      <figure v-for="(item, index) in draft" :key="item.url" :data-media-position="index" class="w-[min(68vw,20rem)] shrink-0 snap-center rounded-lg bg-white p-2 dark:bg-black/20">
-        <video v-if="item.type === 'video'" :src="item.url" :aria-label="`Vidéo ${index + 1} : ${item.alt}`" controls muted playsinline preload="metadata" class="max-h-[36rem] w-full rounded-md bg-black object-contain" :class="draft.length === 1 ? 'aspect-[9/16]' : 'aspect-[4/5]'">
+      <figure v-for="(item, index) in draft" :key="item.url" :data-media-position="index" class="shrink-0 snap-center rounded-lg bg-white p-2 dark:bg-black/20" :class="isLinkedIn ? 'w-full' : 'w-[min(68vw,20rem)]'">
+        <video v-if="item.type === 'video'" :src="item.url" :aria-label="`Vidéo ${index + 1} : ${item.alt}`" controls muted playsinline preload="metadata" class="max-h-[36rem] w-full rounded-md bg-black object-contain" :class="isLinkedIn ? '' : draft.length === 1 ? 'aspect-[9/16]' : 'aspect-[4/5]'">
           Ton navigateur ne peut pas lire cette vidéo. Ouvre l’original avec le lien ci-dessous.
         </video>
         <a v-else :href="item.url" target="_blank" rel="noopener noreferrer" :aria-label="`Ouvrir l’image ${index + 1} en grand`"><img :src="item.url" :alt="item.alt" loading="lazy" class="aspect-[4/5] w-full rounded-md object-contain"></a>
@@ -114,8 +121,8 @@ async function upload(event: Event) {
         <template v-if="editable">
           <label class="block text-xs">Description du média {{ index + 1 }}<input v-model="item.alt" required maxlength="500" :aria-invalid="!item.alt.trim()" class="input-field mt-1 w-full" :disabled="busy || uploading" @input="change"></label>
           <div class="mt-2 flex flex-wrap gap-2">
-            <button type="button" class="min-h-11 min-w-11 px-2 text-xs underline disabled:opacity-30" :disabled="index === 0 || busy || uploading" :aria-label="`Avancer le média ${index + 1}`" @click="move(index, -1)">←</button>
-            <button type="button" class="min-h-11 min-w-11 px-2 text-xs underline disabled:opacity-30" :disabled="index === draft.length - 1 || busy || uploading" :aria-label="`Reculer le média ${index + 1}`" @click="move(index, 1)">→</button>
+            <button v-if="!isLinkedIn" type="button" class="min-h-11 min-w-11 px-2 text-xs underline disabled:opacity-30" :disabled="index === 0 || busy || uploading" :aria-label="`Avancer le média ${index + 1}`" @click="move(index, -1)">←</button>
+            <button v-if="!isLinkedIn" type="button" class="min-h-11 min-w-11 px-2 text-xs underline disabled:opacity-30" :disabled="index === draft.length - 1 || busy || uploading" :aria-label="`Reculer le média ${index + 1}`" @click="move(index, 1)">→</button>
             <button data-remove-media type="button" class="min-h-11 px-2 text-xs text-red-600 underline dark:text-red-300" :disabled="busy || uploading" :aria-label="`Retirer le média ${index + 1}`" @click="remove(index)">Retirer</button>
           </div>
         </template>
@@ -124,8 +131,9 @@ async function upload(event: Event) {
     </div>
     <p class="sr-only" role="status" aria-live="polite">{{ announcement }}</p>
     <template v-if="editable">
-      <label class="mt-3 block text-xs font-medium">Ajouter des images ou vidéos<input ref="uploadInputRef" type="file" multiple accept="image/jpeg,video/mp4" class="mt-2 block w-full text-xs" :disabled="busy || uploading" @change="upload"></label>
-      <p class="mt-2 text-xs leading-5 text-gray-500 dark:text-gray-400">Une vidéo seule pour un Reel, ou 2 à 10 médias dans l’ordre pour un carrousel. JPEG : 5 Mo maximum. MP4 H.264 : 20 Mo, de 3 à 60 secondes. Le format vertical 9:16 est accepté pour un Reel ; les médias d’un carrousel gardent le même format, de 4:5 à 1,91:1.</p>
+      <label class="mt-3 block text-xs font-medium">{{ uploadLabel }}<input ref="uploadInputRef" type="file" :multiple="!isLinkedIn" :accept="isLinkedIn ? 'video/mp4' : 'image/jpeg,video/mp4'" class="mt-2 block w-full text-xs" :disabled="busy || uploading" @change="upload"></label>
+      <p v-if="isLinkedIn" class="mt-2 text-xs leading-5 text-gray-500 dark:text-gray-400">Une vidéo MP4 H.264, 20 Mo maximum, de 3 à 60 secondes. Formats portrait, carré et paysage, de 9:16 à 1,91:1. La vidéo remplace les images lors de l’enregistrement. Sa publication LinkedIn reste manuelle, après ta validation.</p>
+      <p v-else class="mt-2 text-xs leading-5 text-gray-500 dark:text-gray-400">Une vidéo seule pour un Reel, ou 2 à 10 médias dans l’ordre pour un carrousel. JPEG : 5 Mo maximum. MP4 H.264 : 20 Mo, de 3 à 60 secondes. Le format vertical 9:16 est accepté pour un Reel ; les médias d’un carrousel gardent le même format, de 4:5 à 1,91:1.</p>
       <p v-if="uploading" role="status" class="mt-2 text-xs">Téléversement et vérification en cours…</p>
       <p v-if="uploadError" role="alert" class="mt-2 text-xs text-red-700 dark:text-red-300">{{ uploadError }}</p>
       <p v-if="changed && !validCount" role="status" class="mt-2 text-xs text-amber-700 dark:text-amber-300">Ajoute un second média pour enregistrer ce carrousel. Pour une image seule, utilise le format Image.</p>
