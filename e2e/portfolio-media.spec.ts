@@ -42,6 +42,9 @@ async function openFixtureHomepage(page: Page, fixtureProjects = projects) {
   await page.route('**/api/public/articles?*', route => route.fulfill({ json: [] }))
   await page.route('**/api/reviews', route => route.fulfill({ json: [] }))
   await page.route('**/api/google-reviews?*', route => route.fulfill({ json: { configured: false, reviews: [] } }))
+  // Exercise portfolio geometry without loading an unrelated remote WebGL
+  // runtime. The hero's loading policy has its own public-page coverage.
+  await page.route('https://unpkg.com/@splinetool/**', route => route.abort('blockedbyclient'))
   await page.route('https://portfolio-fixtures.invalid/**', route => route.fulfill({
     contentType: 'image/svg+xml',
     body: '<svg xmlns="http://www.w3.org/2000/svg" width="480" height="300"><rect width="480" height="300" fill="#7c3aed"/></svg>',
@@ -104,7 +107,11 @@ async function scrollMobileProject(page: Page, index: number) {
 test('mobile portfolio fetches previews on approach and as its cards are browsed', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   const requests = await openFixtureHomepage(page)
-  await page.locator('[data-portfolio-view="helix"]').click()
+  const helixButton = page.locator('[data-portfolio-view="helix"]')
+  // Select the carousel before approaching it. A pointer click scrolls the
+  // initial mobile grid into view and legitimately loads its other previews.
+  await helixButton.evaluate(element => (element as HTMLButtonElement).focus({ preventScroll: true }))
+  await helixButton.press('Enter')
   await approachPortfolio(page)
 
   const carousel = page.locator('[data-mobile-project-carousel]')
