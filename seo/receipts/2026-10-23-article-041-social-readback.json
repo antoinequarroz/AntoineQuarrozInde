@@ -1,0 +1,48 @@
+{
+  "verifiedAt": "2026-10-23T04:38:12.793Z",
+  "articleUrl": "https://www.antoinequarroz.ch/blog/tableau-de-bord-utile-chiffre-prochaine-action",
+  "posts": [
+    {
+      "id": "eb846a9e-ec53-445f-b787-9a9f3b7e5081",
+      "platform": "linkedin",
+      "sourceKey": "tableau-de-bord-utile-chiffre-prochaine-action-linkedin",
+      "status": "draft",
+      "publicationMode": "manual",
+      "version": 1,
+      "existingDraft": false,
+      "contentPreserved": true,
+      "notApproved": true,
+      "notScheduled": true,
+      "notPublished": true,
+      "mediaImages": [
+        {
+          "alt": "Un tableau de bord utile : du chiffre à l’action. Démonstration avec trois tâches et des données entièrement fictives, sur fond violet avec le robot Antoine Quarroz.",
+          "url": "https://oxlrljszatejqxhclmbu.supabase.co/storage/v1/object/public/media/uploads/article-041-42ffc41797642920d249aa4dcb7f0f44f49fb0d88d1928e04a311926111383f4.png"
+        }
+      ],
+      "characters": 1056
+    },
+    {
+      "id": "8f01cd8b-0647-41c4-a0c5-fcb4d70bfb49",
+      "platform": "x",
+      "sourceKey": "tableau-de-bord-utile-chiffre-prochaine-action-x",
+      "status": "draft",
+      "publicationMode": "manual",
+      "version": 1,
+      "existingDraft": false,
+      "contentPreserved": true,
+      "notApproved": true,
+      "notScheduled": true,
+      "notPublished": true,
+      "mediaImages": [
+        {
+          "alt": "Un tableau de bord utile : du chiffre à l’action. Démonstration avec trois tâches et des données entièrement fictives, sur fond violet avec le robot Antoine Quarroz.",
+          "url": "https://oxlrljszatejqxhclmbu.supabase.co/storage/v1/object/public/media/uploads/article-041-42ffc41797642920d249aa4dcb7f0f44f49fb0d88d1928e04a311926111383f4.png"
+        }
+      ],
+      "characters": 157
+    }
+  ],
+  "coverSha256": "42ffc41797642920d249aa4dcb7f0f44f49fb0d88d1928e04a311926111383f4",
+  "socialPublicationsTriggered": 0
+}

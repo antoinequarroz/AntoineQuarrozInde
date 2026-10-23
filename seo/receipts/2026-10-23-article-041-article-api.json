@@ -1,0 +1,15 @@
+{
+  "verifiedAt": "2026-10-23T04:35:07.089Z",
+  "mode": "published_via_restricted_api",
+  "article": {
+    "id": 46,
+    "title": "41. Un tableau de bord utile : du chiffre à la prochaine action",
+    "slug": "tableau-de-bord-utile-chiffre-prochaine-action",
+    "excerpt": "Relier chaque indicateur à une définition, une liste filtrée et une prochaine action : une méthode pour cadrer un tableau de bord métier utile.",
+    "cover_image": "https://oxlrljszatejqxhclmbu.supabase.co/storage/v1/object/public/media/hermes/215c175dd44c41008ff1fbbc512fe48a855daa1a4ac3ba129b58e4acca387df6.png",
+    "published": true,
+    "published_at": "2026-10-23T04:35:06.966787+00:00"
+  },
+  "idempotent": false,
+  "contentSha256": "a10a4f499e533ce2be0f6f0541fadb0ef4ed5d3e72f49e15cbf72534c267f723"
+}
