@@ -527,6 +527,7 @@ test('desktop service previews follow deliberate hover and stay still when idle'
   const preview = section.getByRole('tabpanel').locator('img').first()
   await expect(preview).toBeVisible()
   await expect.poll(() => preview.evaluate(image => (image as HTMLImageElement).naturalWidth)).toBeGreaterThan(0)
+  await page.evaluate(async () => { await document.fonts.ready })
   expect(inactivePreviewRequests).toEqual([cmsPreviewPath])
   await page.mouse.move(0, 0)
   await expect.poll(() => section.evaluate(element => element.getAnimations({ subtree: true })
