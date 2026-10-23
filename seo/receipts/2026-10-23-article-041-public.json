@@ -1,0 +1,71 @@
+{
+  "verifiedAt": "2026-10-23T04:35:53.407398+00:00",
+  "url": "https://www.antoinequarroz.ch/blog/tableau-de-bord-utile-chiffre-prochaine-action",
+  "articleId": 46,
+  "title": "41. Un tableau de bord utile : du chiffre à la prochaine action",
+  "publicUnique": true,
+  "publicCount": 41,
+  "bodySSR": true,
+  "apiContentMatchesSource": true,
+  "canonical": "https://www.antoinequarroz.ch/blog/tableau-de-bord-utile-chiffre-prochaine-action",
+  "BlogPosting": true,
+  "sitemapLinked": true,
+  "blogLinked": true,
+  "hubLinked": true,
+  "cover": {
+    "dimensions": [
+      1200,
+      675
+    ],
+    "bytes": 141159,
+    "sha256": "42ffc41797642920d249aa4dcb7f0f44f49fb0d88d1928e04a311926111383f4",
+    "matchesApprovedSource": true
+  },
+  "checks": [
+    {
+      "url": "https://www.antoinequarroz.ch/blog/tableau-de-bord-utile-chiffre-prochaine-action",
+      "status": 200,
+      "finalUrl": "https://www.antoinequarroz.ch/blog/tableau-de-bord-utile-chiffre-prochaine-action"
+    },
+    {
+      "url": "https://www.antoinequarroz.ch/api/articles",
+      "status": 200,
+      "finalUrl": "https://www.antoinequarroz.ch/api/articles"
+    },
+    {
+      "url": "https://www.antoinequarroz.ch/blog",
+      "status": 200,
+      "finalUrl": "https://www.antoinequarroz.ch/blog"
+    },
+    {
+      "url": "https://www.antoinequarroz.ch/sitemap.xml",
+      "status": 200,
+      "finalUrl": "https://www.antoinequarroz.ch/sitemap.xml"
+    },
+    {
+      "url": "https://oxlrljszatejqxhclmbu.supabase.co/storage/v1/object/public/media/hermes/215c175dd44c41008ff1fbbc512fe48a855daa1a4ac3ba129b58e4acca387df6.png",
+      "status": 200,
+      "finalUrl": "https://oxlrljszatejqxhclmbu.supabase.co/storage/v1/object/public/media/hermes/215c175dd44c41008ff1fbbc512fe48a855daa1a4ac3ba129b58e4acca387df6.png"
+    },
+    {
+      "url": "https://www.antoinequarroz.ch/developpeur-web-valais",
+      "status": 200,
+      "finalUrl": "https://www.antoinequarroz.ch/developpeur-web-valais"
+    },
+    {
+      "url": "https://www.antoinequarroz.ch/projets/hermes-cockpit",
+      "status": 200,
+      "finalUrl": "https://www.antoinequarroz.ch/projets/hermes-cockpit"
+    },
+    {
+      "url": "https://www.antoinequarroz.ch/blog/devis-documents-validations-espace-client-utile",
+      "status": 200,
+      "finalUrl": "https://www.antoinequarroz.ch/blog/devis-documents-validations-espace-client-utile"
+    },
+    {
+      "url": "https://www.antoinequarroz.ch/#contact-form",
+      "status": 200,
+      "finalUrl": "https://www.antoinequarroz.ch/#contact-form"
+    }
+  ]
+}
