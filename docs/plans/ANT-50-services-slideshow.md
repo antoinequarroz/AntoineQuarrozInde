@@ -56,3 +56,10 @@ LifXP dans le panneau inactif. Les images des services CMS et mobile sont désor
 montées à leur première sélection, puis conservées pour les fondus. Le scénario
 réseau du diaporama et les budgets existants du portfolio vérifient ce comportement
 sans modifier leurs seuils. Nouvelle vérification complète du candidat en cours.
+
+Les 36 E2E du candidat passent après cette correction, et les quatre gates de la
+PR 305 sont verts. La livraison main a ensuite révélé une assertion de position
+absolue trop sensible à l’ancrage du défilement de la page (1–2 px). Le contrôle
+mesure désormais la géométrie relative au panneau, ses dimensions et sa
+transformation ; les assertions d’absence d’animation et de requêtes anticipées
+sont conservées. Cette correction de test ne change pas l’interface.

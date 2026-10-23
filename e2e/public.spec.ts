@@ -527,14 +527,34 @@ test('desktop service previews follow deliberate hover and stay still when idle'
   const preview = section.getByRole('tabpanel').locator('img').first()
   await expect(preview).toBeVisible()
   await expect.poll(() => preview.evaluate(image => (image as HTMLImageElement).naturalWidth)).toBeGreaterThan(0)
+  await page.evaluate(async () => { await document.fonts.ready })
   expect(inactivePreviewRequests).toEqual([cmsPreviewPath])
   await page.mouse.move(0, 0)
   await expect.poll(() => section.evaluate(element => element.getAnimations({ subtree: true })
     .filter(animation => animation.playState === 'running').length)).toBe(0)
-  const firstRect = await preview.boundingBox()
+  // Measure within the panel: scroll anchoring elsewhere on the page may move
+  // the whole section by a pixel without animating or resizing the preview.
+  const readPreviewGeometry = () => preview.evaluate(image => {
+    const rect = image.getBoundingClientRect()
+    const panelElement = image.closest('[role="tabpanel"]')!
+    const panel = panelElement.getBoundingClientRect()
+    const slideshow = image.closest('[data-service-motion]')!.getBoundingClientRect()
+    return {
+      x: rect.left - panel.left,
+      y: rect.top - panel.top,
+      width: rect.width,
+      height: rect.height,
+      panelHeight: panel.height,
+      panelX: panel.left - slideshow.left,
+      panelY: panel.top - slideshow.top,
+      panelTransform: getComputedStyle(panelElement).transform,
+      transform: getComputedStyle(image).transform,
+    }
+  })
+  const firstRect = await readPreviewGeometry()
   await page.waitForTimeout(600)
   await expect(cms).toHaveAttribute('aria-selected', 'true')
-  expect(await preview.boundingBox()).toEqual(firstRect)
+  expect(await readPreviewGeometry()).toEqual(firstRect)
 })
 
 test('contact and footer share one continuous surface', async ({ page }) => {
