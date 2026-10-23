@@ -536,13 +536,18 @@ test('desktop service previews follow deliberate hover and stay still when idle'
   // the whole section by a pixel without animating or resizing the preview.
   const readPreviewGeometry = () => preview.evaluate(image => {
     const rect = image.getBoundingClientRect()
-    const panel = image.closest('[role="tabpanel"]')!.getBoundingClientRect()
+    const panelElement = image.closest('[role="tabpanel"]')!
+    const panel = panelElement.getBoundingClientRect()
+    const slideshow = image.closest('[data-service-motion]')!.getBoundingClientRect()
     return {
       x: rect.left - panel.left,
       y: rect.top - panel.top,
       width: rect.width,
       height: rect.height,
       panelHeight: panel.height,
+      panelX: panel.left - slideshow.left,
+      panelY: panel.top - slideshow.top,
+      panelTransform: getComputedStyle(panelElement).transform,
       transform: getComputedStyle(image).transform,
     }
   })
