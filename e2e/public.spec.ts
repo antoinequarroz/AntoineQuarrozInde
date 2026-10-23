@@ -505,15 +505,29 @@ test('desktop portfolio cards follow the active color mode', { tag: '@live-data'
 
 test('desktop service previews follow deliberate hover and stay still when idle', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
+  const inactivePreviewRequests: string[] = []
+  const cmsPreviewPath = '/service-previews/dashboard-demo.webp'
+  const mobilePreviewPath = '/portfolio-previews/lifxp-0b05f10e-800.webp'
+  page.on('request', (request) => {
+    const path = new URL(request.url()).pathname
+    if (path === cmsPreviewPath || path === mobilePreviewPath) inactivePreviewRequests.push(path)
+  })
   await openServiceSlideshow(page)
   const section = page.locator('#services')
+  // Native lazy loading also considers nearby invisible images. Unselected
+  // service previews must remain deferred, even once the section is in view.
+  await page.waitForTimeout(600)
+  expect(inactivePreviewRequests).toEqual([])
   const cms = section.locator('[data-service-tab="cms"]')
+  const cmsRequest = page.waitForRequest(request => new URL(request.url()).pathname === cmsPreviewPath)
   await cms.hover()
+  await cmsRequest
   await expect(cms).toHaveAttribute('aria-selected', 'true')
   await expect(section.getByRole('tabpanel')).toHaveAttribute('id', 'service-panel-cms')
   const preview = section.getByRole('tabpanel').locator('img').first()
   await expect(preview).toBeVisible()
   await expect.poll(() => preview.evaluate(image => (image as HTMLImageElement).naturalWidth)).toBeGreaterThan(0)
+  expect(inactivePreviewRequests).toEqual([cmsPreviewPath])
   await page.mouse.move(0, 0)
   await expect.poll(() => section.evaluate(element => element.getAnimations({ subtree: true })
     .filter(animation => animation.playState === 'running').length)).toBe(0)

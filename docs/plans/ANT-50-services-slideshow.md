@@ -50,3 +50,9 @@ Le serveur de développement a été arrêté avant le contrôle du build final 
 éviter le partage de `.nuxt` entre dev et build. Le sélecteur du test de contact
 est limité au formulaire : « autonomie » dans le nouveau panneau ne doit pas
 être confondu avec le champ « nom ».
+
+Le premier contrôle CI des médias a détecté le chargement anticipé du visuel
+LifXP dans le panneau inactif. Les images des services CMS et mobile sont désormais
+montées à leur première sélection, puis conservées pour les fondus. Le scénario
+réseau du diaporama et les budgets existants du portfolio vérifient ce comportement
+sans modifier leurs seuils. Nouvelle vérification complète du candidat en cours.

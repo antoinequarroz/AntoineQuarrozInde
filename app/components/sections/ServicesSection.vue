@@ -6,6 +6,7 @@ const { track } = useMarketing()
 type ServiceKey = 'vitrine' | 'mobile' | 'cms'
 
 const activeService = ref<ServiceKey>('vitrine')
+const previewedServices = ref(new Set<ServiceKey>(['vitrine']))
 const interaction = ref<'pointer' | 'keyboard'>('pointer')
 
 const serviceFeatures: Record<string, Record<ServiceKey, string[]>> = {
@@ -63,6 +64,7 @@ const localZones = computed(() => locale.value === 'de'
 
 function activateService(key: ServiceKey, input: 'pointer' | 'keyboard') {
   interaction.value = input
+  previewedServices.value.add(key)
   activeService.value = key
 }
 
@@ -186,6 +188,7 @@ function selectService(service: { key: ServiceKey }) {
             <figure class="services-preview__figure" :class="`services-preview__figure--${service.key}`">
               <div class="services-preview__image-wrap" data-service-artwork>
                 <img
+                  v-if="previewedServices.has(service.key)"
                   :src="service.image"
                   :alt="service.preview.alt"
                   width="1440"
