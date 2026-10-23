@@ -1,23 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
 
-async function openServiceSlideshow(page: Page) {
-  const marketingEvents: Array<{ event?: string, metadata?: Record<string, unknown> }> = []
-  await page.route('**/api/marketing-event', (route) => {
-    marketingEvents.push(route.request().postDataJSON())
-    return route.fulfill({ json: { ok: true } })
-  })
-  await page.route('**/ingest/**', route => route.fulfill({ json: {} }))
-  await page.goto('/#services')
-  await page.waitForFunction(() => {
-    const app = (document.querySelector('#__nuxt') as HTMLElement & {
-      __vue_app__?: { $nuxt?: { isHydrating: boolean } }
-    })?.__vue_app__
-    return app?.$nuxt?.isHydrating === false
-  })
-  await expect(page.locator('#services').getByRole('tablist')).toBeVisible()
-  return marketingEvents
-}
-
 test('landing page exposes the main conversion paths', async ({ page }) => {
   await page.goto('/')
   await expect(page).toHaveTitle(/Antoine Quarroz/i)
@@ -125,134 +107,32 @@ test('mobile navigation keeps preferences inside the burger menu', async ({ page
   }
 })
 
-test.describe('service slideshow', () => {
-  test.describe.configure({ retries: 0 })
+test('mobile service cards keep an even vertical rhythm', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/#services')
 
-  test('keyboard changes the selected service and exposes only its related panel', async ({ page }) => {
-    await page.setViewportSize({ width: 1440, height: 900 })
-    await openServiceSlideshow(page)
-    const section = page.locator('#services')
-    const vitrine = section.locator('[data-service-tab="vitrine"]')
-    const cms = section.locator('[data-service-tab="cms"]')
-    const mobile = section.locator('[data-service-tab="mobile"]')
+  const cards = page.locator('[data-service-card]')
+  await expect(cards).toHaveCount(3)
+  await expect(cards.first()).toBeVisible()
 
-    await expect(section.getByRole('tab')).toHaveCount(3)
-    await expect(vitrine).toHaveAttribute('aria-selected', 'true')
-    await vitrine.focus()
-    await vitrine.press('ArrowRight')
-    await expect(cms).toBeFocused()
-    await expect(cms).toHaveAttribute('aria-selected', 'true')
-    await expect(cms).toHaveAttribute('aria-controls', 'service-panel-cms')
-    await expect(section.getByRole('tabpanel')).toHaveCount(1)
-    await expect(section.getByRole('tabpanel')).toHaveAttribute('id', 'service-panel-cms')
-    await expect(section.getByRole('tabpanel')).toHaveAttribute('aria-labelledby', 'service-tab-cms')
-
-    await cms.press('End')
-    await expect(mobile).toBeFocused()
-    await expect(mobile).toHaveAttribute('aria-selected', 'true')
-    await mobile.press('Home')
-    await expect(vitrine).toBeFocused()
-    await vitrine.press('ArrowLeft')
-    await expect(mobile).toBeFocused()
-    await expect(mobile).toHaveAttribute('aria-selected', 'true')
-    await expect(section.getByRole('tab', { selected: true })).toHaveCount(1)
-    await expect(mobile).toHaveAttribute('tabindex', '0')
-    await expect(vitrine).toHaveAttribute('tabindex', '-1')
-    await expect(cms).toHaveAttribute('tabindex', '-1')
-    await expect(section.getByRole('tabpanel')).toHaveAttribute('id', 'service-panel-mobile')
-
-    // A passing pointer must not hide the panel while its contact action owns
-    // keyboard focus. Explicitly choosing another service must still work.
-    await mobile.press('Tab')
-    const panel = section.getByRole('tabpanel')
-    await expect(panel).toBeFocused()
-    await panel.press('Tab')
-    const contactAction = panel.locator('[data-service-cta="mobile"]')
-    await expect(contactAction).toBeFocused()
-    await vitrine.hover()
-    await expect(contactAction).toBeFocused()
-    await expect(mobile).toHaveAttribute('aria-selected', 'true')
-    await expect(panel).toHaveAttribute('id', 'service-panel-mobile')
-    await vitrine.click()
-    await expect(vitrine).toHaveAttribute('aria-selected', 'true')
-    await expect(section.getByRole('tabpanel')).toHaveAttribute('id', 'service-panel-vitrine')
-  })
-
-  for (const width of [320, 390]) {
-    test(`touch can select every service without overflow at ${width}px`, async ({ browser }) => {
-      const context = await browser.newContext({
-        viewport: { width, height: 844 },
-        isMobile: true,
-        hasTouch: true,
-        reducedMotion: 'reduce',
-      })
-      try {
-        const page = await context.newPage()
-        await openServiceSlideshow(page)
-        const section = page.locator('#services')
-        for (const key of ['cms', 'vitrine', 'mobile']) {
-          const tab = section.locator(`[data-service-tab="${key}"]`)
-          await tab.tap()
-          await expect(tab).toHaveAttribute('aria-selected', 'true')
-          const panel = section.getByRole('tabpanel')
-          await expect(panel).toHaveCount(1)
-          await expect(panel).toHaveAttribute('id', `service-panel-${key}`)
-          await expect(panel.locator(`[data-service-cta="${key}"]`)).toBeVisible()
-          const targets = await section.locator('[role="tab"], [data-service-cta]').evaluateAll(elements => elements
-            .filter(element => !element.closest('[hidden], [inert]'))
-            .map(element => {
-              const { width, height } = element.getBoundingClientRect()
-              return { width, height }
-            }))
-          expect(targets.every(target => target.width >= 44 && target.height >= 44)).toBe(true)
-          expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width)
-        }
-      }
-      finally { await context.close() }
-    })
+  const readGaps = async () => {
+    const boxes = await cards.evaluateAll(elements => elements.map((element) => {
+      const rect = element.getBoundingClientRect()
+      return { top: rect.top, bottom: rect.bottom }
+    }))
+    return [
+      (boxes[1]?.top ?? 0) - (boxes[0]?.bottom ?? 0),
+      (boxes[2]?.top ?? 0) - (boxes[1]?.bottom ?? 0),
+    ]
   }
+  await expect.poll(async () => {
+    const [firstGap = 0, secondGap = 0] = await readGaps()
+    return Math.abs(firstGap - secondGap)
+  }).toBeLessThanOrEqual(1)
+  const [firstGap = 0, secondGap = 0] = await readGaps()
 
-  test('the chosen service opens contact with its selection and one attributed click', async ({ page }) => {
-    await page.setViewportSize({ width: 1440, height: 900 })
-    const contactRequests: string[] = []
-    await page.route('**/api/contact', (route) => {
-      contactRequests.push(route.request().method())
-      return route.fulfill({ status: 500, json: { error: 'Unexpected contact submission in a browsing test' } })
-    })
-    const events = await openServiceSlideshow(page)
-    const section = page.locator('#services')
-    const cms = section.locator('[data-service-tab="cms"]')
-    await cms.focus()
-    await cms.press('Enter')
-    const cta = section.getByRole('tabpanel').locator('[data-service-cta="cms"]')
-    await expect(cta).toHaveAttribute('href', '/#contact-form')
-    await cta.click()
-
-    await expect(page).toHaveURL(/#contact-form$/)
-    await expect(page.locator('#contact-form form')).toBeVisible()
-    await expect(page.locator('#contact-form [role="status"]')).toContainText('Solutions CMS')
-    await expect(page.locator('#contact-name')).toBeFocused()
-    await expect.poll(() => events.filter(event => event.event === 'services_cta_click'))
-      .toHaveLength(1)
-    expect(events.find(event => event.event === 'services_cta_click')?.metadata?.service).toBe('cms')
-    // Browsing services and opening the form must not send a contact request.
-    expect(contactRequests).toEqual([])
-  })
-
-  test('reduced motion keeps service changes immediate and usable', async ({ page }) => {
-    await page.emulateMedia({ reducedMotion: 'reduce' })
-    await openServiceSlideshow(page)
-    const section = page.locator('#services')
-    await section.locator('[data-service-tab="mobile"]').click()
-    await expect(section.getByRole('tabpanel')).toHaveAttribute('id', 'service-panel-mobile')
-    await expect(section.locator('[data-service-cta="mobile"]')).toBeVisible()
-    const motion = await section.getByRole('tabpanel').evaluate(element => element.getAnimations({ subtree: true })
-      .filter(animation => animation.playState === 'running' || animation.pending)
-      .map(animation => animation.effect?.getComputedTiming().activeDuration || 0))
-    expect(motion.every(duration => Number(duration) <= 1)).toBe(true)
-    await section.locator('[data-service-tab="vitrine"]').click()
-    await expect(section.getByRole('tabpanel')).toHaveAttribute('id', 'service-panel-vitrine')
-  })
+  expect(firstGap).toBeGreaterThanOrEqual(23)
+  expect(Math.abs(firstGap - secondGap)).toBeLessThanOrEqual(1)
 })
 
 async function expectTouchFriendlyTargets(page: Page) {
@@ -347,8 +227,8 @@ test('diagnostic contact form keeps only the useful fields at 320px', async ({ p
   await page.waitForTimeout(500)
   await openForm.click()
   await expect(form).toBeVisible()
-  await expect(form.getByLabel(/nom|name/i)).toBeFocused()
-  await expect(form.getByLabel(/nom|name/i)).toHaveAttribute('required', '')
+  await expect(page.getByLabel(/nom|name/i)).toBeFocused()
+  await expect(page.getByLabel(/nom|name/i)).toHaveAttribute('required', '')
   await expect(page.getByLabel(/e-?mail/i)).toHaveAttribute('required', '')
   await expect(page.getByLabel(/quel problème|what problem|welches problem/i)).toHaveAttribute('required', '')
   await expect(page.getByLabel(/entreprise|company|unternehmen/i)).toBeVisible()
@@ -503,58 +383,27 @@ test('desktop portfolio cards follow the active color mode', { tag: '@live-data'
   }
 })
 
-test('desktop service previews follow deliberate hover and stay still when idle', async ({ page }) => {
+test('service cards settle without competing transform animations', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
-  const inactivePreviewRequests: string[] = []
-  const cmsPreviewPath = '/service-previews/dashboard-demo.webp'
-  const mobilePreviewPath = '/portfolio-previews/lifxp-0b05f10e-800.webp'
-  page.on('request', (request) => {
-    const path = new URL(request.url()).pathname
-    if (path === cmsPreviewPath || path === mobilePreviewPath) inactivePreviewRequests.push(path)
-  })
-  await openServiceSlideshow(page)
-  const section = page.locator('#services')
-  // Native lazy loading also considers nearby invisible images. Unselected
-  // service previews must remain deferred, even once the section is in view.
-  await page.waitForTimeout(600)
-  expect(inactivePreviewRequests).toEqual([])
-  const cms = section.locator('[data-service-tab="cms"]')
-  const cmsRequest = page.waitForRequest(request => new URL(request.url()).pathname === cmsPreviewPath)
-  await cms.hover()
-  await cmsRequest
-  await expect(cms).toHaveAttribute('aria-selected', 'true')
-  await expect(section.getByRole('tabpanel')).toHaveAttribute('id', 'service-panel-cms')
-  const preview = section.getByRole('tabpanel').locator('img').first()
-  await expect(preview).toBeVisible()
-  await expect.poll(() => preview.evaluate(image => (image as HTMLImageElement).naturalWidth)).toBeGreaterThan(0)
-  await page.evaluate(async () => { await document.fonts.ready })
-  expect(inactivePreviewRequests).toEqual([cmsPreviewPath])
-  await page.mouse.move(0, 0)
-  await expect.poll(() => section.evaluate(element => element.getAnimations({ subtree: true })
-    .filter(animation => animation.playState === 'running').length)).toBe(0)
-  // Measure within the panel: scroll anchoring elsewhere on the page may move
-  // the whole section by a pixel without animating or resizing the preview.
-  const readPreviewGeometry = () => preview.evaluate(image => {
-    const rect = image.getBoundingClientRect()
-    const panelElement = image.closest('[role="tabpanel"]')!
-    const panel = panelElement.getBoundingClientRect()
-    const slideshow = image.closest('[data-service-motion]')!.getBoundingClientRect()
-    return {
-      x: rect.left - panel.left,
-      y: rect.top - panel.top,
-      width: rect.width,
-      height: rect.height,
-      panelHeight: panel.height,
-      panelX: panel.left - slideshow.left,
-      panelY: panel.top - slideshow.top,
-      panelTransform: getComputedStyle(panelElement).transform,
-      transform: getComputedStyle(image).transform,
-    }
-  })
-  const firstRect = await readPreviewGeometry()
-  await page.waitForTimeout(600)
-  await expect(cms).toHaveAttribute('aria-selected', 'true')
-  expect(await readPreviewGeometry()).toEqual(firstRect)
+  await page.goto('/#services')
+
+  const cards = page.locator('[data-service-card]')
+  await expect(cards).toHaveCount(3)
+  await expect(cards.first()).toBeVisible()
+  await page.waitForTimeout(700)
+
+  const firstSample = await cards.evaluateAll(elements => elements.map((element) => ({
+    animationName: getComputedStyle(element).animationName,
+    transform: getComputedStyle(element).transform,
+  })))
+  await page.waitForTimeout(350)
+  const secondSample = await cards.evaluateAll(elements => elements.map(element => getComputedStyle(element).transform))
+
+  expect(firstSample.every(sample => sample.animationName === 'none')).toBeTruthy()
+  expect(firstSample.map(sample => sample.transform)).toEqual(secondSample)
+  expect(firstSample[0]?.transform).not.toBe('none')
+  expect(firstSample[2]?.transform).not.toBe('none')
+  expect(firstSample[0]?.transform).not.toBe(firstSample[2]?.transform)
 })
 
 test('contact and footer share one continuous surface', async ({ page }) => {
