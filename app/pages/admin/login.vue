@@ -46,7 +46,7 @@ async function handleLogin() {
         <div class="flex justify-center mb-8">
           <div class="flex items-center gap-3">
             <div class="w-12 h-12 rounded-2xl bg-gradient-brand flex items-center justify-center shadow-glow">
-              <span class="font-display font-bold text-white text-lg">AQ</span>
+              <UiBrandMark class="w-[62%] translate-y-[8%] text-white" />
             </div>
             <div>
               <div class="font-display font-bold text-xl text-gray-900 dark:text-white">Admin</div>
