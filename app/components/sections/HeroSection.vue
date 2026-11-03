@@ -1,11 +1,15 @@
 <script setup lang="ts">
-const { t } = useI18n();
+const { t, te } = useI18n();
 const { variant, initVariant, track } = useMarketing();
 
 onMounted(() => {
     initVariant();
     track("hero_view");
 });
+function heroCopy(key: string) {
+    const variantKey = `hero.variant_${variant.value.toLowerCase()}.${key}`;
+    return t(te(variantKey) ? variantKey : `hero.${key}`);
+}
 </script>
 
 <template>
@@ -52,13 +56,13 @@ onMounted(() => {
                     class="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-display font-bold mb-7 tracking-tight"
                 >
                     <span class="block text-gray-950 dark:text-white">
-                        {{ t(`hero.variant_${variant.toLowerCase()}.title_1`) }}
+                        {{ heroCopy("title_1") }}
                     </span>
                     <span class="block section-heading-gradient">
-                        {{ t(`hero.variant_${variant.toLowerCase()}.title_2`) }}
+                        {{ heroCopy("title_2") }}
                     </span>
                     <span class="block text-gray-950 dark:text-white">
-                        {{ t(`hero.variant_${variant.toLowerCase()}.title_3`) }}
+                        {{ heroCopy("title_3") }}
                     </span>
                 </h1>
 
@@ -72,7 +76,7 @@ onMounted(() => {
                     }"
                     class="text-base sm:text-lg md:text-xl text-gray-600 dark:text-white/75 mb-10 leading-relaxed max-w-2xl mx-auto"
                 >
-                    {{ t(`hero.variant_${variant.toLowerCase()}.subtitle`) }}
+                    {{ heroCopy("subtitle") }}
                 </p>
 
                 <div

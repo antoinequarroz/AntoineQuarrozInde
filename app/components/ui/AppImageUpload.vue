@@ -76,6 +76,7 @@ function clear() {
             />
             <button
                 type="button"
+                aria-label="Retirer l’image"
                 class="absolute top-2 right-2 w-7 h-7 rounded-lg bg-black/50 hover:bg-black/70 flex items-center justify-center text-white transition-colors"
                 @click="clear"
             >
@@ -98,6 +99,9 @@ function clear() {
         <!-- Drop zone -->
         <div
             v-else
+            role="button"
+            tabindex="0"
+            aria-label="Choisir une image"
             class="relative border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors duration-200"
             :class="
                 dragging
@@ -105,6 +109,8 @@ function clear() {
                     : 'border-gray-200 dark:border-white/[0.08] hover:border-violet-300 dark:hover:border-violet-500/40'
             "
             @click="inputRef?.click()"
+            @keydown.enter.prevent="inputRef?.click()"
+            @keydown.space.prevent="inputRef?.click()"
             @dragover.prevent="dragging = true"
             @dragleave="dragging = false"
             @drop.prevent="onDrop"
@@ -131,6 +137,7 @@ function clear() {
         <input
             ref="inputRef"
             type="file"
+            aria-label="Fichier image"
             accept="image/*"
             class="hidden"
             @change="onFileChange"
