@@ -178,7 +178,7 @@ describe('AQ-058 release pipeline', () => {
     expect(dockerfile).toContain('POSTHOG_SOURCE_MAP_API_KEY="$(cat /run/secrets/posthog_source_map_api_key)"')
     expect(dockerfile).not.toContain('ENV POSTHOG_SOURCE_MAP_API_KEY')
     expect(dockerfile).toContain('USER node')
-    expect(dockerfile).toMatch(/FROM node:22\.22-alpine@sha256:[0-9a-f]{64}/)
+    expect(dockerfile).toMatch(/FROM node:26\.12-alpine@sha256:[0-9a-f]{64}/)
     expect(compose).toMatch(/image: caddy:2\.10\.2-alpine@sha256:[0-9a-f]{64}/)
     expect(compose).toContain('NUXT_SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}')
     expect(compose).toContain('NUXT_TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-}')
