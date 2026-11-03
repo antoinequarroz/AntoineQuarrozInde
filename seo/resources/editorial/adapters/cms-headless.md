@@ -11,3 +11,7 @@ Une correction de la couverture d'un article déjà public passe par `PUT /api/h
 La validation permanente d'Antoine pour les articles de cette file remplace l'étape générique de nouvelle approbation humaine ; les contrôles factuels et visuels restent obligatoires. Cette autorisation n'est pas transmise aux posts sociaux.
 
 Le front existant est responsable des métadonnées, du canonical et du JSON-LD. Vérifier le résultat réel ; ne pas annoncer un type de schéma absent et ne pas modifier le front dans un cycle de rédaction. Les défauts de rendu empêchant une publication correcte sont remontés avec leur preuve.
+
+## Brèves IA/tech autorisées le 3 novembre 2026
+
+Le contrat violet est confirmé en production depuis le 18 octobre 2026 (reçu 036). Antoine autorise le 3 novembre la même charte pour les news récurrentes suivantes. Utiliser ce style avec une couverture dédiée et son manifeste ; ne pas rouvrir la condition historique de déploiement sans nouvel échec réel. Les brèves font 200 à 350 mots : aucun minimum de guide de fond ne s’applique. Les champs du payload, les 2 à 12 sources HTTPS distinctes, l’idempotence et les contrôles publics restent identiques.
