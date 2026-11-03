@@ -50,11 +50,11 @@
     "@vite-pwa/nuxt": "^1.1.1",
     "@vueuse/motion": "^3.0.3",
     "@vueuse/nuxt": "^15.0.0",
-    "nuxt": "4.6.2",
+    "nuxt": "4.6.3",
     "supabase": "2.122.0",
     "typescript": "^5.9.3",
     "vitest": "^5.0.5",
-    "vue-tsc": "3.3.13"
+    "vue-tsc": "3.3.14"
   },
   "overrides": {
     "simple-git": "4.0.2",
