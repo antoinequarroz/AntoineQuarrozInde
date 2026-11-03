@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "status": "approved_active",
+  "approved_on": "2026-11-03",
+  "approval": "Antoine : « mets ça en place pour FRIDAY : une petite news IA ou tech un jour sur deux, avec les sources vérifiées et les couvertures violettes ».",
+  "timezone": "Europe/Zurich",
+  "cadence": {
+    "anchor_date": "2026-11-04",
+    "interval_calendar_days": 2,
+    "local_time": "07:00",
+    "include_weekends": true,
+    "due_rule": "today >= anchor_date and (today - anchor_date).days % 2 == 0",
+    "missed_slot": "Report a failure; do not publish on an off day or backfill several items. Resume on the next calendar slot.",
+    "on_off_days": "No research, writing or publication. No missing-article alert."
+  },
+  "format": {
+    "kind": "short_ai_tech_news",
+    "language": "fr",
+    "words_min": 200,
+    "words_max": 350,
+    "public_voice": "vouvoiement",
+    "no_practical_guides": true,
+    "sections": [
+      "Annonce et date de l’événement",
+      "Ce que cela change concrètement",
+      "Disponibilité et limite utile",
+      "Liens vers les sources vérifiées"
+    ]
+  },
+  "research": {
+    "selection": "Choose near the run date, not weeks ahead.",
+    "preferred_event_age_days": 7,
+    "max_event_age_days": 14,
+    "minimum_primary_https_sources": 2,
+    "max_sources": 12,
+    "distinguish": [
+      "event_date",
+      "source_published_date",
+      "source_updated_date",
+      "checked_at"
+    ],
+    "exclude": [
+      "rumours treated as facts",
+      "future announcements treated as completed",
+      "crawl date used as event date",
+      "vendor benchmarks presented as Antoine’s tests"
+    ],
+    "no_verified_news": "Do not fabricate, substitute a guide, or publish an empty placeholder. Record the absence and notify once for that slot.",
+    "treg_budget_usd": 0,
+    "paid_tests": false
+  },
+  "publication": {
+    "automatic_blog_authorized": true,
+    "max_new_articles_per_slot": 1,
+    "deduplicate_by": [
+      "slot_date",
+      "event",
+      "normalised_title",
+      "slug",
+      "public_url",
+      "idempotency_key"
+    ],
+    "number": "max public numeric title prefix + 1, checked immediately before creation",
+    "public_verification_required": true,
+    "receipt_pattern": "seo/receipts/YYYY-MM-DD-news-*.json",
+    "social_drafts": {
+      "platforms": [
+        "linkedin",
+        "x"
+      ],
+      "status": "draft",
+      "manual": true,
+      "requires_Antoine_approval_to_publish": true
+    },
+    "newsletter": "Requires explicit approval; no send or schedule."
+  },
+  "cover": {
+    "approved_for": "Recurring AI/tech news from 2026-11-04, not limited to036–041",
+    "style": "aq-editorial-violet-space-grotesk-v1",
+    "background": "#080810",
+    "gradient": [
+      "#7c3aed",
+      "#a855f7",
+      "#c084fc"
+    ],
+    "font": "Bundled authentic Space Grotesk; glyphs converted to vector paths",
+    "robot": "Existing approved robot unchanged",
+    "size": [
+      1200,
+      675
+    ],
+    "max_bytes": 5000000,
+    "ai_generation_required": false,
+    "per_article_dedicated": true,
+    "provenance_and_sha256_required": true,
+    "visual_review_required": true,
+    "fictional_diagrams_label": "Démonstration",
+    "technical_contract_receipt": "seo/receipts/2026-10-18-article-036-violet-cover.json"
+  },
+  "queue": {
+    "canonical": ".codex/geo/queue/",
+    "initial_batch": ".codex/geo/queue/actualites-2026-11.md",
+    "standing_authorization": true,
+    "rolling_reserve": "Maintain the next ten dated news slots in the site queue on origin/main, using date-based IDs. The date slots are authorized, not public article titles. Select and replace the working title only after source verification."
+  },
+  "runtime": {
+    "mission_owner": "friday",
+    "mission_id": "e34258e2fcab",
+    "base_clone": "/data/workspace/AntoineQuarrozInde-seo-runtime",
+    "production_branch": "main",
+    "method": "seo/resources/editorial/short-news.md",
+    "cover_method": "seo/resources/editorial/news-violet-covers.md",
+    "fresh_origin_and_clean_worktree": true
+  }
+}
