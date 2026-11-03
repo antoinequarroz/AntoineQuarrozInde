@@ -116,7 +116,7 @@ describe('TWINT Checkout session', () => {
 
     expect(createSession).toHaveBeenCalledWith(expect.objectContaining({
       mode: 'payment',
-      payment_method_types: ['twint'],
+      allowed_payment_method_types: ['twint'],
       customer_email: 'client@example.ch',
       client_reference_id: '42',
       success_url: 'https://www.antoinequarroz.ch/portal?payment=success&session_id={CHECKOUT_SESSION_ID}',
