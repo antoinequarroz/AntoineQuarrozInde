@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { expect, test, type Page } from '@playwright/test'
+import { waitForAdminLoginReady } from './helpers/admin-login-ready'
 
 test.use({ trace: 'off', screenshot: 'off', video: 'off' })
 
@@ -65,13 +66,14 @@ async function openMockedDocument(page: Page, options: { manifestMissing?: boole
     return route.fulfill({ status: 500, json: { message: `Unexpected mock auth request: ${request.method()} ${url.pathname}` } })
   })
   await page.goto('/admin/login?redirect=/admin/social')
-  await expect(page.getByLabel(/email/i)).toBeEnabled()
+  await waitForAdminLoginReady(page)
   await page.getByLabel(/email/i).fill(user.email)
   await page.getByLabel(/mot de passe/i).fill('synthetic-browser-only-password')
   await page.getByRole('button', { name: /se connecter/i }).click()
   await expect(page).toHaveURL(url => url.pathname.replace(/\/$/, '') === '/admin/social')
   expect(signIns).toBe(1)
-  const card = page.getByRole('article').filter({ has: page.getByRole('heading', { name: post.article_title, exact: true }) })
+  await page.getByRole('button', { name: `Ouvrir ${post.article_title} sur LinkedIn`, exact: true }).click()
+  const card = page.getByRole('dialog', { name: 'Publication LinkedIn', exact: true })
   await expect(card).toBeVisible()
   return { card, preview: card.getByRole('region', { name: 'Carrousel LinkedIn joint', exact: true }), writes, previewRequests }
 }

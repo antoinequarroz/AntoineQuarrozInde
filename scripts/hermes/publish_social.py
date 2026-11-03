@@ -49,6 +49,7 @@ MAX_SOCIAL_DOCUMENT_BYTES = 25 * 1024 * 1024
 MAX_INSTAGRAM_MIXED_IMAGE_BYTES = 5 * 1024 * 1024
 MAX_INSTAGRAM_VIDEO_BYTES = 20 * 1024 * 1024
 INSTAGRAM_MIXED_CAPABILITY = "instagram-mixed-v1"
+INSTAGRAM_REELS_CAPABILITY = "instagram-reels-v1"
 LINKEDIN_SEQUENCE_PREFIX = re.compile(
     r"^\s*(?:post\s+)?(?:#|n[°o]\s*)?\d+\s*[.):-]\s+", re.IGNORECASE
 )
@@ -367,7 +368,7 @@ def prepare_images(post: dict) -> list[dict]:
     return prepared
 
 
-def instagram_video_metadata(data: bytes) -> dict:
+def instagram_video_metadata(data: bytes, *, minimum_ratio: float = 0.8) -> dict:
     """Probe bounded local bytes; ffprobe never receives credentials or a remote URL."""
     if len(data) < 24 or data[4:8] != b"ftyp":
         raise ValueError("Video Instagram refusee : le fichier n'est pas un MP4 valide.")
@@ -398,10 +399,11 @@ def instagram_video_metadata(data: bytes) -> dict:
                 or video.get("disposition", {}).get("attached_pic")
                 or not isinstance(width, int) or not isinstance(height, int)
                 or not 320 <= width <= 1920 or not 1 <= height <= 1920
-                or not 0.8 <= width / height <= 1.91
+                or not minimum_ratio <= width / height <= 1.91
                 or not math.isfinite(duration) or not 3 <= duration <= 60
                 or not math.isfinite(fps) or not 23 <= fps <= 60):
-            raise ValueError("Video Instagram incompatible : MP4 H.264/yuv420p, 3–60 s, 23–60 images/s, largeur 320–1920 px et ratio 4:5 a 1,91:1 requis.")
+            ratio_label = "9:16" if minimum_ratio == 9 / 16 else "4:5"
+            raise ValueError(f"Video Instagram incompatible : MP4 H.264/yuv420p, 3–60 s, 23–60 images/s, largeur 320–1920 px et ratio {ratio_label} a 1,91:1 requis.")
         if any(float(row.get("rotation", 0)) != 0 for row in video.get("side_data_list", [])) or float(video.get("tags", {}).get("rotate", 0)) != 0:
             raise ValueError("Video Instagram incompatible : exporter le MP4 sans rotation de metadonnees.")
         if audios and (audios[0].get("codec_name") != "aac"
@@ -416,11 +418,13 @@ def instagram_video_metadata(data: bytes) -> dict:
 
 
 def prepare_media_items(post: dict) -> list[dict]:
-    """Validate the entire ordered Instagram carousel before any claim or provider write."""
+    """Validate an Instagram Reel or ordered carousel before any claim or provider write."""
     items = post.get("media_items")
-    if (post.get("platform") != "instagram" or not isinstance(items, list) or not 2 <= len(items) <= 10
+    single_video = isinstance(items, list) and len(items) == 1 and isinstance(items[0], dict) and items[0].get("type") == "video"
+    if (post.get("platform") != "instagram" or not isinstance(items, list)
+            or not (single_video or 2 <= len(items) <= 10)
             or post.get("media_images") or any(post.get(key) for key in ("media_kind", "media_url", "media_title"))):
-        raise ValueError("Le carrousel mixte exige 2–10 medias Instagram, sans autre piece jointe.")
+        raise ValueError("Instagram exige une video seule ou un carrousel de 2–10 medias, sans autre piece jointe.")
     prepared = []
     for item in items:
         if (not isinstance(item, dict) or set(item) != {"type", "url", "alt"}
@@ -440,7 +444,7 @@ def prepare_media_items(post: dict) -> list[dict]:
         except urllib.error.HTTPError as exc:
             raise ValueError(f"Media Instagram approuve indisponible ({exc.code}).") from exc
         if video:
-            prepared.append({**item, "mime": mime, **instagram_video_metadata(data)})
+            prepared.append({**item, "mime": mime, **instagram_video_metadata(data, minimum_ratio=9 / 16 if single_video else 0.8)})
         else:
             width, height = image_dimensions(data, mime)
             if not (320 <= width <= 1440 and 1 <= height and width * height <= 36_000_000 and 0.8 <= width / height <= 1.91):
@@ -629,7 +633,7 @@ def site_request(site_url: str, token: str, *, payload: dict | None = None, path
         url,
         data=None if payload is None else json.dumps(payload, ensure_ascii=False).encode("utf-8"),
         headers={"Authorization": f"Bearer {token}", "User-Agent": "hermes-antoinequarroz/1.0",
-                 "X-Hermes-Social-Capabilities": INSTAGRAM_MIXED_CAPABILITY,
+                 "X-Hermes-Social-Capabilities": f"{INSTAGRAM_MIXED_CAPABILITY}, {INSTAGRAM_REELS_CAPABILITY}",
                  **({"Content-Type": "application/json"} if payload is not None else {})},
         method="POST" if payload is not None else "GET",
     )
@@ -948,12 +952,18 @@ def instagram_container(payload: dict, *, video: bool = False) -> str:
 
 def publish_instagram(content: str, media_images: list[dict]) -> dict:
     if not media_images:
-        raise ValueError("Instagram exige les images explicitement validees.")
+        raise ValueError("Instagram exige les medias explicitement valides.")
     if len(media_images) == 1:
         image = media_images[0]
-        if image.get("type", "image") != "image":
-            raise ValueError("Une video Instagram doit appartenir au carrousel explicitement valide.")
-        container_id = instagram_container({"image_url": image["url"], "caption": content, "alt_text": image["alt"]})
+        if image.get("type") == "video":
+            container_id = instagram_container({
+                "media_type": "REELS", "video_url": image["url"],
+                "caption": content, "share_to_feed": True,
+            }, video=True)
+        elif image.get("type", "image") == "image":
+            container_id = instagram_container({"image_url": image["url"], "caption": content, "alt_text": image["alt"]})
+        else:
+            raise ValueError("Type de media Instagram invalide. Aucune publication demandee.")
     else:
         children = []
         has_video = any(item.get("type") == "video" for item in media_images)
@@ -988,7 +998,7 @@ def connection_state(platform: str) -> tuple[str, str]:
     if platform == "instagram":
         try:
             instagram_preflight()
-            return "ready", "Instagram @antoinequarroz.dev autorise la publication des images et carrousels mixtes valides."
+            return "ready", "Instagram @antoinequarroz.dev autorise la publication des images, Reels et carrousels mixtes valides."
         except (ValueError, RuntimeError) as exc:
             return "blocked", str(exc)
         except Exception:

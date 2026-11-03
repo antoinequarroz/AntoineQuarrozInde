@@ -3,6 +3,7 @@ import { MAX_IMAGE_REQUEST_BYTES } from './imageUpload'
 export const MAX_HERMES_ARTICLE_REQUEST_BYTES = MAX_IMAGE_REQUEST_BYTES + 512 * 1024
 export const HERMES_PUBLICATION_SITE = 'https://www.antoinequarroz.ch'
 export const HERMES_EDITORIAL_COVER_STYLE = 'aq-editorial-photorealistic-v1'
+export const HERMES_VIOLET_EDITORIAL_COVER_STYLE = 'aq-editorial-violet-space-grotesk-v1'
 
 const ALLOWED_FIELDS = new Set([
   'site',
@@ -37,6 +38,13 @@ function requiredString(body: Record<string, unknown>, field: string, min: numbe
   return normalized
 }
 
+function validateHermesCoverStyle(value: unknown) {
+  if (value !== HERMES_EDITORIAL_COVER_STYLE && value !== HERMES_VIOLET_EDITORIAL_COVER_STYLE) {
+    throw createError({ statusCode: 400, message: 'The approved editorial cover style must be explicit' })
+  }
+  return value
+}
+
 export function validateHermesIdempotencyKey(value: unknown) {
   if (typeof value !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9._:-]{15,127}$/.test(value)) {
     throw createError({ statusCode: 400, message: 'Invalid Idempotency-Key' })
@@ -55,9 +63,7 @@ export function validateHermesArticlePayload(body: Record<string, unknown>) {
   if (body.published !== true) {
     throw createError({ statusCode: 400, message: 'Hermes articles must be explicitly published' })
   }
-  if (body.coverStyle !== HERMES_EDITORIAL_COVER_STYLE) {
-    throw createError({ statusCode: 400, message: 'The approved editorial cover style must be explicit' })
-  }
+  const coverStyle = validateHermesCoverStyle(body.coverStyle)
 
   const title = requiredString(body, 'title', 10, 160)
   const slug = requiredString(body, 'slug', 10, 160)
@@ -108,7 +114,7 @@ export function validateHermesArticlePayload(body: Record<string, unknown>) {
     tags: body.tags.map(tag => String(tag).trim()),
     readTime,
     sourceUrls,
-    coverStyle: HERMES_EDITORIAL_COVER_STYLE,
+    coverStyle,
   }
 }
 
@@ -120,9 +126,7 @@ export function validateHermesCoverUpdatePayload(body: Record<string, unknown>) 
   if (body.site !== HERMES_PUBLICATION_SITE) {
     throw createError({ statusCode: 400, message: 'Publication site is not allowed' })
   }
-  if (body.coverStyle !== HERMES_EDITORIAL_COVER_STYLE) {
-    throw createError({ statusCode: 400, message: 'The approved editorial cover style must be explicit' })
-  }
+  const coverStyle = validateHermesCoverStyle(body.coverStyle)
 
   const articleId = Number(body.articleId)
   if (!Number.isInteger(articleId) || articleId < 1) {
@@ -132,6 +136,6 @@ export function validateHermesCoverUpdatePayload(body: Record<string, unknown>) 
   return {
     articleId,
     coverImageDataUrl: requiredString(body, 'coverImageDataUrl', 32, MAX_IMAGE_REQUEST_BYTES),
-    coverStyle: HERMES_EDITORIAL_COVER_STYLE,
+    coverStyle,
   }
 }

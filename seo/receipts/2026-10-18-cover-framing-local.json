@@ -1,0 +1,182 @@
+[
+  {
+    "viewport": 320,
+    "stageTop": 410,
+    "cardTop": 416.67626953125,
+    "footerHeight": 287.63995361328125,
+    "cardHeight": 453.7724609375,
+    "boxes": [
+      {
+        "area": "header",
+        "width": 272,
+        "height": 153,
+        "ratio": 1.7777777777777777,
+        "objectFit": "contain",
+        "natural": [
+          1200,
+          675
+        ]
+      },
+      {
+        "area": "blog-card",
+        "width": 272,
+        "height": 153,
+        "ratio": 1.7777777777777777,
+        "objectFit": "contain",
+        "natural": [
+          1200,
+          675
+        ]
+      },
+      {
+        "area": "home-card",
+        "width": 291.7200012207031,
+        "height": 164.09249877929688,
+        "ratio": 1.7777777984419887,
+        "objectFit": "contain",
+        "natural": [
+          1200,
+          675
+        ]
+      }
+    ],
+    "homeFooterBelowImage": true,
+    "homeCardWithinStage": true,
+    "stageHeight": 474
+  },
+  {
+    "viewport": 375,
+    "stageTop": 471.875,
+    "cardTop": 503.5228271484375,
+    "footerHeight": 262.13995361328125,
+    "cardHeight": 456.673095703125,
+    "boxes": [
+      {
+        "area": "header",
+        "width": 327,
+        "height": 183.9375,
+        "ratio": 1.7777777777777777,
+        "objectFit": "contain",
+        "natural": [
+          1200,
+          675
+        ]
+      },
+      {
+        "area": "blog-card",
+        "width": 327,
+        "height": 183.9375,
+        "ratio": 1.7777777777777777,
+        "objectFit": "contain",
+        "natural": [
+          1200,
+          675
+        ]
+      },
+      {
+        "area": "home-card",
+        "width": 342.2099914550781,
+        "height": 192.49313354492188,
+        "ratio": 1.7777776544700334,
+        "objectFit": "contain",
+        "natural": [
+          1200,
+          675
+        ]
+      }
+    ],
+    "homeFooterBelowImage": true,
+    "homeCardWithinStage": true,
+    "stageHeight": 501.84375
+  },
+  {
+    "viewport": 768,
+    "stageTop": 722.75,
+    "cardTop": 739.7262573242188,
+    "footerHeight": 259.0799560546875,
+    "cardHeight": 627.1724243164062,
+    "boxes": [
+      {
+        "area": "header",
+        "width": 720,
+        "height": 405,
+        "ratio": 1.7777777777777777,
+        "objectFit": "contain",
+        "natural": [
+          1200,
+          675
+        ]
+      },
+      {
+        "area": "blog-card",
+        "width": 380,
+        "height": 213.75,
+        "ratio": 1.7777777777777777,
+        "objectFit": "contain",
+        "natural": [
+          1200,
+          675
+        ]
+      },
+      {
+        "area": "home-card",
+        "width": 650.760009765625,
+        "height": 366.05242919921875,
+        "ratio": 1.7777781483085262,
+        "objectFit": "contain",
+        "natural": [
+          1200,
+          675
+        ]
+      }
+    ],
+    "homeFooterBelowImage": true,
+    "homeCardWithinStage": true,
+    "stageHeight": 656
+  },
+  {
+    "viewport": 1280,
+    "stageTop": 749.75,
+    "cardTop": 766.7262573242188,
+    "footerHeight": 259.0799560546875,
+    "cardHeight": 627.1724243164062,
+    "boxes": [
+      {
+        "area": "header",
+        "width": 768,
+        "height": 432,
+        "ratio": 1.7777777777777777,
+        "objectFit": "contain",
+        "natural": [
+          1200,
+          675
+        ]
+      },
+      {
+        "area": "blog-card",
+        "width": 380,
+        "height": 213.75,
+        "ratio": 1.7777777777777777,
+        "objectFit": "contain",
+        "natural": [
+          1200,
+          675
+        ]
+      },
+      {
+        "area": "home-card",
+        "width": 650.760009765625,
+        "height": 366.05242919921875,
+        "ratio": 1.7777781483085262,
+        "objectFit": "contain",
+        "natural": [
+          1200,
+          675
+        ]
+      }
+    ],
+    "homeFooterBelowImage": true,
+    "homeCardWithinStage": true,
+    "stageHeight": 656
+  }
+]

@@ -131,15 +131,32 @@ for (const stateCase of stateCases) {
   test(`${stateCase.name} exposes loading, empty and safe error states on mobile`, async ({ page }) => {
     await loginAdmin(page)
     await selectSandboxOrganization(page)
+    if (stateCase.name === 'invoices') {
+      // The invoice loading state waits for all five sources, not just invoices.
+      for (const [api, data] of [
+        ['**/api/clients', []],
+        ['**/api/quotes', []],
+        ['**/api/projects', []],
+        ['**/api/admin/billing-profile', {}],
+      ] as const) {
+        await page.route(api, route => route.request().method() === 'GET'
+          ? route.fulfill({ json: data })
+          : route.abort('blockedbyclient'))
+      }
+    }
     let releaseResponse!: () => void
     const responseGate = new Promise<void>((resolve) => { releaseResponse = resolve })
+    let markRequestIntercepted!: () => void
+    const requestIntercepted = new Promise<void>((resolve) => { markRequestIntercepted = resolve })
     await page.route(stateCase.api, async (route) => {
+      markRequestIntercepted()
       await responseGate
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(stateCase.empty) })
     })
 
     await page.goto(stateCase.path)
     try {
+      await requestIntercepted
       await expect(page.getByText(stateCase.loading, { exact: true })).toBeVisible()
     }
     finally {

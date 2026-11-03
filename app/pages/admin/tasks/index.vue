@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Task } from '~/types'
 import AdminViewSkeleton from '~/components/admin/AdminViewSkeleton.vue'
+import { matchesTaskListFilter, parseTaskListFilter, taskBusinessDate, type TaskListFilter } from '~/utils/taskListFilter'
 
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 
@@ -10,6 +11,13 @@ const projectsStore = useProjectsStore()
 const toast = useToast()
 const { statusLabel } = useBusinessLabels()
 const route = useRoute()
+const router = useRouter()
+const taskFilter = computed<TaskListFilter>({
+  get: () => parseTaskListFilter(route.query.filter),
+  set: filter => { void router.replace({ query: { ...route.query, filter: filter === 'all' ? undefined : filter, taskId: undefined } }) },
+})
+const todayIso = computed(() => taskBusinessDate())
+const filteredTasks = computed(() => store.tasks.filter(task => matchesTaskListFilter(task, taskFilter.value, todayIso.value)))
 
 const showForm = ref(false)
 const closeForm = () => { showForm.value = false }
@@ -18,6 +26,9 @@ const editing = ref<Task | null>(null)
 const isOffline = ref(false)
 const loadError = ref('')
 const submitting = ref(false)
+watch(taskFilter, filter => {
+  if (showForm.value && editing.value && !submitting.value && !matchesTaskListFilter(editing.value, filter, todayIso.value)) closeForm()
+})
 let onlineStateHandler: (() => void) | null = null
 const formatDate = (value: string | null) => value ? new Intl.DateTimeFormat('fr-CH', { dateStyle: 'medium' }).format(new Date(`${value}T12:00:00`)) : 'Non définie'
 const form = reactive({
@@ -128,7 +139,7 @@ onMounted(async () => {
     return
   }
   const taskId = Number(route.query.taskId || 0)
-  const task = store.tasks.find(item => item.id === taskId)
+  const task = filteredTasks.value.find(item => item.id === taskId)
   if (task) openEdit(task)
 })
 
@@ -157,7 +168,7 @@ onBeforeUnmount(() => {
         <div class="min-w-0">
           <span class="rounded-md bg-gradient-brand px-2 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white">Tâches</span>
           <h1 class="mt-2 font-display text-2xl font-semibold text-gray-950 dark:text-white sm:text-3xl">Tâches</h1>
-          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ store.tasks.length }} tâche{{ store.tasks.length > 1 ? 's' : '' }} · {{ store.done.length }} terminée{{ store.done.length > 1 ? 's' : '' }}</p>
+          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ filteredTasks.length }} tâche{{ filteredTasks.length > 1 ? 's' : '' }}<span v-if="taskFilter === 'all'"> · {{ store.done.length }} terminée{{ store.done.length > 1 ? 's' : '' }}</span><span v-else> à traiter · retards inclus</span></p>
           <p v-if="isOffline || store.pendingCount > 0 || store.syncing" class="mt-1 text-xs text-amber-500">
             <span v-if="store.syncing">Synchronisation en cours…</span>
             <span v-else-if="isOffline">Hors ligne : {{ store.pendingCount }} modification{{ store.pendingCount > 1 ? 's' : '' }} en attente</span>
@@ -176,12 +187,21 @@ onBeforeUnmount(() => {
       <button type="button" class="mt-4 min-h-11 rounded-lg bg-red-700 px-4 text-sm font-semibold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2" @click="loadTasks(true)">Réessayer</button>
     </div>
 
-    <AdminEmptyState v-else-if="!store.tasks.length" title="Aucune tâche planifiée" body="Crée ta première tâche pour organiser le prochain travail à réaliser.">
-      <button type="button" class="mt-2 min-h-11 rounded-lg border border-violet-200 px-4 text-sm font-semibold text-violet-700 hover:bg-violet-50 dark:border-violet-400/30 dark:text-violet-200 dark:hover:bg-violet-500/10" @click="openNew">Créer une tâche</button>
+    <div v-if="!store.loading && !loadError" class="rounded-xl border border-gray-100 bg-white p-3 dark:border-white/[0.06] dark:bg-[#111118]">
+      <label for="task-list-filter" class="sr-only">Filtrer les tâches</label>
+      <select id="task-list-filter" v-model="taskFilter" class="input-field sm:max-w-sm">
+        <option value="all">Toutes les tâches</option>
+        <option value="due-today">À faire aujourd’hui</option>
+      </select>
+    </div>
+
+    <AdminEmptyState v-if="!store.loading && !loadError && !filteredTasks.length" :title="taskFilter === 'due-today' ? 'Aucune tâche à faire aujourd’hui' : 'Aucune tâche planifiée'" :body="taskFilter === 'due-today' ? 'Aucune tâche à faire ou en cours avec une échéance aujourd’hui ou passée.' : 'Crée ta première tâche pour organiser le prochain travail à réaliser.'">
+      <button v-if="taskFilter === 'due-today'" type="button" class="mt-2 min-h-11 rounded-lg border border-violet-200 px-4 text-sm font-semibold text-violet-700 hover:bg-violet-50 dark:border-violet-400/30 dark:text-violet-200 dark:hover:bg-violet-500/10" @click="taskFilter = 'all'">Voir toutes les tâches</button>
+      <button v-else type="button" class="mt-2 min-h-11 rounded-lg border border-violet-200 px-4 text-sm font-semibold text-violet-700 hover:bg-violet-50 dark:border-violet-400/30 dark:text-violet-200 dark:hover:bg-violet-500/10" @click="openNew">Créer une tâche</button>
     </AdminEmptyState>
 
-    <div v-if="!store.loading && !loadError && store.tasks.length" class="space-y-2 sm:hidden">
-      <article v-for="task in store.tasks" :key="`mobile-${task.id}`" class="rounded-xl border border-gray-200 bg-white p-4 dark:border-white/[0.08] dark:bg-[#111118]">
+    <div v-if="!store.loading && !loadError && filteredTasks.length" class="space-y-2 sm:hidden">
+      <article v-for="task in filteredTasks" :key="`mobile-${task.id}`" class="rounded-xl border border-gray-200 bg-white p-4 dark:border-white/[0.08] dark:bg-[#111118]">
         <div class="flex items-start justify-between gap-3">
           <div class="min-w-0"><h2 class="font-semibold text-gray-900 dark:text-white">{{ task.title }}</h2><p v-if="task.description" class="mt-1 line-clamp-2 text-sm text-gray-500 dark:text-gray-400">{{ task.description }}</p><p v-if="task.clientId || task.projectId" class="mt-1 truncate text-xs font-medium text-violet-700 dark:text-violet-300">{{ task.projectId ? projectsById.get(task.projectId)?.title : clientsById.get(task.clientId!)?.name }}</p></div>
           <span class="shrink-0 rounded-md px-2 py-1 text-xs font-semibold" :class="task.status === 'done' ? 'bg-green-50 text-green-700 dark:bg-green-500/10 dark:text-green-300' : task.status === 'in_progress' ? 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300' : 'bg-amber-50 text-amber-800 dark:bg-amber-500/10 dark:text-amber-200'">{{ statusLabel(task.status) }}</span>
@@ -191,7 +211,7 @@ onBeforeUnmount(() => {
       </article>
     </div>
 
-    <div v-if="!store.loading && !loadError && store.tasks.length" class="admin-table-wrap hidden overflow-hidden rounded-xl border border-gray-100 bg-white dark:border-white/[0.06] dark:bg-[#111118] sm:block">
+    <div v-if="!store.loading && !loadError && filteredTasks.length" class="admin-table-wrap hidden overflow-hidden rounded-xl border border-gray-100 bg-white dark:border-white/[0.06] dark:bg-[#111118] sm:block">
       <table class="admin-table w-full">
         <thead>
           <tr class="border-b border-gray-100 dark:border-white/[0.06]">
@@ -203,7 +223,7 @@ onBeforeUnmount(() => {
           </tr>
         </thead>
         <tbody>
-          <tr v-for="task in store.tasks" :key="task.id" class="border-b border-gray-50 dark:border-white/[0.03] last:border-0">
+          <tr v-for="task in filteredTasks" :key="task.id" class="border-b border-gray-50 dark:border-white/[0.03] last:border-0">
             <td class="px-5 py-3">
               <p class="text-sm font-medium text-gray-800 dark:text-gray-200">{{ task.title }}</p>
               <p class="text-xs text-gray-400 line-clamp-1">{{ task.description || '-' }}</p>

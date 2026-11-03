@@ -113,6 +113,11 @@
     "areas": "Zones"
   },
   "portfolio": {
+    "categories": "Catégories de projets",
+    "view_mode": "Affichage des projets",
+    "grid_view": "Grille",
+    "helix_view": "Animation 3D",
+    "carousel_view": "Défilement",
     "badge": "Portfolio",
     "title": "Projets\nrécents.",
     "subtitle": "Une sélection de mes dernières réalisations.",
@@ -123,6 +128,11 @@
     "software": "Logiciel",
     "view": "Voir le projet",
     "code": "Code source",
+    "project_kind": {
+      "client": "Projet client",
+      "personal": "Projet personnel"
+    },
+    "in_development": "En développement",
     "technologies": "Technologies",
     "verifiable_links": "Liens vérifiables",
     "live_available": "Projet accessible en ligne",

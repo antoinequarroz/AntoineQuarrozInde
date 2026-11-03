@@ -36,7 +36,16 @@
     "file": ".codex/geo/queue",
     "inventaire": ".codex/geo/content-inventory.md",
     "dossier_contenu": "seo/articles",
-    "cadence_par_semaine": 7,
+    "cadence_par_semaine": 4,
+    "cadence_calendaire": {
+      "ancre": "2026-11-04",
+      "intervalle_jours": 2,
+      "heure_locale": "07:00",
+      "fuseau": "Europe/Zurich",
+      "weekends": true,
+      "note": "La cible hebdomadaire maximale est 4 ; le calendrier exact alterne 3 et 4 brèves, pas une obligation de 4 par semaine.",
+      "politique": ".codex/geo/news-policy.json"
+    },
     "publication_automatique": true,
     "publication_endpoint": "https://www.antoinequarroz.ch/api/hermes/articles",
     "publication_script": "scripts/hermes/publish_article.py",

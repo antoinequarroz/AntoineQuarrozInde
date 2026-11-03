@@ -1,0 +1,32 @@
+{
+  "verifiedAt": "2026-10-22T06:50:37.477053+00:00",
+  "url": "https://www.antoinequarroz.ch/blog/devis-documents-validations-espace-client-utile",
+  "articleId": 45,
+  "publicationAlreadyPresent": true,
+  "publishedAt": "2026-10-22T05:02:27.469423+00:00",
+  "http": 200,
+  "checks": {
+    "http": 200,
+    "title": true,
+    "canonical": true,
+    "SSRBody": true,
+    "excerpt": true,
+    "BlogPosting": true,
+    "sitemap": true,
+    "publicApiUnique": true,
+    "coverActuallyUsed": true,
+    "coverHash": true,
+    "coverDimensions": true,
+    "blogIncomingLink": true
+  },
+  "cover": "https://oxlrljszatejqxhclmbu.supabase.co/storage/v1/object/public/media/hermes/61819ecdbfbfc085582e91d2452bf834ba95d1f1424afe5c472265fc43aad8ff.png",
+  "coverDimensions": [
+    1200,
+    675
+  ],
+  "coverSha256": "ae5613939d4da848823685186098284720b05c8537376be2170c6aec216797b4",
+  "incomingLinksObserved": {
+    "/blog": true
+  },
+  "noArticleCreateOrUpdateRequest": true
+}

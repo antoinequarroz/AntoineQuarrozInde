@@ -1,0 +1,42 @@
+{
+  "verifiedAt": "2026-10-18T16:28:09.178825+00:00",
+  "articleId": 41,
+  "number": "036",
+  "articleUrl": "https://www.antoinequarroz.ch/blog/physiobaur-site-patients-premier-clic-contact",
+  "httpStatus": 200,
+  "cover": {
+    "url": "https://oxlrljszatejqxhclmbu.supabase.co/storage/v1/object/public/media/hermes/covers/article-41-3e6876efd649567e82f67d0f03848ba9ba3b39c8a5096e945010a7d632a3dd15.png",
+    "sha256": "3e6876efd649567e82f67d0f03848ba9ba3b39c8a5096e945010a7d632a3dd15",
+    "dimensions": [
+      1200,
+      675
+    ],
+    "bytes": 332508,
+    "httpStatus": 200
+  },
+  "canonicalPreserved": true,
+  "openGraphUsesNewCover": true,
+  "ssrImageUsesNewCover": true,
+  "blogListingUsesNewCover": true,
+  "businessFieldsPreserved": [
+    "id",
+    "title",
+    "slug",
+    "excerpt",
+    "content",
+    "published",
+    "author_key",
+    "published_at",
+    "tags",
+    "created_at",
+    "read_time"
+  ],
+  "previousCover": "https://oxlrljszatejqxhclmbu.supabase.co/storage/v1/object/public/media/hermes/46c677b902a30538130c502f09306debad2c49973ef76f9227eac4760a727bbc.png",
+  "onlyArticleChanges": [
+    "cover_image",
+    "updated_at"
+  ],
+  "socialWrites": 0,
+  "codeRelease": "09ed9fee30465b8d666a8c0bea39d0b4588753b8",
+  "pr": "https://github.com/antoinequarroz/AntoineQuarrozInde/pull/286"
+}

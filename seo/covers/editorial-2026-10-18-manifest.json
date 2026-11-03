@@ -1,0 +1,104 @@
+[
+  {
+    "number": "036",
+    "path": "seo/covers/article-036.png",
+    "dimensions": [
+      1200,
+      675
+    ],
+    "bytes": 332508,
+    "sha256": "3e6876efd649567e82f67d0f03848ba9ba3b39c8a5096e945010a7d632a3dd15",
+    "coverStyle": "aq-editorial-violet-space-grotesk-v1",
+    "method": "Original SVG composition, exact Space Grotesk font outlines and Sharp raster composition",
+    "source_manifest": "seo/covers/physiobaur-approved-violet/manifest.json",
+    "visual_review": "passed: French spelling, accents, exact font, violet gradient, readability, actual screenshots or visibly labeled demonstration",
+    "visual_provenance": "Real approved PhysioBaur desktop/mobile dark-mode screenshots and existing brand robot",
+    "scheduled_article_date": "2026-10-18",
+    "social_status": "manual approval required; no publication or scheduling authorized"
+  },
+  {
+    "number": "037",
+    "path": "seo/covers/article-037.png",
+    "dimensions": [
+      1200,
+      675
+    ],
+    "bytes": 282612,
+    "sha256": "582295afb6a6899fb8909103ab160a092906ae8570b2e6d64284c72e8f77296a",
+    "coverStyle": "aq-editorial-violet-space-grotesk-v1",
+    "method": "Original SVG composition, exact Space Grotesk font outlines and Sharp raster composition",
+    "source_manifest": "seo/covers/brand-violet/manifest-037-041.json",
+    "visual_review": "passed: French spelling, accents, exact font, violet gradient, readability, actual screenshots or visibly labeled demonstration",
+    "visual_provenance": "Actual public AboutVideo landscape and portrait posters, with illustrative player chrome explicitly labeled Démonstration. No performance measurements.",
+    "scheduled_article_date": "2026-10-19",
+    "social_status": "manual approval required; no publication or scheduling authorized"
+  },
+  {
+    "number": "038",
+    "path": "seo/covers/article-038.png",
+    "dimensions": [
+      1200,
+      675
+    ],
+    "bytes": 144332,
+    "sha256": "8c1ada12e9e36ddd2c6e5098a5e32e5755788dd0594756ae8e654dca88b2c29d",
+    "coverStyle": "aq-editorial-violet-space-grotesk-v1",
+    "method": "Original SVG composition, exact Space Grotesk font outlines and Sharp raster composition",
+    "source_manifest": "seo/covers/brand-violet/manifest-037-041.json",
+    "visual_review": "passed: French spelling, accents, exact font, violet gradient, readability, actual screenshots or visibly labeled demonstration",
+    "visual_provenance": "Fictitious monthly checklist with unchecked controls; explicitly labeled Démonstration. No actual client verification claimed.",
+    "scheduled_article_date": "2026-10-20",
+    "social_status": "manual approval required; no publication or scheduling authorized"
+  },
+  {
+    "number": "039",
+    "path": "seo/covers/article-039.png",
+    "dimensions": [
+      1200,
+      675
+    ],
+    "bytes": 142463,
+    "sha256": "07c731d9cc4a72d6895bd00b6ba57a30a3015025e58e29ee9d3036d4924c18a4",
+    "coverStyle": "aq-editorial-violet-space-grotesk-v1",
+    "method": "Original SVG composition, exact Space Grotesk font outlines and Sharp raster composition",
+    "source_manifest": "seo/covers/brand-violet/manifest-037-041.json",
+    "visual_review": "passed: French spelling, accents, exact font, violet gradient, readability, actual screenshots or visibly labeled demonstration",
+    "visual_provenance": "Illustrative SVG before/after flow with fictitious exemple.test URL, 404, 301 and 200; labeled Démonstration and URL fictives.",
+    "scheduled_article_date": "2026-10-21",
+    "social_status": "manual approval required; no publication or scheduling authorized"
+  },
+  {
+    "number": "040",
+    "path": "seo/covers/article-040.png",
+    "dimensions": [
+      1200,
+      675
+    ],
+    "bytes": 150879,
+    "sha256": "ae5613939d4da848823685186098284720b05c8537376be2170c6aec216797b4",
+    "coverStyle": "aq-editorial-violet-space-grotesk-v1",
+    "method": "Original SVG composition, exact Space Grotesk font outlines and Sharp raster composition",
+    "source_manifest": "seo/covers/brand-violet/manifest-037-041.json",
+    "visual_review": "passed: French spelling, accents, exact font, violet gradient, readability, actual screenshots or visibly labeled demonstration",
+    "visual_provenance": "Entirely fictitious client portal SVG, labeled Démonstration and Exemple entièrement fictif; no client name, address or amount.",
+    "scheduled_article_date": "2026-10-22",
+    "social_status": "manual approval required; no publication or scheduling authorized"
+  },
+  {
+    "number": "041",
+    "path": "seo/covers/article-041.png",
+    "dimensions": [
+      1200,
+      675
+    ],
+    "bytes": 141159,
+    "sha256": "42ffc41797642920d249aa4dcb7f0f44f49fb0d88d1928e04a311926111383f4",
+    "coverStyle": "aq-editorial-violet-space-grotesk-v1",
+    "method": "Original SVG composition, exact Space Grotesk font outlines and Sharp raster composition",
+    "source_manifest": "seo/covers/brand-violet/manifest-037-041.json",
+    "visual_review": "passed: French spelling, accents, exact font, violet gradient, readability, actual screenshots or visibly labeled demonstration",
+    "visual_provenance": "Illustrative SVG showing a count of 3 and exactly 3 fictitious action tasks, labeled Démonstration and Données fictives.",
+    "scheduled_article_date": "2026-10-23",
+    "social_status": "manual approval required; no publication or scheduling authorized"
+  }
+]

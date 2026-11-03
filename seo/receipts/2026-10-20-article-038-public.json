@@ -1,0 +1,21 @@
+{
+  "verifiedAt": "2026-10-20T04:36:19.096236+00:00",
+  "url": "https://www.antoinequarroz.ch/blog/site-en-ligne-checklist-mensuelle-fiable",
+  "articleId": 43,
+  "http": 200,
+  "checks": {
+    "SSR": true,
+    "title": true,
+    "canonical": true,
+    "sitemap": true,
+    "coverHash": true,
+    "BlogPosting": true
+  },
+  "cover": "https://oxlrljszatejqxhclmbu.supabase.co/storage/v1/object/public/media/hermes/4734a0802a6431b8f0754addb0008823b4a37184a5c0289f97cc641e9716afc3.png",
+  "coverDimensions": [
+    1200,
+    675
+  ],
+  "coverSha256": "8c1ada12e9e36ddd2c6e5098a5e32e5755788dd0594756ae8e654dca88b2c29d",
+  "internalLinksHTTP200": true
+}

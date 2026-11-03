@@ -20,7 +20,7 @@ test('Instagram observations and draft review stay separate from automatic publi
   const post = { id: '00000000-0000-0000-0000-000000000899', studioContentId: '12345678-0000-0000-0000-000000000001',
     platform: 'instagram', article_title: 'Pilote Instagram', article_url: 'https://www.antoinequarroz.ch/',
     content: 'Texte de démonstration à relire.', status: 'draft', version: 1, media_kind: null, media_url: null, publish_after: null }
-  await page.route('**/api/admin/social-posts', route => route.fulfill({ json: { posts: [post], connections: [] } }))
+  await page.route(/\/api\/admin\/social-posts(?:\?.*)?$/, route => route.fulfill({ json: { posts: [post], connections: [] } }))
   const reviewed: any[] = []
   await page.route('**/api/admin/social-posts/*/review-instagram', route => {
     reviewed.push(route.request().postDataJSON())
@@ -30,13 +30,12 @@ test('Instagram observations and draft review stay separate from automatic publi
   page.on('request', request => { if (request.method() === 'POST' && request.url().includes('/approve')) unexpected.push(request.url()) })
   await loginAdmin(page)
   await page.goto('/admin/social')
-  await expect(page.getByRole('heading', { name: 'Audience et visites vers le site' })).toBeVisible()
-  await expect(page.getByText('Connecté · lecture seule', { exact: true })).toBeVisible()
-  const draft = page.getByRole('article').filter({ has: page.getByRole('heading', { name: 'Pilote Instagram', exact: true }) })
-  await expect(draft.getByRole('button', { name: 'Valider pour 18 h' })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Ouvrir Pilote Instagram sur Instagram', exact: true }).click()
+  const draft = page.getByRole('dialog', { name: 'Publication Instagram', exact: true })
+  await expect(draft.getByRole('button', { name: 'Programmer', exact: true })).toHaveCount(0)
   await expect(draft.getByRole('button', { name: 'Publier maintenant' })).toHaveCount(0)
   await draft.getByRole('button', { name: 'Valider le texte', exact: true }).click()
-  const dialog = page.getByRole('dialog')
+  const dialog = page.getByRole('dialog', { name: 'Valider le texte Instagram', exact: true })
   await expect(dialog.getByRole('button', { name: 'Valider le texte', exact: true })).toBeDisabled()
   await dialog.getByRole('checkbox').check()
   await dialog.getByRole('button', { name: 'Valider le texte', exact: true }).click()
@@ -46,6 +45,7 @@ test('Instagram observations and draft review stay separate from automatic publi
   expect(unexpected).toEqual([])
   await page.goto('/admin/analytics')
   await expect(page.getByRole('heading', { name: 'Statistiques natives LinkedIn et X' })).toBeVisible()
+  await expect(page.getByText('Connecté · lecture seule', { exact: true })).toBeVisible()
   await page.setViewportSize({ width: 390, height: 844 })
   await expect(page.getByRole('heading', { name: 'Audience et visites vers le site' })).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)

@@ -110,8 +110,8 @@ export function projectPayload(body: Record<string, unknown>, organizationId: st
   if (clientId !== null && (!Number.isInteger(clientId) || clientId <= 0)) {
     throw createError({ statusCode: 400, message: 'Invalid project client' })
   }
-  if ((portfolioVisible || caseStudyPublished) && !liveUrl && !codeUrl) {
-    throw createError({ statusCode: 400, message: 'A public project requires a website or GitHub URL' })
+  if (caseStudyPublished && !liveUrl && !codeUrl) {
+    throw createError({ statusCode: 400, message: 'A published case study requires a website or GitHub URL' })
   }
 
   return {

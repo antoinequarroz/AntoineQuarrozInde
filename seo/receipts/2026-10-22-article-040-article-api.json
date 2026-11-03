@@ -1,0 +1,18 @@
+{
+  "verifiedAt": "2026-10-22T06:50:37.477053+00:00",
+  "mode": "reconcile_existing_public_article",
+  "createdByThisCheck": false,
+  "publicApi": "https://www.antoinequarroz.ch/api/articles",
+  "article": {
+    "id": 45,
+    "title": "40. Devis, documents et validations : quand un espace client devient utile",
+    "slug": "devis-documents-validations-espace-client-utile",
+    "published": true,
+    "published_at": "2026-10-22T05:02:27.469423+00:00",
+    "updated_at": "2026-10-22T05:02:27.469423+00:00",
+    "excerpt": "Devis, versions, validations et livrables : comment cadrer un espace client utile sans déplacer toute votre activité dans un nouvel outil.",
+    "cover_image": "https://oxlrljszatejqxhclmbu.supabase.co/storage/v1/object/public/media/hermes/61819ecdbfbfc085582e91d2452bf834ba95d1f1424afe5c472265fc43aad8ff.png"
+  },
+  "contentSha256": "c570fc1dbb7822d4c984278d706411765fdbc7b4f378dff1a6a560bcc5b744e2",
+  "matchesRecordedContent": true
+}

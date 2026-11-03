@@ -1,0 +1,14 @@
+{
+  "articleId": 42,
+  "status": "contact_link_corrected",
+  "changedFields": [
+    "content",
+    "updated_at"
+  ],
+  "contentSha256": "6d322243264917ae20be6450986d5d81c5aad4e30645797b560203cec52eec1e",
+  "publishedAtPreserved": true,
+  "coverPreserved": true,
+  "visibilityPreserved": true,
+  "method": "existing_private_CMS_Data_API_content_only_compare_and_swap",
+  "automaticRetry": false
+}

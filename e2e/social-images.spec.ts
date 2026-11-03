@@ -10,7 +10,7 @@ test('Instagram carousel approval includes saved images and uses automatic publi
     status: 'draft', version: 1, publication_mode: 'manual', approved_version: null,
     media_kind: null, media_url: null, media_title: null, publish_after: null,
     media_images: [1, 2].map(i => ({ url: `https://www.antoinequarroz.ch/social/physiobaur/0${i}-PhysioBaur.jpg`, alt: `Visuel ${i}` })) }
-  await page.route('**/api/admin/social-posts', route => route.fulfill({ json: { posts: [post], connections: [] } }))
+  await page.route(/\/api\/admin\/social-posts(?:\?.*)?$/, route => route.fulfill({ json: { posts: [post], connections: [] } }))
   await page.route('**/api/admin/social-insights', route => route.fulfill({ json: { instagram: null, receivedAt: null } }))
   await page.route('**/api/admin/social-site-stats', route => route.fulfill({ json: { available: false, configured: false, rows: [] } }))
   const approvals: any[] = []
@@ -22,11 +22,12 @@ test('Instagram carousel approval includes saved images and uses automatic publi
   page.on('request', request => { if (request.method() === 'POST' && /\/review-(instagram|media)$/.test(new URL(request.url()).pathname)) manualReviews.push(request.url()) })
   await loginAdmin(page)
   await page.goto('/admin/social')
-  const card = page.getByRole('article').filter({ has: page.getByRole('heading', { name: post.article_title, exact: true }) })
+  await page.getByRole('button', { name: `Ouvrir ${post.article_title} sur Instagram`, exact: true }).click()
+  const card = page.getByRole('dialog', { name: 'Publication Instagram', exact: true })
   await expect(card.getByRole('heading', { name: 'Carrousel · 2 images', exact: true })).toBeVisible()
   await expect(card.getByRole('button', { name: 'Valider le texte', exact: true })).toHaveCount(0)
   await card.getByRole('button', { name: 'Publier maintenant', exact: true }).click()
-  const dialog = page.getByRole('dialog')
+  const dialog = page.getByRole('dialog', { name: 'Publier maintenant', exact: true })
   await expect(dialog.getByRole('button', { name: 'Publier maintenant', exact: true })).toBeDisabled()
   await expect(dialog.getByRole('img')).toHaveCount(2)
   await dialog.getByRole('checkbox').check()

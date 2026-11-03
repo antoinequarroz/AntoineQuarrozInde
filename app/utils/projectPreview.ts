@@ -5,6 +5,7 @@ export interface ProjectPreview {
 }
 
 const carouselPreviewSizes = '(min-width: 768px) and (prefers-reduced-motion: reduce) 84vw, (min-width: 1280px) 280px, (min-width: 768px) 260px, (max-width: 390px) 91vw, (max-width: 430px) 88vw, 84vw'
+const gridPreviewSizes = '(min-width: 1280px) 400px, (min-width: 768px) 46vw, 92vw'
 
 function responsivePreview(name: string): ProjectPreview {
   return {
@@ -26,6 +27,8 @@ const projectPreviews: ReadonlyMap<string, ProjectPreview> = new Map([
   ],
 ])
 
-export function resolveProjectPreview(source: string): ProjectPreview {
-  return projectPreviews.get(source) ?? { src: source }
+export function resolveProjectPreview(source: string, layout: 'carousel' | 'grid' = 'carousel'): ProjectPreview {
+  const preview = projectPreviews.get(source)
+  if (!preview) return { src: source }
+  return layout === 'grid' ? { ...preview, sizes: gridPreviewSizes } : preview
 }

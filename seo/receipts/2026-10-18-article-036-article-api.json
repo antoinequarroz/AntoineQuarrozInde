@@ -1,0 +1,8 @@
+{
+  "operation": "article",
+  "status": "api_accepted_public_verification_required",
+  "articleId": 41,
+  "url": "https://www.antoinequarroz.ch/blog/physiobaur-site-patients-premier-clic-contact",
+  "idempotent": false,
+  "idempotencyKey": "hermes-article:e1267750b2018cd9e0349ba2234c906c"
+}

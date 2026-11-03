@@ -47,6 +47,13 @@ def mixed_post():
     return result
 
 
+def reel_post():
+    result = mixed_post()
+    result["media_items"] = [result["media_items"][1]]
+    result["approval_fingerprint"] = publisher.approval_fingerprint(result)
+    return result
+
+
 def mp4_metadata():
     return {"streams": [{"codec_type": "video", "codec_name": "h264", "pix_fmt": "yuv420p", "field_order": "progressive", "width": 1080, "height": 1350, "avg_frame_rate": "30/1"}], "format": {"duration": "7"}}
 
@@ -325,6 +332,41 @@ class ImageValidationTests(unittest.TestCase):
 
 
 class MixedValidationTests(unittest.TestCase):
+    def test_vertical_reel_is_validated_before_claim_without_relaxing_carousel_ratio(self):
+        metadata = mp4_metadata(); metadata["streams"][0]["height"] = 1920
+        with patch.object(publisher.shutil, "which", return_value="ffprobe"), patch.object(publisher.subprocess, "run", return_value=subprocess.CompletedProcess([], 0, json.dumps(metadata))):
+            with self.assertRaisesRegex(ValueError, "4:5"):
+                publisher.instagram_video_metadata(MP4_HEADER)
+            with patch.object(publisher, "secure_open", return_value=Response(MP4_HEADER, "video/mp4")):
+                prepared = publisher.prepare_media_items(reel_post())
+        self.assertEqual(len(prepared), 1)
+        self.assertEqual((prepared[0]["width"], prepared[0]["height"]), (1080, 1920))
+        self.assertNotIn("data", prepared[0])
+
+    def test_reel_does_not_allow_a_single_image_empty_or_oversized_list(self):
+        invalid = [[], [mixed_post()["media_items"][0]], mixed_post()["media_items"] * 2]
+        for items in invalid:
+            queued = reel_post(); queued["media_items"] = items
+            with self.subTest(items=items), patch.object(publisher, "secure_open") as network, self.assertRaises(ValueError):
+                publisher.prepare_media_items(queued)
+            network.assert_not_called()
+
+    def test_reel_keeps_mp4_size_codec_audio_duration_and_ratio_guards(self):
+        variants = []
+        for field, value in (("width", 320), ("codec_name", "hevc"), ("pix_fmt", "yuv444p")):
+            metadata = mp4_metadata(); metadata["streams"][0]["height"] = 1920
+            metadata["streams"][0][field] = value; variants.append(metadata)
+        metadata = mp4_metadata(); metadata["format"]["duration"] = "60.01"; variants.append(metadata)
+        metadata = mp4_metadata(); metadata["streams"].append({"codec_type": "audio", "codec_name": "mp3", "channels": 2, "sample_rate": "48000"}); variants.append(metadata)
+        for metadata in variants:
+            with self.subTest(metadata=metadata), patch.object(publisher, "secure_open", return_value=Response(MP4_HEADER, "video/mp4")), patch.object(publisher.shutil, "which", return_value="ffprobe"), patch.object(publisher.subprocess, "run", return_value=subprocess.CompletedProcess([], 0, json.dumps(metadata))), self.assertRaises(ValueError):
+                publisher.prepare_media_items(reel_post())
+        response = Response(MP4_HEADER, "video/mp4")
+        response.headers["Content-Length"] = str(publisher.MAX_INSTAGRAM_VIDEO_BYTES + 1)
+        with patch.object(publisher, "secure_open", return_value=response), patch.object(publisher, "instagram_video_metadata") as probe, self.assertRaisesRegex(RuntimeError, "taille"):
+            publisher.prepare_media_items(reel_post())
+        probe.assert_not_called()
+
     def test_real_probe_only_receives_bounded_private_tempfile_and_deletes_it(self):
         def probe(args, **kwargs):
             path = Path(args[-1])
@@ -422,7 +464,32 @@ class ApprovalTests(unittest.TestCase):
             with patch.object(publisher, "secure_open", return_value=Response(b"{}", "application/json")) as network:
                 publisher.site_request("https://www.antoinequarroz.ch", "private", payload=payload)
             headers = {key.lower(): value for key, value in network.call_args.args[0].header_items()}
-            self.assertEqual(headers["x-hermes-social-capabilities"], "instagram-mixed-v1")
+            self.assertEqual(headers["x-hermes-social-capabilities"], "instagram-mixed-v1, instagram-reels-v1")
+
+    def test_reel_uses_existing_fingerprint_protocol_and_signed_media_changes_invalidate_it(self):
+        queued = reel_post()
+        self.assertTrue(publisher.verified_approval(queued))
+        for field, value in (("type", "image"), ("url", "https://www.antoinequarroz.ch/social/replaced.mp4"), ("alt", "Autre description")):
+            edited = copy.deepcopy(queued); edited["media_items"][0][field] = value
+            self.assertFalse(publisher.verified_approval(edited))
+        with patch.object(publisher, "INSTAGRAM_REELS_CAPABILITY", "future-capability"):
+            self.assertEqual(publisher.approval_fingerprint(queued), queued["approval_fingerprint"])
+
+    def test_reel_preflight_then_exact_claim_precedes_publication_and_dry_run_never_claims(self):
+        for dry_run in (True, False):
+            queued = reel_post(); events = []
+            def site(*args, payload=None, **kwargs):
+                if payload is None: return {"posts": [queued]}
+                events.append(payload["action"])
+                return {"post": {**queued, "version": 3}} if payload["action"] == "claim" else {}
+            def prepare(item):
+                self.assertEqual(item, queued); events.append("preflight-reel")
+                return queued["media_items"]
+            with patch.object(publisher, "connection_state", return_value=("ready", "ready")), patch.object(publisher, "site_request", side_effect=site), patch.object(publisher, "prepare_media_items", side_effect=prepare), patch.object(publisher, "publish_instagram", return_value={"id": "999", "url": "https://www.instagram.com/reel/abc123/"}) as publish:
+                result = publisher.process_approved("https://site", "private", dry_run=dry_run)
+            self.assertEqual(events, ["readiness"] * 3 + ["preflight-reel"] + ([] if dry_run else ["claim", "complete"]))
+            self.assertEqual(publish.call_count, 0 if dry_run else 1)
+            self.assertEqual(result["published"], 0 if dry_run else 1)
 
     def test_mixed_dry_run_and_real_flow_validate_all_media_before_claim(self):
         for dry_run in (True, False):
@@ -569,6 +636,40 @@ class ApprovalTests(unittest.TestCase):
 
 
 class TransportTests(unittest.TestCase):
+    def test_single_video_creates_one_reel_waits_for_finished_and_publishes_only_once(self):
+        calls = []
+        statuses = iter(["IN_PROGRESS", "FINISHED"])
+        def instagram(path, query=None, payload=None):
+            calls.append((path, query, payload))
+            if path.endswith("/media_publish"): return {"id": "999"}
+            if query and query.get("fields") == "status_code": return {"status_code": next(statuses)}
+            if query: return {"permalink": "https://www.instagram.com/reel/abc123/"}
+            return {"id": "123"}
+        with patch.object(publisher, "instagram_call", side_effect=instagram), patch.object(publisher.time, "sleep") as sleep:
+            result = publisher.publish_instagram("caption", reel_post()["media_items"])
+        self.assertEqual(calls[0][2], {"media_type": "REELS", "video_url": reel_post()["media_items"][0]["url"], "caption": "caption", "share_to_feed": True})
+        self.assertEqual([path for path, _, _ in calls], [publisher.INSTAGRAM_EXPECTED_ID + "/media", "123", "123", publisher.INSTAGRAM_EXPECTED_ID + "/media_publish", "999"])
+        self.assertEqual(sleep.call_args.args, (60.0,))
+        self.assertEqual(result, {"id": "999", "url": "https://www.instagram.com/reel/abc123/", "container": "123"})
+
+    def test_failed_or_unfinished_reel_never_requests_a_publication(self):
+        for status in ("ERROR", "IN_PROGRESS"):
+            calls = []
+            def instagram(path, query=None, payload=None):
+                calls.append(path)
+                return {"status_code": status} if query else {"id": "123"}
+            with self.subTest(status=status), patch.object(publisher, "instagram_call", side_effect=instagram), patch.object(publisher.time, "sleep"), self.assertRaises(ValueError):
+                publisher.publish_instagram("caption", reel_post()["media_items"])
+            self.assertFalse(any(path.endswith("/media_publish") for path in calls))
+
+    def test_ambiguous_reel_publication_is_never_retried(self):
+        def instagram(path, query=None, payload=None):
+            if path.endswith("/media_publish"): raise TimeoutError("unknown outcome")
+            return {"id": "123", "status_code": "FINISHED"}
+        with patch.object(publisher, "instagram_call", side_effect=instagram) as call, self.assertRaisesRegex(RuntimeError, "conteneur 123"):
+            publisher.publish_instagram("caption", reel_post()["media_items"])
+        self.assertEqual(sum(item.args[0].endswith("/media_publish") for item in call.call_args_list), 1)
+
     def test_mixed_instagram_children_keep_order_and_wait_before_parent_and_only_public_write(self):
         calls = []
         def instagram(path, query=None, payload=None):

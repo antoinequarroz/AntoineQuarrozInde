@@ -97,7 +97,7 @@ function formatPublicationDate(article: PublicArticleSummary) {
           :key="i"
           class="rounded-2xl overflow-hidden border border-violet-500/10 dark:border-white/10 bg-white/70 dark:bg-white/[0.04] animate-pulse"
         >
-          <div class="h-44 bg-violet-500/8 dark:bg-violet-400/8" />
+          <div class="aspect-video bg-violet-500/8 dark:bg-violet-400/8" />
           <div class="p-6 space-y-3">
             <div class="h-2.5 w-1/4 rounded-full bg-violet-500/10 dark:bg-white/10" />
             <div class="h-5 w-3/4 rounded-full bg-gray-200 dark:bg-white/10" />
@@ -113,12 +113,12 @@ function formatPublicationDate(article: PublicArticleSummary) {
           :key="article.slug"
           class="group card-glow overflow-hidden hover:-translate-y-2 transition-transform duration-500"
         >
-          <div class="h-44 bg-gradient-to-br from-violet-500/20 to-purple-600/20 dark:from-violet-500/30 dark:to-purple-600/30 relative overflow-hidden">
+          <div class="aspect-video bg-gradient-to-br from-violet-500/20 to-purple-600/20 dark:from-violet-500/30 dark:to-purple-600/30 relative overflow-hidden">
             <img
               v-if="article.cover_image"
               :src="article.cover_image"
               :alt="article.title"
-              class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+              class="w-full h-full object-contain"
               loading="lazy"
             >
             <div v-else class="absolute inset-0 flex items-center justify-center">

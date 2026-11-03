@@ -1,0 +1,110 @@
+{
+  "verifiedAt": "2026-10-22T06:50:37.477053+00:00",
+  "sourcesReadDate": "2026-10-22",
+  "links": [
+    {
+      "url": "https://design-system.service.gov.uk/patterns/check-answers/",
+      "http": 200,
+      "finalUrl": "https://design-system.service.gov.uk/patterns/check-answers/",
+      "sha256": "88816e197e3d11cfa414a1c15aa8fca864bcd9ea629d71cf0a14eacea5ba48ad"
+    },
+    {
+      "url": "https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html",
+      "http": 200,
+      "finalUrl": "https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html",
+      "sha256": "ef90d31f45bc6018ed7d859d341c1339499f036128c85f0fd5eccd08850537b9"
+    },
+    {
+      "url": "https://www.antoinequarroz.ch/developpeur-web-valais",
+      "http": 200,
+      "finalUrl": "https://www.antoinequarroz.ch/developpeur-web-valais",
+      "sha256": "f4deacabd34815fc03736b72c02d7e2ce7b46631470866e7c8337378077ea9f7"
+    },
+    {
+      "url": "https://www.antoinequarroz.ch/",
+      "http": 200,
+      "finalUrl": "https://www.antoinequarroz.ch/",
+      "sha256": "24662c19e63b3bdcf0057b852c16a9b5ad5ec71e93b5bc66de06f2b672b85ec1"
+    }
+  ],
+  "cover": {
+    "file": "seo/covers/article-040.png",
+    "sha256": "ae5613939d4da848823685186098284720b05c8537376be2170c6aec216797b4",
+    "bytes": 150879,
+    "dimensions": [
+      1200,
+      675
+    ],
+    "style": "aq-editorial-violet-space-grotesk-v1",
+    "visualReview": "Passed: exact approved violet artwork, Space Grotesk, spelling, title readability, robot; Démonstration and Exemple entièrement fictif visibly present.",
+    "assets": [
+      {
+        "path": "seo/covers/brand-violet/assets/SpaceGrotesk-VariableFont_wght.ttf",
+        "sha256Matches": true,
+        "provenance": "Existing approved PhysioBaur assets/fonts/SpaceGrotesk-VariableFont_wght.ttf"
+      },
+      {
+        "path": "seo/covers/brand-violet/assets/OFL-SpaceGrotesk.txt",
+        "sha256Matches": true,
+        "provenance": "Existing font license distributed with Space Grotesk; line endings normalized to LF, legal text unchanged"
+      },
+      {
+        "path": "seo/covers/brand-violet/assets/robot-transparent.png",
+        "sha256Matches": true,
+        "provenance": "Existing approved PhysioBaur dark proposal / assets/robot-transparent.png"
+      }
+    ],
+    "fontLicense": "seo/covers/brand-violet/assets/OFL-SpaceGrotesk.txt",
+    "contractProductionProof": "seo/receipts/2026-10-18-article-036-violet-cover.json",
+    "publicBytesEqualApprovedCover": true
+  },
+  "articleReview": {
+    "fiveSections": true,
+    "fictionalExamplesLabeled": true,
+    "noPrivateClientData": true,
+    "noInventedMeasuredOutcome": true,
+    "noH1InBody": true,
+    "noLegalSignatureGuarantee": true,
+    "sourceMatrix": {
+      "GOVUK": "Review before submission, sections, edit links and returning with previous answers preserved.",
+      "OWASP": "Authentication versus authorization, least privilege, deny by default, permissions checked on each request."
+    }
+  },
+  "antiDuplicate": {
+    "apiMatchesBySlugOrNumber": 1,
+    "blogPresent": true,
+    "sitemapOccurrences": 1,
+    "existingDraftsPerPlatform": 1,
+    "articleNotRecreated": true
+  },
+  "socialUtmExpected": {
+    "x": {
+      "source": "x",
+      "medium": "social",
+      "campaign": "article_devis-documents-validations-espace-client-utile",
+      "rawCharacters": 279,
+      "literalWithUTMCharacters": 396,
+      "charactersWithURLsCountedAs23": 220,
+      "utmInjectedByExistingPublicationFlow": true,
+      "publicationRequiresAntoineApproval": true,
+      "xManualModePreserved": true
+    },
+    "linkedin": {
+      "source": "linkedin",
+      "medium": "social",
+      "campaign": "article_devis-documents-validations-espace-client-utile",
+      "rawCharacters": 1004,
+      "literalWithUTMCharacters": 1128,
+      "charactersWithURLsCountedAs23": 945,
+      "utmInjectedByExistingPublicationFlow": true,
+      "publicationRequiresAntoineApproval": true,
+      "xManualModePreserved": false
+    }
+  },
+  "transport": "Reconciliation only. Existing live article not recreated; cover enrichment through the restricted API using private web-container environment.",
+  "formSubmissions": 0,
+  "missionsTriggered": 0,
+  "modelCalls": 0,
+  "tregCalls": 0,
+  "paidCalls": 0
+}

@@ -26,7 +26,7 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
-          node-version: 22.22.0
+          node-version: 26.12.0
           cache: npm
       - run: npm ci --legacy-peer-deps
       - name: Audit production dependencies
@@ -40,6 +40,8 @@ jobs:
       - run: npm test
       - name: Verify social transports without publishing
         run: python3 -m unittest discover -s scripts/hermes -p 'test_social_media_publisher.py'
+      - name: Verify the editorial cover payload without publishing
+        run: python3 -m unittest scripts/hermes/test_publish_article.py
       - run: npm run typecheck
       - run: npm run build
       - name: Audit exact packages shipped in the standalone server
@@ -60,7 +62,7 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
-          node-version: 22.22.0
+          node-version: 26.12.0
           cache: npm
       - run: npm ci --legacy-peer-deps
       - name: Install Chromium without unrelated Chrome APT source
@@ -68,8 +70,10 @@ jobs:
           sudo rm -f /etc/apt/sources.list.d/google-chrome.list /etc/apt/sources.list.d/google-chrome.sources
           npx playwright install --with-deps chromium
       - run: npx playwright test e2e/accessibility.spec.ts --project=chromium --grep @credential-free
-      - name: Verify mixed carousel editing and explicit consent
-        run: npx playwright test e2e/social-mixed-media.spec.ts e2e/social-document-carousel.spec.ts --project=chromium
+      - name: Verify social editing, calendar movement, and explicit consent
+        run: npx playwright test e2e/social-linkedin-video.spec.ts e2e/social-mixed-media.spec.ts e2e/social-document-carousel.spec.ts e2e/social-editorial-calendar.spec.ts e2e/social-calendar-drag.spec.ts e2e/social-planning-panel.spec.ts --project=chromium
+      - name: Verify repeated mobile focus handoffs without retries
+        run: npx playwright test e2e/social-planning-panel.spec.ts --project=chromium --grep '375px keyboard planning' --repeat-each=3 --retries=0
 
   seo-quality:
     needs: quality
@@ -82,7 +86,7 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
-          node-version: 22.22.0
+          node-version: 26.12.0
           cache: npm
       - run: npm ci --legacy-peer-deps
       - name: Install Chromium without unrelated Chrome APT source
@@ -113,6 +117,17 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
+      - name: Preserve failed candidate browser diagnostics
+        if: failure()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: candidate-browser-failure-${{ github.sha }}
+          path: |
+            test-results/
+            ${{ runner.temp }}/seo-preview.log
+          if-no-files-found: warn
+          retention-days: 7
+
   database:
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -120,7 +135,7 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
-          node-version: 22.22.0
+          node-version: 26.12.0
           cache: npm
       - run: npm ci --legacy-peer-deps
       - run: npm run test:db
@@ -139,7 +154,7 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
-          node-version: 22.22.0
+          node-version: 26.12.0
           cache: npm
       - run: npm ci --legacy-peer-deps
       - name: Install encrypted backup tooling
@@ -263,7 +278,7 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
-          node-version: 22.22.0
+          node-version: 26.12.0
           cache: npm
       - run: npm ci --legacy-peer-deps
       - name: Install Chromium without unrelated Chrome APT source
@@ -289,6 +304,7 @@ jobs:
         run: |
           test -n "$E2E_ADMIN_EMAIL" && test -n "$E2E_ADMIN_PASSWORD" && test -n "$E2E_ADMIN_TOTP_SECRET"
           npm run test:e2e
+          npx playwright test e2e/social-planning-panel.spec.ts --project=chromium --grep '375px keyboard planning' --repeat-each=3 --retries=0
       - if: failure()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:

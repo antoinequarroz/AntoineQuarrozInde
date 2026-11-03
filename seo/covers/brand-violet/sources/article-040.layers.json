@@ -1,0 +1,14 @@
+{
+  "number": "040",
+  "assets": "../assets",
+  "base": "article-040.base.svg",
+  "overlay": null,
+  "output": "../../article-040.png",
+  "images": [],
+  "robot": {
+    "x": 582,
+    "y": 463,
+    "width": 225,
+    "height": 204
+  }
+}

@@ -84,6 +84,57 @@ describe('project publication states', () => {
     expect(() => projectPayload({ ...base, caseStudyPublished: 1 }, 'org-test')).toThrow('caseStudyPublished must be a boolean')
   })
 
+  it.each([false, true])('allows a linkless portfolio=%s without exposing an unapproved study', async (portfolioVisible) => {
+    const { projectPayload } = await import('../server/utils/projectPayload')
+    const { serializePublicProject } = await import('../server/utils/publicContent')
+    const payload = projectPayload({
+      title: 'Projet sans démonstration publique',
+      slug: 'projet-sans-lien',
+      category: 'software',
+      description: 'Présentation publique du projet.',
+      image: 'https://example.com/cover.webp',
+      portfolioVisible,
+      caseStudyPublished: false,
+      challenge: 'Contexte interne en attente de validation.',
+      clientLabel: 'Attribution privée',
+    }, 'org-test')
+
+    expect(payload).toMatchObject({
+      portfolio_visible: portfolioVisible,
+      case_study_published: false,
+      live_url: null,
+      code_url: null,
+    })
+    expect(serializePublicProject(payload)).toMatchObject({
+      description: 'Présentation publique du projet.',
+      live_url: null,
+      code_url: null,
+      case_study_published: false,
+      challenge: null,
+      client_label: null,
+    })
+  })
+
+  it.each([false, true])('still requires a public link for a published study with portfolio=%s', async (portfolioVisible) => {
+    const { projectPayload } = await import('../server/utils/projectPayload')
+    const base = {
+      title: 'Étude de cas',
+      slug: 'etude-de-cas',
+      category: 'web',
+      description: 'Résumé',
+      image: 'https://example.com/cover.webp',
+      portfolioVisible,
+      caseStudyPublished: true,
+    }
+
+    expect(() => projectPayload(base, 'org-test')).toThrow('A published case study requires a website or GitHub URL')
+    expect(() => projectPayload({ ...base, codeUrl: 'https://github.com/example/project' }, 'org-test')).not.toThrow()
+    expect(() => projectPayload({ ...base, liveUrl: 'https://example.com/project' }, 'org-test')).not.toThrow()
+    expect(() => projectPayload({ ...base, caseStudyPublished: false, liveUrl: 'javascript:alert(1)' }, 'org-test')).toThrow('Invalid project URL')
+    expect(() => projectPayload({ ...base, caseStudyPublished: false, codeUrl: 'javascript:alert(1)' }, 'org-test')).toThrow('Invalid project URL')
+    expect(() => projectPayload({ ...base, caseStudyPublished: false, codeUrl: 'not a URL' }, 'org-test')).toThrow('Invalid project URL')
+  })
+
   it('allows only owners and administrators to change a public state', async () => {
     const { assertCanChangeProjectPublication } = await import('../server/utils/projectPublication')
     const privateState = { portfolioVisible: false, caseStudyPublished: false }

@@ -1,0 +1,8 @@
+{
+  "operation": "article",
+  "status": "api_accepted_public_verification_required",
+  "articleId": 42,
+  "url": "https://www.antoinequarroz.ch/blog/video-site-limiter-poids-confort-mobile",
+  "idempotent": false,
+  "idempotencyKey": "hermes-article:0aeaa29acb21626a06e820100629a539"
+}

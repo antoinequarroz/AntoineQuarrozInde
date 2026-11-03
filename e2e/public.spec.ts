@@ -237,10 +237,14 @@ test('diagnostic contact form keeps only the useful fields at 320px', async ({ p
   await expect(page.getByLabel(/délai cible|target timeline|gewünschter zeitrahmen/i)).toHaveCount(0)
 })
 
-test('mobile portfolio makes horizontal browsing and project actions explicit', { tag: '@live-data' }, async ({ page }) => {
+test('mobile portfolio starts in the grid and keeps horizontal browsing available', { tag: '@live-data' }, async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/#portfolio')
 
+  await expect(page.locator('[data-portfolio-view="grid"]')).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.locator('[data-project-grid-card]').first()).toBeVisible()
+  await expect(page.locator('[data-mobile-project-carousel]')).toHaveCount(0)
+  await page.locator('[data-portfolio-view="helix"]').click()
   const carousel = page.locator('[data-mobile-project-carousel]')
   const cards = carousel.locator('[data-mobile-project-card]')
   await expect(carousel).toBeVisible()

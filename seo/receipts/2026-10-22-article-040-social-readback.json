@@ -1,0 +1,49 @@
+{
+  "verifiedAt": "2026-10-22T06:50:06.923Z",
+  "existingDraftsReused": true,
+  "articleUrl": "https://www.antoinequarroz.ch/blog/devis-documents-validations-espace-client-utile",
+  "posts": [
+    {
+      "id": "95443bac-85d1-4758-bd05-34fd0c88b749",
+      "platform": "x",
+      "sourceKey": "devis-documents-validations-espace-client-utile-x",
+      "status": "draft",
+      "publicationMode": "manual",
+      "version": 2,
+      "notApproved": true,
+      "notScheduled": true,
+      "notPublished": true,
+      "existingContentPreserved": true,
+      "coverAttached": true,
+      "mediaImages": [
+        {
+          "alt": "Un espace client pour suivre votre projet : documents, versions et validations. Démonstration entièrement fictive, couverture violette avec le robot Antoine Quarroz.",
+          "url": "https://oxlrljszatejqxhclmbu.supabase.co/storage/v1/object/public/media/uploads/article-040-ae5613939d4da848823685186098284720b05c8537376be2170c6aec216797b4.png"
+        }
+      ],
+      "characters": 279
+    },
+    {
+      "id": "70c5b7be-5767-4758-ab64-26cb552d8bfc",
+      "platform": "linkedin",
+      "sourceKey": "devis-documents-validations-espace-client-utile-linkedin",
+      "status": "draft",
+      "publicationMode": "manual",
+      "version": 2,
+      "notApproved": true,
+      "notScheduled": true,
+      "notPublished": true,
+      "existingContentPreserved": true,
+      "coverAttached": true,
+      "mediaImages": [
+        {
+          "alt": "Un espace client pour suivre votre projet : documents, versions et validations. Démonstration entièrement fictive, couverture violette avec le robot Antoine Quarroz.",
+          "url": "https://oxlrljszatejqxhclmbu.supabase.co/storage/v1/object/public/media/uploads/article-040-ae5613939d4da848823685186098284720b05c8537376be2170c6aec216797b4.png"
+        }
+      ],
+      "characters": 1004
+    }
+  ],
+  "mutations": "Only empty-media draft enrichment through POST /api/hermes/social-drafts; content, status and schedule preserved.",
+  "socialPublicationsTriggered": 0
+}

@@ -1,0 +1,112 @@
+{
+  "reviewedAt": "2026-10-23T04:39:44.412277+00:00",
+  "article": "article-041",
+  "originMain": "a7a81b94a1ccb4c133aeacca852448c85c709f64",
+  "worktreeInitiallyClean": true,
+  "publicDuplicateCheck": {
+    "before": {
+      "articleCount": 40,
+      "highestPrefix": 40,
+      "matched": 0
+    },
+    "after": {
+      "articleCount": 41,
+      "matched": 1,
+      "articleId": 46
+    }
+  },
+  "sourceReview": [
+    {
+      "url": "https://www.nngroup.com/articles/vanity-metrics/",
+      "scope": "Contexte, période et utilité opérationnelle des indicateurs. Aucun gain attribué au site."
+    },
+    {
+      "url": "https://www.nngroup.com/articles/data-tables/",
+      "scope": "Recherche par critères, filtres compréhensibles et état des filtres visible."
+    },
+    {
+      "url": "https://design-system.service.gov.uk/components/task-list/",
+      "scope": "Tâche, statut et destination ; usage limité aux démarches complexes, simplifier d’abord."
+    },
+    {
+      "url": "https://posthog.com/docs/web-analytics",
+      "scope": "Pages vues, sessions et sources ; aucune assimilation à une vente."
+    }
+  ],
+  "sourcesReadOn": "2026-10-23",
+  "independentEditorialReview": "passed; no necessary correction",
+  "publicProjectFacts": "Fiche publique Hermes : date du relevé et aperçus illustratifs ; aucune donnée privée utilisée.",
+  "examples": "entirely fictitious; no customer, private account or real invoice data",
+  "financialCategories": "explicit interface conventions, not universal accounting rules",
+  "personalPerformanceClaims": false,
+  "cover": {
+    "path": "seo/covers/article-041.png",
+    "dimensions": [
+      1200,
+      675
+    ],
+    "bytes": 141159,
+    "sha256": "42ffc41797642920d249aa4dcb7f0f44f49fb0d88d1928e04a311926111383f4",
+    "manifestMatches": true,
+    "style": "aq-editorial-violet-space-grotesk-v1",
+    "realSpaceGroteskGlyphPaths": true,
+    "existingApprovedRobot": true,
+    "fontLicense": "SIL OFL 1.1",
+    "demonstrationLabelVisible": true,
+    "visualInspection": "Passed independently on 23 October; no regeneration needed. Glyph conversion sources and hashes checked; independent rebuild not performed."
+  },
+  "socialChecks": [
+    {
+      "platform": "linkedin",
+      "characters": 1056,
+      "trackedCharacters": 1179,
+      "campaign": "article_tableau-de-bord-utile-chiffre-prochaine-action",
+      "source": "linkedin",
+      "medium": "social",
+      "status": "A_VALIDER",
+      "notScheduled": true
+    },
+    {
+      "platform": "x",
+      "characters": 157,
+      "trackedCharacters": 273,
+      "campaign": "article_tableau-de-bord-utile-chiffre-prochaine-action",
+      "source": "x",
+      "medium": "social",
+      "status": "A_VALIDER",
+      "notScheduled": true
+    }
+  ],
+  "linkedinReview": {
+    "skills": [
+      "li-post",
+      "li-human"
+    ],
+    "hooksConsidered": [
+      "Votre tableau de bord affiche « 3 tâches aujourd’hui ». Où mène le clic ?",
+      "Un chiffre sur le tableau de bord : quelle liste ouvre-t-il ?",
+      "Avant les cartes du tableau de bord, je propose de définir leurs destinations."
+    ],
+    "selected": 1,
+    "reason": "Scénario concret immédiatement identifié comme fictif ; aucune expérience ou mesure inventée.",
+    "diagnosticOnly": true,
+    "automaticRewritesApplied": false,
+    "frenchTypographyPreserved": true,
+    "englishHeuristicScoreNotUsedAsFrenchEvidence": true
+  },
+  "publicArticleVerified": true,
+  "missionsTriggered": 0,
+  "aiCalls": 0,
+  "tregCalls": 0,
+  "socialPublications": 0,
+  "visualVerification": {
+    "desktopWidth": 1440,
+    "mobileWidth": 390,
+    "passed": true,
+    "globalOverflow": false,
+    "pageErrors": 0,
+    "tables": "Readable; first table scrolls locally on mobile without page overflow.",
+    "analyticsBlocked": true,
+    "receipt": "2026-10-23-article-041-visual.json"
+  }
+}

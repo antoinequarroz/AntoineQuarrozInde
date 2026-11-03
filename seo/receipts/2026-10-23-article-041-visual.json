@@ -1,0 +1,448 @@
+{
+  "checkedAt": "2026-10-23T04:39:02.476Z",
+  "url": "https://www.antoinequarroz.ch/blog/tableau-de-bord-utile-chiffre-prochaine-action",
+  "expectedTitle": "41. Un tableau de bord utile : du chiffre à la prochaine action",
+  "readOnly": true,
+  "views": [
+    {
+      "name": "desktop",
+      "width": 1440,
+      "height": 1000,
+      "httpStatus": 200,
+      "title": "41. Un tableau de bord utile : du chiffre à la prochaine action",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "documentWidth": 1440,
+      "bodyWidth": 1440,
+      "hero": {
+        "currentSrc": "https://oxlrljszatejqxhclmbu.supabase.co/storage/v1/object/public/media/hermes/215c175dd44c41008ff1fbbc512fe48a855daa1a4ac3ba129b58e4acca387df6.png",
+        "naturalWidth": 1200,
+        "naturalHeight": 675,
+        "complete": true,
+        "bounds": {
+          "x": 336,
+          "y": 418,
+          "width": 768,
+          "height": 432
+        },
+        "style": {
+          "font": "Inter, system-ui, sans-serif",
+          "fontSize": "16px",
+          "lineHeight": "24px",
+          "color": "rgb(243, 244, 246)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      },
+      "titleStyle": {
+        "font": "\"Space Grotesk\", system-ui, sans-serif",
+        "fontSize": "36px",
+        "lineHeight": "40px",
+        "color": "rgb(255, 255, 255)",
+        "background": "rgba(0, 0, 0, 0)"
+      },
+      "firstParagraphStyle": {
+        "font": "Inter, system-ui, sans-serif",
+        "fontSize": "18px",
+        "lineHeight": "29.25px",
+        "color": "rgb(209, 213, 219)",
+        "background": "rgba(0, 0, 0, 0)"
+      },
+      "articleBounds": {
+        "x": 336,
+        "y": 890,
+        "width": 768,
+        "height": 6012
+      },
+      "tables": [
+        {
+          "bounds": {
+            "x": 337,
+            "y": 1631.5,
+            "width": 766,
+            "height": 259.5
+          },
+          "clientWidth": 766,
+          "scrollWidth": 766,
+          "style": {
+            "font": "Inter, system-ui, sans-serif",
+            "fontSize": "14px",
+            "lineHeight": "20px",
+            "color": "rgb(209, 213, 219)",
+            "background": "rgba(0, 0, 0, 0)"
+          },
+          "headers": [
+            "Carte fictive",
+            "Question",
+            "Destination du clic",
+            "Prochaine action possible"
+          ],
+          "rows": 3,
+          "ancestors": [
+            {
+              "tag": "DIV",
+              "class": "mb-6 overflow-x-auto rounded-2xl border border-gray-200/80 dark:border-white/10",
+              "clientWidth": 766,
+              "scrollWidth": 766,
+              "overflowX": "auto"
+            },
+            {
+              "tag": "DIV",
+              "class": "text-gray-600 dark:text-gray-300",
+              "clientWidth": 768,
+              "scrollWidth": 768,
+              "overflowX": "visible"
+            },
+            {
+              "tag": "DIV",
+              "class": "prose-content",
+              "clientWidth": 768,
+              "scrollWidth": 768,
+              "overflowX": "visible"
+            },
+            {
+              "tag": "DIV",
+              "class": "max-w-3xl mx-auto",
+              "clientWidth": 768,
+              "scrollWidth": 768,
+              "overflowX": "visible"
+            }
+          ]
+        },
+        {
+          "bounds": {
+            "x": 337,
+            "y": 3403,
+            "width": 766,
+            "height": 220
+          },
+          "clientWidth": 766,
+          "scrollWidth": 766,
+          "style": {
+            "font": "Inter, system-ui, sans-serif",
+            "fontSize": "14px",
+            "lineHeight": "20px",
+            "color": "rgb(209, 213, 219)",
+            "background": "rgba(0, 0, 0, 0)"
+          },
+          "headers": [
+            "Catégorie fictive",
+            "Ce qu’elle représente dans cet exemple",
+            "Ce qu’elle ne prouve pas"
+          ],
+          "rows": 3,
+          "ancestors": [
+            {
+              "tag": "DIV",
+              "class": "mb-6 overflow-x-auto rounded-2xl border border-gray-200/80 dark:border-white/10",
+              "clientWidth": 766,
+              "scrollWidth": 766,
+              "overflowX": "auto"
+            },
+            {
+              "tag": "DIV",
+              "class": "text-gray-600 dark:text-gray-300",
+              "clientWidth": 768,
+              "scrollWidth": 768,
+              "overflowX": "visible"
+            },
+            {
+              "tag": "DIV",
+              "class": "prose-content",
+              "clientWidth": 768,
+              "scrollWidth": 768,
+              "overflowX": "visible"
+            },
+            {
+              "tag": "DIV",
+              "class": "max-w-3xl mx-auto",
+              "clientWidth": 768,
+              "scrollWidth": 768,
+              "overflowX": "visible"
+            }
+          ]
+        }
+      ],
+      "headings": [
+        "En bref",
+        "1. Quelle décision chaque chiffre doit-il aider à prendre ?",
+        "2. Que comprend exactement le compteur ?",
+        "3. Pourquoi le clic doit-il retrouver les bons éléments ?",
+        "4. Comment séparer prévu, à encaisser et encaissé ?",
+        "5. Que montrer si une source ne répond plus ?",
+        "6. Comment vérifier le parcours avant la mise en service ?",
+        "Questions fréquentes",
+        "Combien d’indicateurs faut-il afficher ?",
+        "Tous les chiffres doivent-ils être cliquables ?",
+        "Peut-on garder les dernières statistiques pendant une panne ?",
+        "Faut-il une application sur mesure pour commencer ?",
+        "Quels indicateurs aideraient votre équipe à agir ?",
+        "Explorer mes retours de terrain",
+        "Pour approfondir ce sujet",
+        "Recevez les prochains guides pratiques"
+      ],
+      "coverHttpStatus": 200,
+      "coverSha256": "42ffc41797642920d249aa4dcb7f0f44f49fb0d88d1928e04a311926111383f4",
+      "coverSizeBytes": 141159,
+      "pageErrors": [],
+      "blockedRequests": [
+        {
+          "method": "GET",
+          "url": "https://www.antoinequarroz.ch/ingest/static/1.434.8/web-vitals-with-attribution.js"
+        },
+        {
+          "method": "GET",
+          "url": "https://www.antoinequarroz.ch/ingest/array/phc_pEpzDYuscdeuHAfWFJTpgyDZT3dxWVFm4y38DUxA2epS/config.js"
+        },
+        {
+          "method": "GET",
+          "url": "https://www.antoinequarroz.ch/ingest/static/1.434.8/exception-autocapture.js"
+        },
+        {
+          "method": "GET",
+          "url": "https://www.antoinequarroz.ch/ingest/static/web-vitals-with-attribution.js"
+        },
+        {
+          "method": "GET",
+          "url": "https://www.antoinequarroz.ch/ingest/array/phc_pEpzDYuscdeuHAfWFJTpgyDZT3dxWVFm4y38DUxA2epS/config"
+        },
+        {
+          "method": "GET",
+          "url": "https://www.antoinequarroz.ch/ingest/static/exception-autocapture.js"
+        }
+      ]
+    },
+    {
+      "name": "mobile390",
+      "width": 390,
+      "height": 844,
+      "httpStatus": 200,
+      "title": "41. Un tableau de bord utile : du chiffre à la prochaine action",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "documentWidth": 390,
+      "bodyWidth": 390,
+      "hero": {
+        "currentSrc": "https://oxlrljszatejqxhclmbu.supabase.co/storage/v1/object/public/media/hermes/215c175dd44c41008ff1fbbc512fe48a855daa1a4ac3ba129b58e4acca387df6.png",
+        "naturalWidth": 1200,
+        "naturalHeight": 675,
+        "complete": true,
+        "bounds": {
+          "x": 12,
+          "y": 502.5,
+          "width": 366,
+          "height": 205.875
+        },
+        "style": {
+          "font": "Inter, system-ui, sans-serif",
+          "fontSize": "16px",
+          "lineHeight": "24px",
+          "color": "rgb(243, 244, 246)",
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      },
+      "titleStyle": {
+        "font": "\"Space Grotesk\", system-ui, sans-serif",
+        "fontSize": "30px",
+        "lineHeight": "37.5px",
+        "color": "rgb(255, 255, 255)",
+        "background": "rgba(0, 0, 0, 0)"
+      },
+      "firstParagraphStyle": {
+        "font": "Inter, system-ui, sans-serif",
+        "fontSize": "18px",
+        "lineHeight": "29.25px",
+        "color": "rgb(209, 213, 219)",
+        "background": "rgba(0, 0, 0, 0)"
+      },
+      "articleBounds": {
+        "x": 12,
+        "y": 748.375,
+        "width": 366,
+        "height": 10141.5
+      },
+      "tables": [
+        {
+          "bounds": {
+            "x": 13,
+            "y": 2048.375,
+            "width": 428.28125,
+            "height": 499.5
+          },
+          "clientWidth": 428,
+          "scrollWidth": 428,
+          "style": {
+            "font": "Inter, system-ui, sans-serif",
+            "fontSize": "14px",
+            "lineHeight": "20px",
+            "color": "rgb(209, 213, 219)",
+            "background": "rgba(0, 0, 0, 0)"
+          },
+          "headers": [
+            "Carte fictive",
+            "Question",
+            "Destination du clic",
+            "Prochaine action possible"
+          ],
+          "rows": 3,
+          "ancestors": [
+            {
+              "tag": "DIV",
+              "class": "mb-6 overflow-x-auto rounded-2xl border border-gray-200/80 dark:border-white/10",
+              "clientWidth": 364,
+              "scrollWidth": 428,
+              "overflowX": "auto"
+            },
+            {
+              "tag": "DIV",
+              "class": "text-gray-600 dark:text-gray-300",
+              "clientWidth": 366,
+              "scrollWidth": 366,
+              "overflowX": "visible"
+            },
+            {
+              "tag": "DIV",
+              "class": "prose-content",
+              "clientWidth": 366,
+              "scrollWidth": 366,
+              "overflowX": "visible"
+            },
+            {
+              "tag": "DIV",
+              "class": "max-w-3xl mx-auto",
+              "clientWidth": 366,
+              "scrollWidth": 366,
+              "overflowX": "visible"
+            }
+          ]
+        },
+        {
+          "bounds": {
+            "x": 13,
+            "y": 5143.875,
+            "width": 364,
+            "height": 419
+          },
+          "clientWidth": 364,
+          "scrollWidth": 364,
+          "style": {
+            "font": "Inter, system-ui, sans-serif",
+            "fontSize": "14px",
+            "lineHeight": "20px",
+            "color": "rgb(209, 213, 219)",
+            "background": "rgba(0, 0, 0, 0)"
+          },
+          "headers": [
+            "Catégorie fictive",
+            "Ce qu’elle représente dans cet exemple",
+            "Ce qu’elle ne prouve pas"
+          ],
+          "rows": 3,
+          "ancestors": [
+            {
+              "tag": "DIV",
+              "class": "mb-6 overflow-x-auto rounded-2xl border border-gray-200/80 dark:border-white/10",
+              "clientWidth": 364,
+              "scrollWidth": 364,
+              "overflowX": "auto"
+            },
+            {
+              "tag": "DIV",
+              "class": "text-gray-600 dark:text-gray-300",
+              "clientWidth": 366,
+              "scrollWidth": 366,
+              "overflowX": "visible"
+            },
+            {
+              "tag": "DIV",
+              "class": "prose-content",
+              "clientWidth": 366,
+              "scrollWidth": 366,
+              "overflowX": "visible"
+            },
+            {
+              "tag": "DIV",
+              "class": "max-w-3xl mx-auto",
+              "clientWidth": 366,
+              "scrollWidth": 366,
+              "overflowX": "visible"
+            }
+          ]
+        }
+      ],
+      "headings": [
+        "En bref",
+        "1. Quelle décision chaque chiffre doit-il aider à prendre ?",
+        "2. Que comprend exactement le compteur ?",
+        "3. Pourquoi le clic doit-il retrouver les bons éléments ?",
+        "4. Comment séparer prévu, à encaisser et encaissé ?",
+        "5. Que montrer si une source ne répond plus ?",
+        "6. Comment vérifier le parcours avant la mise en service ?",
+        "Questions fréquentes",
+        "Combien d’indicateurs faut-il afficher ?",
+        "Tous les chiffres doivent-ils être cliquables ?",
+        "Peut-on garder les dernières statistiques pendant une panne ?",
+        "Faut-il une application sur mesure pour commencer ?",
+        "Quels indicateurs aideraient votre équipe à agir ?",
+        "Explorer mes retours de terrain",
+        "Pour approfondir ce sujet",
+        "Recevez les prochains guides pratiques"
+      ],
+      "coverHttpStatus": 200,
+      "coverSha256": "42ffc41797642920d249aa4dcb7f0f44f49fb0d88d1928e04a311926111383f4",
+      "coverSizeBytes": 141159,
+      "pageErrors": [],
+      "blockedRequests": [
+        {
+          "method": "GET",
+          "url": "https://www.antoinequarroz.ch/ingest/static/1.434.8/web-vitals-with-attribution.js"
+        },
+        {
+          "method": "GET",
+          "url": "https://www.antoinequarroz.ch/ingest/array/phc_pEpzDYuscdeuHAfWFJTpgyDZT3dxWVFm4y38DUxA2epS/config.js"
+        },
+        {
+          "method": "GET",
+          "url": "https://www.antoinequarroz.ch/ingest/static/1.434.8/exception-autocapture.js"
+        },
+        {
+          "method": "GET",
+          "url": "https://www.antoinequarroz.ch/ingest/static/web-vitals-with-attribution.js"
+        },
+        {
+          "method": "GET",
+          "url": "https://www.antoinequarroz.ch/ingest/array/phc_pEpzDYuscdeuHAfWFJTpgyDZT3dxWVFm4y38DUxA2epS/config"
+        },
+        {
+          "method": "GET",
+          "url": "https://www.antoinequarroz.ch/ingest/static/exception-autocapture.js"
+        }
+      ]
+    }
+  ],
+  "mobileTableHorizontalScroll": {
+    "before": 0,
+    "after": 64,
+    "clientWidth": 364,
+    "scrollWidth": 428,
+    "lastHeaderVisible": true
+  },
+  "visualReview": {
+    "reviewedAt": "2026-10-23T04:39:45.744Z",
+    "coverVioletVisible": true,
+    "coverMatchesLocalSha256": true,
+    "desktopAndMobileTitleReadable": true,
+    "bodyTextReadable": true,
+    "noGlobalHorizontalOverflow": true,
+    "tablesReadable": true,
+    "notes": [
+      "Le premier tableau à quatre colonnes défile localement sur mobile. Sa dernière colonne reste accessible sans débordement de la page.",
+      "Le second tableau à trois colonnes tient dans la largeur mobile.",
+      "Couverture violette dédiée, illustration marquée Démonstration, titre et robot présents."
+    ],
+    "materialBlockers": []
+  }
+}

@@ -57,7 +57,7 @@ describe('parcours client vers paiement', () => {
     expect(payload.code_url).toBeNull()
   })
 
-  it('exige une image et au moins un lien pour un projet public', async () => {
+  it('exige une image pour le portfolio et un lien uniquement pour l’étude de cas publiée', async () => {
     const { projectPayload } = await import('../server/utils/projectPayload')
     const base = {
       title: 'Site vitrine',
@@ -69,7 +69,24 @@ describe('parcours client vers paiement', () => {
 
     expect(() => projectPayload(base, 'org-test')).toThrow('image is required')
     expect(projectPayload({ ...base, image: 'https://example.com/cover.jpg', liveUrl: '' }, 'org-test').live_url).toBeNull()
-    expect(() => projectPayload({ ...base, image: 'https://example.com/cover.jpg', liveUrl: '', portfolioVisible: true }, 'org-test')).toThrow('website or GitHub URL')
+    expect(projectPayload({
+      ...base,
+      image: 'https://example.com/cover.jpg',
+      liveUrl: '',
+      portfolioVisible: true,
+    }, 'org-test')).toMatchObject({
+      portfolio_visible: true,
+      case_study_published: false,
+      live_url: null,
+      code_url: null,
+    })
+    expect(() => projectPayload({
+      ...base,
+      image: 'https://example.com/cover.jpg',
+      liveUrl: '',
+      portfolioVisible: true,
+      caseStudyPublished: true,
+    }, 'org-test')).toThrow('A published case study requires a website or GitHub URL')
     expect(projectPayload({
       ...base,
       image: 'https://example.com/cover.jpg',

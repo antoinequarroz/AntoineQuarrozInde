@@ -24,6 +24,16 @@ Un enfant vidéo utilise `media_type=VIDEO`, `video_url` et `is_carousel_item=tr
 
 Références primaires : [publication Instagram Meta](https://developers.facebook.com/docs/instagram-platform/content-publishing/), [référence du conteneur media](https://developers.facebook.com/docs/instagram-platform/instagram-graph-api/reference/ig-user/media/), [proxy natif Treg](https://treg.to/docs). Le connecteur Treg et le contrôle de coût nul restent identiques ; le budget de recherche de 1 USD/semaine n’est pas modifié.
 
+## Vidéo Instagram seule / Reel (ANT-42)
+
+Un `media_items` contenant exactement une vidéo publie un Reel, après validation explicite de cette version sur le site. Une image seule conserve le champ `media_images` existant ; deux à dix éléments de `media_items` conservent le transport carrousel. Le Reel accepte un ratio de 9:16 à 1,91:1, avec les mêmes contrôles de poids, codec, durée, fréquence et audio que les vidéos du carrousel. Le ratio minimal des carrousels reste 4:5.
+
+Le runner crée un unique conteneur `media_type=REELS` avec `video_url`, `caption` et `share_to_feed=true`, sans `children`, `is_carousel_item` ni `alt_text` vidéo. Il attend `FINISHED` avant un seul appel `media_publish`. Un traitement non terminé ou en erreur bloque cet appel ; un résultat de publication ambigu ne déclenche aucune nouvelle tentative. La description reste disponible dans l’aperçu de validation.
+
+Le runner déclare les deux capacités `X-Hermes-Social-Capabilities: instagram-mixed-v1, instagram-reels-v1`. Le serveur doit exiger `instagram-reels-v1` pour fournir ou réclamer une vidéo seule : le runner de l’ancien carrousel ne sait pas la publier. Le protocole d’empreinte existant reste strictement inchangé, y compris son suffixe `instagram-mixed-v1` pour les éléments de `media_items` ; la nouvelle capacité identifie le transport et ne remplace pas ce suffixe.
+
+Déployer ce runner avant le site autorisant les Reels. Joindre une vidéo, vérifier son aperçu et enregistrer sa date souhaitée laisse le brouillon à valider : ces actions ne créent aucun conteneur Instagram ni envoi public.
+
 ## Échecs et déploiement
 
 Un média invalide ou inaccessible reste approuvé en attente, avec son blocage visible et sans appel de publication. Une connexion indisponible reste bloquée. Après un envoi final ambigu, aucune reprise automatique n’est effectuée : vérifier le réseau avant un nouvel accord manuel. Un identifiant Instagram confirmé est enregistré comme publié même si la récupération du lien public échoue.

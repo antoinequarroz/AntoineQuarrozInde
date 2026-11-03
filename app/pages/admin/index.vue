@@ -1,5 +1,9 @@
 <script setup lang="ts">
 import type { ContactMessage } from '~/types'
+import { draftInvoiceTotals, invoiceThirtyDayCutoff, outstandingInvoiceTotals } from '~/utils/outstandingInvoices'
+import { isQuoteAwaitingDecision } from '~/utils/quoteListFilter'
+import { isTaskDueToday, taskBusinessDate } from '~/utils/taskListFilter'
+import { isNewMessage } from '~/utils/messageListFilter'
 import AdminAdminIcon from '~/components/admin/AdminIcon.vue'
 import AdminAdminEmptyState from '~/components/admin/AdminEmptyState.vue'
 import { buildCommercialTaskSuggestions, type CommercialTaskSuggestion } from '~/utils/commercialTaskPlan'
@@ -218,12 +222,7 @@ function readableError(error: unknown) {
   return value?.data?.message || value?.message || 'La source n’a pas répondu. Réessaie dans quelques instants.'
 }
 
-const todayIso = computed(() => new Intl.DateTimeFormat('en-CA', {
-  timeZone: 'Europe/Zurich',
-  year: 'numeric',
-  month: '2-digit',
-  day: '2-digit',
-}).format(new Date()))
+const todayIso = computed(() => taskBusinessDate())
 const nowIso = computed(() => new Date().toISOString())
 const todayLabel = computed(() => new Date().toLocaleDateString('fr-CH', {
   weekday: 'long',
@@ -242,7 +241,7 @@ const openTasks = computed(() =>
     .sort((a, b) => String(a.dueDate || '9999-12-31').localeCompare(String(b.dueDate || '9999-12-31'))),
 )
 
-const dueTasks = computed(() => openTasks.value.filter(task => task.dueDate && task.dueDate <= todayIso.value))
+const dueTasks = computed(() => openTasks.value.filter(task => isTaskDueToday(task, todayIso.value)))
 
 const overdueInvoices = computed(() =>
   invoices.invoices
@@ -252,7 +251,7 @@ const overdueInvoices = computed(() =>
 
 const pendingQuotes = computed(() =>
   quotes.quotes
-    .filter(quote => quote.status === 'sent')
+    .filter(isQuoteAwaitingDecision)
     .sort((a, b) => String(a.validUntil || '').localeCompare(String(b.validUntil || ''))),
 )
 
@@ -291,9 +290,7 @@ const nextAppointments = computed(() =>
 )
 
 const newMessages = computed(() =>
-  messages.value
-    .filter(message => message.status === 'new')
-    .slice(0, 6),
+  messages.value.filter(isNewMessage),
 )
 
 const monthRevenue = computed(() => {
@@ -312,16 +309,9 @@ const monthRevenue = computed(() => {
   return totals
 })
 
-const expectedRevenue = computed(() => {
-  const next30 = addDaysToIsoDate(todayIso.value, 30)
-  const totals: Record<string, number> = {}
-  for (const invoice of invoices.invoices.filter(invoice => invoice.documentType === 'invoice' && ['sent', 'overdue'].includes(invoice.status) && invoice.dueAt && invoice.dueAt <= next30)) {
-    const currency = invoice.currency || 'CHF'
-    const outstanding = Math.max(0, (invoice.totalCents ?? invoice.amountCents) - invoice.paidAmountCents)
-    totals[currency] = (totals[currency] || 0) + outstanding
-  }
-  return totals
-})
+const draftInvoiceAmount = computed(() => draftInvoiceTotals(invoices.invoices))
+const totalOutstanding = computed(() => outstandingInvoiceTotals(invoices.invoices))
+const expectedRevenue = computed(() => outstandingInvoiceTotals(invoices.invoices, invoiceThirtyDayCutoff(todayIso.value)))
 
 const quoteValue = computed(() => {
   const totals: Record<string, number> = {}
@@ -334,20 +324,38 @@ const quoteValue = computed(() => {
 
 const metrics = computed(() => [
   {
+    label: 'Total à encaisser',
+    value: sourceStates.invoices === 'ready' ? formatCurrencyTotals(totalOutstanding.value) : '—',
+    meta: sourceStates.invoices === 'ready' ? 'Toutes échéances confondues' : 'Factures indisponibles',
+    icon: 'receipt',
+    to: '/admin/invoices?status=outstanding',
+    tone: 'text-violet-600 bg-violet-50 dark:text-violet-300 dark:bg-violet-500/10',
+    bar: 'bg-violet-500',
+  },
+  {
     label: 'À encaisser sous 30 jours',
     value: sourceStates.invoices === 'ready' ? formatCurrencyTotals(expectedRevenue.value) : '—',
     meta: sourceStates.invoices === 'ready' ? `${overdueInvoices.value.length} facture(s) en retard` : 'Factures indisponibles',
     icon: 'receipt',
-    to: '/admin/invoices',
+    to: '/admin/invoices?status=outstanding-30-days',
     tone: 'text-rose-600 bg-rose-50 dark:text-rose-300 dark:bg-rose-500/10',
     bar: 'bg-rose-500',
+  },
+  {
+    label: 'Factures en brouillon',
+    value: sourceStates.invoices === 'ready' ? formatCurrencyTotals(draftInvoiceAmount.value) : '—',
+    meta: sourceStates.invoices === 'ready' ? 'Montants prévus, non émis' : 'Factures indisponibles',
+    icon: 'file-plus',
+    to: '/admin/invoices?status=draft-invoices',
+    tone: 'text-amber-700 bg-amber-50 dark:text-amber-300 dark:bg-amber-500/10',
+    bar: 'bg-amber-500',
   },
   {
     label: 'Devis en attente de décision',
     value: sourceStates.quotes === 'ready' ? formatCurrencyTotals(quoteValue.value) : '—',
     meta: sourceStates.quotes === 'ready' ? `${pendingQuotes.value.length} devis envoyé(s)` : 'Devis indisponibles',
     icon: 'file-plus',
-    to: '/admin/quotes',
+    to: '/admin/quotes?status=sent',
     tone: 'text-sky-600 bg-sky-50 dark:text-sky-300 dark:bg-sky-500/10',
     bar: 'bg-sky-500',
   },
@@ -356,7 +364,7 @@ const metrics = computed(() => [
     value: sourceStates.tasks === 'ready' ? dueTasks.value.length : '—',
     meta: sourceStates.tasks === 'ready' ? `${openTasks.value.length} tâche(s) ouverte(s)` : 'Tâches indisponibles',
     icon: 'check-square',
-    to: '/admin/tasks',
+    to: '/admin/tasks?filter=due-today',
     tone: 'text-amber-700 bg-amber-50 dark:text-amber-300 dark:bg-amber-500/10',
     bar: 'bg-amber-500',
   },
@@ -365,7 +373,7 @@ const metrics = computed(() => [
     value: sourceStates.messages === 'ready' ? newMessages.value.length : '—',
     meta: sourceStates.messages === 'ready' ? 'À lire dans la messagerie' : 'Messages indisponibles',
     icon: 'mail',
-    to: '/admin/messages',
+    to: '/admin/messages?status=new',
     tone: 'text-emerald-700 bg-emerald-50 dark:text-emerald-300 dark:bg-emerald-500/10',
     bar: 'bg-emerald-500',
   },
@@ -468,7 +476,7 @@ const commercialRows = computed(() => {
     tone: string
   }> = []
 
-  for (const message of sourceStates.messages === 'ready' ? newMessages.value : []) {
+  for (const message of sourceStates.messages === 'ready' ? newMessages.value.slice(0, 6) : []) {
     rows.push({
       id: `message-${message.id}`,
       type: 'Lead',
@@ -906,8 +914,8 @@ watch(() => auth.currentOrganizationId, (organizationId, previousOrganizationId)
 
     <div v-if="dashboardIsLoading" role="status" aria-live="polite" class="space-y-4">
       <span class="sr-only">Chargement du tableau de bord</span>
-      <div class="grid grid-cols-1 gap-2.5 min-[480px]:grid-cols-2 xl:grid-cols-4">
-        <div v-for="index in 4" :key="index" class="h-28 animate-pulse rounded-xl bg-gray-200/70 dark:bg-white/[0.06]" />
+      <div class="grid grid-cols-1 gap-2.5 min-[480px]:grid-cols-2 xl:grid-cols-3 min-[1800px]:grid-cols-6">
+        <div v-for="index in 6" :key="index" class="h-28 animate-pulse rounded-xl bg-gray-200/70 dark:bg-white/[0.06]" />
       </div>
       <div class="grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(300px,0.65fr)]">
         <div class="h-64 animate-pulse rounded-xl bg-gray-200/70 dark:bg-white/[0.06]" />
@@ -916,7 +924,7 @@ watch(() => auth.currentOrganizationId, (organizationId, previousOrganizationId)
     </div>
 
     <div v-else class="flex flex-col gap-4 lg:gap-5">
-    <section v-show="isSectionVisible('metrics')" class="grid grid-cols-1 gap-2.5 min-[480px]:grid-cols-2 xl:grid-cols-4" :style="{ order: sectionOrder('metrics') }" aria-label="Indicateurs clés">
+    <section v-show="isSectionVisible('metrics')" class="grid grid-cols-1 gap-2.5 min-[480px]:grid-cols-2 xl:grid-cols-3 min-[1800px]:grid-cols-6" :style="{ order: sectionOrder('metrics') }" aria-label="Indicateurs clés">
       <NuxtLink
         v-for="metric in metrics"
         :key="metric.label"
@@ -925,14 +933,14 @@ watch(() => auth.currentOrganizationId, (organizationId, previousOrganizationId)
       >
         <div class="flex items-start justify-between gap-3">
           <div class="min-w-0">
-            <p class="truncate text-xs font-medium text-gray-500 dark:text-gray-400">{{ metric.label }}</p>
-            <p class="mt-2 truncate text-xl font-semibold text-gray-950 dark:text-white sm:text-2xl">{{ metric.value }}</p>
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ metric.label }}</p>
+            <p class="mt-2 break-words text-xl font-semibold text-gray-950 dark:text-white sm:text-2xl">{{ metric.value }}</p>
           </div>
           <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg" :class="metric.tone">
             <AdminAdminIcon :icon="metric.icon" class="h-4 w-4" />
           </span>
         </div>
-        <p class="mt-3 truncate text-xs text-gray-500 dark:text-gray-400">{{ metric.meta }}</p>
+        <p class="mt-3 text-xs text-gray-500 dark:text-gray-400">{{ metric.meta }}</p>
       </NuxtLink>
     </section>
 
@@ -1032,7 +1040,7 @@ watch(() => auth.currentOrganizationId, (organizationId, previousOrganizationId)
       <aside class="rounded-lg border border-gray-200 bg-white shadow-sm dark:border-white/[0.08] dark:bg-[#111118]">
         <div class="flex items-center justify-between gap-3 border-b border-gray-100 px-4 py-3 dark:border-white/[0.06]">
           <div>
-            <h2 class="text-sm font-semibold text-gray-950 dark:text-white">Aujourd'hui</h2>
+            <h2 class="text-sm font-semibold text-gray-950 dark:text-white">Prochains rendez-vous</h2>
             <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Tes cinq prochains rendez-vous.</p>
           </div>
           <NuxtLink to="/admin/appointments" class="text-xs font-semibold text-gray-600 hover:text-gray-950 dark:text-gray-300 dark:hover:text-white">
@@ -1072,7 +1080,7 @@ watch(() => auth.currentOrganizationId, (organizationId, previousOrganizationId)
             <h2 class="text-sm font-semibold text-gray-950 dark:text-white">Décisions commerciales</h2>
             <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{{ sourceStates.invoices === 'ready' ? `${formatCurrencyTotals(monthRevenue)} encaissés ce mois-ci.` : 'Encaissements indisponibles.' }}</p>
           </div>
-          <NuxtLink to="/admin/clients" class="shrink-0 text-xs font-semibold text-gray-600 hover:text-gray-950 dark:text-gray-300 dark:hover:text-white">
+          <NuxtLink to="/admin/crm" class="shrink-0 text-xs font-semibold text-gray-600 hover:text-gray-950 dark:text-gray-300 dark:hover:text-white">
             CRM
           </NuxtLink>
         </div>
@@ -1401,7 +1409,7 @@ watch(() => auth.currentOrganizationId, (organizationId, previousOrganizationId)
             <div>
               <h3 class="text-sm font-semibold text-gray-950 dark:text-white">Comprendre le cockpit</h3>
               <div class="mt-3 space-y-2 text-xs">
-                <details class="rounded-lg border border-gray-200 px-3 py-2 dark:border-white/[0.1]"><summary class="cursor-pointer font-semibold text-gray-800 dark:text-gray-100">Montants à encaisser</summary><p class="mt-2 leading-5 text-gray-600 dark:text-gray-300">Le total additionne uniquement les soldes restant dus dans les 30 prochains jours, séparés par devise.</p></details>
+                <details class="rounded-lg border border-gray-200 px-3 py-2 dark:border-white/[0.1]"><summary class="cursor-pointer font-semibold text-gray-800 dark:text-gray-100">Montants à encaisser</summary><p class="mt-2 leading-5 text-gray-600 dark:text-gray-300">Le total à encaisser additionne les soldes des factures envoyées ou en retard, toutes échéances confondues. Le montant sous 30 jours se limite aux échéances passées ou prévues dans les 30 prochains jours. Les factures en brouillon apparaissent séparément comme montants prévus, non émis : elles ne font pas partie du total à encaisser. Les devises restent séparées.</p></details>
                 <details class="rounded-lg border border-gray-200 px-3 py-2 dark:border-white/[0.1]"><summary class="cursor-pointer font-semibold text-gray-800 dark:text-gray-100">Relances clients</summary><p class="mt-2 leading-5 text-gray-600 dark:text-gray-300">Aucun message n’est envoyé sans sélection et confirmation. Si son contenu ou son destinataire change, le serveur bloque l’envoi.</p></details>
                 <details class="rounded-lg border border-gray-200 px-3 py-2 dark:border-white/[0.1]"><summary class="cursor-pointer font-semibold text-gray-800 dark:text-gray-100">Données partielles</summary><p class="mt-2 leading-5 text-gray-600 dark:text-gray-300">Une valeur masquée signifie qu’une source n’a pas répondu. Ouvre « État détaillé » pour actualiser uniquement cette source.</p></details>
               </div>

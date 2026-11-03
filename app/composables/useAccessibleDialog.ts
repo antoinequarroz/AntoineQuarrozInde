@@ -37,6 +37,7 @@ export function useAccessibleDialog(
   isOpen: Ref<boolean>,
   close: () => void,
   initialFocusSelector?: string,
+  options: { restoreFocus?: boolean, preventScrollOnRestore?: boolean } = {},
 ) {
   const dialogRef = ref<HTMLElement | null>(null)
   let previousFocus: HTMLElement | null = null
@@ -117,7 +118,7 @@ export function useAccessibleDialog(
     previousFocus = null
     restoreBackground()
     await nextTick()
-    focusTarget?.focus()
+    if (options.restoreFocus !== false) focusTarget?.focus({ preventScroll: options.preventScrollOnRestore ?? false })
   })
 
   onBeforeUnmount(() => {

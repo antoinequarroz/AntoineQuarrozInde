@@ -298,3 +298,318 @@ test('secondary admin pages remain complete and responsive on mobile', async ({ 
   expect(pageErrors).toEqual([])
   expect(hydrationWarnings).toEqual([])
 })
+
+test('dashboard invoice cards open persistent, resettable filters', async ({ page }) => {
+  test.skip(!adminCredentialsConfigured, 'E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD are required')
+  await loginAdmin(page)
+  await selectSandboxOrganization(page)
+
+  for (const [label, filter] of [['Factures en brouillon', 'draft-invoices'], ['Total à encaisser', 'outstanding'], ['À encaisser sous 30 jours', 'outstanding-30-days']] as const) {
+    await page.goto('/admin')
+    await page.getByRole('region', { name: 'Indicateurs clés' }).getByRole('link', { name: new RegExp(label) }).click()
+    await expect(page).toHaveURL(url => url.pathname === '/admin/invoices' && url.searchParams.get('status') === filter)
+    await expect(page.getByRole('combobox', { name: 'Filtrer les factures' })).toHaveValue(filter)
+    await page.reload()
+    await expect(page.getByRole('combobox', { name: 'Filtrer les factures' })).toHaveValue(filter)
+    await page.getByRole('combobox', { name: 'Filtrer les factures' }).selectOption('all')
+    await expect(page).toHaveURL(/\/admin\/invoices$/)
+  }
+  await page.goto('/admin/invoices?status=draft-invoices')
+  await page.goto('/admin/invoices?status=outstanding')
+  await page.goBack()
+  await expect(page.getByRole('combobox', { name: 'Filtrer les factures' })).toHaveValue('draft-invoices')
+})
+
+test('dashboard pending quote card shows only sent quotes with a persistent, resettable filter', async ({ page }) => {
+  test.skip(!adminCredentialsConfigured, 'E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD are required')
+  await loginAdmin(page)
+  await selectSandboxOrganization(page)
+
+  const documents = (['draft', 'sent', 'accepted', 'rejected'] as const).map((status, index) => ({
+    id: 903600 + index,
+    number: `ANT36-Q-${status.toUpperCase()}`,
+    client_id: null,
+    project_id: null,
+    title: `Devis de démonstration ${status}`,
+    amount_cents: 50000,
+    currency: 'CHF',
+    status,
+    issued_at: '2026-10-01',
+    valid_until: '2026-09-01',
+    notes: null,
+    created_at: '2026-10-01T08:00:00Z',
+  }))
+  await page.route('**/api/quotes', route => route.request().method() === 'GET'
+    ? route.fulfill({ json: documents })
+    : route.abort('blockedbyclient'))
+
+  await page.goto('/admin')
+  await page.getByRole('region', { name: 'Indicateurs clés' }).getByRole('link', { name: /Devis en attente de décision/ }).click()
+  await expect(page).toHaveURL(url => url.pathname === '/admin/quotes' && url.searchParams.get('status') === 'sent')
+  const statusFilter = page.getByRole('combobox', { name: 'Filtrer les devis par statut' })
+  const quoteRows = page.locator('table tbody tr').filter({ hasText: 'ANT36-Q-' })
+  await expect(statusFilter).toHaveValue('sent')
+  await expect(quoteRows).toHaveCount(1)
+  await expect(quoteRows.first()).toContainText('ANT36-Q-SENT')
+  await expect(page.getByRole('heading', { name: 'ANT36-Q-DRAFT', exact: true })).toHaveCount(0)
+  await expect(page.getByRole('heading', { name: 'ANT36-Q-SENT', exact: true })).toBeVisible()
+
+  await page.reload()
+  await expect(statusFilter).toHaveValue('sent')
+  await expect(quoteRows).toHaveCount(1)
+  await statusFilter.selectOption('all')
+  await expect(page).toHaveURL(/\/admin\/quotes$/)
+  await expect(quoteRows).toHaveCount(4)
+  await quoteRows.filter({ hasText: 'ANT36-Q-DRAFT' }).click()
+  await expect(page.getByRole('heading', { name: 'ANT36-Q-DRAFT', exact: true })).toBeVisible()
+  await statusFilter.selectOption('sent')
+  await expect(page).toHaveURL(url => url.searchParams.get('status') === 'sent')
+  await expect(page.getByRole('heading', { name: 'ANT36-Q-DRAFT', exact: true })).toHaveCount(0)
+  await expect(quoteRows).toHaveCount(1)
+
+  await page.goto('/admin/quotes?status=accepted')
+  await expect(statusFilter).toHaveValue('accepted')
+  await expect(quoteRows).toHaveCount(1)
+  await expect(quoteRows.first()).toContainText('ANT36-Q-ACCEPTED')
+  await page.goto(`/admin/quotes?status=sent&quoteId=${documents[0]!.id}`)
+  await expect(statusFilter).toHaveValue('sent')
+  await expect(quoteRows).toHaveCount(1)
+  await expect(quoteRows.first()).toContainText('ANT36-Q-SENT')
+  await expect(page.getByRole('heading', { name: 'ANT36-Q-DRAFT', exact: true })).toHaveCount(0)
+  await page.goBack()
+  await expect(statusFilter).toHaveValue('accepted')
+  await expect(quoteRows).toHaveCount(1)
+  await expect(quoteRows.first()).toContainText('ANT36-Q-ACCEPTED')
+})
+
+test('dashboard today task card keeps its due-task filter and opens only matching task links', async ({ page }) => {
+  test.skip(!adminCredentialsConfigured, 'E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD are required')
+  await loginAdmin(page)
+  await selectSandboxOrganization(page)
+
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Zurich', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
+  const documents = [
+    { id: 903700, title: 'ANT37-T-FUTURE', status: 'todo', due_date: '2099-12-31' },
+    { id: 903701, title: 'ANT37-T-TODAY', status: 'todo', due_date: today },
+    { id: 903702, title: 'ANT37-T-OVERDUE', status: 'in_progress', due_date: '2000-01-01' },
+    { id: 903703, title: 'ANT37-T-DONE', status: 'done', due_date: today },
+    { id: 903704, title: 'ANT37-T-UNDATED', status: 'todo', due_date: null },
+    { id: 903705, title: 'ANT37-T-IN-PROGRESS', status: 'in_progress', due_date: today },
+  ].map(document => ({ ...document, description: null, priority: 'medium', client_id: null, project_id: null, created_at: '2026-10-01T08:00:00Z' }))
+  const taskMutations: string[] = []
+  await page.route('**/api/tasks**', route => {
+    if (route.request().method() === 'GET') return route.fulfill({ json: documents })
+    taskMutations.push(route.request().method())
+    return route.abort('blockedbyclient')
+  })
+
+  await page.goto('/admin')
+  await page.getByRole('region', { name: 'Indicateurs clés' }).getByRole('link', { name: /À faire aujourd’hui/ }).click()
+  await expect(page).toHaveURL(url => url.pathname === '/admin/tasks' && url.searchParams.get('filter') === 'due-today')
+  const taskFilter = page.getByRole('combobox', { name: 'Filtrer les tâches' })
+  const taskRows = page.locator('table tbody tr').filter({ hasText: 'ANT37-T-' })
+  await expect(taskFilter).toHaveValue('due-today')
+  await expect(taskRows).toHaveCount(3)
+  await expect(taskRows.filter({ hasText: 'ANT37-T-TODAY' })).toHaveCount(1)
+  await expect(taskRows.filter({ hasText: 'ANT37-T-OVERDUE' })).toHaveCount(1)
+  await expect(taskRows.filter({ hasText: 'ANT37-T-IN-PROGRESS' })).toHaveCount(1)
+  await page.reload()
+  await expect(taskFilter).toHaveValue('due-today')
+  await expect(taskRows).toHaveCount(3)
+  await taskFilter.selectOption('all')
+  await expect(page).toHaveURL(/\/admin\/tasks$/)
+  await expect(taskRows).toHaveCount(6)
+
+  await page.goto('/admin/tasks?filter=due-today&taskId=903700')
+  await expect(taskFilter).toHaveValue('due-today')
+  await expect(taskRows).toHaveCount(3)
+  await expect(page.getByRole('dialog', { name: 'Modifier la tâche', exact: true })).toHaveCount(0)
+  await page.goto('/admin/tasks?filter=due-today&taskId=903701')
+  const editDialog = page.getByRole('dialog', { name: 'Modifier la tâche', exact: true })
+  await expect(editDialog).toBeVisible()
+  await expect(editDialog.locator('#task-title')).toHaveValue('ANT37-T-TODAY')
+  await editDialog.getByRole('button', { name: 'Annuler', exact: true }).click()
+  await expect(editDialog).toBeHidden()
+
+  await page.goto('/admin/tasks?filter=due-today&taskId=903700&new=1')
+  const newDialog = page.getByRole('dialog', { name: 'Nouvelle tâche', exact: true })
+  await expect(newDialog).toBeVisible()
+  await expect(newDialog.locator('#task-title')).toHaveValue('')
+  await newDialog.getByRole('button', { name: 'Annuler', exact: true }).click()
+  await expect(newDialog).toBeHidden()
+
+  await page.goto('/admin/tasks')
+  await expect(taskFilter).toHaveValue('all')
+  await expect(taskRows).toHaveCount(6)
+  await page.goto('/admin/tasks?filter=due-today')
+  await expect(taskFilter).toHaveValue('due-today')
+  await expect(taskRows).toHaveCount(3)
+  await page.goBack()
+  await expect(taskFilter).toHaveValue('all')
+  await expect(taskRows).toHaveCount(6)
+  expect(taskMutations).toEqual([])
+})
+
+test('failed task updates preserve the edit form when the optimistic change leaves the current filter', async ({ page }) => {
+  test.skip(!adminCredentialsConfigured, 'E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD are required')
+  await loginAdmin(page)
+  await selectSandboxOrganization(page)
+
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Zurich', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
+  const document = {
+    id: 903710, title: 'ANT37-T-FAILED-UPDATE', description: null, status: 'todo', priority: 'medium',
+    due_date: today, client_id: null, project_id: null, created_at: '2026-10-01T08:00:00Z',
+  }
+  await page.route('**/api/tasks**', route => {
+    if (route.request().method() === 'GET') return route.fulfill({ json: [document] })
+    if (route.request().method() === 'PUT') return route.fulfill({ status: 503, json: { message: 'Échec simulé pour ce test' } })
+    return route.abort('blockedbyclient')
+  })
+
+  await page.goto(`/admin/tasks?filter=due-today&taskId=${document.id}`)
+  const dialog = page.getByRole('dialog', { name: 'Modifier la tâche', exact: true })
+  await expect(dialog).toBeVisible()
+  await dialog.locator('#task-title').fill('ANT37 saisie conservée après erreur')
+  await dialog.locator('#task-status').selectOption('done')
+  await dialog.getByRole('button', { name: 'Enregistrer', exact: true }).click()
+  await expect(page.getByText('La tâche n’a pas pu être enregistrée', { exact: true })).toBeVisible()
+  await expect(dialog).toBeVisible()
+  await expect(dialog.locator('#task-title')).toHaveValue('ANT37 saisie conservée après erreur')
+  await expect(dialog.locator('#task-status')).toHaveValue('done')
+  await dialog.getByRole('button', { name: 'Annuler', exact: true }).click()
+  await expect(dialog).toBeHidden()
+})
+
+test('all dashboard metric links keep their context and the new-message filter includes every unread message', async ({ page }) => {
+  test.skip(!adminCredentialsConfigured, 'E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD are required')
+  await loginAdmin(page)
+  await selectSandboxOrganization(page)
+
+  const message = (id: number, label: string, status: 'new' | 'in_progress' | 'replied' | 'archived') => ({
+    id, name: `ANT38-${label}`, email: `ant38-${id}@example.invalid`, subject: `ANT38 sujet ${label}`,
+    message: `ANT38 contenu ${label}`, status, tags: [], repliedAt: null, createdAt: '2026-10-16T08:00:00Z',
+  })
+  const documents = [
+    message(903800, 'ARCHIVED', 'archived'),
+    ...Array.from({ length: 8 }, (_, index) => message(903801 + index, `NEW-${index + 1}`, 'new')),
+    message(903809, 'IN-PROGRESS', 'in_progress'), message(903810, 'REPLIED', 'replied'),
+  ]
+  const mutations: string[] = []
+  await page.route('**/api/messages**', route => {
+    if (route.request().method() === 'GET') return route.fulfill({ json: documents })
+    mutations.push(route.request().method())
+    return route.abort('blockedbyclient')
+  })
+
+  await page.goto('/admin')
+  const metrics = page.getByRole('region', { name: 'Indicateurs clés' })
+  for (const [label, href] of [
+    ['Total à encaisser', '/admin/invoices?status=outstanding'],
+    ['À encaisser sous 30 jours', '/admin/invoices?status=outstanding-30-days'],
+    ['Factures en brouillon', '/admin/invoices?status=draft-invoices'],
+    ['Devis en attente de décision', '/admin/quotes?status=sent'],
+    ['À faire aujourd’hui', '/admin/tasks?filter=due-today'],
+    ['Nouveaux messages', '/admin/messages?status=new'],
+  ] as const) {
+    await expect(metrics.getByRole('link', { name: new RegExp(label) })).toHaveAttribute('href', href)
+  }
+  const messageCard = metrics.getByRole('link', { name: /Nouveaux messages/ })
+  await expect(messageCard.getByText('8', { exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Prochains rendez-vous', exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Décisions commerciales', exact: true }).locator('..').locator('..').getByRole('link', { name: 'CRM', exact: true })).toHaveAttribute('href', '/admin/crm')
+  await messageCard.click()
+  await expect(page).toHaveURL(url => url.pathname === '/admin/messages' && url.searchParams.get('status') === 'new')
+  const statusFilter = page.getByRole('combobox', { name: 'Filtrer les messages par statut' })
+  const newMessages = page.getByRole('button', { name: /ANT38-NEW-/ })
+  await expect(statusFilter).toHaveValue('new')
+  await expect(newMessages).toHaveCount(8)
+  await expect(page.getByRole('button', { name: /ANT38-ARCHIVED/ })).toHaveCount(0)
+  await expect(page.getByLabel('Sujet', { exact: true })).toHaveValue('Re: ANT38 sujet NEW-1')
+  await page.reload()
+  await expect(statusFilter).toHaveValue('new')
+  await expect(newMessages).toHaveCount(8)
+
+  await page.goto('/admin/messages?status=new&messageId=903801')
+  await expect(statusFilter).toHaveValue('new')
+  await expect(page.getByLabel('Sujet', { exact: true })).toHaveValue('Re: ANT38 sujet NEW-1')
+  await statusFilter.selectOption('all')
+  await expect(page).toHaveURL(/\/admin\/messages$/)
+  await expect(page.getByRole('button', { name: /ANT38-/ })).toHaveCount(11)
+  await page.goto('/admin/messages?status=archived')
+  await expect(statusFilter).toHaveValue('archived')
+  await expect(page.getByRole('button', { name: /ANT38-ARCHIVED/ })).toHaveCount(1)
+  await page.goto('/admin/messages?status=new&messageId=903800')
+  await expect(statusFilter).toHaveValue('new')
+  await expect(newMessages).toHaveCount(8)
+  await expect(page.getByText('ANT38 contenu ARCHIVED', { exact: true })).toHaveCount(0)
+  await page.goBack()
+  await expect(statusFilter).toHaveValue('archived')
+  await expect(page.getByRole('button', { name: /ANT38-ARCHIVED/ })).toHaveCount(1)
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/admin/messages?status=new')
+  await expect(statusFilter).toHaveValue('new')
+  await expect(newMessages).toHaveCount(8)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true)
+  expect(mutations).toEqual([])
+})
+
+test('failed message metadata saves preserve the reply draft and successful saves update the filtered selection', async ({ page }) => {
+  test.skip(!adminCredentialsConfigured, 'E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD are required')
+  await loginAdmin(page)
+  await selectSandboxOrganization(page)
+
+  const documents = ['FIRST', 'NEXT'].map((label, index) => ({
+    id: 903820 + index, name: `ANT38-EDIT-${label}`, email: `ant38-edit-${index}@example.invalid`,
+    subject: `ANT38 sujet ${label}`, message: `ANT38 contenu ${label}`, status: 'new', tags: [] as string[],
+    repliedAt: null, createdAt: '2026-10-16T08:00:00Z',
+  }))
+  let failSave = true
+  const savedIds: number[] = []
+  const blockedMutations: string[] = []
+  await page.route('**/api/messages**', async route => {
+    if (route.request().method() === 'GET') return route.fulfill({ json: documents })
+    if (route.request().method() === 'PUT' && new URL(route.request().url()).pathname === '/api/messages') {
+      if (failSave) return route.fulfill({ status: 503, json: { message: 'Échec simulé pour ce test' } })
+      const body = route.request().postDataJSON() as { id: number, status: string, tags: string[] }
+      const document = documents.find(item => item.id === body.id)
+      if (!document) return route.fulfill({ status: 404, json: { message: 'Message de démonstration absent' } })
+      document.status = body.status
+      document.tags = [...body.tags]
+      savedIds.push(document.id)
+      return route.fulfill({ json: document })
+    }
+    blockedMutations.push(route.request().method())
+    return route.abort('blockedbyclient')
+  })
+
+  await page.goto('/admin/messages?status=new&messageId=903820')
+  const selectedStatus = page.getByRole('combobox', { name: 'Statut du message' })
+  const replySubject = page.getByLabel('Sujet', { exact: true })
+  const replyBody = page.getByLabel('Réponse', { exact: true })
+  const saveButton = page.getByRole('button', { name: 'Enregistrer', exact: true })
+  await expect(replySubject).toHaveValue('Re: ANT38 sujet FIRST')
+  await replySubject.fill('ANT38 sujet conservé après erreur')
+  await replyBody.fill('ANT38 réponse conservée, sans aucun envoi.')
+  await selectedStatus.selectOption('in_progress')
+  await expect(page.getByRole('button', { name: /ANT38-EDIT-FIRST/ })).toBeVisible()
+  await saveButton.click()
+  await expect(page.getByText('Le message n’a pas pu être mis à jour', { exact: true })).toBeVisible()
+  await expect(saveButton).toBeEnabled()
+  await expect(selectedStatus).toHaveValue('in_progress')
+  await expect(replySubject).toHaveValue('ANT38 sujet conservé après erreur')
+  await expect(replyBody).toHaveValue('ANT38 réponse conservée, sans aucun envoi.')
+  await expect(page.getByRole('button', { name: /ANT38-EDIT-FIRST/ })).toBeVisible()
+
+  failSave = false
+  await saveButton.click()
+  await expect(page.getByText('Message mis à jour', { exact: true })).toBeVisible()
+  await expect(page).toHaveURL(url => url.pathname === '/admin/messages' && url.searchParams.get('status') === 'new' && !url.searchParams.has('messageId'))
+  await expect(page.getByRole('button', { name: /ANT38-EDIT-FIRST/ })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: /ANT38-EDIT-NEXT/ })).toBeVisible()
+  await expect(selectedStatus).toHaveValue('new')
+  await expect(replySubject).toHaveValue('Re: ANT38 sujet NEXT')
+  await expect(replyBody).not.toHaveValue('ANT38 réponse conservée, sans aucun envoi.')
+  expect(savedIds).toEqual([903820])
+  expect(blockedMutations).toEqual([])
+})

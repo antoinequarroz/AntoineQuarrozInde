@@ -1,0 +1,28 @@
+{
+  "verifiedAt": "2026-10-21T05:49:19.082057+00:00",
+  "url": "https://www.antoinequarroz.ch/blog/apres-refonte-liens-casses-redirections",
+  "articleId": 44,
+  "http": 200,
+  "checks": {
+    "SSRBody": true,
+    "title": true,
+    "canonical": true,
+    "sitemap": true,
+    "coverActuallyUsed": true,
+    "coverHash": true,
+    "coverDimensions": true,
+    "BlogPosting": true,
+    "apiBodyMatches": true
+  },
+  "cover": "https://oxlrljszatejqxhclmbu.supabase.co/storage/v1/object/public/media/hermes/41b8b13950459c760a54e22f7fd41c04c3b5faf0c28fbecd6d5ce0f965250f95.png",
+  "coverDimensions": [
+    1200,
+    675
+  ],
+  "coverSha256": "07c731d9cc4a72d6895bd00b6ba57a30a3015025e58e29ee9d3036d4924c18a4",
+  "incomingLinksObserved": {
+    "/blog": true,
+    "/refonte-site-web-valais": true
+  },
+  "internalLinksHTTP200": "see quality receipt"
+}
