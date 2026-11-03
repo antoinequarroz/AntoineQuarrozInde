@@ -12,7 +12,9 @@ setup((app) => {
   app.use(MotionPlugin)
   const components = import.meta.glob([
     '../app/components/ui/{LangSwitcher,ThemeToggle,AppImageUpload,CardStack,BookingCalendar,SplineRobot}.vue',
-    '../app/components/sections/ProjectHelixCarousel.vue',
+    '../app/components/ui/VideoScrollHero.vue',
+    '../app/components/sections/{ProjectHelixCarousel,AboutVideo}.vue',
+    '../app/components/admin/{Icon,SocialPostTile,SocialPlatformBadge,SocialPlatformIcon,SocialDocumentPreview}.vue',
   ], { eager: true, import: 'default' })
   for (const [path, component] of Object.entries(components)) {
     const parts = path.replace('../app/components/', '').replace('.vue', '').split('/')

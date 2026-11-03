@@ -28,8 +28,8 @@ const config: StorybookConfig = {
         vue({ template: { compilerOptions: { isCustomElement: tag => tag === 'spline-viewer' } } }),
         AutoImport({
           include: [/\/app\/.*\.(vue|ts)$/, /\.vue\?vue/],
-          imports: ['vue', { '@vueuse/core': ['useWindowScroll', 'useWindowSize', 'useElementBounding'] },
-            { [root + '.storybook/runtime']: ['useI18n', 'useColorMode', 'useRoute', 'useLocalePath', 'useLocaleRoute', 'useRouteBaseName', 'useSwitchLocalePath', 'useRuntimeConfig', 'useMarketing', 'usePlausibleEvent', 'captureLeadAttribution', 'useHead', 'useAsyncData', 'useAuthStore', 'useClientsStore', 'useProjectsStore', 'useQuotesStore', 'useInvoicesStore', 'useTasksStore', 'useArticlesStore', 'useReviewsStore', 'useGoogleReviewsStore'] },
+          imports: ['vue', { '@vueuse/core': ['useWindowScroll', 'useWindowSize', 'useElementBounding', 'usePreferredReducedMotion'] },
+            { [root + '.storybook/runtime']: ['useI18n', 'useColorMode', 'useRoute', 'useLocalePath', 'useLocaleRoute', 'useRouteBaseName', 'useSwitchLocalePath', 'useRuntimeConfig', 'useMarketing', 'usePlausibleEvent', 'usePostHogEvent', 'useHomepageArticlesStore', 'captureLeadAttribution', 'useHead', 'useAsyncData', 'useAuthStore', 'useClientsStore', 'useProjectsStore', 'useQuotesStore', 'useInvoicesStore', 'useTasksStore', 'useArticlesStore', 'useReviewsStore', 'useGoogleReviewsStore'] },
             { [root + 'app/composables/useToast']: ['useToast'] },
             { [root + 'app/composables/useAccessibleDialog']: ['useAccessibleDialog'] }],
           dts: false,

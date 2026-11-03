@@ -8,9 +8,11 @@ export const ErreurEnvoi: StoryObj<typeof ContactSection> = { globals: { locale:
 
 async function submitDemo(canvasElement: HTMLElement) {
   const canvas = within(canvasElement)
-  await userEvent.type(canvas.getByLabelText(/votre nom/i), 'Camille Démo')
+  // The form only appears after the visitor opens it from the call to action.
+  await userEvent.click(canvas.getByRole('button', { name: 'Recevoir un premier avis' }))
+  await userEvent.type(await canvas.findByLabelText(/votre nom/i), 'Camille Démo')
   await userEvent.type(canvas.getByLabelText(/votre email/i), 'demo@example.invalid')
-  await userEvent.type(canvas.getByLabelText(/votre message/i), 'Message fictif pour vérifier le formulaire dans Storybook.')
+  await userEvent.type(canvas.getByLabelText(/quel problème souhaitez-vous résoudre/i), 'Message fictif pour vérifier le formulaire dans Storybook.')
   await userEvent.click(canvas.getByRole('button', { name: 'Envoyer le message' }))
 }
 export const Succes: StoryObj<typeof ContactSection> = { globals: { locale: 'fr' }, play: async ({ canvasElement }) => { await submitDemo(canvasElement); await waitFor(() => expect(within(canvasElement).getByText(/Message envoyé !/)).toBeVisible()) } }

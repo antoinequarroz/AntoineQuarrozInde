@@ -39,9 +39,25 @@ export const useArticlesStore = () => demo().articles
 export const useReviewsStore = () => demo().reviews
 export const useGoogleReviewsStore = () => demo().googleReviews
 export const useAuthStore = () => ({ authHeader: () => ({}) })
-export const useRuntimeConfig = () => ({ public: { turnstileSiteKey: '', calLink: demo().options.calLink ?? '' } })
+export const useRuntimeConfig = () => ({ public: { siteUrl: 'https://www.antoinequarroz.ch', turnstileSiteKey: '', calLink: demo().options.calLink ?? '' } })
 export const useMarketing = () => ({ variant: ref(demo().options.variant ?? 'A'), initVariant() {}, track() {} })
 export const usePlausibleEvent = () => ({ trackPlausible() {} })
+/** Analytics stay silent in the catalogue: no event leaves Storybook. */
+export const usePostHogEvent = () => ({ trackPostHog() {} })
+/** Same shape as app/stores/homepageArticles.ts, filled with fictional articles. */
+export function useHomepageArticlesStore() {
+  const published = demo().articles.published
+  const articles = published.map(a => ({ id: a.slug, title: a.title, slug: a.slug, excerpt: a.excerpt, coverImage: a.coverImage, tags: a.tags, createdAt: a.createdAt.slice(0, 10), publishedAt: a.createdAt, readTime: a.readTime }))
+  return reactive({
+    articles, loading: false, loaded: true,
+    ensureLoaded: async () => {},
+    fetchArticlePreview: async (slug: string) => {
+      const article = published.find(a => a.slug === slug)
+      if (!article) throw new Error('Article de démonstration introuvable')
+      return { slug: article.slug, title: article.title, excerpt: article.excerpt, content: article.content }
+    },
+  })
+}
 export const captureLeadAttribution = () => ({ utmSource: 'storybook', referrerHost: '', landingPath: '/', utmMedium: 'demo', utmCampaign: 'demo' })
 export const useHead = () => undefined
 /** Resolves the handler once, like a client-side Nuxt navigation; keys are ignored. */
@@ -70,6 +86,7 @@ export function useDemoFetch() {
     const method = options.method ?? 'GET'
     if (url === '/api/articles') return (state.options.empty ? [] : state.articles.published.map((a, i) => ({ slug: a.slug, title: a.title, published: true, published_at: `2026-09-0${i + 1}T12:00:00Z` }))) as T
     if (url === '/api/contact') return { acquisitionChannel: 'demo' } as T
+    if (url === '/api/newsletter') return { emailDelivered: true } as T
     if (url === '/api/admin/upload') return { url: options.body.dataUrl } as T
     if (url === '/api/admin/payment-reconciliation') return (method === 'GET' ? { invoices: state.options.empty ? [] : [{ id: 9001, number: 'DEMO-2026-001', clientName: 'Atelier Démo', balanceCents: 120000, currency: 'CHF', paymentReference: null }] } : { success: true }) as T
     if (url === '/api/admin/commercial-actions') return (method === 'GET' ? {} : options.body) as T
