@@ -15,6 +15,7 @@
   },
   "format": {
     "kind": "short_ai_tech_news",
+    "required_public_tag": "Actualités IA et tech",
     "language": "fr",
     "words_min": 200,
     "words_max": 350,
@@ -104,6 +105,22 @@
     "rolling_reserve": "Maintain the next ten dated news slots in the site queue on origin/main, using date-based IDs. The date slots are authorized, not public article titles. Select and replace the working title only after source verification."
   },
   "runtime": {
+    "post_publication_audit": {
+      "contract": "hermes-friday-news-verification-v1",
+      "host": "site VPS",
+      "service": "aq-friday-news-check.service",
+      "timer": "aq-friday-news-check.timer",
+      "mode": "deterministic_read_only_no_agent",
+      "interval_minutes": 5,
+      "earliest_after_expected_publication_minutes": 10,
+      "missing_news_grace_minutes": 90,
+      "private_report_root": "/home/ubuntu/friday-news-control/private",
+      "method": "seo/resources/editorial/post-publication-check.md",
+      "mac_required": false,
+      "cms_mutations": false,
+      "model_calls": false,
+      "paid_calls": false
+    },
     "mission_owner": "friday",
     "mission_id": "e34258e2fcab",
     "base_clone": "/data/workspace/AntoineQuarrozInde-seo-runtime",

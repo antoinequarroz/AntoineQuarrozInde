@@ -22,7 +22,7 @@ Aucun appel Treg payant, achat, abonnement ou mission de test nécessaire. S’i
 
 ## Texte court
 
-200 à 350 mots hors titre et sources, français clair, vouvoiement. Un titre informatif, l’annonce avec sa date, ce que cela change, disponibilité et limite utile. Pas de tutoriel étape par étape, longue introduction, FAQ artificielle, liste de conseils génériques ou promotion forcée des prestations. Aucun H1 répété dans le Markdown. Le minimum de longueur des anciens guides ne s’applique pas.
+200 à 350 mots hors titre et sources, français clair, vouvoiement. Ajouter le tag public exact **Actualités IA et tech** pour le contrôle serveur. Un titre informatif, l’annonce avec sa date, ce que cela change, disponibilité et limite utile. Pas de tutoriel étape par étape, longue introduction, FAQ artificielle, liste de conseils génériques ou promotion forcée des prestations. Aucun H1 répété dans le Markdown. Le minimum de longueur des anciens guides ne s’applique pas.
 
 Relire noms, dates, accents, faits et liens. Garder seulement les liens internes pertinents réellement publics, sans allonger artificiellement la brève.
 
@@ -35,3 +35,5 @@ Récupérer origin/main et créer un worktree propre du clone éditorial dédié
 Publier par l’[adaptateur CMS](adapters/cms-headless.md) et `scripts/hermes/publish_article.py`, jeton uniquement dans l’environnement privé autorisé et clé d’idempotence stable. Contrôler les contraintes du payload : contenu de 800 à 100000 caractères tout en restant dans les 200 à 350 mots, extrait de 40 à 320 caractères et readTime entier de 1 à 60. Ne pas confondre caractères et mots ni transformer la brève en guide pour franchir ce contrôle. Vérifier HTTP 200, contenu SSR/extrait distinctif, titre, canonical, image réellement utilisée et sitemap. Enregistrer `seo/receipts/AAAA-MM-JJ-news-*.json`, puis seulement cocher le créneau et réconcilier notes/inventaire/registre sur main. Une réponse API seule n’est pas une preuve publique.
 
 Après preuve publique, créer seulement les brouillons LinkedIn et X manquants, clés stables, `draft/manual`, sans date ni approbation, sans remplacer une correction humaine. Les UTM viennent du flux existant. Ne pas programmer, approuver ou publier un post social, ni envoyer de newsletter.
+
+Appliquer ensuite le [contrat du contrôle serveur](post-publication-check.md) : revue de la couverture liée au bon hash, manifeste/SVG/reçu disponibles sur main et clés exactes `<slug>-linkedin` / `<slug>-x`. Ne pas lancer de mission de test ou d’appel IA pour ce contrôle : le timer VPS réalise lui-même les lectures après production.
