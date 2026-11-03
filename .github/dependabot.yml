@@ -10,6 +10,11 @@ updates:
         dependency-type: development
       production-dependencies:
         dependency-type: production
+    ignore:
+      # TypeScript 7 ships without the JavaScript compiler API that vue-tsc
+      # (nuxi typecheck) and several tests rely on. Stay on 5.x for now.
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: /
