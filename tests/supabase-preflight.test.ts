@@ -6,7 +6,7 @@ describe('AQ-059 Supabase preflight', () => {
     const packageJson = JSON.parse(await readFile('package.json', 'utf8'))
     const config = await readFile('supabase/config.toml', 'utf8')
 
-    expect(packageJson.devDependencies.supabase).toBe('2.113.0')
+    expect(packageJson.devDependencies.supabase).toBe('2.122.0')
     expect(packageJson.scripts['test:db']).toBe('bash scripts/ops/test-supabase-migrations.sh')
     expect(config).toContain('project_id = "antoinequarroz-preflight"')
     expect(config).not.toMatch(/access_token|service_role|password|project_ref/i)

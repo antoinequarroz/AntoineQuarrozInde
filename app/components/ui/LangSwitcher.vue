@@ -10,7 +10,7 @@ const detailsRef = ref<HTMLDetailsElement | null>(null)
 
 const available = computed(() => {
   const baseRouteName = getRouteBaseName(route)
-  if (!baseRouteName) return []
+  if (typeof baseRouteName !== 'string') return []
 
   return locales.value.flatMap((item) => {
     if (
@@ -30,9 +30,7 @@ const available = computed(() => {
     const path = switchLocalePath(item.code)
     if (!path || resolvedRoute.fullPath !== path) return []
 
-    const htmlLanguage = 'iso' in item
-      ? String(item.iso)
-      : String(item.language || item.code)
+    const htmlLanguage = String(item.language || item.code)
 
     return [{ ...item, path, htmlLanguage }]
   })
