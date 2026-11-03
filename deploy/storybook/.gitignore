@@ -1,0 +1,5 @@
+*
+!.gitignore
+!vercel.json
+.vercel
+.env*

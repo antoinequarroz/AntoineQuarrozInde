@@ -1,0 +1,38 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Bienvenue" />
+
+# AQ — Le catalogue de l’interface
+
+Les composants utilisés par le site d’Antoine Quarroz, son administration et son portail client. Cette bibliothèque sert à concevoir, comparer et vérifier une évolution avant de l’intégrer à un parcours complet.
+
+## Explorer
+
+**34 composants sur 34, 93 exemples interactifs.** Tous les fichiers Vue de `app/components` sont représentés. Les pages Nuxt et leurs parcours serveur restent hors de ce catalogue de composants.
+
+- **Fondations** : couleurs, typographie, espacements et styles partagés.
+- **Navigation** : en-tête, menu mobile et pied de page.
+- **Vitrine** : accueil, robot, présentation, services, portfolio, carrousel, articles, avis et contact.
+- **Administration** : cartes, indicateurs, barres d’outils, états vides, chargements, icônes, CRM, parcours commercial, rapprochement bancaire et éditeur d’étude de cas.
+- **Interface** : navigation, notifications, thèmes, langues, import d’image, cartes, rendez-vous et détail de prestation.
+- **Portail client** : factures et devis avec leurs variantes métier.
+- **Effets visuels** : particules Three.js et robot Spline.
+
+## Vérifier un composant
+
+1. Choisir un exemple dans le menu.
+2. Modifier ses propriétés dans **Controls**.
+3. Passer du thème **Clair** au thème **Sombre** dans la barre d’outils.
+4. Comparer les tailles de viewport et tester au clavier.
+5. Consulter **Accessibility** et **Actions** pour les contrôles et les événements.
+6. Utiliser le **globe** pour comparer les traductions françaises, anglaises et allemandes disponibles dans le site. L’administration conserve ses libellés français.
+
+Les clients, projets, articles, avis et documents de démonstration sont fictifs. Les textes éditoriaux publics et le portrait du site sont conservés. Les actions métier sont simulées ; elles ne contactent aucun backend. Les liens, le tracking et le CAPTCHA sont neutralisés. Les imports d’images restent dans le navigateur. La scène Spline et les polices utilisent leurs services publics externes.
+
+Pour le rapprochement bancaire, utiliser exclusivement le [relevé fictif fourni](https://ui.antoinequarroz.ch/releve-demo.csv) depuis la page Docs, ou le scénario **Confirmation simulée**. Les exemples **Succès**, **Erreur envoi** et **Envoi en cours** remplissent automatiquement le formulaire de contact avec une adresse fictive. Certains composants, comme les articles et les avis, ne rendent aucun contenu dans leur état vide : c’est leur comportement réel.
+
+## Une référence pour les agents
+
+Avant de créer une interface, chercher le composant existant et lire ses exemples. Importer le composant depuis `app/components`, réutiliser `app/assets/css/main.css` et `tailwind.config.ts`. Ajouter une story pour chaque nouveau comportement significatif, notamment chargement, vide, erreur et contenu long.
+
+Le catalogue décrit les composants. Les tests de parcours de l’application restent nécessaires pour vérifier authentification, API et règles serveur.

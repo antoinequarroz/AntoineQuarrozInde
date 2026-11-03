@@ -23,7 +23,9 @@
     "postinstall": "node scripts/prepare-nuxt.mjs",
     "typst:qr:demo": "typst compile --root . typst/examples/swiss-qr-bill-demo.typ typst/examples/swiss-qr-bill-demo.pdf",
     "typst:billing:demo": "typst compile --root . --input data=../examples/billing-document-demo.json typst/templates/billing-document.typ typst/examples/billing-document-demo.pdf",
-    "quality:runtime-security": "node scripts/check-runtime-security.mjs"
+    "quality:runtime-security": "node scripts/check-runtime-security.mjs",
+    "storybook": "storybook dev -p 6006 --no-open",
+    "build-storybook": "storybook build --disable-telemetry"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.106.1",
@@ -45,15 +47,24 @@
     "@pinia/nuxt": "^0.9.0",
     "@playwright/test": "1.62.1",
     "@posthog/nuxt": "^1.7.91",
+    "@storybook/addon-a11y": "^10.6.0",
+    "@storybook/addon-docs": "^10.6.0",
+    "@storybook/addon-themes": "^10.6.0",
+    "@storybook/vue3-vite": "^10.6.0",
     "@types/node": "^26.1.2",
     "@types/three": "^0.177.0",
     "@vite-pwa/nuxt": "^1.1.1",
+    "@vitejs/plugin-vue": "^6.0.9",
+    "@vueuse/core": "^15.0.0",
     "@vueuse/motion": "^2.2.6",
     "@vueuse/nuxt": "^12.7.0",
     "nuxt": "4.5.1",
+    "storybook": "^10.6.0",
     "supabase": "2.113.0",
     "typescript": "^5.8.3",
+    "unplugin-auto-import": "^21.1.0",
     "vitest": "^4.1.10",
+    "vue-i18n": "^11.4.12",
     "vue-tsc": "3.1.2"
   },
   "overrides": {

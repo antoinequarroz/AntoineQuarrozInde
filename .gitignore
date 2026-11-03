@@ -31,3 +31,7 @@ playwright/.auth
 playwright-report
 test-results
 .artifacts
+
+# Storybook and separate hosting metadata
+storybook-static
+.vercel
