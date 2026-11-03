@@ -13,10 +13,13 @@ export function buildTwintCheckoutParams(input: TwintCheckoutInput): Stripe.Chec
   return {
     mode: 'payment',
     // The account enables Managed Payments by default. This invoice checkout
-    // must opt out so Stripe accepts an explicit TWINT-only payment method and
-    // does not recalculate tax already included in the invoice total.
+    // must opt out so Stripe offers TWINT only and does not recalculate tax
+    // already included in the invoice total.
     managed_payments: { enabled: false },
-    payment_method_types: ['twint'],
+    // Since API 2026-09-30 (stripe-node 23), Checkout no longer accepts
+    // payment_method_types. This filter keeps TWINT as the only option, as long
+    // as TWINT stays enabled in the Stripe payment method settings.
+    allowed_payment_method_types: ['twint'],
     customer_email: input.client.email || input.userEmail,
     client_reference_id: String(input.invoice.id),
     line_items: [{

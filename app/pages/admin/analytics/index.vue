@@ -328,7 +328,7 @@ onMounted(loadAnalytics)
           <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Visiteurs uniques ayant atteint chaque étape pendant les sept derniers jours.</p>
           <div class="mt-6 space-y-4">
             <div v-for="(step, index) in posthog.funnel" :key="step.key">
-              <div class="mb-2 flex items-center justify-between gap-3 text-sm"><span>{{ index + 1 }}. {{ step.label }}</span><span><strong>{{ step.value }}</strong><small v-if="index" class="ml-2 text-gray-400">{{ step.rate }} %</small></span></div>
+              <div class="mb-2 flex items-center justify-between gap-3 text-sm"><span>{{ Number(index) + 1 }}. {{ step.label }}</span><span><strong>{{ step.value }}</strong><small v-if="index" class="ml-2 text-gray-400">{{ step.rate }} %</small></span></div>
               <div class="h-3 overflow-hidden rounded-full bg-gray-100 dark:bg-white/[0.07]"><div class="h-full rounded-full bg-violet-600" :style="{ width: `${posthog.funnel[0].value ? Math.max(step.value ? 5 : 0, step.value / posthog.funnel[0].value * 100) : 0}%` }" /></div>
             </div>
           </div>
@@ -352,7 +352,7 @@ onMounted(loadAnalytics)
         </div>
         <div class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <div v-for="(step, index) in posthog.serviceFunnel" :key="step.key" class="rounded-lg bg-gray-50 p-4 dark:bg-white/[0.04]">
-            <p class="text-xs text-gray-500 dark:text-gray-400">{{ index + 1 }}. {{ step.label }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">{{ Number(index) + 1 }}. {{ step.label }}</p>
             <p class="mt-2 font-display text-2xl font-semibold">{{ step.value }}</p>
             <p v-if="index" class="mt-1 text-xs font-medium text-violet-600 dark:text-violet-300">{{ step.rate }} % depuis l’étape précédente</p>
           </div>
@@ -367,7 +367,7 @@ onMounted(loadAnalytics)
         </div>
         <div class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <div v-for="(step, index) in posthog.auditServiceFunnel" :key="step.key" class="rounded-lg bg-cyan-50/70 p-4 dark:bg-cyan-400/[0.05]">
-            <p class="text-xs text-gray-500 dark:text-gray-400">{{ index + 1 }}. {{ step.label }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">{{ Number(index) + 1 }}. {{ step.label }}</p>
             <p class="mt-2 font-display text-2xl font-semibold">{{ step.value }}</p>
             <p v-if="index" class="mt-1 text-xs font-medium text-cyan-700 dark:text-cyan-300">{{ step.rate }} % depuis l’étape précédente</p>
           </div>

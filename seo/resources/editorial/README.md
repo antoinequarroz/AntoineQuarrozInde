@@ -1,4 +1,12 @@
-# Production éditoriale du lot du 18 au 23 octobre 2026
+# Production éditoriale : brèves IA et tech
+
+Depuis le 3 novembre 2026, la rubrique active est celle des petites news : 200 à 350 mots, un jour sur deux dès le 4 novembre à 07:00 Europe/Zurich, weekends compris. Lire en priorité `.codex/geo/news-policy.json`, [la méthode brèves](short-news.md), [les couvertures news violettes](news-violet-covers.md) et `.codex/geo/queue/actualites-2026-11.md`, puis ses prolongements. Les propositions de guides ne constituent pas la nouvelle file. La publication du blog est autorisée après contrôles ; les posts sociaux et newsletters restent à valider.
+
+Le guide ci-dessous conserve l’historique du lot 036–041. Ses dates, longs formats et restriction du violet à ces six images ne remplacent pas le nouveau cadre approuvé. Ne pas exécuter ni importer le build historique 037–041 pour créer une news.
+
+---
+
+# Historique : lot du 18 au 23 octobre 2026
 
 Guide propre au projet, préparé le 18 octobre 2026. Il remplace pour ce lot une dépendance implicite à des fichiers de plugin absents du runner ; il ne prétend installer aucun plugin, outil de génération ou connexion.
 

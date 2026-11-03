@@ -81,9 +81,9 @@ export default defineNuxtConfig({
 
   i18n: {
     locales: [
-      { code: 'fr', iso: 'fr-CH', name: 'Français' },
-      { code: 'en', iso: 'en-US', name: 'English' },
-      { code: 'de', iso: 'de-CH', name: 'Deutsch' },
+      { code: 'fr', language: 'fr-CH', name: 'Français' },
+      { code: 'en', language: 'en-US', name: 'English' },
+      { code: 'de', language: 'de-CH', name: 'Deutsch' },
     ],
     defaultLocale: 'fr',
     strategy: 'prefix_except_default',
@@ -93,9 +93,6 @@ export default defineNuxtConfig({
     customRoutes: 'config',
     pages: createI18nPagesConfig(),
     vueI18n: './i18n.config.ts',
-    bundle: {
-      optimizeTranslationDirective: false,
-    },
   },
 
   css: ['~/assets/css/main.css'],
