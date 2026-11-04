@@ -6,6 +6,8 @@ Cette consigne remplace pour la nouvelle rubrique les propositions de guides et 
 
 Dès le 4 novembre 2026 : une brève un jour sur deux à 07:00 Europe/Zurich, weekends compris. Produire seulement si la différence entre la date civile locale et le 4 novembre est positive ou nulle et paire. Ni jour pair du mois, ni intervalle aveugle de 48 heures. Les jours intercalaires : arrêt avant recherche/rédaction/publication, sans alerte d’article manquant.
 
+Exception : une date listée dans `cadence.extra_slots` de la politique est aussi due, avec l’item de la file à la même date (5 et 7 novembre 2026, choisis par Antoine). Les dates de `format.long_format_slots` peuvent dépasser 350 mots.
+
 Prendre seulement le créneau `news-AAAA-MM-JJ` du jour. Ces libellés sont privés, pas des titres publics. Le choix de l’annonce fait partie de l’autorisation : modèles, fonctions grand public, outils créatifs, sécurité/confidentialité, développement ou recherche tech compréhensible. Maintenir dix créneaux d’avance sur origin/main, sans nouvelle validation pour chaque news conforme. Ne pas reprendre les guides retirés.
 
 Un créneau manqué reste documenté ; pas de publication les jours intercalaires ou de rattrapage multiple. Une réponse API ambiguë se réconcilie avant toute nouvelle tentative.

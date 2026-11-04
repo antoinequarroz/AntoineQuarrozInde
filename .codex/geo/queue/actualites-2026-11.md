@@ -9,8 +9,10 @@
 # Les libellés de créneaux privés ci-dessous ne sont jamais des titres publiables.
 
 - [ ] news-2026-11-04 | Brève IA ou tech du 2026-11-04 — sujet à sélectionner sur sources vérifiées | cluster : Actualités IA et tech | date prévue : 2026-11-04 | livrable :
-- [ ] news-2026-11-06 | Brève IA ou tech du 2026-11-06 — sujet à sélectionner sur sources vérifiées | cluster : Actualités IA et tech | date prévue : 2026-11-06 | livrable :
-- [ ] news-2026-11-08 | Brève IA ou tech du 2026-11-08 — sujet à sélectionner sur sources vérifiées | cluster : Actualités IA et tech | date prévue : 2026-11-08 | livrable :
+- [ ] news-2026-11-05 | Sujet choisi par Antoine le 4 novembre : Apple ouvre Siri aux développeurs d’apps (App Intents, préversion iOS 27.3 bêta) | cluster : Actualités IA et tech | date prévue : 2026-11-05 | créneau exceptionnel hors cadence | livrable :
+- [ ] news-2026-11-06 | Sujet choisi parmi la sélection d’Antoine du 4 novembre : Google Gemini 4 Carbon (réserve dans cet ordre : recherche Anthropic sur la preuve du modèle utilisé, Soniox STT v6) | cluster : Actualités IA et tech | date prévue : 2026-11-06 | livrable :
+- [ ] news-2026-11-07 | Demande d’Antoine du 4 novembre : sa découverte de Moshi (Kyutai) pour la voix, équivalent, points positifs et négatifs face à ElevenLabs | cluster : Actualités IA et tech | date prévue : 2026-11-07 | créneau exceptionnel hors cadence ; comparatif plus long que 350 mots autorisé ; expérience personnelle uniquement d’après les notes d’Antoine, à fournir avant rédaction | livrable :
+- [ ] news-2026-11-08 | Demande d’Antoine du 4 novembre : sujet plus grand, proposé : convention du Conseil de l’Europe sur l’IA et projet suisse, ce que cela change pour une PME (à confirmer par Antoine) | cluster : Actualités IA et tech | date prévue : 2026-11-08 | format plus long que 350 mots autorisé | livrable :
 - [ ] news-2026-11-10 | Brève IA ou tech du 2026-11-10 — sujet à sélectionner sur sources vérifiées | cluster : Actualités IA et tech | date prévue : 2026-11-10 | livrable :
 - [ ] news-2026-11-12 | Brève IA ou tech du 2026-11-12 — sujet à sélectionner sur sources vérifiées | cluster : Actualités IA et tech | date prévue : 2026-11-12 | livrable :
 - [ ] news-2026-11-14 | Brève IA ou tech du 2026-11-14 — sujet à sélectionner sur sources vérifiées | cluster : Actualités IA et tech | date prévue : 2026-11-14 | livrable :
@@ -18,6 +20,10 @@
 - [ ] news-2026-11-18 | Brève IA ou tech du 2026-11-18 — sujet à sélectionner sur sources vérifiées | cluster : Actualités IA et tech | date prévue : 2026-11-18 | livrable :
 - [ ] news-2026-11-20 | Brève IA ou tech du 2026-11-20 — sujet à sélectionner sur sources vérifiées | cluster : Actualités IA et tech | date prévue : 2026-11-20 | livrable :
 - [ ] news-2026-11-22 | Brève IA ou tech du 2026-11-22 — sujet à sélectionner sur sources vérifiées | cluster : Actualités IA et tech | date prévue : 2026-11-22 | livrable :
+
+## Sujets en réserve choisis par Antoine
+
+CrowdStrike « kill switch » pour arrêter un agent IA (annonce du 3 novembre 2026) ; Revolut et les modèles auto-hébergés pour le code (3 novembre 2026). À placer sur un prochain créneau si l’annonce a encore moins de 14 jours.
 
 ## Réserve renouvelable
 
