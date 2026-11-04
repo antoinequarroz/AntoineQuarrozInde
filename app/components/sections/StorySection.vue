@@ -346,7 +346,7 @@ const hintOpacity = computed(() => {
                 <div class="flex items-center justify-between px-3 py-2 rounded-xl bg-white/88 dark:bg-white/[0.08] border border-black/[0.06] dark:border-white/[0.09] backdrop-blur flex-shrink-0 shadow-[0_4px_18px_rgba(15,23,42,0.08)]">
                   <div class="flex items-center gap-2">
                     <div class="w-6 h-6 rounded-lg bg-gradient-to-br from-violet-600 to-indigo-500 flex items-center justify-center shadow-sm flex-shrink-0">
-                      <span class="text-xs font-bold text-white leading-none">AQ</span>
+                      <UiBrandMark class="w-[62%] translate-y-[8%] text-white" />
                     </div>
                     <span class="text-xs font-semibold text-gray-800 dark:text-white/90 hidden sm:block">Antoine Quarroz</span>
                   </div>

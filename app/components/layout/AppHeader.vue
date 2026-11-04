@@ -87,7 +87,7 @@ onBeforeUnmount(() => {
         <!-- Left -->
         <div class="flex items-center gap-2.5">
           <NuxtLink :to="localePath('/')" :aria-label="`AQ — ${t('nav.home')}, Antoine Quarroz`" class="h-11 w-11 rounded-xl bg-gradient-brand flex items-center justify-center shadow-glow-sm">
-            <span class="font-display font-bold text-white text-xs">AQ</span>
+            <UiBrandMark class="w-[62%] translate-y-[8%] text-white" />
           </NuxtLink>
           <span
             class="hidden sm:block font-display text-sm font-semibold transition-colors"
@@ -171,7 +171,7 @@ onBeforeUnmount(() => {
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2.5">
               <div class="w-8 h-8 rounded-xl bg-gradient-brand flex items-center justify-center shadow-glow-sm">
-                <span class="font-display font-bold text-white text-sm">AQ</span>
+                <UiBrandMark class="w-[62%] translate-y-[8%] text-white" />
               </div>
               <div>
                 <div id="mobile-menu-title" class="font-display font-semibold text-white"><span class="text-gradient">{{ menuLabels.title }}</span></div>
