@@ -1,0 +1,7 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+.sb-show-main { min-height: 100vh; }
+.sbdocs-content { max-width: 1100px; }
+.aq-demo { max-width: 1000px; margin: auto; }
+.aq-demo-heading { font: 600 24px 'Space Grotesk', sans-serif; margin-bottom: 16px; }
+.aq-demo-note { color: #6b7280; font-size: 14px; margin: 12px 0; }
+.dark .aq-demo-note { color: #9ca3af; }
