@@ -11,7 +11,16 @@
     "include_weekends": true,
     "due_rule": "today >= anchor_date and (today - anchor_date).days % 2 == 0",
     "missed_slot": "Report a failure; do not publish on an off day or backfill several items. Resume on the next calendar slot.",
-    "on_off_days": "No research, writing or publication. No missing-article alert."
+    "on_off_days": "No research, writing or publication. No missing-article alert.",
+    "extra_slots": {
+      "approved_on": "2026-11-04",
+      "approval": "Antoine choisit le 4 novembre 2026 les sujets du 5 au 8 novembre, dont deux jours hors cadence.",
+      "dates": [
+        "2026-11-05",
+        "2026-11-07"
+      ],
+      "rule": "A date listed here is also due, with the queue item of the same date. The regular cadence is unchanged."
+    }
   },
   "format": {
     "kind": "short_ai_tech_news",
@@ -26,7 +35,15 @@
       "Ce que cela change concrètement",
       "Disponibilité et limite utile",
       "Liens vers les sources vérifiées"
-    ]
+    ],
+    "long_format_slots": {
+      "dates": [
+        "2026-11-07",
+        "2026-11-08"
+      ],
+      "words_max": 1200,
+      "note": "Comparatif Moshi/ElevenLabs le 7 et article sur le développement d’apps pour téléphones pliables le 8, demandés par Antoine ; conseils pratiques permis le 8 ; aucune expérience inventée."
+    }
   },
   "research": {
     "selection": "Choose near the run date, not weeks ahead.",
