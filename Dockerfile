@@ -1,11 +1,11 @@
 # syntax=docker/dockerfile:1.7
-FROM node:26.12-alpine@sha256:40cd011b55415bc894e45b02fdd5a5dfde056921b7d23a64c74f80497af48797 AS deps
+FROM node:26.13-alpine@sha256:c6ad9e9c1d80f6eb607c26b4b0a132ff7a2344fad1c78ea3baa2a7d4c8de6d94 AS deps
 WORKDIR /app
 COPY package*.json ./
 COPY scripts/prepare-nuxt.mjs ./scripts/prepare-nuxt.mjs
 RUN npm ci --legacy-peer-deps
 
-FROM node:26.12-alpine@sha256:40cd011b55415bc894e45b02fdd5a5dfde056921b7d23a64c74f80497af48797 AS build
+FROM node:26.13-alpine@sha256:c6ad9e9c1d80f6eb607c26b4b0a132ff7a2344fad1c78ea3baa2a7d4c8de6d94 AS build
 WORKDIR /app
 ARG POSTHOG_PROJECT_ID=281423
 ARG POSTHOG_HOST=https://eu.posthog.com
@@ -17,7 +17,7 @@ RUN --mount=type=secret,id=posthog_source_map_api_key,required=true \
     POSTHOG_HOST="$POSTHOG_HOST" \
     npm run build
 
-FROM node:26.12-alpine@sha256:40cd011b55415bc894e45b02fdd5a5dfde056921b7d23a64c74f80497af48797 AS runner
+FROM node:26.13-alpine@sha256:c6ad9e9c1d80f6eb607c26b4b0a132ff7a2344fad1c78ea3baa2a7d4c8de6d94 AS runner
 WORKDIR /app
 ARG APP_VERSION=development
 ARG APP_BUILD_TIME=unknown
