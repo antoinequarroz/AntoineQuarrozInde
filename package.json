@@ -26,14 +26,14 @@
     "quality:runtime-security": "node scripts/check-runtime-security.mjs"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.118.0",
+    "@supabase/supabase-js": "^2.119.0",
     "lumail": "^2.2.0",
     "pdf-lib": "^1.17.1",
     "pinia": "^4.1.0",
-    "simple-icons": "^16.35.0",
-    "stripe": "^23.0.1",
-    "three": "^0.186.1",
-    "vue": "^3.5.44",
+    "simple-icons": "^16.37.0",
+    "stripe": "^23.1.0",
+    "three": "^0.187.0",
+    "vue": "^3.5.45",
     "vue-router": "^5.4.0"
   },
   "devDependencies": {
@@ -46,7 +46,7 @@
     "@playwright/test": "1.64.1",
     "@posthog/nuxt": "^1.8.0",
     "@types/node": "^26.6.5",
-    "@types/three": "^0.177.0",
+    "@types/three": "^0.187.0",
     "@vite-pwa/nuxt": "^1.1.1",
     "@vueuse/motion": "^3.0.3",
     "@vueuse/nuxt": "^15.0.0",
