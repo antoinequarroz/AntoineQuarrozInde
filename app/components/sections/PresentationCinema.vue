@@ -8,7 +8,12 @@ const copy = computed(() => {
   if (locale.value === 'de') return { badge: 'Im Video', title: 'Eine Idee.', accent: 'Dann wird sie Realität.', subtitle: 'Meine Arbeit in 50 Sekunden entdecken.', design: 'Design', code: 'Code', experience: 'Erlebnis', scroll: 'Scrollen und entdecken' }
   return { badge: 'En vidéo', title: 'Une idée.', accent: 'Puis du concret.', subtitle: 'Mon travail en 50 secondes.', design: 'Design', code: 'Code', experience: 'Expérience', scroll: 'Défiler pour découvrir' }
 })
-
+// Two long rows so the drift never runs out of words; one filled word per row.
+const wordRows = computed(() => {
+  const labels = [copy.value.design, copy.value.code, copy.value.experience]
+  const row = (start: number, accent: number) => Array.from({ length: 9 }, (_, index) => ({ label: labels[(start + index) % 3]!, accent: index === accent }))
+  return [row(0, 3), row(2, 6)]
+})
 </script>
 
 <template>
@@ -26,23 +31,13 @@ const copy = computed(() => {
       </template>
       <template #intro>
         <div class="cinema-scene">
-          <div class="cinema-scene__halo" />
-          <div class="cinema-scene__cards">
-            <div class="cinema-scene__card cinema-scene__card--design">
-              <span class="cinema-scene__number">01</span>
-              <span class="cinema-scene__label">{{ copy.design }}</span>
-              <div class="cinema-scene__swatches"><i /><i /><i /></div>
-            </div>
-            <div class="cinema-scene__card cinema-scene__card--code">
-              <span class="cinema-scene__number">02</span>
-              <span class="cinema-scene__label">{{ copy.code }}</span>
-              <div class="cinema-scene__code"><span>&lt;/&gt;</span><i /><i /></div>
-            </div>
-            <div class="cinema-scene__card cinema-scene__card--experience">
-              <span class="cinema-scene__number">03</span>
-              <span class="cinema-scene__label">{{ copy.experience }}</span>
-              <div class="cinema-scene__path"><i /><span /><i /><span /><i /></div>
-            </div>
+          <!-- Oversized words drift in opposite directions behind the film, which grows over them. -->
+          <div class="cinema-scene__words">
+            <p v-for="(row, index) in wordRows" :key="index" class="cinema-scene__row" :class="`cinema-scene__row--${index ? 'reverse' : 'forward'}`">
+              <template v-for="(word, position) in row" :key="position">
+                <span :class="{ 'cinema-scene__word--accent': word.accent }">{{ word.label }}</span><i />
+              </template>
+            </p>
           </div>
           <div class="cinema-scene__cue">
             <span>{{ copy.scroll }}</span>
@@ -67,42 +62,26 @@ const copy = computed(() => {
 .presentation-cinema { background: radial-gradient(ellipse at 50% 48%, rgb(124 58 237 / .1), transparent 65%); }
 /* A small scene around the film disperses with the same native scroll. */
 .cinema-scene { position: absolute; inset: 0; --scene-exit: var(--video-scroll-scene-exit, 0); --scene-arrival: var(--video-scroll-entry-y, 0px); }
-.cinema-scene__halo { position: absolute; left: 50%; top: 50%; width: min(820px, 85vw); aspect-ratio: 1.8; border: 1px solid rgb(139 92 246 / .14); border-radius: 50%; background: radial-gradient(ellipse, rgb(139 92 246 / .12), transparent 68%); transform: translate(-50%, -50%) scale(calc(1 + var(--scene-exit) * .4)); }
-.cinema-scene__card { position: absolute; width: 176px; padding: 16px; border-radius: 18px; border: 1px solid rgb(139 92 246 / .22); color: #4c1d95; background: #faf7ff; box-shadow: 0 16px 44px -22px rgb(109 40 217 / .25); transform: translate3d(calc(var(--exit-x) * var(--scene-exit)), calc(var(--exit-y) * var(--scene-exit) + var(--scene-arrival)), 0) rotate(calc(var(--rotation) + var(--exit-rotation) * var(--scene-exit))); }
-.cinema-scene__card--design { left: calc(50% - clamp(220px, 31vw, 460px)); top: 42%; --exit-x: -180px; --exit-y: -45px; --rotation: -8deg; --exit-rotation: -10deg; }
-.cinema-scene__card--code { right: calc(50% - clamp(220px, 31vw, 460px)); top: 43%; --exit-x: 180px; --exit-y: -30px; --rotation: 7deg; --exit-rotation: 12deg; }
-.cinema-scene__card--experience { left: calc(50% - 88px); top: 72%; --exit-x: 0px; --exit-y: 110px; --rotation: -3deg; --exit-rotation: 7deg; }
-.cinema-scene__number { margin-right: 10px; font-size: 10px; font-weight: 600; color: #7c3aed; }
-.cinema-scene__label { font-size: 14px; font-weight: 600; }
-.cinema-scene__swatches { display: flex; margin-top: 20px; gap: 6px; }
-.cinema-scene__swatches i { height: 24px; flex: 1; border-radius: 6px; background: #8b5cf6; }
-.cinema-scene__swatches i:nth-child(2) { background: #e879f9; }
-.cinema-scene__swatches i:nth-child(3) { background: #22d3ee; }
-.cinema-scene__code { margin-top: 14px; display: grid; grid-template-columns: 40px 1fr; align-items: center; gap: 7px; }
-.cinema-scene__code span { grid-row: span 2; font-size: 23px; font-weight: 500; color: #a78bfa; }
-.cinema-scene__code i { height: 4px; border-radius: 4px; background: #c4b5fd; }
-.cinema-scene__code i:last-child { width: 65%; background: #e879f9; }
-.cinema-scene__path { margin-top: 20px; display: flex; align-items: center; }
-.cinema-scene__path i { width: 9px; height: 9px; border: 1px solid #a78bfa; border-radius: 50%; }
-.cinema-scene__path i:last-child { background: #a78bfa; }
-.cinema-scene__path span { height: 1px; flex: 1; background: linear-gradient(90deg, #a78bfa, #e879f9); }
+.cinema-scene__words { position: absolute; inset-inline: 0; top: 50%; display: grid; gap: clamp(8px, 1.6vw, 22px); transform: translateY(calc(-34% + var(--scene-arrival))); }
+.cinema-scene__row { display: flex; align-items: center; width: max-content; margin: 0; font-family: 'Space Grotesk', system-ui, sans-serif; font-size: clamp(64px, 11vw, 150px); font-weight: 700; line-height: 1; letter-spacing: -.03em; white-space: nowrap; color: transparent; -webkit-text-stroke: 1.2px rgb(124 58 237 / .32); will-change: transform; }
+.cinema-scene__row--forward { transform: translate3d(calc(-33.333% + 4vw - var(--scene-exit) * 26vw), 0, 0); }
+.cinema-scene__row--reverse { transform: translate3d(calc(-55% + var(--scene-exit) * 26vw), 0, 0); }
+.cinema-scene__row i { width: .22em; height: .22em; margin-inline: .16em; border: 1.2px solid rgb(217 70 239 / .45); border-radius: 50%; }
+.cinema-scene__word--accent { -webkit-text-stroke: 0; background: linear-gradient(90deg, #8b5cf6, #e879f9 60%, #22d3ee); -webkit-background-clip: text; background-clip: text; }
 .cinema-scene__cue { position: absolute; bottom: 22px; inset-inline: 0; display: flex; justify-content: center; align-items: center; gap: 9px; font-size: 11px; letter-spacing: .04em; color: #7c3aed; transform: translateY(calc(var(--scene-exit) * 30px + var(--scene-arrival))); }
 .cinema-scene__cue svg { width: 15px; height: 15px; }
-:global(.dark .cinema-scene__card) { color: #ede9fe; background: #181323; border-color: rgb(167 139 250 / .2); }
-:global(.dark .cinema-scene__number) { color: #c4b5fd; }
+:global(.dark .cinema-scene__row) { -webkit-text-stroke-color: rgb(167 139 250 / .38); }
 :global(.dark .cinema-scene__cue) { color: #c4b5fd; }
 @media (max-width: 767px) {
-  .cinema-scene__halo { width: 92%; aspect-ratio: 1; }
-  .cinema-scene__cards { position: absolute; inset-inline: 0; bottom: 54px; display: flex; justify-content: center; gap: 8px; }
-  .cinema-scene__card { position: relative; inset: auto; width: auto; padding: 8px 10px; border-radius: 9px; --exit-x: 0px; --exit-y: 40px; --rotation: 0deg; --exit-rotation: 0deg; }
-  .cinema-scene__number, .cinema-scene__swatches, .cinema-scene__code, .cinema-scene__path { display: none; }
-  .cinema-scene__label { font-size: 11px; }
+  /* The portrait film fills the middle, so the words run in the band beneath it. */
+  .cinema-scene__words { top: auto; bottom: 46px; gap: 2px; transform: translateY(var(--scene-arrival)); }
+  .cinema-scene__row { font-size: 13vw; -webkit-text-stroke-width: 1px; }
   .cinema-scene__cue { bottom: 20px; }
 }
 @media (min-width: 768px) and (max-height: 720px) {
-  .cinema-scene__card { width: 144px; padding: 12px; }
-  .cinema-scene__card--experience { left: calc(50% - 72px); top: 73%; }
-  .cinema-scene__swatches, .cinema-scene__path { margin-top: 12px; }
+  /* Short windows push the heading onto the film: keep the words below it. */
+  .cinema-scene__words { gap: 4px; transform: translateY(calc(-4% + var(--scene-arrival))); }
+  .cinema-scene__row { font-size: clamp(56px, 7vw, 84px); }
   .cinema-scene__cue { bottom: 8px; }
 }
 .presentation-cinema__after { display: flex; justify-content: center; padding: 16px 12px 40px; }
