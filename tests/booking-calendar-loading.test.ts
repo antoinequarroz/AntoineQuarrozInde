@@ -137,7 +137,7 @@ describe('Cal.com embed loading', () => {
 
 describe('Alfred booking destination', () => {
   it('opens Alfred as a plain link and never loads the Cal.com embed', () => {
-    for (const bookingUrl of ['https://alfred.antoinequarroz.ch/rdv/diagnostic', 'https://alfred.antoinequarroz.ch/rdv']) {
+    for (const bookingUrl of ['https://alfred.postmelo.ch/rdv/diagnostic', 'https://alfred.postmelo.ch/rdv', 'https://alfred.antoinequarroz.ch/rdv/diagnostic']) {
       const runtime = setup({ bookingUrl })
       expect(runtime.component.bookingProvider.value).toBe('alfred')
       expect(runtime.component.bookingUrl.value).toBe(bookingUrl)
@@ -155,6 +155,9 @@ describe('Alfred booking destination', () => {
       'http://alfred.antoinequarroz.ch/rdv',
       'https://alfred.antoinequarroz.ch/',
       'https://alfred.antoinequarroz.ch/rdv/../admin',
+      'https://alfred.postmelo.ch.evil.example/rdv',
+      'http://alfred.postmelo.ch/rdv',
+      'https://alfred.postmelo.ch/rdv/../admin',
     ]) {
       const runtime = setup({ bookingUrl })
       expect(runtime.component.bookingProvider.value).toBe('')

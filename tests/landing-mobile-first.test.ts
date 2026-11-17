@@ -63,8 +63,8 @@ describe('landing page mobile-first refinements', () => {
 
     expect(config).toContain("bookingUrl: process.env.NUXT_PUBLIC_BOOKING_URL")
     expect(config).not.toContain('NUXT_PUBLIC_CAL_LINK')
-    expect(config).toContain("'https://alfred.antoinequarroz.ch/rdv/diagnostic'")
-    expect(envExample).toContain('NUXT_PUBLIC_BOOKING_URL=https://alfred.antoinequarroz.ch/rdv/diagnostic')
+    expect(config).toContain("'https://alfred.postmelo.ch/rdv/diagnostic'")
+    expect(envExample).toContain('NUXT_PUBLIC_BOOKING_URL=https://alfred.postmelo.ch/rdv/diagnostic')
     expect(booking).toContain("script.src = 'https://app.cal.com/embed/embed.js'")
     expect(booking).toContain(':data-cal-link="bookingPath || undefined"')
     expect(booking).toContain(':data-cal-namespace="bookingPath ? CAL_NAMESPACE : undefined"')

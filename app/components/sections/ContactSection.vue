@@ -44,7 +44,7 @@ const status = ref<FormStatus>('idle')
 const attribution = ref(captureLeadAttribution())
 const bookingUrl = computed(() => {
   const value = String(runtimeConfig.public.bookingUrl || '').trim()
-  return /^https:\/\/(?:alfred\.antoinequarroz\.ch\/rdv(?:\/[a-z0-9-]+)?\/?$|(?:www\.)?cal\.com\/)/i.test(value) ? value : ''
+  return /^https:\/\/(?:alfred\.(?:postmelo|antoinequarroz)\.ch\/rdv(?:\/[a-z0-9-]+)?\/?$|(?:www\.)?cal\.com\/)/i.test(value) ? value : ''
 })
 const bookingProvider = computed(() => bookingUrl.value.includes('cal.com') ? 'cal.com' : 'alfred')
 
