@@ -4,12 +4,13 @@ import { describe, expect, it } from 'vitest'
 const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
 
 describe('PostHog booking and public error signals', () => {
-  it('counts a confirmed Cal.com booking without forwarding booking details', () => {
-    const source = read('app/components/ui/BookingCalendar.vue')
-    expect(source).toContain("event.data?.type !== 'bookingSuccessfulV2'")
-    expect(source).toContain("trackPostHog('booking_confirmed', { provider: 'cal.com' })")
-    expect(source).toContain("['https://cal.com', 'https://app.cal.com'].includes(event.origin)")
-    expect(source).not.toContain('event.data.booking')
+  it('counts booking clicks towards Alfred without loading a third-party embed', () => {
+    const booking = read('app/components/ui/BookingCalendar.vue')
+    const plugin = read('app/plugins/posthog-public.client.ts')
+    expect(booking).toContain("trackPostHog('booking_clicked', { provider: 'alfred' })")
+    expect(booking).not.toContain('booking_confirmed')
+    expect(plugin).toContain("host === 'alfred.postmelo.ch'")
+    expect(plugin).not.toContain('cal.com')
   })
 
   it('captures native exceptions only on public production pages', () => {

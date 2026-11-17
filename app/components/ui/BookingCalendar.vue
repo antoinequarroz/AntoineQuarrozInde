@@ -3,129 +3,13 @@ const { locale } = useI18n()
 const config = useRuntimeConfig()
 const { track } = useMarketing()
 const { trackPostHog } = usePostHogEvent()
-const CAL_NAMESPACE = 'portfolio-contact'
-
-type CalQueue = ((...args: unknown[]) => void) & {
-  loaded?: boolean
-  ns?: Record<string, CalQueue>
-  q?: unknown[]
-}
-
-type CalEmbedMessage = {
-  type?: unknown
-  originator?: unknown
-}
-
-let bookingConfirmationCaptured = false
-const bookingCard = ref<HTMLElement | null>(null)
-let bookingObserver: IntersectionObserver | null = null
-let embedInitialized = false
-
-// Alfred (page de RDV auto-hébergée, synchronisée avec iCloud) est la destination par défaut.
-// Cal.com reste accepté : pour revenir en arrière, il suffit de définir NUXT_PUBLIC_BOOKING_URL, sans changer le code.
+// Alfred (page de RDV auto-hébergée, synchronisée avec iCloud) est le seul outil de réservation.
+// Toute autre URL fait basculer la carte vers le formulaire de contact.
 const ALFRED_BOOKING_PATTERN = /^https:\/\/alfred\.(?:postmelo|antoinequarroz)\.ch\/rdv(?:\/[a-z0-9-]+)?\/?$/i
-const CAL_BOOKING_PATTERN = /^https:\/\/(?:www\.)?cal\.com\//i
 
-const bookingProvider = computed<'alfred' | 'cal.com' | ''>(() => {
+const bookingUrl = computed(() => {
   const value = String(config.public.bookingUrl || '').trim()
-  if (ALFRED_BOOKING_PATTERN.test(value)) return 'alfred'
-  if (CAL_BOOKING_PATTERN.test(value)) return 'cal.com'
-  return ''
-})
-
-const bookingUrl = computed(() => bookingProvider.value ? String(config.public.bookingUrl || '').trim() : '')
-
-const bookingPath = computed(() => {
-  if (bookingProvider.value !== 'cal.com') return ''
-  try {
-    return new URL(bookingUrl.value).pathname.replace(/^\/+|\/+$/g, '')
-  }
-  catch {
-    return ''
-  }
-})
-
-const bookingConfig = computed(() => JSON.stringify({ layout: 'month_view' }))
-
-function initializeCalEmbed() {
-  if (!bookingPath.value) return
-
-  const scope = window as typeof window & { Cal?: CalQueue }
-
-  if (!scope.Cal) {
-    const enqueue = (target: { q?: unknown[] }, args: unknown) => {
-      target.q = target.q || []
-      target.q.push(args)
-    }
-    let cal: CalQueue
-    cal = function (...args: unknown[]) {
-      if (!cal.loaded) {
-        cal.ns = {}
-        cal.q = cal.q || []
-        const script = document.createElement('script')
-        script.src = 'https://app.cal.com/embed/embed.js'
-        script.async = true
-        document.head.appendChild(script)
-        cal.loaded = true
-      }
-      if (args[0] === 'init' && typeof args[1] === 'string') {
-        const namespace = args[1]
-        let namespaced: CalQueue
-        namespaced = function (...namespacedArgs: unknown[]) {
-          enqueue(namespaced, namespacedArgs)
-        }
-        namespaced.q = []
-        cal.ns = cal.ns || {}
-        cal.ns[namespace] = cal.ns[namespace] || namespaced
-        enqueue(cal.ns[namespace], args)
-        enqueue(cal, ['initNamespace', namespace])
-        return
-      }
-      enqueue(cal, args)
-    }
-    scope.Cal = cal
-  }
-
-  scope.Cal('init', CAL_NAMESPACE, { origin: 'https://cal.com' })
-  scope.Cal.ns?.[CAL_NAMESPACE]?.('ui', {
-    hideEventTypeDetails: false,
-    layout: 'month_view',
-  })
-}
-
-function prepareCalEmbed() {
-  if (embedInitialized || !bookingPath.value) return
-  embedInitialized = true
-  bookingObserver?.disconnect()
-  bookingObserver = null
-  initializeCalEmbed()
-}
-
-function captureConfirmedBooking(event: MessageEvent<CalEmbedMessage>) {
-  if (!['https://cal.com', 'https://app.cal.com'].includes(event.origin)) return
-  if (event.data?.type !== 'bookingSuccessfulV2') return
-  if (typeof event.data.originator !== 'string' || !event.data.originator.toLowerCase().includes('cal')) return
-  if (bookingConfirmationCaptured) return
-  bookingConfirmationCaptured = true
-  trackPostHog('booking_confirmed', { provider: 'cal.com' })
-}
-
-onMounted(() => {
-  bookingConfirmationCaptured = false
-  window.addEventListener('message', captureConfirmedBooking)
-
-  if (bookingPath.value && bookingCard.value && typeof IntersectionObserver !== 'undefined') {
-    bookingObserver = new IntersectionObserver((entries) => {
-      if (entries.some(entry => entry.isIntersecting)) prepareCalEmbed()
-    }, { rootMargin: '400px 0px' })
-    bookingObserver.observe(bookingCard.value)
-  }
-})
-
-onBeforeUnmount(() => {
-  bookingObserver?.disconnect()
-  bookingObserver = null
-  window.removeEventListener('message', captureConfirmedBooking)
+  return ALFRED_BOOKING_PATTERN.test(value) ? value : ''
 })
 
 const content = computed(() => {
@@ -169,12 +53,7 @@ function openContactFallback() {
 </script>
 
 <template>
-  <div
-    ref="bookingCard"
-    class="card-glass flex h-full flex-col gap-5 p-4 md:gap-6 md:p-8"
-    @pointerenter="prepareCalEmbed"
-    @focusin="prepareCalEmbed"
-  >
+  <div class="card-glass flex h-full flex-col gap-5 p-4 md:gap-6 md:p-8">
     <div>
       <h3 class="font-display text-base font-semibold leading-tight text-gray-900 dark:text-white md:text-lg">{{ content.title }}</h3>
       <p class="mt-2 text-sm leading-relaxed text-gray-500 dark:text-gray-400">{{ content.desc }}</p>
@@ -208,10 +87,7 @@ function openContactFallback() {
       target="_blank"
       rel="noopener noreferrer"
       class="btn-primary mt-auto w-full justify-center rounded-xl py-3 text-sm"
-      :data-cal-link="bookingPath || undefined"
-      :data-cal-namespace="bookingPath ? CAL_NAMESPACE : undefined"
-      :data-cal-config="bookingPath ? bookingConfig : undefined"
-      @click="track('booking_calendar_click'); trackPostHog('booking_clicked', { provider: bookingProvider })"
+      @click="track('booking_calendar_click'); trackPostHog('booking_clicked', { provider: 'alfred' })"
     >{{ content.cta }}</a>
     <a v-else href="#contact-form" class="btn-primary mt-auto w-full justify-center rounded-xl py-3 text-sm active:scale-[0.96]" @click="openContactFallback">{{ content.fallbackCta }}</a>
     <a href="mailto:info@antoinequarroz.ch" class="flex min-h-11 items-center justify-center gap-2 text-xs text-gray-500 transition-colors duration-150 hover:text-violet-600 dark:text-gray-400 dark:hover:text-violet-300" @click="track('contact_email_click')">info@antoinequarroz.ch</a>
