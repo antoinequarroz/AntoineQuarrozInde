@@ -211,7 +211,7 @@ test('contact opens the Alfred booking page in a new tab without loading Cal.com
   await page.goto('/#contact')
 
   const booking = page.getByRole('link', { name: /choisir un créneau|choose a time|termin auswählen/i })
-  await expect(booking).toHaveAttribute('href', 'https://alfred.antoinequarroz.ch/rdv/diagnostic')
+  await expect(booking).toHaveAttribute('href', 'https://alfred.postmelo.ch/rdv/diagnostic')
   await expect(booking).toHaveAttribute('target', '_blank')
   await expect(booking).not.toHaveAttribute('data-cal-link')
   await expect(booking).not.toHaveAttribute('data-cal-namespace')
