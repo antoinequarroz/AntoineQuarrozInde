@@ -2,6 +2,10 @@ import { isPostHogProductionHost, isPostHogPublicPath, safeAnalyticsPath, stripA
 import { publicJourneyProperties } from '~/utils/analyticsJourney'
 import { excludeInternalVisit } from '~~/shared/utils/analyticsQuality'
 
+function isBookingHost(host: string) {
+  return host === 'alfred.antoinequarroz.ch' || host === 'cal.com' || host.endsWith('.cal.com')
+}
+
 const DOWNLOAD_EXTENSION = /\.(?:pdf|zip|docx?|xlsx?|csv|pptx?)$/i
 
 function contentProperties(path: string) {
@@ -89,9 +93,9 @@ export default defineNuxtPlugin({
         }
         const contactDestination = destination.origin === window.location.origin
           && (destination.pathname === '/contact' || destination.hash === '#contact' || destination.hash === '#contact-form')
-        if (contactDestination || destination.protocol === 'mailto:' || destination.host === 'cal.com' || destination.host.endsWith('.cal.com')) {
+        if (contactDestination || destination.protocol === 'mailto:' || isBookingHost(destination.host)) {
           try { sessionStorage.setItem('aq_contact_origin', window.location.pathname) } catch {}
-          posthog?.capture('contact_clicked', { ...properties, contact_type: destination.protocol === 'mailto:' ? 'email' : destination.host.includes('cal.com') ? 'booking' : 'form' })
+          posthog?.capture('contact_clicked', { ...properties, contact_type: destination.protocol === 'mailto:' ? 'email' : isBookingHost(destination.host) ? 'booking' : 'form' })
         }
         if (destination.origin !== window.location.origin && !['mailto:', 'tel:'].includes(destination.protocol)) {
           posthog?.capture('outbound_link_clicked', properties)

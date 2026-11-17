@@ -21,13 +21,22 @@ const bookingCard = ref<HTMLElement | null>(null)
 let bookingObserver: IntersectionObserver | null = null
 let embedInitialized = false
 
-const bookingUrl = computed(() => {
+// Alfred (page de RDV auto-hébergée, synchronisée avec iCloud) est la destination par défaut.
+// Cal.com reste accepté : pour revenir en arrière, il suffit de définir NUXT_PUBLIC_BOOKING_URL, sans changer le code.
+const ALFRED_BOOKING_PATTERN = /^https:\/\/alfred\.antoinequarroz\.ch\/rdv(?:\/[a-z0-9-]+)?\/?$/i
+const CAL_BOOKING_PATTERN = /^https:\/\/(?:www\.)?cal\.com\//i
+
+const bookingProvider = computed<'alfred' | 'cal.com' | ''>(() => {
   const value = String(config.public.bookingUrl || '').trim()
-  return /^https:\/\/(?:www\.)?cal\.com\//i.test(value) ? value : ''
+  if (ALFRED_BOOKING_PATTERN.test(value)) return 'alfred'
+  if (CAL_BOOKING_PATTERN.test(value)) return 'cal.com'
+  return ''
 })
 
+const bookingUrl = computed(() => bookingProvider.value ? String(config.public.bookingUrl || '').trim() : '')
+
 const bookingPath = computed(() => {
-  if (!bookingUrl.value) return ''
+  if (bookingProvider.value !== 'cal.com') return ''
   try {
     return new URL(bookingUrl.value).pathname.replace(/^\/+|\/+$/g, '')
   }
@@ -199,10 +208,10 @@ function openContactFallback() {
       target="_blank"
       rel="noopener noreferrer"
       class="btn-primary mt-auto w-full justify-center rounded-xl py-3 text-sm"
-      :data-cal-link="bookingPath"
-      :data-cal-namespace="CAL_NAMESPACE"
-      :data-cal-config="bookingConfig"
-      @click="track('booking_calendar_click'); trackPostHog('booking_clicked', { provider: 'cal.com' })"
+      :data-cal-link="bookingPath || undefined"
+      :data-cal-namespace="bookingPath ? CAL_NAMESPACE : undefined"
+      :data-cal-config="bookingPath ? bookingConfig : undefined"
+      @click="track('booking_calendar_click'); trackPostHog('booking_clicked', { provider: bookingProvider })"
     >{{ content.cta }}</a>
     <a v-else href="#contact-form" class="btn-primary mt-auto w-full justify-center rounded-xl py-3 text-sm active:scale-[0.96]" @click="openContactFallback">{{ content.fallbackCta }}</a>
     <a href="mailto:info@antoinequarroz.ch" class="flex min-h-11 items-center justify-center gap-2 text-xs text-gray-500 transition-colors duration-150 hover:text-violet-600 dark:text-gray-400 dark:hover:text-violet-300" @click="track('contact_email_click')">info@antoinequarroz.ch</a>

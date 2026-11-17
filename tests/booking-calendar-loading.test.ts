@@ -33,7 +33,7 @@ function setup({ observerAvailable = true, bookingUrl = 'https://cal.com/antoine
   const instantiate = new Function(
     'useI18n', 'useRuntimeConfig', 'useMarketing', 'usePostHogEvent',
     'ref', 'computed', 'onMounted', 'onBeforeUnmount', 'window', 'document', 'IntersectionObserver',
-    `${executable}; return { bookingCard, prepareCalEmbed, captureConfirmedBooking };`,
+    `${executable}; return { bookingCard, bookingUrl, bookingPath, bookingProvider, prepareCalEmbed, captureConfirmedBooking };`,
   )
   const component = instantiate(
     () => ({ locale: { value: 'fr' } }),
@@ -132,5 +132,37 @@ describe('Cal.com embed loading', () => {
     runtime.component.captureConfirmedBooking({ origin: 'https://app.cal.com', data })
     runtime.component.captureConfirmedBooking({ origin: 'https://cal.com', data })
     expect(runtime.trackPostHog).toHaveBeenCalledExactlyOnceWith('booking_confirmed', { provider: 'cal.com' })
+  })
+})
+
+describe('Alfred booking destination', () => {
+  it('opens Alfred as a plain link and never loads the Cal.com embed', () => {
+    for (const bookingUrl of ['https://alfred.antoinequarroz.ch/rdv/diagnostic', 'https://alfred.antoinequarroz.ch/rdv']) {
+      const runtime = setup({ bookingUrl })
+      expect(runtime.component.bookingProvider.value).toBe('alfred')
+      expect(runtime.component.bookingUrl.value).toBe(bookingUrl)
+      expect(runtime.component.bookingPath.value).toBe('')
+      runtime.component.prepareCalEmbed()
+      runtime.intersect(true)
+      expect(runtime.appended).toEqual([])
+      expect(runtime.observe).not.toHaveBeenCalled()
+    }
+  })
+
+  it('rejects look-alike Alfred hosts and paths outside the public booking page', () => {
+    for (const bookingUrl of [
+      'https://alfred.antoinequarroz.ch.evil.example/rdv',
+      'http://alfred.antoinequarroz.ch/rdv',
+      'https://alfred.antoinequarroz.ch/',
+      'https://alfred.antoinequarroz.ch/rdv/../admin',
+    ]) {
+      const runtime = setup({ bookingUrl })
+      expect(runtime.component.bookingProvider.value).toBe('')
+      expect(runtime.component.bookingUrl.value).toBe('')
+    }
+  })
+
+  it('reports the provider in the booking click event', () => {
+    expect(source).toContain("trackPostHog('booking_clicked', { provider: bookingProvider })")
   })
 })

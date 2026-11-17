@@ -38,8 +38,9 @@ valeur de production par défaut et accepte aussi `NUXT_PUBLIC_POSTHOG_KEY` et
 - `$pageview` et `$pageleave` sur les pages publiques ;
 - `contact_sent` après un formulaire de contact accepté ;
 - `newsletter_subscribed` après une inscription newsletter acceptée ;
-- `booking_clicked` et `booking_fallback_clicked` ;
-- `booking_confirmed` après le signal de succès officiel de l'embed Cal.com ;
+- `booking_clicked` (propriété `provider` : `alfred` ou `cal.com`) et `booking_fallback_clicked` ;
+- `booking_confirmed` après le signal de succès officiel de l'embed Cal.com (uniquement si le
+  lien de réservation pointe encore vers Cal.com ; les RDV pris sur Alfred se suivent dans Alfred) ;
 - `outbound_link_clicked` et `file_downloaded`.
 - `crm_lead_created`, `client_won`, `quote_accepted` et `invoice_created` depuis
   les transitions CRM confirmées côté serveur ;
