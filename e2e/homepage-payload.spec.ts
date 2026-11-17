@@ -54,7 +54,7 @@ test('mobile home serializes only article summaries and keeps account and calend
   expect(articles.length).toBeLessThanOrEqual(3)
   expect(articles.some(article => 'content' in article)).toBe(false)
   await expect(page.locator('#mobile-menu-trigger')).toBeEnabled()
-  await expect(page.locator('#contact a[href^="https://alfred.antoinequarroz.ch/rdv"]')).toHaveCount(1)
+  await expect(page.locator('#contact a[href^="https://alfred.postmelo.ch/rdv"]')).toHaveCount(1)
   const scriptHints = await page.locator('link[rel="prefetch"][as="script"]').evaluateAll(links =>
     links.map(link => (link as HTMLLinkElement).href).filter(href => new URL(href).pathname.startsWith('/_nuxt/')))
   for (const href of scriptHints) {
