@@ -302,7 +302,7 @@ export default defineNuxtConfig({
     posthogIngestionHost: process.env.POSTHOG_INGESTION_HOST || process.env.NUXT_PUBLIC_POSTHOG_HOST || 'https://eu.i.posthog.com',
     public: {
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'https://www.antoinequarroz.ch',
-      bookingUrl: process.env.NUXT_PUBLIC_BOOKING_URL || 'https://alfred.antoinequarroz.ch/rdv/diagnostic',
+      bookingUrl: process.env.NUXT_PUBLIC_BOOKING_URL || 'https://alfred.postmelo.ch/rdv/diagnostic',
       defaultOrganizationSlug: process.env.DEFAULT_ORGANIZATION_SLUG || '',
       turnstileSiteKey: process.env.TURNSTILE_SITE_KEY || '',
       supabaseUrl: process.env.SUPABASE_URL || '',

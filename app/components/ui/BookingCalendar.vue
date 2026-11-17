@@ -23,7 +23,7 @@ let embedInitialized = false
 
 // Alfred (page de RDV auto-hébergée, synchronisée avec iCloud) est la destination par défaut.
 // Cal.com reste accepté : pour revenir en arrière, il suffit de définir NUXT_PUBLIC_BOOKING_URL, sans changer le code.
-const ALFRED_BOOKING_PATTERN = /^https:\/\/alfred\.antoinequarroz\.ch\/rdv(?:\/[a-z0-9-]+)?\/?$/i
+const ALFRED_BOOKING_PATTERN = /^https:\/\/alfred\.(?:postmelo|antoinequarroz)\.ch\/rdv(?:\/[a-z0-9-]+)?\/?$/i
 const CAL_BOOKING_PATTERN = /^https:\/\/(?:www\.)?cal\.com\//i
 
 const bookingProvider = computed<'alfred' | 'cal.com' | ''>(() => {
