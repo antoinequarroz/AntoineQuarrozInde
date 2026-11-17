@@ -44,8 +44,9 @@ const status = ref<FormStatus>('idle')
 const attribution = ref(captureLeadAttribution())
 const bookingUrl = computed(() => {
   const value = String(runtimeConfig.public.bookingUrl || '').trim()
-  return /^https:\/\/(?:www\.)?cal\.com\//i.test(value) ? value : ''
+  return /^https:\/\/(?:alfred\.antoinequarroz\.ch\/rdv(?:\/[a-z0-9-]+)?\/?$|(?:www\.)?cal\.com\/)/i.test(value) ? value : ''
 })
+const bookingProvider = computed(() => bookingUrl.value.includes('cal.com') ? 'cal.com' : 'alfred')
 
 useHead(() => ({
   script: shouldUseTurnstile && turnstileShouldLoad.value
@@ -343,7 +344,7 @@ const contactInfo = computed(() => [
                 </span>
                 <h3 class="mt-5 font-display text-2xl font-semibold text-gray-950 dark:text-white">{{ t('contact.form.success_title') }}</h3>
                 <p class="mt-3 max-w-lg text-sm leading-6 text-gray-600 dark:text-gray-300">{{ t('contact.form.success') }}</p>
-                <a v-if="bookingUrl" :href="bookingUrl" target="_blank" rel="noopener noreferrer" class="btn-primary mt-7 min-h-11 w-full justify-center" @click="track('booking_calendar_click'); trackPostHog('booking_clicked', { provider: 'cal.com', placement: 'contact_success' })">
+                <a v-if="bookingUrl" :href="bookingUrl" target="_blank" rel="noopener noreferrer" class="btn-primary mt-7 min-h-11 w-full justify-center" @click="track('booking_calendar_click'); trackPostHog('booking_clicked', { provider: bookingProvider, placement: 'contact_success' })">
                   {{ t('contact.form.success_booking') }}
                 </a>
               </div>

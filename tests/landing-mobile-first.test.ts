@@ -54,7 +54,7 @@ describe('landing page mobile-first refinements', () => {
     expect(styles).toContain('transition-duration: 120ms !important')
   })
 
-  it('opens the public 30-minute Cal.com scheduler without exposing an API key', async () => {
+  it('opens the public 30-minute Alfred booking page without exposing an API key', async () => {
     const [booking, config, envExample] = await Promise.all([
       readFile('app/components/ui/BookingCalendar.vue', 'utf8'),
       readFile('nuxt.config.ts', 'utf8'),
@@ -63,10 +63,11 @@ describe('landing page mobile-first refinements', () => {
 
     expect(config).toContain("bookingUrl: process.env.NUXT_PUBLIC_BOOKING_URL")
     expect(config).not.toContain('NUXT_PUBLIC_CAL_LINK')
-    expect(envExample).toContain('NUXT_PUBLIC_BOOKING_URL=https://cal.com/your-name/30min')
+    expect(config).toContain("'https://alfred.antoinequarroz.ch/rdv/diagnostic'")
+    expect(envExample).toContain('NUXT_PUBLIC_BOOKING_URL=https://alfred.antoinequarroz.ch/rdv/diagnostic')
     expect(booking).toContain("script.src = 'https://app.cal.com/embed/embed.js'")
-    expect(booking).toContain(':data-cal-link="bookingPath"')
-    expect(booking).toContain(':data-cal-namespace="CAL_NAMESPACE"')
+    expect(booking).toContain(':data-cal-link="bookingPath || undefined"')
+    expect(booking).toContain(':data-cal-namespace="bookingPath ? CAL_NAMESPACE : undefined"')
     expect(booking).toContain(':href="bookingUrl"')
   })
 
