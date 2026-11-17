@@ -3,7 +3,7 @@ import { publicJourneyProperties } from '~/utils/analyticsJourney'
 import { excludeInternalVisit } from '~~/shared/utils/analyticsQuality'
 
 function isBookingHost(host: string) {
-  return host === 'alfred.postmelo.ch' || host === 'alfred.antoinequarroz.ch' || host === 'cal.com' || host.endsWith('.cal.com')
+  return host === 'alfred.postmelo.ch' || host === 'alfred.antoinequarroz.ch'
 }
 
 const DOWNLOAD_EXTENSION = /\.(?:pdf|zip|docx?|xlsx?|csv|pptx?)$/i
