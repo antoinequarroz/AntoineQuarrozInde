@@ -57,7 +57,7 @@ useHead({
           <div class="relative grid items-end gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(20rem,0.9fr)]">
             <div>
               <div class="flex items-center gap-3">
-                <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 via-fuchsia-500 to-cyan-400 font-display text-sm font-bold text-white shadow-lg shadow-violet-900/30">AQ</span>
+                <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 via-fuchsia-500 to-cyan-400 text-white shadow-lg shadow-violet-900/30"><UiBrandMark class="w-[62%] translate-y-[8%] text-white" /></span>
                 <span class="rounded-full border border-violet-300/25 bg-violet-400/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-cyan-300">Ressource gratuite pour PME</span>
               </div>
               <h1 class="mt-6 max-w-4xl font-display text-4xl font-bold leading-tight text-white sm:text-5xl">
