@@ -1,0 +1,24 @@
+name: Storybook
+on:
+  pull_request:
+    paths: ['.storybook/**', 'stories/**', 'app/components/**', 'app/composables/**', 'app/utils/**', 'app/assets/css/**', 'shared/**', 'i18n/**', 'scripts/check-storybook-coverage.mjs', 'tailwind.config.ts', 'package.json', 'package-lock.json', '.github/workflows/storybook.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: 26.12.0
+          cache: npm
+      - run: npm ci --legacy-peer-deps
+      - run: node scripts/check-storybook-coverage.mjs
+      - run: npm run build-storybook
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: aq-storybook
+          path: storybook-static
+          retention-days: 7

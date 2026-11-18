@@ -1,0 +1,32 @@
+{
+  "status": "published",
+  "articleId": 19,
+  "url": "https://www.antoinequarroz.ch/blog/decider-refonte-site-audit-sept-points",
+  "publishedAt": "2026-09-18T09:55:44.626081+00:00",
+  "verified": {
+    "publicPage": true,
+    "title": "14. Décider une refonte de site avec un audit en sept points",
+    "distinctiveText": true,
+    "sitemap": true,
+    "canonical": true,
+    "blogPostingSchema": true,
+    "newCoverHttp200": true,
+    "coverPngDimensions": "1200x675"
+  },
+  "sourceMarkdown": "seo/articles/14-decider-refonte-site-audit-sept-points.md",
+  "sourcePayload": "seo/articles/14-decider-refonte-site.json",
+  "sourceCover": "seo/articles/14-decider-refonte-site-cover.png",
+  "coverUpdate": {
+    "sourceCover": "seo/articles/14-cover-formats/blog-desktop-1200x675.png",
+    "publicUrl": "https://oxlrljszatejqxhclmbu.supabase.co/storage/v1/object/public/media/hermes/covers/article-19-1bf50684e5c8714a94dd4c0e8eb3b16c33fea1453e8d9f7776ffd4ec1728ead0.png",
+    "sha256": "1bf50684e5c8714a94dd4c0e8eb3b16c33fea1453e8d9f7776ffd4ec1728ead0",
+    "verified": "2026-09-18",
+    "dimensions": "1200x675",
+    "reason": "Couverture liée à l’audit d’un site web"
+  },
+  "coverVariants": {
+    "blogMobile": "seo/articles/14-cover-formats/blog-mobile-1120x800.png",
+    "x": "seo/articles/14-cover-formats/x-1200x628.png",
+    "linkedin": "seo/articles/14-cover-formats/linkedin-1200x627.png"
+  }
+}
