@@ -589,13 +589,15 @@ Après un déploiement du code :
 sudo scripts/ops/install-ops.sh /home/ubuntu/antoinequarroz-vitrine
 ```
 
-## Relances commerciales automatiques
+## Relances commerciales manuelles
 
-Le timer `antoinequarroz-pipeline-reminders.timer` vérifie les échéances chaque
-jour ouvrable à 08:15, heure de Zurich. Les e-mails ne partent qu’aux jalons
-prévus : J−3 et jour J pour un devis, J−2 et jour J pour une facture, puis
-J+3, J+7, J+14, J+21 et J+28 en cas de retard. Chaque jalon dispose d’une clé
-anti-doublon conservée dans le journal d’audit.
+Aucun rappel de devis, de facture ou de prospect ne part automatiquement. Les
+envois se préparent et se confirment dans l’admin, section « Relances clients ».
+Un même document peut être relancé au plus une fois par jour.
+
+Le timer `antoinequarroz-pipeline-reminders.timer` passe chaque jour ouvrable à
+08:15, heure de Zurich. Il marque seulement les factures échues comme en retard
+et n’envoie aucun e-mail.
 
 Créer un secret aléatoire dans le `.env` du VPS :
 

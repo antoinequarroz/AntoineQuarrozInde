@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { buildPipelineReminderPlan } from '../server/utils/pipelineReminderPlan'
-import { buildCommercialReminderDelivery, buildConfirmedPipelineReminderMessage, buildPipelineReminderMessage, confirmationMatchesCandidate, recordProspectReminderSuccess, selectPipelineReminderCandidates, selectPipelineReminderCandidatesForTrigger } from '../server/utils/pipelineReminders'
+import { buildCommercialReminderDelivery, buildConfirmedPipelineReminderMessage, buildPipelineReminderMessage, confirmationMatchesCandidate, recordProspectReminderSuccess, runPipelineReminders, selectPipelineReminderCandidates } from '../server/utils/pipelineReminders'
 
 const clients = [{ id: 1, name: 'Client Test', email: 'client@example.com' }]
 
@@ -203,16 +203,41 @@ describe('pipeline reminder plan', () => {
     expect(result.skipped.alreadySent).toBe(1)
   })
 
-  it('never includes prospects in a scheduled run', () => {
-    const candidates = buildPipelineReminderPlan({
-      today: '2026-09-14',
-      clients: [{ id: 2, name: 'Prospect', email: 'lead@example.com', status: 'lead', next_follow_up_at: '2026-09-14' }],
-      quotes: [{ id: 10, number: 'DEV-10', client_id: 2, valid_until: '2026-09-14', status: 'sent' }],
-      invoices: [],
-    }).candidates
+  describe('scheduled run', () => {
+    afterEach(() => vi.unstubAllGlobals())
 
-    expect(selectPipelineReminderCandidatesForTrigger(candidates, 'manual').map(candidate => candidate.targetType)).toEqual(['quote', 'lead'])
-    expect(selectPipelineReminderCandidatesForTrigger(candidates, 'scheduled').map(candidate => candidate.targetType)).toEqual(['quote'])
+    it('marks overdue invoices without sending any email', async () => {
+      const sendAppEmail = vi.fn()
+      const sendTrackedEmail = vi.fn()
+      const query = { update: vi.fn(() => query), eq: vi.fn(() => query), lt: vi.fn(() => query), select: vi.fn(async () => ({ data: [{ id: 20 }], error: null })) }
+      vi.stubGlobal('getSupabaseAdmin', () => ({ from: vi.fn(() => query) }))
+      vi.stubGlobal('sendAppEmail', sendAppEmail)
+      vi.stubGlobal('sendTrackedEmail', sendTrackedEmail)
+
+      const result = await runPipelineReminders({ organizationId: 'org-safe', trigger: 'scheduled' })
+
+      expect(result).toMatchObject({ sentCount: 0, failedCount: 0, candidateCount: 0, overdueMarkedCount: 1 })
+      expect(query.update).toHaveBeenCalledWith({ status: 'overdue' })
+      expect(sendAppEmail).not.toHaveBeenCalled()
+      expect(sendTrackedEmail).not.toHaveBeenCalled()
+    })
+  })
+
+  it('offers every open invoice for a manual reminder, once per day', () => {
+    const input = {
+      today: '2026-11-23', clients, quotes: [], manualOnly: true,
+      invoices: [
+        { id: 40, number: 'FAC-40', client_id: 1, due_at: '2026-11-02', status: 'overdue', balance_cents: 1000 },
+        { id: 41, number: 'FAC-41', client_id: 1, due_at: '2026-12-20', status: 'sent', balance_cents: 1000 },
+        { id: 42, number: 'FAC-42', client_id: 1, due_at: '2026-11-02', status: 'overdue', balance_cents: 1000, reminders_paused: true },
+      ],
+    }
+    expect(buildPipelineReminderPlan(input).candidates.map(candidate => [candidate.reminderKey, candidate.urgency])).toEqual([
+      ['invoice:40:manuel-2026-11-23', 'overdue'],
+      ['invoice:41:manuel-2026-11-23', 'upcoming'],
+    ])
+    expect(buildPipelineReminderPlan({ ...input, sentReminderKeys: ['invoice:40:manuel-2026-11-23'] }).candidates.map(candidate => candidate.targetId)).toEqual([41])
+    expect(buildPipelineReminderPlan({ ...input, today: '2026-11-24', sentReminderKeys: ['invoice:40:manuel-2026-11-23'] }).candidates.map(candidate => candidate.targetId)).toEqual([40, 41])
   })
 
   it('records a successful prospect contact with organization and preview guards', async () => {

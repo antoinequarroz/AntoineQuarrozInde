@@ -408,7 +408,7 @@ async function prepareReminder(action: CommercialTaskSuggestion) {
     const candidate = preview.candidates.find(item => item.targetType === action.kind && item.targetId === action.sourceId) || null
     if (!candidate) {
       reminderDialogStatus.value = 'error'
-      reminderDialogError.value = 'Aucun message ne peut être envoyé aujourd’hui pour ce dossier. Le moteur Lumail respecte les jalons et les envois déjà effectués.'
+      reminderDialogError.value = 'Aucun message ne peut être envoyé aujourd’hui pour ce dossier. Il a peut-être déjà été relancé aujourd’hui, être suspendu ou ne plus avoir de solde ouvert.'
       return
     }
     selectedReminderCandidate.value = candidate

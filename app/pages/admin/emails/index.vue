@@ -26,7 +26,6 @@ interface EmailResponse {
   nextPage: number | null
 }
 
-interface EmailSettings { automationEnabled: boolean, quoteOffsets: number[], invoiceOffsets: number[], updatedAt: string | null }
 
 const auth = useAuthStore()
 const toast = useToast()
@@ -110,35 +109,7 @@ async function fetchEmails({ append = false } = {}) {
   }
 }
 
-const settings = ref<EmailSettings>({ automationEnabled: true, quoteOffsets: [3, 0], invoiceOffsets: [2, 0, -3, -10, -20], updatedAt: null })
-const settingsSaving = ref(false)
-const quoteChoices = [14, 10, 7, 5, 3, 2, 1, 0]
-const invoiceChoices = [14, 10, 7, 5, 3, 2, 1, 0, -1, -3, -5, -7, -10, -14, -20, -30, -45, -60]
 const retryingId = ref<string | null>(null)
-
-async function fetchSettings() {
-  try {
-    settings.value = await $fetch<EmailSettings>('/api/admin/email-settings', { headers: auth.authHeader() })
-  }
-  catch {
-    toast.error('Les réglages de relance ne sont pas encore disponibles.')
-  }
-}
-
-async function saveSettings() {
-  settingsSaving.value = true
-  try {
-    settings.value = await $fetch<EmailSettings>('/api/admin/email-settings', { method: 'PUT', headers: auth.authHeader(), body: settings.value })
-    toast.success('Réglages de relance enregistrés.')
-  }
-  catch { toast.error('Impossible d’enregistrer les réglages de relance.') }
-  finally { settingsSaving.value = false }
-}
-
-function toggleOffset(kind: 'quoteOffsets' | 'invoiceOffsets', value: number) {
-  const current = settings.value[kind]
-  settings.value[kind] = current.includes(value) ? current.filter(item => item !== value) : [...current, value]
-}
 
 async function retryEmail(email: EmailRow) {
   if (!email.canRetry || retryingId.value || !confirm(`Relancer l’envoi vers ${email.to[0]} ?`)) return
@@ -153,7 +124,7 @@ async function retryEmail(email: EmailRow) {
   finally { retryingId.value = null }
 }
 
-onMounted(() => Promise.all([fetchEmails(), fetchSettings()]))
+onMounted(fetchEmails)
 </script>
 
 <template>
@@ -171,7 +142,7 @@ onMounted(() => Promise.all([fetchEmails(), fetchSettings()]))
       <div class="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div class="min-w-0">
           <h1 class="font-display text-2xl font-semibold text-gray-950 dark:text-white sm:text-3xl">Suivi des e-mails</h1>
-          <p class="mt-1 max-w-2xl text-sm leading-6 text-gray-500 dark:text-gray-400">Contrôle les envois transactionnels, leurs tentatives et les relances automatiques, sans exposer leur contenu.</p>
+          <p class="mt-1 max-w-2xl text-sm leading-6 text-gray-500 dark:text-gray-400">Contrôle les envois transactionnels, leurs tentatives et les relances envoyées, sans exposer leur contenu.</p>
         </div>
         <div class="flex shrink-0 gap-2">
           <a href="https://lumail.io/" target="_blank" rel="noopener noreferrer" class="inline-flex min-h-11 items-center justify-center rounded-lg border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-700 transition-colors hover:border-violet-300 hover:text-violet-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:border-white/[0.1] dark:bg-white/[0.04] dark:text-gray-200">Ouvrir Lumail</a>
@@ -205,32 +176,12 @@ onMounted(() => Promise.all([fetchEmails(), fetchSettings()]))
       <p class="border-t border-gray-100 px-4 py-2.5 text-xs text-gray-500 dark:border-white/[0.06] dark:text-gray-400">Ces chiffres concernent uniquement les {{ counts.total }} e-mails actuellement chargés.</p>
     </section>
 
-    <section class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-white/[0.08] dark:bg-[#111118] sm:p-5">
-      <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div>
-          <h2 class="text-base font-semibold text-gray-950 dark:text-white">Relances automatiques</h2>
-          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Choisis les jours relatifs à l’échéance. Les factures soldées, annulées ou suspendues sont revérifiées avant chaque envoi.</p>
-        </div>
-        <label class="inline-flex min-h-11 shrink-0 items-center gap-3 rounded-lg border border-gray-200 px-3 text-sm font-semibold text-gray-800 dark:border-white/[0.1] dark:text-gray-100">
-          <input v-model="settings.automationEnabled" type="checkbox" class="h-4 w-4 accent-violet-600">
-          Automatisation active
-        </label>
+    <section class="flex flex-col gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-white/[0.08] dark:bg-[#111118] sm:flex-row sm:items-center sm:justify-between sm:p-5">
+      <div>
+        <h2 class="text-base font-semibold text-gray-950 dark:text-white">Relances manuelles</h2>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Aucun rappel de paiement ne part automatiquement. Tu choisis chaque envoi et tu vérifies le message avant de confirmer.</p>
       </div>
-      <div class="mt-5 grid gap-5 lg:grid-cols-2">
-        <fieldset>
-          <legend class="text-sm font-semibold text-gray-800 dark:text-gray-200">Devis — jours avant échéance</legend>
-          <div class="mt-2 flex flex-wrap gap-2">
-            <button v-for="offset in quoteChoices" :key="`quote-${offset}`" type="button" class="min-h-10 rounded-lg border px-3 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500" :class="settings.quoteOffsets.includes(offset) ? 'border-violet-600 bg-violet-50 text-violet-800 dark:bg-violet-500/15 dark:text-violet-200' : 'border-gray-200 text-gray-600 dark:border-white/[0.1] dark:text-gray-300'" :aria-pressed="settings.quoteOffsets.includes(offset)" @click="toggleOffset('quoteOffsets', offset)">{{ offset === 0 ? 'Jour J' : `J-${offset}` }}</button>
-          </div>
-        </fieldset>
-        <fieldset>
-          <legend class="text-sm font-semibold text-gray-800 dark:text-gray-200">Factures — avant et après échéance</legend>
-          <div class="mt-2 flex flex-wrap gap-2">
-            <button v-for="offset in invoiceChoices" :key="`invoice-${offset}`" type="button" class="min-h-10 rounded-lg border px-3 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500" :class="settings.invoiceOffsets.includes(offset) ? 'border-violet-600 bg-violet-50 text-violet-800 dark:bg-violet-500/15 dark:text-violet-200' : 'border-gray-200 text-gray-600 dark:border-white/[0.1] dark:text-gray-300'" :aria-pressed="settings.invoiceOffsets.includes(offset)" @click="toggleOffset('invoiceOffsets', offset)">{{ offset === 0 ? 'Jour J' : offset > 0 ? `J-${offset}` : `J+${Math.abs(offset)}` }}</button>
-          </div>
-        </fieldset>
-      </div>
-      <div class="mt-5 flex justify-end"><button type="button" class="min-h-11 rounded-lg bg-violet-600 px-4 text-sm font-semibold text-white disabled:opacity-60" :disabled="settingsSaving || !settings.quoteOffsets.length || !settings.invoiceOffsets.length" @click="saveSettings">{{ settingsSaving ? 'Enregistrement…' : 'Enregistrer les relances' }}</button></div>
+      <NuxtLink to="/admin#relances-clients" class="inline-flex min-h-11 shrink-0 items-center justify-center rounded-lg bg-violet-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-violet-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500">Préparer une relance</NuxtLink>
     </section>
 
     <section class="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-white/[0.08] dark:bg-[#111118]">
