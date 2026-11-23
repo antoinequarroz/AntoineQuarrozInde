@@ -59,10 +59,16 @@ export function buildPipelineReminderPlan(input: {
   sentReminderKeys?: Iterable<string>
   quoteOffsets?: number[]
   invoiceOffsets?: number[]
+  /** Propose chaque document ouvert, quel que soit le jour, avec une clé anti-doublon quotidienne. */
+  manualOnly?: boolean
 }) {
   const clientsById = new Map(input.clients.map(client => [Number(client.id), client]))
   const sentKeys = new Set(input.sentReminderKeys || [])
   const candidates: PipelineReminderCandidate[] = []
+  const manualMilestone = (daysUntilDue: number) => ({
+    milestone: `manuel-${input.today}`,
+    urgency: daysUntilDue > 0 ? 'upcoming' as const : daysUntilDue === 0 ? 'due' as const : 'overdue' as const,
+  })
   const skipped = { alreadySent: 0, missingContact: 0, outsideMilestone: 0, paused: 0 }
 
   const addCandidate = (target: ReminderTarget, row: ReminderPlanQuote | ReminderPlanInvoice, dueDate: string, milestone: { milestone: string, urgency: PipelineReminderCandidate['urgency'] }) => {
@@ -130,7 +136,10 @@ export function buildPipelineReminderPlan(input: {
 
   for (const quote of input.quotes) {
     if (quote.status !== 'sent' || !quote.valid_until) continue
-    const milestone = quoteMilestone(calendarDayDifference(input.today, quote.valid_until), input.quoteOffsets || [3, 0])
+    const daysUntilDue = calendarDayDifference(input.today, quote.valid_until)
+    const milestone = input.manualOnly
+      ? (daysUntilDue >= 0 ? manualMilestone(daysUntilDue) : null)
+      : quoteMilestone(daysUntilDue, input.quoteOffsets || [3, 0])
     if (!milestone) {
       skipped.outsideMilestone += 1
       continue
@@ -142,7 +151,10 @@ export function buildPipelineReminderPlan(input: {
     if (!['sent', 'overdue'].includes(invoice.status) || !invoice.due_at) continue
     if (invoice.reminders_paused) { skipped.paused += 1; continue }
     if (Number(invoice.balance_cents || 0) <= 0) continue
-    const milestone = invoiceMilestone(calendarDayDifference(input.today, invoice.due_at), input.invoiceOffsets || [2, 0, -3, -10, -20])
+    const daysUntilDue = calendarDayDifference(input.today, invoice.due_at)
+    const milestone = input.manualOnly
+      ? manualMilestone(daysUntilDue)
+      : invoiceMilestone(daysUntilDue, input.invoiceOffsets || [2, 0, -3, -10, -20])
     if (!milestone) {
       skipped.outsideMilestone += 1
       continue

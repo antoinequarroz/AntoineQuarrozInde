@@ -1209,7 +1209,7 @@ watch(() => auth.currentOrganizationId, (organizationId, previousOrganizationId)
         <div class="min-w-0">
           <h2 class="text-sm font-semibold text-gray-950 dark:text-white">Relances clients</h2>
           <div class="mt-1 flex flex-wrap items-center gap-2">
-            <p id="reminder-help" class="text-xs text-gray-500 dark:text-gray-400">Prépare les rappels à des échéances précises et vérifie chaque destinataire avant l’envoi.</p>
+            <p id="reminder-help" class="text-xs text-gray-500 dark:text-gray-400">Aucun rappel ne part automatiquement. Choisis les dossiers à relancer et vérifie chaque message avant l’envoi.</p>
             <span v-if="reminderPreviewStatus === 'ready' && reminderPreview" class="rounded-full px-2 py-0.5 text-xs font-semibold" :class="reminderPreview.automationEnabled ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' : 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'">
               {{ reminderPreview.automationEnabled ? 'Automatique actif' : 'Mode manuel' }}
             </span>
@@ -1252,7 +1252,7 @@ watch(() => auth.currentOrganizationId, (organizationId, previousOrganizationId)
             </div>
           </div>
           <div v-else class="rounded-lg border border-dashed border-gray-200 px-4 py-6 text-center dark:border-white/[0.1]"><p class="text-sm font-medium text-gray-800 dark:text-gray-100">Aucune relance à envoyer</p><p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Le moteur surveille les prochaines échéances.</p></div>
-          <p v-if="reminderPreviewStatus === 'ready' && reminderPreview" class="mt-2 text-xs text-gray-500 dark:text-gray-400">{{ reminderPreview.skipped.alreadySent }} déjà envoyée(s) · {{ reminderPreview.skipped.missingContact }} sans adresse · {{ reminderPreview.skipped.paused }} suspendue(s) · {{ reminderPreview.skipped.outsideMilestone }} hors jalon</p>
+          <p v-if="reminderPreviewStatus === 'ready' && reminderPreview" class="mt-2 text-xs text-gray-500 dark:text-gray-400">{{ reminderPreview.skipped.alreadySent }} déjà envoyée(s) · {{ reminderPreview.skipped.missingContact }} sans adresse · {{ reminderPreview.skipped.paused }} suspendue(s) · {{ reminderPreview.skipped.outsideMilestone }} hors période</p>
         </div>
         <div>
           <h3 class="mb-3 text-xs font-semibold uppercase tracking-[0.12em] text-gray-500 dark:text-gray-400">Historique récent</h3>
