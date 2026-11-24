@@ -325,7 +325,7 @@ watch(isSidebarOpen, (open) => {
       <div class="relative flex items-center gap-2.5 px-4 h-14 border-b border-gray-100 dark:border-white/[0.06] flex-shrink-0 overflow-hidden">
         <div class="pointer-events-none absolute -top-10 -left-10 h-24 w-24 rounded-full bg-violet-500/10 blur-2xl" />
         <div class="w-6 h-6 rounded-lg bg-gradient-brand flex items-center justify-center flex-shrink-0 shadow-glow-sm">
-          <span class="font-display font-bold text-white text-xs">AQ</span>
+          <UiBrandMark class="w-[62%] translate-y-[8%] text-white" />
         </div>
         <div class="flex-1 min-w-0">
           <span class="font-display font-semibold text-xs text-gray-900 dark:text-white truncate block">Antoine Quarroz</span>

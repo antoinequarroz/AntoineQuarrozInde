@@ -74,7 +74,7 @@ const localSeoLinks = [
           <div>
             <NuxtLink :to="localePath('/')" class="flex min-h-11 w-fit items-center gap-3 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-4 dark:focus-visible:ring-offset-gray-950">
               <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-fuchsia-500 shadow-glow-sm">
-                <span class="font-display text-sm font-bold text-white">AQ</span>
+                <UiBrandMark class="w-[62%] translate-y-[8%] text-white" />
               </span>
               <span>
                 <span class="block font-display font-semibold text-gray-950 dark:text-white">Antoine Quarroz</span>
