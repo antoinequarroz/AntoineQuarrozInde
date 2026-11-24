@@ -1209,7 +1209,7 @@ watch(() => auth.currentOrganizationId, (organizationId, previousOrganizationId)
         <div class="min-w-0">
           <h2 class="text-sm font-semibold text-gray-950 dark:text-white">Relances clients</h2>
           <div class="mt-1 flex flex-wrap items-center gap-2">
-            <p id="reminder-help" class="text-xs text-gray-500 dark:text-gray-400">Aucun rappel ne part automatiquement. Choisis les dossiers à relancer et vérifie chaque message avant l’envoi.</p>
+            <p id="reminder-help" class="text-xs text-gray-500 dark:text-gray-400">Aucun rappel ne part automatiquement. Choisis les dossiers à relancer et vérifie chaque destinataire avant l’envoi.</p>
             <span v-if="reminderPreviewStatus === 'ready' && reminderPreview" class="rounded-full px-2 py-0.5 text-xs font-semibold" :class="reminderPreview.automationEnabled ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' : 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'">
               {{ reminderPreview.automationEnabled ? 'Automatique actif' : 'Mode manuel' }}
             </span>
